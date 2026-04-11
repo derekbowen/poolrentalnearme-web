@@ -1,0 +1,19 @@
+.collapse {
+  &.entered {
+    animation: fadeIn 0.8s linear;
+  }
+
+  &.closed {
+    max-height: 0;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    max-height: 0;
+  }
+
+  100% {
+    max-height: 500px;
+  }
+}

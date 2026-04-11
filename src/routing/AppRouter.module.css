@@ -1,0 +1,4 @@
+.missingInformationModal {
+  composes: marketplaceModalBaseStyles from global;
+  padding-top: 70px;
+}

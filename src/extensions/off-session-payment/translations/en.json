@@ -1,0 +1,18 @@
+{
+  "InboxPage.default-booking.requested.status": "Requested",
+  "TransactionPage.default-booking.customer.requested.title": "Your booking request was successful!",
+  "TransactionPage.ActivityFeed.default-booking.requested": "{actor, select, you {You requested to book { listingTitle }.} other {{ otherUsersName } requested to book {listingTitle}}}",
+  "TransactionPage.default-booking.provider.requested.title": "You received a booking request from {customerName}.",
+  "TransactionPage.default-booking.provider.transition-accept-with-payment.actionButton": "Accept request",
+  "TransactionPage.default-booking.provider.transition-accept-with-payment.actionError": "Oops, accepting failed. Please try again.",
+  "TransactionPage.default-booking.provider.transition-decline-without-payment.actionButton": "Decline request",
+  "TransactionPage.default-booking.provider.transition-decline-without-payment.actionError": "Oops, declining failed. Please try again.",
+  "TransactionPage.default-booking.provider.transaction-missing-stripe-account.title": "Please connect your Stripe account to accept the booking request.",
+  "TransactionPage.default-booking.customer.requested.extraInfo": "You'll be notified when {providerName} accepts your request.",
+  "ActivityFeed.paymentFailed.provider": "The customer's payment for the booking request could not be captured successfully, so the request cannot be processed. Please wait for the customer to retry the payment before the auto-expire action occurs.",
+  "ActivityFeed.paymentFailed.customer": "The payment for the booking request failed, so it cannot be processed. Please retry before it expires.",
+  "TransactionPanel.paymentError.transaction-payment-failed": "The payment for the booking request failed, so it cannot be processed. Please wait for the customer to retry",
+  "TransactionPanel.paymentError.transaction-stripe-customer-missing-default-payment-method": "The payment for the booking request failed, so it cannot be processed. Please wait for the customer to retry",
+  "StripePaymentForm.offSessionPayment.cardSavingInfo": "Your card will be saved in your account settings.",
+  "TransactionPanel.stripeNotConnected": "You cannot respond to this booking request because you haven’t had a Stripe connected account. Please complete the <a>Stripe connected account at your payout details</a> in order to respond to new booking requests"
+}

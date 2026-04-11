@@ -1,0 +1,4 @@
+.arrow {
+	fill: var(--marketplaceColor);
+	stroke: var(--marketplaceColor);
+}

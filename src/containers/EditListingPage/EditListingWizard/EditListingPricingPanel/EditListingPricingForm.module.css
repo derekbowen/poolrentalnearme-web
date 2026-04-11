@@ -1,0 +1,173 @@
+@import '../../../../styles/customMediaQueries.css';
+
+.root {
+  /* Dimensions */
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+
+  @media (--viewportMedium) {
+    padding-top: 2px;
+  }
+}
+
+.error {
+  color: var(--colorFail);
+}
+
+.input {
+  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: 24px;
+
+  @media (--viewportMedium) {
+    margin-bottom: 32px;
+  }
+}
+
+.submitButton {
+  margin-top: auto;
+  margin-bottom: 24px;
+
+  @media (--viewportLarge) {
+    display: inline-block;
+    width: 241px;
+    margin-top: 100px;
+  }
+}
+
+.amenities {
+  margin-top: 24px;
+}
+
+.fieldAmenityRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (--viewportMedium) {
+    gap: 12px;
+    flex-direction: row;
+  }
+}
+
+.fieldAmenity {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  padding: 24px;
+
+  position: relative;
+  background-color: var(--colorWhite);
+  border-radius: 8px;
+  border: 1px solid var(--colorGrey100);
+  margin-bottom: 24px;
+
+  @media (--viewportMedium) {
+    gap: 12px;
+    padding: 24px;
+  }
+}
+
+.removeButton {
+  position: absolute;
+  right: 24px;
+  top: 8px;
+
+  color: var(--colorFail);
+  cursor: pointer;
+
+  border: none;
+
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+.closeIcon {
+  composes: marketplaceModalCloseIcon from global;
+}
+
+.amenityName,
+.amenityPrice {
+  flex: 1;
+
+  & label {
+    font-size: 14px;
+
+    @media (--viewportMedium) {
+      font-size: 16px;
+    }
+  }
+}
+
+.addMoreAmenity {
+  border: none;
+  text-align: start;
+  cursor: pointer;
+
+  color: var(--marketplaceColor);
+  margin: 12px 0;
+
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+.amenitiesDesc {
+  margin: 0;
+  padding: 0;
+}
+
+.amenityDesc label {
+  font-size: 14px;
+
+  @media (--viewportMedium) {
+    font-size: 16px;
+  }
+}
+
+.fieldError {
+  composes: h4 from global;
+  margin-top: 6px;
+  margin-bottom: 0;
+  color: var(--colorFail);
+  overflow: hidden;
+  font-size: 13px;
+
+  @media (--viewportMedium) {
+    margin-top: 8px;
+  }
+}
+
+.fieldId {
+  display: none;
+}
+
+.instantBookingDesc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.instantBookingTitle {
+  color: var(--marketplaceColor);
+  margin-bottom: 8px;
+  font-size: 21px;
+  font-weight: var(--fontWeightBold);
+}
+
+.instantBookingField {
+  padding: 16px 24px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: 8px;
+}
+
+.instantBookingDescText {
+  margin-right: 20px;
+}

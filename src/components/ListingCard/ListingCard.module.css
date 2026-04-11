@@ -1,0 +1,115 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+
+  /* Remove link's hover effect */
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.aspectRatioWrapper {
+  transition: var(--transitionStyleButton);
+  background: var(--colorGrey100);
+  /* Loading BG color */
+  border-radius: var(--borderRadiusMedium);
+
+  @media (--viewportMedium) {
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: var(--boxShadowListingCard);
+    }
+  }
+}
+
+.rootForImage {
+  border: solid 1px var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+  width: 100%;
+  height: 100%;
+}
+
+.info {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0 2px 0;
+}
+
+.price {
+  all: unset;
+  position: absolute;
+  height: max-content;
+  z-index: 1;
+  background-color: var(--colorGrey700);
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  display: absolute;
+  bottom: 10px;
+  left: 10px;
+  margin-bottom: 4px;
+  width: fit-content;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.priceValue {
+  font-weight: var(--fontWeightBold);
+  color: var(--colorWhite);
+  font-size: 18px;
+}
+
+.perUnit {
+  font-weight: var(--fontWeightBold);
+  color: var(--colorWhite);
+  font-size: 18px;
+}
+
+.mainInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  /* Font */
+  composes: textSmall from global;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorGrey700);
+  margin: 0;
+}
+
+.authorInfo {
+  /* Font */
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey700);
+  font-size: 14px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+
+  /* Remove default margins from font */
+  margin-top: 0;
+  margin-bottom: 0;
+
+  @media (--viewportMedium) {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+.longWord {
+  /* fallback option */
+  word-break: break-all;
+  /* use break-word if available */
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.cityInfo {
+  font-size: 14px;
+  color: var(--colorGrey700);
+}

@@ -1,0 +1,63 @@
+{
+  "extensions": [
+    {
+      "socials-sign-in": {
+        "client": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-socials-sign-in-client.git",
+          "branch": "main"
+        },
+        "server": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-socials-sign-in-server.git"
+        }
+      }
+    },
+    {
+      "account-deletion": {
+        "server": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-account-deletion-server.git",
+          "branch": "main"
+        }
+      }
+    },
+    {
+      "common": {
+        "client": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-common-client.git",
+          "branch": "main"
+        },
+        "server": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-common-server.git",
+          "branch": "main"
+        }
+      }
+    },
+    {
+      "wishlist": {
+        "client": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-wishlist-client.git",
+          "branch": "main"
+        },
+        "server": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-wishlist-server.git",
+          "branch": "main"
+        }
+      }
+    },
+    {
+      "event-handler": {
+        "server": {
+          "enabled": true,
+          "remote": "git@github.com:journeyhorizon/sharetribe-horizon-extensions-event-handler.git",
+          "branch": "main"
+        }
+      }
+    }
+  ]
+}

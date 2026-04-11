@@ -1,0 +1,40 @@
+.modalTitle {
+  composes: marketplaceModalTitleStyles from global;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.resendOTP {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.resendBtn {
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: var(--fontWeightRegular);
+  font-size: 14px;
+
+  &:hover {
+    opacity: .7;
+  }
+}
+
+.notReceiveOTP {
+  font-size: 14px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.error {
+  color: var(--colorFail);
+  padding: 0;
+  margin: 0;
+}

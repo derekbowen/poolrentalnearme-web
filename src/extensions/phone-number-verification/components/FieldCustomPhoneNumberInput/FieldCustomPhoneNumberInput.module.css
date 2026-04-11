@@ -1,0 +1,19 @@
+@import '../../../../styles/customMediaQueries.css';
+
+.phoneNumberInput {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.error {
+  margin-top: 6px;
+  color: var(--colorFail);
+  font-size: 13px;
+  font-weight: var(--fontWeightBold);
+
+  @media (--viewportMedium) {
+    margin-top: 12px;
+  }
+}

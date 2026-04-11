@@ -1,0 +1,87 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Wishlist - Client",
+  "steps": [
+    {
+      "file": "src/components/ListingCard/ListingCard.js",
+      "description": "Import `BookmarkButton` to `ListingCard`\n\n```jsx\n\nimport BookmarkButton from '../../extensions/wishlist/components/BookmarkButton/BookmarkButton';\n```",
+      "line": 18
+    },
+    {
+      "file": "src/components/ListingCard/ListingCard.js",
+      "description": "Insert `BookmarkButton` component before the `LazyImage` component\n\n```jsx\n<BookmarkButton listingId={id} listingAuthor={author} />\n\n```",
+      "line": 116
+    },
+    {
+      "file": "src/containers/SearchPage/SearchPage.duck.js",
+      "description": "Delete sparse attributes while querying listings on `SearchPage`\n\n`TODO`: Investigate why adding one more sparse attribute, such as `metadata.likedByUserIds` is not working",
+      "line": 260
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPage.module.css",
+      "description": "Add `position: relative` to class `.productGallery` to make it as parent container of `BookmarkButton` component\n\n```css\n  position: relative;\n\n```",
+      "line": 688
+    },
+    {
+      "file": "src/containers/SearchPage/SearchFiltersMobile/SearchFiltersMobile.module.css",
+      "description": "Increase `z-index` of the `SearchFiltersMobile` root container to a number that is greater than 1 as `z-index` of `BookmarkButton` is 1 and less than 10 (default `z-index` of `Topbar` is 10)",
+      "line": 12
+    },
+    {
+      "file": "src/containers/ListingPage/SectionGallery.js",
+      "description": "Import `BookmarkButton` to `SectionGallery` for showing button on Listing Page\n\n```jsx\nimport BookmarkButton from '../../extensions/wishlist/components/BookmarkButton/BookmarkButton';\n```",
+      "line": 3
+    },
+    {
+      "file": "src/containers/ListingPage/SectionGallery.js",
+      "description": "Insert `Bookmark Button` before `ListingImageGallery` component\n\n```jsx\n<BookmarkButton listingId={listing.id.uuid} listingAuthor={listing.author} />\n\n```",
+      "line": 13
+    },
+    {
+      "file": "src/components/UserNav/UserNav.js",
+      "description": "Add a new object for showing `My Wishlist` on `UserNav`\n\n```jsx\n{\n  text: <FormattedMessage id=\"UserNav.myWishlistLink\" />,\n  selected: currentPage === 'WishlistPage',\n  linkProps: {\n    name: 'WishlistPage',\n  },\n},\n\n```",
+      "selection": {
+        "start": {
+          "line": 4,
+          "character": 1
+        },
+        "end": {
+          "line": 10,
+          "character": 2
+        }
+      },
+      "line": 38
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarDesktop/TopbarDesktop.js",
+      "description": "Import `WishlistLink` component\n\n```jsx\nimport WishlistLink from '../../../../extensions/wishlist/components/WishlistLink/WishlistLink';\n\n```",
+      "line": 20
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarDesktop/TopbarDesktop.js",
+      "description": "Check and return `<WishlistLink />`, otherwise return `null`\n\n```jsx\n  const wishlistLinkMaybe = authenticatedOnClientSide ? (\n    <WishlistLink linkClassName={css.topbarLink} linkLabelClassName={css.topbarLinkLabel} />\n  ) : null;\n\n```",
+      "line": 152
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarDesktop/TopbarDesktop.js",
+      "description": "Add a new menu item for `My Wishlist` to show it in the profile menu\n\n```jsx\n        <MenuItem key=\"WishlistPage\">\n          <NamedLink\n            className={classNames(css.menuLink, currentPageClass('WishlistPage'))}\n            name=\"WishlistPage\"\n          >\n            <span className={css.menuItemBorder} />\n            <FormattedMessage id=\"TopbarDesktop.myWishlistLink\" />\n          </NamedLink>\n        </MenuItem>\n```",
+      "line": 82
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarDesktop/TopbarDesktop.js",
+      "description": "Assign the `<WishlistLink />` component to `wishlistLinkMaybe` if the user is authenticated, otherwise return null\n\n```jsx\nconst wishlistLinkMaybe = authenticatedOnClientSide ? <WishlistLink /> : null;\n```",
+      "line": 152
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarDesktop/TopbarDesktop.js",
+      "description": "Add `{wishlistLinkMaybe}` to appropriate position compared to other links\n\n```jsx\n{wishlistLinkMaybe}\n\n```",
+      "line": 176
+    },
+    {
+      "file": "src/containers/TopbarContainer/Topbar/TopbarMobileMenu/TopbarMobileMenu.js",
+      "description": "Add a new `NamedLink` for `TopbarMobileMenu` \n```jsx\n<NamedLink\n  className={classNames(css.navigationLink, currentPageClass('WishlistPage'))}\n  name=\"WishlistPage\"\n>\n  <FormattedMessage id=\"TopbarMobileMenu.myWishlistLink\" />\n</NamedLink>\n```",
+      "line": 156
+    }
+  ],
+  "ref": "feature/1ArnlxwJ-wishlist"
+}

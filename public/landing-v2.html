@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pool Rental Near Me — Luxury Private Pool Rentals</title>
+  <meta name="description" content="Book a stunning private pool by the hour. No membership required. Thousands of verified pools across the US." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #FDFAF5;
+      --surface: #F5EDD8;
+      --accent: #D4633C;
+      --gold: #C5973A;
+      --text: #1A1511;
+      --muted: #6B5B4E;
+      --dark-bg: #1E1208;
+      --dark-surface: #2A1A0E;
+      --border: rgba(26,21,17,0.10);
+      --shadow-warm: 0 8px 40px rgba(212,99,60,0.10);
+      --shadow-card: 0 2px 20px rgba(26,21,17,0.07);
+      --ease: cubic-bezier(.25,.46,.45,.94);
+      --radius: 16px;
+      --radius-lg: 24px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      cursor: none;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── CUSTOM CURSOR ── */
+    #cursor-dot {
+      position: fixed; top: 0; left: 0; z-index: 9999;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      pointer-events: none;
+      transform: translate(-50%,-50%);
+      transition: width .15s var(--ease), height .15s var(--ease), background .2s;
+    }
+    #cursor-ring {
+      position: fixed; top: 0; left: 0; z-index: 9998;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      pointer-events: none;
+      transform: translate(-50%,-50%);
+      transition: transform .12s var(--ease), width .2s var(--ease), height .2s var(--ease), opacity .2s;
+      opacity: .6;
+    }
+    body:has(a:hover) #cursor-dot,
+    body:has(button:hover) #cursor-dot { width: 14px; height: 14px; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      padding: 20px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .4s var(--ease), padding .3s var(--ease), box-shadow .4s;
+    }
+    nav.scrolled {
+      background: rgba(253,250,245,0.95);
+      backdrop-filter: blur(20px);
+      padding: 14px 48px;
+      box-shadow: 0 1px 0 var(--border), 0 4px 24px rgba(26,21,17,0.05);
+    }
+    .nav-logo {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: -.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: .9rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff !important;
+      padding: 10px 22px; border-radius: 100px;
+      font-weight: 600 !important; font-size: .88rem !important;
+      transition: background .2s, transform .2s var(--ease) !important;
+    }
+    .nav-cta:hover { background: #bf5633 !important; transform: translateY(-1px) !important; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      padding-top: 100px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-left {
+      padding: 60px 48px 60px 80px;
+      display: flex; flex-direction: column; gap: 32px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: .8rem; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .hero-eyebrow::before {
+      content: ''; display: block;
+      width: 24px; height: 2px; background: var(--accent);
+    }
+    .hero-headline {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: clamp(3rem, 5vw, 5.5rem);
+      line-height: 1.05;
+      letter-spacing: -.02em;
+      color: var(--text);
+    }
+    .hero-headline em {
+      font-style: italic; color: var(--accent);
+    }
+    .hero-sub {
+      font-size: 1.1rem; line-height: 1.65;
+      color: var(--muted); max-width: 420px;
+    }
+    .search-card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-warm), 0 0 0 1px var(--border);
+      padding: 8px;
+      display: flex; align-items: stretch; gap: 0;
+    }
+    .search-field {
+      flex: 1;
+      display: flex; flex-direction: column;
+      padding: 12px 18px;
+      border-right: 1px solid var(--border);
+    }
+    .search-field:last-of-type { border-right: none; }
+    .search-label {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
+    }
+    .search-input {
+      border: none; outline: none; background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem; color: var(--text);
+      font-weight: 500;
+    }
+    .search-input::placeholder { color: var(--muted); font-weight: 400; }
+    .search-btn {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 12px;
+      padding: 14px 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem; font-weight: 600;
+      cursor: none; white-space: nowrap;
+      transition: background .2s, transform .2s var(--ease);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .search-btn:hover { background: #bf5633; transform: scale(1.02); }
+    .search-btn svg { width: 16px; height: 16px; }
+    .hero-stats {
+      display: flex; gap: 32px;
+    }
+    .hero-stat-item { }
+    .hero-stat-num {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 1.8rem; color: var(--text);
+      display: block; line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: .8rem; color: var(--muted); margin-top: 4px;
+    }
+    .hero-right {
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scale(1.03);
+      transition: transform 8s var(--ease);
+    }
+    .hero-img-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, var(--bg) 0%, transparent 30%),
+                  linear-gradient(to top, rgba(30,18,8,.3) 0%, transparent 50%);
+    }
+    .hero-badge {
+      position: absolute; bottom: 48px; right: 48px;
+      background: rgba(253,250,245,.92);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border);
+    }
+    .hero-badge-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--surface); overflow: hidden;
+    }
+    .hero-badge-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-badge-text { }
+    .hero-badge-name { font-weight: 600; font-size: .88rem; }
+    .hero-badge-detail { color: var(--muted); font-size: .78rem; margin-top: 2px; }
+    .hero-badge-stars { color: var(--gold); font-size: .78rem; margin-top: 3px; }
+
+    /* ── PRESS BAR ── */
+    #press {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+      overflow: hidden;
+    }
+    .press-inner {
+      display: flex; align-items: center; gap: 0;
+    }
+    .press-label {
+      white-space: nowrap;
+      padding: 0 40px 0 48px;
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent);
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+    }
+    .marquee-track {
+      overflow: hidden; flex: 1;
+    }
+    .marquee-content {
+      display: flex; align-items: center;
+      animation: marquee 28s linear infinite;
+      width: max-content;
+      gap: 0;
+    }
+    .marquee-content:hover { animation-play-state: paused; }
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .press-item {
+      display: flex; align-items: center;
+      padding: 0 36px;
+      border-right: 1px solid var(--border);
+      font-weight: 700; font-size: .85rem;
+      letter-spacing: .04em; color: var(--muted);
+      white-space: nowrap;
+      transition: color .2s;
+    }
+    .press-item:hover { color: var(--text); }
+    .press-sep {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--accent); opacity: .4; flex-shrink: 0;
+    }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 100px 80px; }
+    .section-eyebrow {
+      font-size: .78rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-eyebrow::before {
+      content: ''; display: block;
+      width: 20px; height: 2px; background: var(--accent);
+    }
+    .section-headline {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: clamp(2rem, 3.5vw, 3.2rem);
+      line-height: 1.1; letter-spacing: -.02em; color: var(--text);
+    }
+    .section-sub {
+      font-size: 1.05rem; line-height: 1.65; color: var(--muted);
+      max-width: 500px; margin-top: 12px;
+    }
+
+    /* reveal animation */
+    .reveal {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity .7s var(--ease), transform .7s var(--ease);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+
+    /* ── FEATURED POOLS ── */
+    #pools { background: var(--bg); }
+    .pools-header {
+      display: flex; align-items: flex-end;
+      justify-content: space-between; margin-bottom: 48px;
+    }
+    .pools-view-all {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--accent);
+      font-weight: 600; font-size: .9rem;
+      transition: gap .2s;
+    }
+    .pools-view-all:hover { gap: 14px; }
+    .pools-view-all svg { width: 16px; height: 16px; }
+
+    .bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 20px;
+    }
+    .pool-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      transition: transform .35s var(--ease), box-shadow .35s;
+      cursor: none;
+    }
+    .pool-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 60px rgba(212,99,60,0.14);
+    }
+    .pool-card.featured {
+      grid-column: 1 / 3;
+      grid-row: 1 / 2;
+    }
+    .pool-card.tall {
+      grid-column: 3 / 4;
+      grid-row: 1 / 3;
+    }
+    .pool-card img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      transition: transform .5s var(--ease);
+    }
+    .pool-card.featured img { height: 340px; }
+    .pool-card.small img { height: 220px; }
+    .pool-card.tall img { height: 100%; min-height: 560px; }
+    .pool-card:hover img { transform: scale(1.04); }
+    .pool-card-body {
+      padding: 20px 22px 22px;
+    }
+    .pool-card-tags {
+      display: flex; gap: 6px; margin-bottom: 10px;
+    }
+    .tag {
+      font-size: .7rem; font-weight: 600; letter-spacing: .05em;
+      text-transform: uppercase;
+      padding: 4px 10px; border-radius: 100px;
+      background: rgba(212,99,60,.1); color: var(--accent);
+    }
+    .tag.gold {
+      background: rgba(197,151,58,.12); color: var(--gold);
+    }
+    .pool-card-name {
+      font-weight: 600; font-size: 1.05rem; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .pool-card-location {
+      font-size: .85rem; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .pool-card-footer {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-top: 14px;
+    }
+    .pool-card-price {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 1.3rem; color: var(--text);
+    }
+    .pool-card-price span {
+      font-family: 'DM Sans', sans-serif;
+      font-size: .8rem; color: var(--muted); font-weight: 400;
+    }
+    .pool-card-rating {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .85rem; font-weight: 600;
+    }
+    .pool-card-rating svg { color: var(--gold); }
+    .pool-card-cta {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      border: none; display: flex; align-items: center; justify-content: center;
+      cursor: none; transition: background .2s, transform .2s;
+    }
+    .pool-card-cta:hover { background: #bf5633; transform: scale(1.1); }
+    .pool-wishlist {
+      position: absolute; top: 16px; right: 16px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(253,250,245,.88); backdrop-filter: blur(8px);
+      border: none; cursor: none;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, transform .2s;
+    }
+    .pool-wishlist:hover { background: #fff; transform: scale(1.1); }
+    .pool-wishlist svg { width: 16px; height: 16px; color: var(--muted); }
+
+    /* ── HOW IT WORKS ── */
+    #how { background: var(--surface); }
+    .how-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 48px; margin-top: 60px;
+    }
+    .how-step {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .how-number {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 4rem; color: var(--accent); opacity: .25;
+      line-height: 1;
+    }
+    .how-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .how-icon svg { width: 26px; height: 26px; color: #fff; }
+    .how-title {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 1.4rem; color: var(--text);
+    }
+    .how-desc {
+      font-size: .95rem; line-height: 1.65; color: var(--muted);
+    }
+    .how-connector {
+      display: none;
+    }
+
+    /* ── OCCASIONS ── */
+    #occasions { padding: 100px 0 100px 80px; background: var(--bg); overflow: hidden; }
+    .occasions-header { margin-bottom: 40px; padding-right: 80px; }
+    .occasions-track {
+      display: flex; gap: 20px;
+      overflow-x: auto; scrollbar-width: none;
+      padding-right: 80px; padding-bottom: 8px;
+      cursor: grab;
+    }
+    .occasions-track::-webkit-scrollbar { display: none; }
+    .occasions-track.dragging { cursor: grabbing; }
+    .occasion-card {
+      flex: 0 0 280px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      height: 360px;
+      cursor: none;
+      transition: transform .3s var(--ease);
+    }
+    .occasion-card:hover { transform: translateY(-6px); }
+    .occasion-card img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .5s var(--ease);
+    }
+    .occasion-card:hover img { transform: scale(1.06); }
+    .occasion-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(26,21,17,.75) 0%, transparent 55%);
+    }
+    .occasion-body {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 24px;
+    }
+    .occasion-tag {
+      display: inline-block; margin-bottom: 8px;
+      font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .occasion-name {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 1.4rem; color: #fff; line-height: 1.2;
+    }
+    .occasion-count {
+      font-size: .8rem; color: rgba(255,255,255,.65); margin-top: 6px;
+    }
+
+    /* ── TRUST & SAFETY ── */
+    #trust {
+      background: var(--dark-bg);
+      color: #fff;
+    }
+    .trust-inner {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 80px; align-items: center;
+    }
+    .trust-left .section-eyebrow { color: var(--gold); }
+    .trust-left .section-eyebrow::before { background: var(--gold); }
+    .trust-left .section-headline { color: #fff; }
+    .trust-left .section-sub { color: rgba(255,255,255,.55); }
+    .trust-badges {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+    .trust-badge {
+      background: var(--dark-surface);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      border: 1px solid rgba(255,255,255,.07);
+      transition: border-color .3s, transform .3s var(--ease);
+    }
+    .trust-badge:hover {
+      border-color: rgba(197,151,58,.3);
+      transform: translateY(-4px);
+    }
+    .trust-badge-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(197,151,58,.12);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .trust-badge-icon svg { width: 24px; height: 24px; color: var(--gold); }
+    .trust-badge-num {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 2.2rem; color: #fff; line-height: 1;
+      margin-bottom: 6px;
+    }
+    .trust-badge-label {
+      font-size: .88rem; color: rgba(255,255,255,.55); line-height: 1.45;
+    }
+
+    /* ── TESTIMONIALS ── */
+    #testimonials { background: var(--surface); }
+    .testi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+      margin-top: 56px;
+    }
+    .testi-card {
+      background: #fff; border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      border: 1px solid var(--border);
+      transition: transform .3s var(--ease), box-shadow .3s;
+    }
+    .testi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-warm);
+    }
+    .testi-quote {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 3rem; color: var(--accent); opacity: .3;
+      line-height: .8; margin-bottom: 16px;
+    }
+    .testi-text {
+      font-size: 1rem; line-height: 1.7; color: var(--text);
+      font-style: italic;
+    }
+    .testi-author {
+      margin-top: 24px; display: flex; align-items: center; gap: 12px;
+    }
+    .testi-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--surface); display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 1rem;
+      color: var(--accent); flex-shrink: 0;
+    }
+    .testi-name { font-weight: 600; font-size: .9rem; }
+    .testi-location { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .testi-stars { display: flex; gap: 2px; margin-top: 4px; }
+    .testi-stars svg { width: 13px; height: 13px; color: var(--gold); }
+
+    /* ── HOST CTA ── */
+    #host {
+      background: var(--bg);
+      padding: 0;
+    }
+    .host-inner {
+      display: grid; grid-template-columns: 1fr 1fr; min-height: 600px;
+    }
+    .host-left {
+      padding: 80px;
+      display: flex; flex-direction: column; justify-content: center; gap: 28px;
+      background: var(--dark-bg);
+    }
+    .host-eyebrow {
+      font-size: .78rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--gold);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .host-eyebrow::before {
+      content: ''; display: block; width: 20px; height: 2px; background: var(--gold);
+    }
+    .host-headline {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: clamp(2rem, 3vw, 3rem); color: #fff; line-height: 1.1;
+    }
+    .host-headline em { color: var(--gold); font-style: normal; }
+    .host-sub {
+      font-size: 1rem; line-height: 1.65; color: rgba(255,255,255,.55);
+      max-width: 400px;
+    }
+    .host-stats {
+      display: flex; gap: 40px; margin: 8px 0;
+    }
+    .host-stat-num {
+      font-family: 'Libre Caslon Display', serif;
+      font-size: 2rem; color: var(--gold); display: block; line-height: 1;
+    }
+    .host-stat-label { font-size: .8rem; color: rgba(255,255,255,.45); margin-top: 4px; }
+    .host-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      padding: 14px 28px; border-radius: 100px;
+      text-decoration: none; font-weight: 600; font-size: .95rem;
+      transition: background .2s, transform .2s var(--ease);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { background: #bf5633; transform: translateY(-2px); }
+    .btn-ghost {
+      border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.8);
+      padding: 14px 28px; border-radius: 100px;
+      text-decoration: none; font-weight: 500; font-size: .95rem;
+      transition: border-color .2s, color .2s, transform .2s;
+    }
+    .btn-ghost:hover {
+      border-color: rgba(255,255,255,.5); color: #fff;
+      transform: translateY(-2px);
+    }
+    .host-right {
+      position: relative; overflow: hidden;
+    }
+    .host-right img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .host-right-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, var(--dark-bg) 0%, transparent 40%);
+    }
+    .host-pill {
+      position: absolute; top: 40px; right: 40px;
+      background: rgba(253,250,245,.92); backdrop-filter: blur(20px);
+      border-radius: 100px; padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: .9rem; color: var(--text);
+      box-shadow: var(--shadow-card);
+    }
+    .host-pill-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #22c55e; flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(34,197,94,.2);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark-bg);
+      color: rgba(255,255,255,.5);
+      padding: 64px 80px 40px;
+    }
+    .footer-top {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-brand-name {
+      font-weight: 600; font-size: 1.1rem; color: #fff;
+      text-decoration: none; display: block; margin-bottom: 16px;
+    }
+    .footer-brand-name span { color: var(--accent); }
+    .footer-brand-desc { font-size: .88rem; line-height: 1.65; max-width: 280px; }
+    .footer-col-title {
+      font-size: .78rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.3);
+      margin-bottom: 20px;
+    }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .footer-links a {
+      text-decoration: none; color: rgba(255,255,255,.5);
+      font-size: .88rem; transition: color .2s;
+    }
+    .footer-links a:hover { color: #fff; }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 32px; font-size: .82rem;
+    }
+    .footer-socials { display: flex; gap: 16px; }
+    .footer-social-link {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.4); text-decoration: none;
+      font-size: .75rem; font-weight: 700;
+      transition: border-color .2s, color .2s;
+    }
+    .footer-social-link:hover { border-color: rgba(255,255,255,.4); color: #fff; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      #hero { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .hero-left { padding: 60px 40px; }
+      section { padding: 80px 40px; }
+      nav { padding: 16px 40px; }
+      nav.scrolled { padding: 12px 40px; }
+      .bento { grid-template-columns: 1fr 1fr; }
+      .pool-card.featured { grid-column: 1 / 3; }
+      .pool-card.tall { grid-column: 1 / 2; grid-row: auto; }
+      .trust-inner { grid-template-columns: 1fr; gap: 48px; }
+      .trust-badges { grid-template-columns: repeat(3, 1fr); }
+      .host-inner { grid-template-columns: 1fr; }
+      .host-right { height: 400px; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+
+    @media (max-width: 700px) {
+      nav { padding: 14px 20px; }
+      nav.scrolled { padding: 10px 20px; }
+      .nav-links { display: none; }
+      #hero { padding-top: 80px; }
+      .hero-left { padding: 40px 20px; }
+      section { padding: 60px 20px; }
+      #occasions { padding: 60px 0 60px 20px; }
+      .occasions-header { padding-right: 20px; }
+      .occasions-track { padding-right: 20px; }
+      .search-card { flex-direction: column; }
+      .search-field { border-right: none; border-bottom: 1px solid var(--border); }
+      .bento { grid-template-columns: 1fr; }
+      .pool-card.featured { grid-column: auto; }
+      .pool-card.tall { grid-column: auto; }
+      .pool-card.tall img { min-height: 280px; }
+      .how-grid { grid-template-columns: 1fr; gap: 32px; }
+      .testi-grid { grid-template-columns: 1fr; }
+      .trust-badges { grid-template-columns: 1fr; }
+      .host-left { padding: 48px 20px; }
+      footer { padding: 48px 20px 32px; }
+      .footer-top { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ── NAVBAR ── -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">poolrental<span>nearme</span></a>
+    <ul class="nav-links">
+      <li><a href="#pools">Browse Pools</a></li>
+      <li><a href="#occasions">Occasions</a></li>
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#host">List Your Pool</a></li>
+      <li><a href="#" class="nav-cta">Book Now</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section id="hero">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Private Pool Rentals</div>
+      <h1 class="hero-headline reveal">
+        The pool<br/>you deserve is<br/><em>waiting</em>
+      </h1>
+      <p class="hero-sub reveal reveal-delay-1">
+        Rent a stunning private pool by the hour — no membership, no crowds, no compromise. Over 4,200 verified pools across the US.
+      </p>
+      <div class="search-card reveal reveal-delay-2">
+        <div class="search-field">
+          <label class="search-label">Location</label>
+          <input class="search-input" type="text" placeholder="Los Angeles, CA" />
+        </div>
+        <div class="search-field">
+          <label class="search-label">Date</label>
+          <input class="search-input" type="text" placeholder="Pick a date" />
+        </div>
+        <div class="search-field">
+          <label class="search-label">Guests</label>
+          <input class="search-input" type="text" placeholder="2 guests" />
+        </div>
+        <button class="search-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Search
+        </button>
+      </div>
+      <div class="hero-stats reveal reveal-delay-3">
+        <div class="hero-stat-item">
+          <span class="hero-stat-num">4,200+</span>
+          <div class="hero-stat-label">Verified pools</div>
+        </div>
+        <div class="hero-stat-item">
+          <span class="hero-stat-num">98%</span>
+          <div class="hero-stat-label">Guest satisfaction</div>
+        </div>
+        <div class="hero-stat-item">
+          <span class="hero-stat-num">$5M</span>
+          <div class="hero-stat-label">Host protection</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <img class="hero-img" src="https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=1920&q=90" alt="Luxury pool at golden hour" />
+      <div class="hero-img-overlay"></div>
+      <div class="hero-badge">
+        <div class="hero-badge-avatar">
+          <img src="https://images.unsplash.com/photo-1601288496920-b6154fe3626a?w=100&q=80" alt="Host" />
+        </div>
+        <div class="hero-badge-text">
+          <div class="hero-badge-name">Malibu Infinity Pool</div>
+          <div class="hero-badge-detail">Hosted by Sarah K. &bull; Malibu, CA</div>
+          <div class="hero-badge-stars">★★★★★ 4.98 &nbsp;(312 reviews)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRESS BAR ── -->
+  <div id="press">
+    <div class="press-inner">
+      <div class="press-label">As Seen In</div>
+      <div class="marquee-track">
+        <div class="marquee-content" id="marquee">
+          <div class="press-item">Forbes</div>
+          <div class="press-item">TechCrunch</div>
+          <div class="press-item">Vogue Living</div>
+          <div class="press-item">Architectural Digest</div>
+          <div class="press-item">The New York Times</div>
+          <div class="press-item">Condé Nast Traveler</div>
+          <div class="press-item">Business Insider</div>
+          <div class="press-item">Travel + Leisure</div>
+          <div class="press-item">Refinery29</div>
+          <div class="press-item">WIRED</div>
+          <!-- duplicate for seamless loop -->
+          <div class="press-item">Forbes</div>
+          <div class="press-item">TechCrunch</div>
+          <div class="press-item">Vogue Living</div>
+          <div class="press-item">Architectural Digest</div>
+          <div class="press-item">The New York Times</div>
+          <div class="press-item">Condé Nast Traveler</div>
+          <div class="press-item">Business Insider</div>
+          <div class="press-item">Travel + Leisure</div>
+          <div class="press-item">Refinery29</div>
+          <div class="press-item">WIRED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURED POOLS ── -->
+  <section id="pools">
+    <div class="pools-header reveal">
+      <div>
+        <div class="section-eyebrow">Featured Pools</div>
+        <h2 class="section-headline">Pools that make<br/><em style="font-style:italic;color:var(--accent)">memories</em></h2>
+      </div>
+      <a href="#" class="pools-view-all">
+        View all pools
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <div class="bento">
+      <!-- Card 1 — Featured Large -->
+      <div class="pool-card featured reveal">
+        <img src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80" alt="Palm Springs infinity pool" />
+        <button class="pool-wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <div class="pool-card-body">
+          <div class="pool-card-tags">
+            <span class="tag">Infinity Edge</span>
+            <span class="tag gold">Superhost</span>
+          </div>
+          <div class="pool-card-name">Desert Oasis Infinity Pool</div>
+          <div class="pool-card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Palm Springs, CA
+          </div>
+          <div class="pool-card-footer">
+            <div class="pool-card-price">$149 <span>/ hour</span></div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="pool-card-rating">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" color="#C5973A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                4.97 (284)
+              </div>
+              <button class="pool-card-cta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 — Small -->
+      <div class="pool-card small reveal reveal-delay-1">
+        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80" alt="Modern backyard pool" />
+        <button class="pool-wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <div class="pool-card-body">
+          <div class="pool-card-tags"><span class="tag">Heated</span></div>
+          <div class="pool-card-name">Modern Terrace Pool</div>
+          <div class="pool-card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Beverly Hills, CA
+          </div>
+          <div class="pool-card-footer">
+            <div class="pool-card-price">$95 <span>/ hour</span></div>
+            <div class="pool-card-rating">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" color="#C5973A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              4.91 (156)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 — Small -->
+      <div class="pool-card small reveal reveal-delay-2">
+        <img src="https://images.unsplash.com/photo-1519046904884-53103b34b206?w=600&q=80" alt="Beach pool" />
+        <button class="pool-wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <div class="pool-card-body">
+          <div class="pool-card-tags"><span class="tag">Oceanfront</span></div>
+          <div class="pool-card-name">Malibu Blufftop Pool</div>
+          <div class="pool-card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Malibu, CA
+          </div>
+          <div class="pool-card-footer">
+            <div class="pool-card-price">$185 <span>/ hour</span></div>
+            <div class="pool-card-rating">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" color="#C5973A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              5.0 (421)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 — Small -->
+      <div class="pool-card small reveal reveal-delay-1">
+        <img src="https://images.unsplash.com/photo-1561501900-3701fa6a0864?w=600&q=80" alt="Resort-style pool" />
+        <button class="pool-wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <div class="pool-card-body">
+          <div class="pool-card-tags"><span class="tag">Resort-Style</span><span class="tag gold">Superhost</span></div>
+          <div class="pool-card-name">Scottsdale Villa Pool</div>
+          <div class="pool-card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Scottsdale, AZ
+          </div>
+          <div class="pool-card-footer">
+            <div class="pool-card-price">$120 <span>/ hour</span></div>
+            <div class="pool-card-rating">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" color="#C5973A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              4.95 (198)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5 — Tall -->
+      <div class="pool-card tall reveal reveal-delay-3">
+        <img src="https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&q=80" alt="Tropical pool" />
+        <button class="pool-wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+        <div class="pool-card-body" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(26,21,17,.85) 0%,transparent 100%);padding:24px;">
+          <div class="pool-card-tags"><span class="tag" style="background:rgba(255,255,255,.15);color:#fff;">Tropical</span></div>
+          <div class="pool-card-name" style="color:#fff;font-size:1.1rem;">Kauai Jungle Pool</div>
+          <div class="pool-card-location" style="color:rgba(255,255,255,.7);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Kauai, HI
+          </div>
+          <div class="pool-card-footer">
+            <div class="pool-card-price" style="color:#fff;">$210 <span style="color:rgba(255,255,255,.6)">/ hour</span></div>
+            <div class="pool-card-rating" style="color:#fff;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" color="#C5973A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              4.99 (537)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section id="how">
+    <div class="reveal">
+      <div class="section-eyebrow">How It Works</div>
+      <h2 class="section-headline">From search to<br/>splash in minutes</h2>
+      <p class="section-sub">We've stripped away every barrier between you and the perfect pool day.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-step reveal reveal-delay-1">
+        <div class="how-number">01</div>
+        <div class="how-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+        <div class="how-title">Search Your City</div>
+        <p class="how-desc">Enter your location, date, and number of guests. Filter by pool type, amenities, and vibe. Find exactly what you're looking for in seconds.</p>
+      </div>
+      <div class="how-step reveal reveal-delay-2">
+        <div class="how-number">02</div>
+        <div class="how-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="how-title">Book Instantly</div>
+        <p class="how-desc">Reserve your pool with one click. Payment is secure and held until 24 hours before your swim — you're protected every step of the way.</p>
+      </div>
+      <div class="how-step reveal reveal-delay-3">
+        <div class="how-number">03</div>
+        <div class="how-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="how-title">Swim in Style</div>
+        <p class="how-desc">Show up, dive in. Every pool is verified, photographed, and reviewed. Enjoy your private oasis with full peace of mind.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── OCCASIONS ── -->
+  <section id="occasions">
+    <div class="occasions-header reveal">
+      <div class="section-eyebrow">Perfect For Any Occasion</div>
+      <h2 class="section-headline">Whatever calls<br/>for a pool</h2>
+    </div>
+    <div class="occasions-track" id="occasions-track">
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80" alt="Pool Party" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Most Popular</div>
+          <div class="occasion-name">Pool Party</div>
+          <div class="occasion-count">1,240 pools available</div>
+        </div>
+      </div>
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1572331165267-854da2b10ccc?w=400&q=80" alt="Date Night" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Romantic</div>
+          <div class="occasion-name">Date Night</div>
+          <div class="occasion-count">680 pools available</div>
+        </div>
+      </div>
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80" alt="Family Fun" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Kid-Friendly</div>
+          <div class="occasion-name">Family Fun</div>
+          <div class="occasion-count">920 pools available</div>
+        </div>
+      </div>
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80" alt="Work Retreat" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Corporate</div>
+          <div class="occasion-name">Work Retreat</div>
+          <div class="occasion-count">340 pools available</div>
+        </div>
+      </div>
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&q=80" alt="Birthdays" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Celebration</div>
+          <div class="occasion-name">Birthdays</div>
+          <div class="occasion-count">1,080 pools available</div>
+        </div>
+      </div>
+      <div class="occasion-card">
+        <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80" alt="Bachelorette" />
+        <div class="occasion-overlay"></div>
+        <div class="occasion-body">
+          <div class="occasion-tag">Girls' Trip</div>
+          <div class="occasion-name">Bachelorette</div>
+          <div class="occasion-count">760 pools available</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TRUST & SAFETY ── -->
+  <section id="trust">
+    <div class="trust-inner">
+      <div class="trust-left reveal">
+        <div class="section-eyebrow">Trust &amp; Safety</div>
+        <h2 class="section-headline">Protected from the moment you book</h2>
+        <p class="section-sub">Every reservation is backed by our comprehensive protection program. Swim worry-free.</p>
+        <div style="margin-top:24px">
+          <a href="#" class="btn-primary" style="background:var(--gold)">Learn about protection</a>
+        </div>
+      </div>
+      <div class="trust-badges">
+        <div class="trust-badge reveal reveal-delay-1">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="trust-badge-num">$5M</div>
+          <div class="trust-badge-label">Host liability protection on every booking</div>
+        </div>
+        <div class="trust-badge reveal reveal-delay-2">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="trust-badge-num">100%</div>
+          <div class="trust-badge-label">Verified hosts and photographed properties</div>
+        </div>
+        <div class="trust-badge reveal reveal-delay-3">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="trust-badge-num">24/7</div>
+          <div class="trust-badge-label">Live support from our dedicated safety team</div>
+        </div>
+        <div class="trust-badge reveal reveal-delay-1">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="trust-badge-num">SSL</div>
+          <div class="trust-badge-label">Bank-grade encryption on all transactions</div>
+        </div>
+        <div class="trust-badge reveal reveal-delay-2">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="trust-badge-num">42K+</div>
+          <div class="trust-badge-label">Trusted guests and hosts across the US</div>
+        </div>
+        <div class="trust-badge reveal reveal-delay-3">
+          <div class="trust-badge-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="trust-badge-num">4.9★</div>
+          <div class="trust-badge-label">Average platform rating across 28,000 reviews</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
+  <section id="testimonials">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto 56px;">
+      <div class="section-eyebrow" style="justify-content:center;">What Guests Say</div>
+      <h2 class="section-headline">Stories from the water's edge</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card reveal reveal-delay-1">
+        <div class="testi-quote">"</div>
+        <p class="testi-text">We booked the Palm Springs infinity pool for my wife's birthday and it was absolutely extraordinary. The host was gracious, the water was crystal clear, and the sunset views left us speechless. We've already planned our return trip.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">M</div>
+          <div>
+            <div class="testi-name">Marcus &amp; Priya T.</div>
+            <div class="testi-location">Los Angeles, CA</div>
+            <div class="testi-stars">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card reveal reveal-delay-2">
+        <div class="testi-quote">"</div>
+        <p class="testi-text">Organized a bachelorette party for 12 people using Pool Rental Near Me and it was seamless. The Malibu property was even more stunning in person. The whole process from booking to checkout took under 10 minutes. Pure luxury made accessible.</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:rgba(197,151,58,.15);color:var(--gold);">J</div>
+          <div>
+            <div class="testi-name">Jasmine W.</div>
+            <div class="testi-location">San Francisco, CA</div>
+            <div class="testi-stars">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card reveal reveal-delay-3">
+        <div class="testi-quote">"</div>
+        <p class="testi-text">We rent the Kauai jungle pool every quarter for our offsite team retreats. There's nothing like closing a sprint review and then jumping into a private pool surrounded by tropical gardens. Productivity and morale through the roof every time.</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:rgba(212,99,60,.1);">D</div>
+          <div>
+            <div class="testi-name">David K., CTO</div>
+            <div class="testi-location">Austin, TX</div>
+            <div class="testi-stars">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOST CTA ── -->
+  <section id="host">
+    <div class="host-inner">
+      <div class="host-left">
+        <div class="host-eyebrow">Become a Host</div>
+        <h2 class="host-headline">Your pool earns<br/>while you <em>sleep</em></h2>
+        <p class="host-sub">List your pool in under 10 minutes and start earning. Join thousands of hosts who turn their backyard into a five-figure income stream.</p>
+        <div class="host-stats">
+          <div>
+            <span class="host-stat-num">$8,400</span>
+            <div class="host-stat-label">Average annual host earnings</div>
+          </div>
+          <div>
+            <span class="host-stat-num">48 hrs</span>
+            <div class="host-stat-label">Avg. time to first booking</div>
+          </div>
+        </div>
+        <div class="host-btns">
+          <a href="#" class="btn-primary">List your pool free</a>
+          <a href="#" class="btn-ghost">See how it works</a>
+        </div>
+      </div>
+      <div class="host-right">
+        <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900&q=85" alt="Beautiful pool property" />
+        <div class="host-right-overlay"></div>
+        <div class="host-pill">
+          <div class="host-pill-dot"></div>
+          New booking — Malibu Cliffside Pool · $312 earned
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-top">
+      <div>
+        <a href="#" class="footer-brand-name">poolrental<span>nearme</span></a>
+        <p class="footer-brand-desc">The marketplace for private pool rentals. Thousands of verified pools across the United States, ready to book by the hour.</p>
+        <div style="margin-top:24px;display:flex;gap:12px;align-items:center">
+          <div style="padding:6px 12px;background:rgba(255,255,255,.06);border-radius:8px;font-size:.75rem;display:flex;align-items:center;gap:6px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            SOC 2 Certified
+          </div>
+          <div style="padding:6px 12px;background:rgba(255,255,255,.06);border-radius:8px;font-size:.75rem;">
+            CPSP Licensed
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Explore</div>
+        <ul class="footer-links">
+          <li><a href="#">Browse Pools</a></li>
+          <li><a href="#">Pool Map</a></li>
+          <li><a href="#">New Listings</a></li>
+          <li><a href="#">Gift Cards</a></li>
+          <li><a href="#">Occasions Guide</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Hosting</div>
+        <ul class="footer-links">
+          <li><a href="#">List Your Pool</a></li>
+          <li><a href="#">Host Resources</a></li>
+          <li><a href="#">Earnings Calculator</a></li>
+          <li><a href="#">Host Community</a></li>
+          <li><a href="#">Superhost Program</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <ul class="footer-links">
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Safety</a></li>
+          <li><a href="#">Cancellation Policy</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">Press Kit</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2026 Pool Rental Near Me, Inc. &nbsp;&bull;&nbsp; <a href="#" style="color:inherit;text-decoration:none;">Privacy</a> &nbsp;&bull;&nbsp; <a href="#" style="color:inherit;text-decoration:none;">Terms</a> &nbsp;&bull;&nbsp; <a href="#" style="color:inherit;text-decoration:none;">Accessibility</a></div>
+      <div class="footer-socials">
+        <a href="#" class="footer-social-link">IG</a>
+        <a href="#" class="footer-social-link">TT</a>
+        <a href="#" class="footer-social-link">TW</a>
+        <a href="#" class="footer-social-link">FB</a>
+        <a href="#" class="footer-social-link">YT</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ── CURSOR ──
+    const dot = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top = my + 'px';
+    });
+
+    (function animRing() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
+      requestAnimationFrame(animRing);
+    })();
+
+    // ── NAVBAR ──
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 60);
+    }, { passive: true });
+
+    // ── SCROLL REVEAL ──
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => revealObs.observe(el));
+
+    // ── DRAG SCROLL — OCCASIONS ──
+    const track = document.getElementById('occasions-track');
+    let isDown = false, startX, scrollLeft;
+
+    track.addEventListener('mousedown', e => {
+      isDown = true;
+      track.classList.add('dragging');
+      startX = e.pageX - track.offsetLeft;
+      scrollLeft = track.scrollLeft;
+    });
+    track.addEventListener('mouseleave', () => { isDown = false; track.classList.remove('dragging'); });
+    track.addEventListener('mouseup', () => { isDown = false; track.classList.remove('dragging'); });
+    track.addEventListener('mousemove', e => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - track.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      track.scrollLeft = scrollLeft - walk;
+    });
+
+    // ── HERO IMAGE PARALLAX ──
+    const heroImg = document.querySelector('.hero-img');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY < window.innerHeight) {
+        heroImg.style.transform = `scale(1.03) translateY(${window.scrollY * 0.15}px)`;
+      }
+    }, { passive: true });
+  </script>
+</body>
+</html>

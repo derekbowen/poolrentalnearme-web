@@ -1,0 +1,37 @@
+/* Template-scoped CSS custom properties */
+[data-template="clean"] {
+  --templatePrimary: #2563eb;
+  --templateAccent: #3b82f6;
+  --templateBg: #ffffff;
+  --templateFont: 'Inter', sans-serif;
+}
+[data-template="resort"] {
+  --templatePrimary: #0d9488;
+  --templateAccent: #f97316;
+  --templateBg: #f0fdf4;
+  --templateFont: 'Poppins', sans-serif;
+}
+[data-template="luxury"] {
+  --templatePrimary: #1a1a2e;
+  --templateAccent: #d4af37;
+  --templateBg: #0f0f1a;
+  --templateFont: 'Playfair Display', serif;
+}
+[data-template="party"] {
+  --templatePrimary: #e11d48;
+  --templateAccent: #06b6d4;
+  --templateBg: #0f172a;
+  --templateFont: 'Space Grotesk', sans-serif;
+}
+[data-template="family"] {
+  --templatePrimary: #f59e0b;
+  --templateAccent: #10b981;
+  --templateBg: #fffbeb;
+  --templateFont: 'Nunito', sans-serif;
+}
+[data-template="bold"] {
+  --templatePrimary: #f97316;
+  --templateAccent: #8b5cf6;
+  --templateBg: #1c1917;
+  --templateFont: 'Space Mono', monospace;
+}

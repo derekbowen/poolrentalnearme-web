@@ -1,0 +1,57 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(11, 15, 20, 0.88);
+  border: 1px solid var(--badge-accent, #d4af37);
+  color: #f7f1df;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.emoji {
+  color: var(--badge-accent, #d4af37);
+  font-size: 14px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.prnm {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(247, 241, 223, 0.62);
+}
+
+.tier {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--badge-accent, #d4af37);
+}
+
+.size_sm {
+  padding: 4px 10px;
+}
+.size_sm .emoji { font-size: 12px; }
+.size_sm .prnm { font-size: 9px; }
+.size_sm .tier { font-size: 11px; }
+
+.size_lg {
+  padding: 10px 18px;
+  gap: 10px;
+}
+.size_lg .emoji { font-size: 18px; }
+.size_lg .prnm { font-size: 11px; }
+.size_lg .tier { font-size: 14px; }

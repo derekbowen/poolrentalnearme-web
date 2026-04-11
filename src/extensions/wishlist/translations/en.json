@@ -1,0 +1,19 @@
+{
+  "BookmarkButton.title": "{isBookmarked, select, true {Added to wishlist} other {Add to wishlist}}",
+  "WishlistPage.loadingListings": "Loading listings…",
+  "WishlistPage.noResults": "You haven't liked any listings…",
+  "WishlistPage.queryError": "Query failed. Please try again.",
+  "WishlistPage.title": "Manage your wishlist",
+  "WishlistPage.searchListings": "Search your favorite listings...",
+  "WishlistPage.myWishlist": "My wishlist ({count} {count, plural, one {listing} other {listings}})",
+  "WishlistListingCard.removeListing": "Remove from wishlist",
+  "WishlistListingCard.actionFailed": "Action failed. Please try again.",
+  "WishlistListingCard.perUnit": "{unitType, select, day {per day} night {per night} hour {per hour} other {}}",
+  "WishlistListingCard.author": "{authorName}",
+  "WishlistListingCard.unsupportedPrice": "({currency})",
+  "WishlistListingCard.unsupportedPriceTitle": "Unsupported currency ({currency})",
+  "WishlistListingCard.priceNotSet": "Price not set",
+  "TopbarDesktop.myWishlistLink": "My wishlist",
+  "TopbarMobileMenu.myWishlistLink": "My wishlist",
+  "UserNav.myWishlistLink": "My wishlist"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "social-authentication",
+  "version": "0.0.1",
+  "private": true,
+  "license": "see LICENSE",
+  "dependencies": {
+    "express-session": "^1.18.0",
+    "passport-oauth2": "^1.8.0"
+  }
+}

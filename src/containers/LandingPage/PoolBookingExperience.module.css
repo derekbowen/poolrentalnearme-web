@@ -1,0 +1,1122 @@
+/* ═════════════════════════════════════════════════════════════
+   PoolBookingExperience — premium booking UX
+   Matches the PremiumLandingPage design language:
+   - Obsidian / cream / gold palette
+   - Cormorant Garamond serif + DM Sans
+   - Glass morphism, subtle motion, hairline borders
+   ═════════════════════════════════════════════════════════════ */
+
+:root {
+  --pbe-obsidian: #0B0E14;
+  --pbe-obsidian-2: #11151F;
+  --pbe-panel: rgba(18, 22, 32, 0.78);
+  --pbe-panel-solid: #151A25;
+  --pbe-cream: #F5F0E8;
+  --pbe-text-muted: rgba(245, 240, 232, 0.55);
+  --pbe-text-dim: rgba(245, 240, 232, 0.38);
+  --pbe-gold: #D8B35C;
+  --pbe-gold-light: #E5C47A;
+  --pbe-gold-dim: rgba(216, 179, 92, 0.18);
+  --pbe-border: rgba(245, 240, 232, 0.08);
+  --pbe-border-gold: rgba(216, 179, 92, 0.3);
+  --pbe-green: #7DDB9E;
+  --pbe-amber: #F4B84D;
+  --pbe-red: #F47466;
+  --pbe-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ── Section frame ─────────────────────────────────────────── */
+.bookingSection {
+  position: relative;
+  background: linear-gradient(180deg, #0B0E14 0%, #11151F 50%, #0B0E14 100%);
+  padding: 130px 0;
+  color: var(--pbe-cream);
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+}
+
+.bookingSection::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(216, 179, 92, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.bookingSection::after {
+  content: '';
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 40%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(86, 180, 204, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.bookingHeader {
+  max-width: 1300px;
+  margin: 0 auto 64px;
+  padding: 0 52px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--pbe-gold);
+  font-weight: 500;
+  margin-bottom: 18px;
+  padding: 6px 14px;
+  border: 1px solid var(--pbe-border-gold);
+  border-radius: 100px;
+  background: var(--pbe-gold-dim);
+}
+
+.headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 18px;
+  color: var(--pbe-cream);
+}
+
+.headline em {
+  font-style: italic;
+  color: var(--pbe-gold-light);
+  font-weight: 500;
+}
+
+.subheadline {
+  max-width: 580px;
+  margin: 0 auto;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--pbe-text-muted);
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.bookingLayout {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 52px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.bookingLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ═══ POOL HERO CARD ═════════════════════════════════════ */
+.poolHero {
+  position: relative;
+  height: 340px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+}
+
+.poolHeroImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.9s var(--pbe-ease);
+}
+
+.poolHero:hover .poolHeroImg {
+  transform: scale(1.04);
+}
+
+.poolHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 30%,
+    rgba(7, 9, 12, 0.85) 100%
+  );
+}
+
+.poolHeroInfo {
+  position: absolute;
+  bottom: 32px;
+  left: 36px;
+  right: 36px;
+}
+
+.poolHeroLocation {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(245, 240, 232, 0.72);
+  margin-bottom: 8px;
+}
+
+.poolHeroName {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-bottom: 14px;
+  color: var(--pbe-cream);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+}
+
+.poolHeroMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(245, 240, 232, 0.88);
+}
+
+.poolHeroStar {
+  color: var(--pbe-gold-light);
+  font-size: 14px;
+}
+
+.poolHeroRating {
+  font-weight: 600;
+}
+
+.poolHeroReviews {
+  color: var(--pbe-text-muted);
+}
+
+.poolHeroDot {
+  color: var(--pbe-text-dim);
+  margin: 0 2px;
+}
+
+.poolHeroHost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poolHeroSuperhost {
+  padding: 3px 8px;
+  background: var(--pbe-gold-dim);
+  color: var(--pbe-gold-light);
+  border: 1px solid var(--pbe-border-gold);
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ═══ MARKET INTELLIGENCE BANNER ═════════════════════════ */
+.marketBanner {
+  background: var(--pbe-panel);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--pbe-border);
+  border-radius: 22px;
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.marketBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pbe-gold-light), transparent);
+  opacity: 0.5;
+}
+
+.marketBannerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.marketBannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.marketPulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pbe-green);
+  box-shadow: 0 0 0 0 rgba(125, 219, 158, 0.5);
+  animation: marketPulse 1.8s infinite;
+}
+
+@keyframes marketPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(125, 219, 158, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(125, 219, 158, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(125, 219, 158, 0); }
+}
+
+.marketLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pbe-text-muted);
+  font-weight: 500;
+}
+
+.marketRegion {
+  font-size: 12px;
+  color: var(--pbe-gold-light);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.marketStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--pbe-border);
+  margin-bottom: 22px;
+}
+
+.marketStat {
+  text-align: left;
+}
+
+.marketStatValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.marketStatValueHot {
+  color: var(--pbe-gold-light);
+}
+
+.marketStatLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pbe-text-muted);
+}
+
+.supplyBar {
+  position: relative;
+  height: 6px;
+  background: rgba(245, 240, 232, 0.06);
+  border-radius: 100px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.supplyBarFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--pbe-red) 0%, var(--pbe-amber) 100%);
+  border-radius: 100px;
+  animation: supplyBarRise 1.2s var(--pbe-ease);
+}
+
+@keyframes supplyBarRise {
+  from { width: 0 !important; }
+}
+
+.supplyBarLabel {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  font-size: 12px;
+  color: var(--pbe-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.supplyBarLabel strong {
+  color: var(--pbe-red);
+  font-weight: 600;
+}
+
+.marketNote {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--pbe-text-muted);
+  font-weight: 300;
+  font-style: italic;
+}
+
+.marketNoteIcon {
+  font-size: 16px;
+  font-style: normal;
+}
+
+/* ═══ SECTION LABELS ═════════════════════════════════════ */
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.015em;
+  margin-bottom: 18px;
+}
+
+.sectionLabelNum {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--pbe-gold-dim);
+  border: 1px solid var(--pbe-border-gold);
+  color: var(--pbe-gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* ═══ PACKAGE SELECTOR ═══════════════════════════════════ */
+.packageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.packageCard {
+  position: relative;
+  padding: 26px 22px 24px;
+  background: var(--pbe-panel);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--pbe-border);
+  border-radius: 18px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--pbe-cream);
+  transition: all 0.35s var(--pbe-ease);
+  overflow: hidden;
+}
+
+.packageCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.35s var(--pbe-ease);
+}
+
+.packageCard:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 240, 232, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.packageCardActive {
+  background: linear-gradient(180deg, rgba(216, 179, 92, 0.08) 0%, var(--pbe-panel) 80%);
+  border-color: var(--pbe-gold) !important;
+  box-shadow: 0 0 0 1px var(--pbe-gold), 0 24px 60px rgba(216, 179, 92, 0.15);
+}
+
+.packageCardActive::before {
+  background: linear-gradient(90deg, transparent, var(--pbe-gold-light), transparent);
+}
+
+.packageCardRecommended {
+  border-color: rgba(216, 179, 92, 0.35);
+}
+
+.packageRibbon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 4px 10px;
+  background: var(--pbe-gold);
+  color: var(--pbe-obsidian);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  box-shadow: 0 4px 12px rgba(216, 179, 92, 0.4);
+}
+
+.packageName {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--pbe-cream);
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.packageTagline {
+  font-size: 12px;
+  color: var(--pbe-text-muted);
+  font-weight: 300;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+.packageDuration {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pbe-gold-light);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.packagePrice {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--pbe-cream);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.packagePriceUnit {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--pbe-text-muted);
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.packageIncluded {
+  font-size: 12px;
+  color: var(--pbe-cream);
+  font-weight: 500;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--pbe-border);
+}
+
+.packageExtra {
+  font-size: 11px;
+  color: var(--pbe-text-muted);
+  font-weight: 300;
+  margin-top: 3px;
+}
+
+/* ═══ DATE CARD ══════════════════════════════════════════ */
+.dateCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  background: var(--pbe-panel);
+  border: 1px solid var(--pbe-border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+}
+
+.dateCardLeft {
+  flex: 1;
+}
+
+.dateCardLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pbe-text-muted);
+  margin-bottom: 4px;
+}
+
+.dateCardValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.dateCardMeta {
+  font-size: 12px;
+  color: var(--pbe-text-muted);
+  font-weight: 300;
+}
+
+.dateCardBtn {
+  padding: 12px 22px;
+  background: transparent;
+  border: 1px solid var(--pbe-border);
+  border-radius: 100px;
+  color: var(--pbe-cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.3s var(--pbe-ease);
+}
+
+.dateCardBtn:hover {
+  border-color: var(--pbe-gold);
+  color: var(--pbe-gold-light);
+  background: var(--pbe-gold-dim);
+}
+
+/* ═══ GUEST STEPPER ══════════════════════════════════════ */
+.guestCard {
+  padding: 32px 36px;
+  background: var(--pbe-panel);
+  border: 1px solid var(--pbe-border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+}
+
+.guestStepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 38px;
+  margin-bottom: 34px;
+}
+
+.guestStepBtn {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(245, 240, 232, 0.05);
+  border: 1px solid var(--pbe-border);
+  color: var(--pbe-cream);
+  font-size: 26px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.3s var(--pbe-ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.guestStepBtn:hover:not(:disabled) {
+  border-color: var(--pbe-gold);
+  color: var(--pbe-gold-light);
+  background: var(--pbe-gold-dim);
+  transform: scale(1.05);
+}
+
+.guestStepBtn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.guestCount {
+  text-align: center;
+  min-width: 120px;
+}
+
+.guestCountValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 72px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  background: linear-gradient(180deg, var(--pbe-cream) 0%, var(--pbe-gold-light) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.guestCountLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pbe-text-muted);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* Capacity bar */
+.capacityBar {
+  position: relative;
+  height: 10px;
+  background: rgba(245, 240, 232, 0.06);
+  border-radius: 100px;
+  margin-bottom: 14px;
+  overflow: visible;
+}
+
+.capacityBarIncluded {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--pbe-green) 0%, #4FB382 100%);
+  border-radius: 100px;
+  transition: width 0.5s var(--pbe-ease);
+}
+
+.capacityBarExtra {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--pbe-gold-light) 0%, var(--pbe-gold) 100%);
+  border-radius: 0 100px 100px 0;
+  transition: width 0.5s var(--pbe-ease), left 0.5s var(--pbe-ease);
+}
+
+.capacityBarMarker {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--pbe-cream);
+  transition: left 0.5s var(--pbe-ease);
+}
+
+.capacityBarMarkerLabel {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9px;
+  color: var(--pbe-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.guestHint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--pbe-text-muted);
+  font-weight: 300;
+  margin-top: 20px;
+}
+
+.guestHint strong {
+  color: var(--pbe-gold-light);
+  font-weight: 600;
+}
+
+/* ═══ CANCELLATION CARD ══════════════════════════════════ */
+.cancelCard {
+  padding: 28px 32px;
+  background: var(--pbe-panel);
+  border: 1px solid var(--pbe-border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+}
+
+.cancelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--pbe-border);
+}
+
+.cancelHeaderTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.015em;
+}
+
+.cancelHeaderBadge {
+  padding: 5px 12px;
+  background: var(--pbe-gold-dim);
+  color: var(--pbe-gold-light);
+  border: 1px solid var(--pbe-border-gold);
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cancelTiers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.cancelTier {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.tierDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tierDotGreen  { background: var(--pbe-green); box-shadow: 0 0 10px rgba(125, 219, 158, 0.4); }
+.tierDotAmber  { background: var(--pbe-amber); box-shadow: 0 0 10px rgba(244, 184, 77, 0.4); }
+.tierDotRed    { background: var(--pbe-red);   box-shadow: 0 0 10px rgba(244, 116, 102, 0.4); }
+
+.cancelTierLabel {
+  flex: 1;
+  color: var(--pbe-cream);
+  font-weight: 400;
+}
+
+.cancelTierRefund {
+  color: var(--pbe-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cancelFootnote {
+  padding-top: 22px;
+  border-top: 1px solid var(--pbe-border);
+  font-size: 12px;
+  color: var(--pbe-text-muted);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* ═══ RIGHT COLUMN — STICKY PRICE CARD ═══════════════════ */
+.bookingRight {
+  position: relative;
+}
+
+.priceCard {
+  position: sticky;
+  top: 100px;
+  padding: 32px 34px 30px;
+  background: linear-gradient(
+    180deg,
+    rgba(21, 26, 37, 0.92) 0%,
+    rgba(15, 19, 28, 0.92) 100%
+  );
+  backdrop-filter: blur(28px);
+  border: 1px solid var(--pbe-border);
+  border-radius: 22px;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.priceCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--pbe-gold-light) 50%,
+    transparent 100%
+  );
+}
+
+.priceCardHead {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--pbe-border);
+  margin-bottom: 22px;
+}
+
+.priceCardPkgName {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--pbe-cream);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.priceCardPkgMeta {
+  font-size: 12px;
+  color: var(--pbe-text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Surge badge */
+.priceSurgeBadge {
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(244, 184, 77, 0.12) 0%, rgba(244, 116, 102, 0.08) 100%);
+  border: 1px solid rgba(244, 184, 77, 0.3);
+  border-radius: 12px;
+}
+
+.priceSurgeBadgeTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.priceSurgeIcon {
+  font-size: 14px;
+}
+
+.priceSurgeLabel {
+  flex: 1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pbe-amber);
+  font-weight: 600;
+}
+
+.priceSurgeValue {
+  padding: 3px 10px;
+  background: var(--pbe-amber);
+  color: var(--pbe-obsidian);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.priceSurgeDesc {
+  font-size: 12px;
+  color: rgba(245, 240, 232, 0.68);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+/* Line items */
+.priceLines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.priceLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 14px;
+  gap: 12px;
+}
+
+.priceLineLabel {
+  color: rgba(245, 240, 232, 0.72);
+  font-weight: 400;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.priceLineSurge {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--pbe-amber);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.priceLineNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--pbe-text-dim);
+  font-style: italic;
+}
+
+.priceLineValue {
+  color: var(--pbe-cream);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.priceLineValueDim {
+  color: var(--pbe-text-dim);
+}
+
+.priceDivider {
+  height: 1px;
+  background: var(--pbe-border);
+  margin: 4px 0;
+}
+
+.priceLineTotal {
+  font-size: 16px;
+  padding-top: 4px;
+}
+
+.priceLineTotal .priceLineLabel {
+  color: var(--pbe-cream);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.priceLineTotal .priceLineValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--pbe-gold-light);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Book button */
+.bookBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--pbe-gold-light) 0%, var(--pbe-gold) 100%);
+  color: var(--pbe-obsidian);
+  border: none;
+  border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s var(--pbe-ease);
+  box-shadow: 0 16px 40px rgba(216, 179, 92, 0.35);
+}
+
+.bookBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 60px rgba(216, 179, 92, 0.5);
+}
+
+.bookBtnArrow {
+  font-size: 18px;
+  transition: transform 0.3s var(--pbe-ease);
+}
+
+.bookBtn:hover .bookBtnArrow {
+  transform: translateX(4px);
+}
+
+.bookBtnFootnote {
+  text-align: center;
+  font-size: 11px;
+  color: var(--pbe-text-muted);
+  margin-top: 14px;
+  font-weight: 400;
+}
+
+.bookAssurances {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--pbe-border);
+}
+
+.bookAssurance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--pbe-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  flex: 1;
+}
+
+.bookAssuranceIcon {
+  font-size: 16px;
+  text-transform: none;
+}
+
+/* ═══ RESPONSIVE ═════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .bookingLayout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .priceCard {
+    position: relative;
+    top: 0;
+  }
+  .packageGrid {
+    grid-template-columns: 1fr;
+  }
+  .marketStats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bookingSection {
+    padding: 80px 0;
+  }
+  .bookingHeader {
+    padding: 0 24px;
+    margin-bottom: 44px;
+  }
+  .bookingLayout {
+    padding: 0 24px;
+  }
+  .poolHeroName {
+    font-size: 30px;
+  }
+  .poolHero {
+    height: 260px;
+  }
+  .guestCountValue {
+    font-size: 56px;
+  }
+  .marketBanner,
+  .guestCard,
+  .cancelCard,
+  .priceCard {
+    padding: 22px 20px;
+  }
+  .guestStepper {
+    gap: 20px;
+  }
+}

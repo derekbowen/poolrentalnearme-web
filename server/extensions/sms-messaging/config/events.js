@@ -1,0 +1,33 @@
+const TRANSACTION_TRANSITIONED = 'transaction/transitioned';
+const MESSAGE_CREATED = 'message/created';
+
+const SUPPORTED_EVENTS = [TRANSACTION_TRANSITIONED, MESSAGE_CREATED];
+
+const BOOKING_NEW_REQUEST = 'booking-new-request';
+
+const TRANSITION_CONFIRM_PAYMENT = 'transition/confirm-payment';
+const TRANSITION_EXPIRE = 'transition/expire';
+const TRANSITION_DECLINE = 'transition/decline';
+const TRANSITION_ACCEPT = 'transition/accept';
+const TRANSITION_CANCEL = 'transition/cancel';
+const TRANSITION_COMPLETE = 'transition/complete';
+const TRANSITION_OPERATOR_COMPLETE = 'transition/operator-complete';
+
+const USER_ROLE_PROVIDER = 'provider';
+const USER_ROLE_CUSTOMER = 'customer';
+
+module.exports = {
+  TRANSACTION_TRANSITIONED,
+  MESSAGE_CREATED,
+  SUPPORTED_EVENTS,
+  BOOKING_NEW_REQUEST,
+  TRANSITION_CONFIRM_PAYMENT,
+  TRANSITION_EXPIRE,
+  TRANSITION_DECLINE,
+  TRANSITION_ACCEPT,
+  TRANSITION_CANCEL,
+  TRANSITION_COMPLETE,
+  TRANSITION_OPERATOR_COMPLETE,
+  USER_ROLE_PROVIDER,
+  USER_ROLE_CUSTOMER,
+};

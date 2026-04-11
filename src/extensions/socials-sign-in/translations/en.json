@@ -1,0 +1,8 @@
+{
+  "AuthenticationPage.loginWithApple": "Continue with Apple",
+  "AuthenticationPage.signupWithApple": "Continue with Apple",
+  "AuthenticationPage.loginWithX": "Continue with X (Twitter)",
+  "AuthenticationPage.signupWithX": "Continue with X (Twitter)",
+  "AuthenticationPage.loginWithLinkedIn": "Continue with LinkedIn",
+  "AuthenticationPage.signupWithLinkedIn": "Continue with LinkedIn"
+}

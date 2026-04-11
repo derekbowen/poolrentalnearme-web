@@ -1,0 +1,16 @@
+{
+  "include": ["src", "server"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "components/*": ["src/components/*"],
+      "util/*": ["src/util/*"],
+      "hooks/*": ["src/hooks/*"],
+      "ducks/*": ["src/ducks/*"],
+      "config/*": ["src/config/*"],
+      "context/*": ["src/context/*"],
+      "containers/*": ["src/containers/*"],
+    }
+  },
+  "exclude": ["node_modules"]
+}

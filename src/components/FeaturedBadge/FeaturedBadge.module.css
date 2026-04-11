@@ -1,0 +1,38 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7efd5 0%, #e6c55a 100%);
+  color: #3d2d0a;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.28);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c98a3c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.size_sm {
+  padding: 3px 8px;
+  font-size: 9px;
+}
+
+.size_lg {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.label {
+  white-space: nowrap;
+}

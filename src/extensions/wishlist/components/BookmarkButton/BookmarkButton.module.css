@@ -1,0 +1,47 @@
+.root {
+  all: unset;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: max-content;
+  height: max-content;
+  cursor: pointer;
+  z-index: 2;
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 20%;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: var(--colorGrey50);
+  fill-opacity: 0.35;
+  transition: all 0.2s ease-in-out;
+  padding: 4px;
+  & path {
+    stroke: var(--colorWhite);
+  }
+}
+
+.bookmarked {
+  fill: var(--marketplaceColor) !important;
+  fill-opacity: 1 !important;
+}
+
+.disabled {
+  cursor: progress;
+}
+
+@media (hover) {
+  /* Smartphones and touchscreens */
+  .root {
+    &:hover {
+      scale: 1.2
+    }
+  }
+}

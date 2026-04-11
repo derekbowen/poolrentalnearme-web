@@ -1,0 +1,47 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Receiving Event",
+  "steps": [
+    {
+      "file": "example/server/index-prod.example.js",
+      "description": "To start receiving event, you would need to initiate the broker. There are 2 server file to add the initiate code:\n- index-dev\n- index-prod\n\nAs you can see right here, you would import from an `instance` of the broker as `EventHandler`",
+      "line": 15
+    },
+    {
+      "file": "example/server/index-prod.example.js",
+      "description": "You would then create a new broker using `EventHandler`",
+      "line": 89
+    },
+    {
+      "file": "common/config/rabbitmq.js",
+      "description": "You can adjust the broker's various directly here in the code. Our implementation is using rascal - https://github.com/onebeyond/rascal so you can go here and checkout for more options.",
+      "line": 57
+    },
+    {
+      "file": "common/config/rabbitmq.js",
+      "description": "But just remember the most important thing is the `marketplaceId` as placing the wrong marketplace id would prevent you from accessing the queue",
+      "line": 26
+    },
+    {
+      "file": "common/config/rabbitmq.js",
+      "description": "Because before you are able to have connection, we are creating a queue for you with proper permission already. If you haven't got your marketplace a queue, contact tam.vu@journeyh.io to create one.",
+      "line": 77
+    },
+    {
+      "file": "common/config/rabbitmq.js",
+      "description": "You would be supplied with a username and password just for your marketplace.",
+      "line": 9
+    },
+    {
+      "file": "example/server/index-prod.example.js",
+      "description": "After everything is setup, you can start adding `handler` which is basically a callback function for the event. Whenever there is a new event, the broker would call of of its added callback. There are various method underlying as well and we would write a full document for them when the time come but it would not be right now.",
+      "line": 90
+    },
+    {
+      "file": "example/server/index-prod.example.js",
+      "description": "Remember to initiate the broker and everything should be good",
+      "line": 91
+    }
+  ],
+  "ref": "main"
+}

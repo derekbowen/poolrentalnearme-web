@@ -1,0 +1,927 @@
+/* Host Application Page — premium onboarding wizard */
+
+.pageRoot {
+  --obsidian: #0b0d10;
+  --obsidian-2: #14181d;
+  --cream: #f5efe4;
+  --cream-dim: #dcd5c7;
+  --gold: #d4af37;
+  --gold-soft: #e6c55a;
+  --emerald: #3ba776;
+  --amber: #c98a3c;
+  --rose: #c94a5a;
+
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(212,175,55,0.08), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(59,167,118,0.06), transparent 60%),
+    linear-gradient(180deg, #0a0c10 0%, #0f1217 100%);
+  color: var(--cream);
+  padding: 48px 24px 120px;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+.shell {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* ─── Step dots ─────────────────────────────────────────── */
+.stepDots {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 56px;
+  padding: 0 8px;
+}
+
+.stepDot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  opacity: 0.45;
+  transition: opacity 0.3s ease;
+}
+
+.stepDot::after {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(245,239,228,0.2), rgba(245,239,228,0.05));
+  z-index: 0;
+}
+
+.stepDot:last-child::after {
+  display: none;
+}
+
+.stepDotActive,
+.stepDotDone {
+  opacity: 1;
+}
+
+.stepDotCircle {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--obsidian-2);
+  border: 1px solid rgba(245,239,228,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  color: var(--cream-dim);
+  transition: all 0.3s ease;
+}
+
+.stepDotActive .stepDotCircle {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+  color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(212,175,55,0.1), 0 8px 24px rgba(212,175,55,0.15);
+}
+
+.stepDotDone .stepDotCircle {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--obsidian);
+}
+
+.stepDotLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-dim);
+  text-align: center;
+}
+
+/* ─── Step body shell ───────────────────────────────────── */
+.stepBody {
+  background: rgba(20, 24, 29, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 24px;
+  padding: 56px 56px 48px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.stepTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-weight: 500;
+  color: var(--cream);
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.stepLead {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--cream-dim);
+  margin: 0 0 36px;
+  max-width: 560px;
+}
+
+.stepFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(245,239,228,0.08);
+}
+
+/* ─── Buttons ───────────────────────────────────────────── */
+.primaryCta {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%);
+  color: var(--obsidian);
+  border: none;
+  border-radius: 999px;
+  padding: 16px 36px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 28px rgba(212,175,55,0.25);
+  font-family: inherit;
+}
+
+.primaryCta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(212,175,55,0.35);
+}
+
+.primaryCta:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ghostCta {
+  background: transparent;
+  color: var(--cream-dim);
+  border: 1px solid rgba(245,239,228,0.15);
+  border-radius: 999px;
+  padding: 15px 28px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.ghostCta:hover:not(:disabled) {
+  color: var(--cream);
+  border-color: rgba(245,239,228,0.3);
+}
+
+.ghostCta:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ─── Welcome step ──────────────────────────────────────── */
+.welcomeBadge {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  padding: 6px 14px;
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 999px;
+  margin-bottom: 24px;
+}
+
+.welcomeTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--cream);
+  margin: 0 0 20px;
+  letter-spacing: -1px;
+}
+
+.welcomeLead {
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--cream-dim);
+  margin: 0 0 40px;
+  max-width: 640px;
+}
+
+.welcomeBullets {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 44px;
+}
+
+.welcomeBullet {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px 22px;
+  background: rgba(245,239,228,0.03);
+  border: 1px solid rgba(245,239,228,0.06);
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--cream-dim);
+}
+
+.welcomeBullet strong {
+  color: var(--cream);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.welcomeBulletIcon {
+  color: var(--gold);
+  font-size: 14px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* ─── Photo uploader ────────────────────────────────────── */
+.photoUploader {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.photoDropzone {
+  display: block;
+  cursor: pointer;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.dropzoneInner {
+  border: 2px dashed rgba(212,175,55,0.3);
+  border-radius: 16px;
+  padding: 48px 32px;
+  text-align: center;
+  background: rgba(212,175,55,0.02);
+  transition: all 0.2s ease;
+}
+
+.photoDropzone:hover .dropzoneInner {
+  border-color: var(--gold);
+  background: rgba(212,175,55,0.05);
+}
+
+.dropzoneIcon {
+  font-size: 48px;
+  font-weight: 200;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.dropzoneTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--cream);
+  margin-bottom: 6px;
+}
+
+.dropzoneHint {
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.photoTile {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--obsidian);
+  border: 1px solid rgba(245,239,228,0.08);
+}
+
+.photoTile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoRemove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(11,13,16,0.85);
+  color: var(--cream);
+  border: 1px solid rgba(245,239,228,0.2);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.photoRemove:hover {
+  background: var(--rose);
+  border-color: var(--rose);
+}
+
+/* ─── Fields ────────────────────────────────────────────── */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.fieldStack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-dim);
+  font-weight: 600;
+}
+
+.textInput,
+.textArea {
+  background: rgba(245,239,228,0.04);
+  border: 1px solid rgba(245,239,228,0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--cream);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.textInput:focus,
+.textArea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(212,175,55,0.04);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
+}
+
+.textArea {
+  resize: vertical;
+  min-height: 86px;
+  font-family: inherit;
+}
+
+.booleanRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(245,239,228,0.03);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 12px;
+}
+
+.toggleGroup {
+  display: flex;
+  gap: 6px;
+  background: rgba(11,13,16,0.6);
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.toggleBtn {
+  background: transparent;
+  border: none;
+  color: var(--cream-dim);
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.toggleBtnActive {
+  background: var(--gold);
+  color: var(--obsidian);
+  font-weight: 600;
+}
+
+/* ─── Safety checklist ──────────────────────────────────── */
+.checklistCard {
+  background: rgba(245,239,228,0.03);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.checklistHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(245,239,228,0.08);
+}
+
+.checklistCounter {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  color: var(--cream-dim);
+}
+
+.checklistCounter strong {
+  color: var(--gold);
+  font-size: 28px;
+  margin-right: 2px;
+}
+
+.checklistHint {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-style: italic;
+  max-width: 280px;
+  text-align: right;
+}
+
+.checklistRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(245,239,228,0.04);
+  transition: padding 0.2s ease;
+}
+
+.checklistRow:last-child {
+  border-bottom: none;
+}
+
+.checklistRow:hover {
+  padding-left: 6px;
+}
+
+.checklistRow input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checklistLabel {
+  font-size: 14px;
+  color: var(--cream);
+  line-height: 1.5;
+}
+
+/* ─── Review card ───────────────────────────────────────── */
+.reviewCard {
+  background: rgba(245,239,228,0.03);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+}
+
+.reviewRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(245,239,228,0.06);
+  font-size: 14px;
+  color: var(--cream-dim);
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+}
+
+.reviewRow strong {
+  color: var(--cream);
+  font-weight: 500;
+}
+
+.errorBanner {
+  background: rgba(201,74,90,0.1);
+  border: 1px solid rgba(201,74,90,0.4);
+  color: #ffb5bf;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ─── Result view ───────────────────────────────────────── */
+.resultWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.resultHero {
+  background:
+    radial-gradient(600px 280px at 80% 20%, color-mix(in srgb, var(--tier-accent, #d4af37) 18%, transparent), transparent 60%),
+    rgba(20,24,29,0.85);
+  border: 1px solid color-mix(in srgb, var(--tier-accent, #d4af37) 40%, transparent);
+  border-radius: 24px;
+  padding: 48px 48px 42px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5),
+              0 0 0 1px color-mix(in srgb, var(--tier-accent, #d4af37) 10%, transparent) inset;
+}
+
+.resultApprovedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(59,167,118,0.15);
+  border: 1px solid rgba(59,167,118,0.5);
+  color: #8ddcb5;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.resultApprovedDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ba776;
+  box-shadow: 0 0 0 3px rgba(59,167,118,0.25);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.resultTierBadge {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.resultTierEmoji {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--tier-accent, #d4af37), color-mix(in srgb, var(--tier-accent, #d4af37) 70%, #000));
+  color: var(--obsidian);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  flex-shrink: 0;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--tier-accent, #d4af37) 30%, transparent);
+}
+
+.resultTierLabel {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.resultTierTagline {
+  font-size: 13px;
+  color: var(--cream-dim);
+  letter-spacing: 0.02em;
+}
+
+.resultWelcome {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--cream);
+  margin: 0;
+  max-width: 620px;
+}
+
+/* Scorecard */
+.resultScoreCard {
+  background: rgba(20,24,29,0.8);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 20px;
+  padding: 32px 36px;
+}
+
+.resultScoreHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+}
+
+.resultScoreLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--cream-dim);
+  margin-bottom: 6px;
+}
+
+.resultScoreTotal {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.resultScoreTotal span {
+  font-size: 22px;
+  color: var(--cream-dim);
+  margin-left: 4px;
+}
+
+.resultNextTier {
+  text-align: right;
+}
+
+.resultNextTierLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--cream-dim);
+  margin-bottom: 4px;
+}
+
+.resultNextTierValue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--cream);
+}
+
+.resultScoreBars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scoreBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scoreBarLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+.scoreBarLabel span:last-child {
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreBarTrack {
+  height: 6px;
+  background: rgba(245,239,228,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.resultUnlockMessage {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(212,175,55,0.08);
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cream);
+}
+
+.resultUnlockMessage strong {
+  color: var(--gold);
+}
+
+/* Polish Plan */
+.polishPlanCard {
+  background: rgba(20,24,29,0.8);
+  border: 1px solid rgba(245,239,228,0.08);
+  border-radius: 20px;
+  padding: 32px 36px;
+}
+
+.polishPlanHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24px;
+}
+
+.polishPlanTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  color: var(--cream);
+  letter-spacing: -0.3px;
+}
+
+.polishPlanMeta {
+  font-size: 12px;
+  color: var(--cream-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.polishPlanList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.polishPlanItem {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  background: rgba(245,239,228,0.02);
+  border: 1px solid rgba(245,239,228,0.06);
+  border-radius: 12px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.polishPlanItem:hover {
+  transform: translateX(4px);
+  border-color: rgba(245,239,228,0.15);
+}
+
+.polishPlanItemNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(212,175,55,0.12);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.polishPlanItemBody {
+  min-width: 0;
+}
+
+.polishPlanItemAction {
+  font-size: 15px;
+  color: var(--cream);
+  line-height: 1.5;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.polishPlanItemWhy {
+  font-size: 13px;
+  color: var(--cream-dim);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.polishPlanItemPriority {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.priority_high {
+  border-left: 3px solid var(--gold);
+}
+
+.priority_high_pill {
+  background: rgba(212,175,55,0.18);
+  color: var(--gold-soft);
+}
+
+.priority_medium_pill {
+  background: rgba(201,138,60,0.15);
+  color: var(--amber);
+}
+
+.priority_low_pill {
+  background: rgba(245,239,228,0.08);
+  color: var(--cream-dim);
+}
+
+.resultCtas {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 24px;
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .pageRoot {
+    padding: 32px 16px 80px;
+  }
+  .stepBody {
+    padding: 36px 28px 32px;
+  }
+  .welcomeTitle {
+    font-size: 40px;
+  }
+  .stepTitle {
+    font-size: 32px;
+  }
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+  .stepDots {
+    margin-bottom: 36px;
+  }
+  .stepDotLabel {
+    display: none;
+  }
+  .resultHero {
+    padding: 36px 28px 32px;
+  }
+  .resultScoreCard,
+  .polishPlanCard {
+    padding: 24px 20px;
+  }
+  .resultTierLabel {
+    font-size: 26px;
+  }
+  .resultScoreTotal {
+    font-size: 44px;
+  }
+  .resultScoreHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .resultNextTier {
+    text-align: left;
+  }
+  .polishPlanItem {
+    grid-template-columns: 28px 1fr;
+  }
+  .polishPlanItemPriority {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-top: 4px;
+  }
+}

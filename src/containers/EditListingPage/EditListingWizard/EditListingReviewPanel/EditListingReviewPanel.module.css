@@ -1,0 +1,98 @@
+@import '../../../../styles/customMediaQueries.css';
+
+.root {
+  flex-grow: 1;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 11px 24px 0 24px;
+
+  @media (--viewportLarge) {
+    padding: 88px 36px 82px 59px;
+  }
+}
+
+.title {
+  composes: marketplaceModalTitleStyles from global;
+  margin-bottom: 24px;
+}
+
+.aiSection {
+  background-color: var(--colorGrey50);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.aiDescription {
+  composes: h4 from global;
+  color: var(--colorGrey700);
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.aiButton {
+  composes: buttonDefault from global;
+  display: inline-block;
+  width: auto;
+  min-width: 200px;
+  padding: 12px 32px;
+}
+
+.aiHint {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey300);
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.skipHint {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey300);
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.aiLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  margin-bottom: 32px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--colorGrey100);
+  border-top-color: var(--marketplaceColor);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  composes: h4 from global;
+  color: var(--colorGrey700);
+  margin-top: 16px;
+}
+
+.error {
+  color: var(--colorFail);
+  margin-bottom: 16px;
+}
+
+.uniqueAngle {
+  background-color: #f0fdf4;
+  border-left: 4px solid var(--colorSuccess);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-radius: 0 4px 4px 0;
+  font-size: 14px;
+  line-height: 20px;
+}

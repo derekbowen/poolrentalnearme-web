@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pool Rental Near Me — Private Pools, Reimagined</title>
+  <meta name="description" content="The luxury private pool rental marketplace. Discover extraordinary pools for every occasion — curated, verified, unforgettable." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,800&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #FAFAF8;
+      --ink: #0A0A0A;
+      --coral: #FF4D2D;
+      --warm-gray: #F0EEE9;
+      --muted: #9B9589;
+      --border: rgba(10,10,10,0.1);
+      --border-solid: #E4E0D9;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Lato', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      cursor: none;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Playfair Display', serif;
+      line-height: 1.1;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; width: 100%; }
+    button { font-family: 'Lato', sans-serif; cursor: none; }
+
+    /* ── Custom Cursor (coral dot + ring) ─────────────────────── */
+    #cursor-dot {
+      width: 8px; height: 8px;
+      background: var(--coral);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s ease;
+    }
+    #cursor-ring {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--coral);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0.5;
+      transition: transform 0.18s ease, width 0.25s ease, height 0.25s ease, opacity 0.25s ease;
+    }
+    body:has(a:hover) #cursor-ring,
+    body:has(button:hover) #cursor-ring {
+      width: 56px; height: 56px; opacity: 0.25;
+    }
+
+    /* ── Utilities ────────────────────────────────────────────── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+    .section { padding: 120px 0; }
+    .reveal {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.25,0.46,0.45,0.94), transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.12s; }
+    .reveal-d2 { transition-delay: 0.24s; }
+    .reveal-d3 { transition-delay: 0.36s; }
+
+    /* ── NAVBAR ───────────────────────────────────────────────── */
+    #navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(250,250,248,0.92);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.35s, background 0.35s;
+    }
+    #navbar.scrolled {
+      border-color: var(--border);
+      background: rgba(250,250,248,0.98);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 72px;
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .nav-logo span { color: var(--coral); font-style: italic; }
+    .nav-links {
+      display: flex; align-items: center; gap: 40px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'Lato', sans-serif;
+      font-size: 13px; font-weight: 400; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      transition: color 0.2s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; right: 0;
+      height: 1px; background: var(--coral);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .btn-nav-ghost {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--ink); border: none; background: none;
+      transition: color 0.2s;
+    }
+    .btn-nav-ghost:hover { color: var(--coral); }
+    .btn-nav-coral {
+      padding: 10px 24px;
+      background: var(--coral); color: #fff;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; border: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-nav-coral:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* ── HERO ─────────────────────────────────────────────────── */
+    #hero {
+      padding-top: 72px; min-height: 100vh;
+      display: grid; grid-template-columns: 1fr 480px;
+      align-items: center; gap: 0;
+      overflow: hidden;
+    }
+    .hero-left {
+      padding: 100px 80px 100px 0;
+    }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px;
+    }
+    .hero-eyebrow-line { width: 32px; height: 1px; background: var(--coral); }
+    .hero-eyebrow span {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--coral);
+    }
+    .hero-headline {
+      font-size: clamp(56px, 7vw, 96px);
+      font-weight: 900; letter-spacing: -0.03em;
+      color: var(--ink); line-height: 0.95;
+      margin-bottom: 32px;
+    }
+    .hero-headline em {
+      font-style: italic; color: var(--coral);
+    }
+    .hero-headline .line2 { display: block; margin-top: 6px; }
+    .hero-sub {
+      font-size: 18px; font-weight: 300;
+      color: var(--muted); max-width: 460px;
+      line-height: 1.75; margin-bottom: 48px;
+    }
+
+    /* Search bar: editorial thin-border style */
+    .search-form {
+      display: flex; flex-direction: column; gap: 0;
+      border: 1px solid var(--ink); max-width: 520px;
+    }
+    .search-row {
+      display: flex;
+    }
+    .search-field-v5 {
+      flex: 1; padding: 18px 22px;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .search-field-v5:last-child { border-right: none; }
+    .search-field-v5 label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 5px;
+    }
+    .search-field-v5 input,
+    .search-field-v5 select {
+      border: none; outline: none; background: transparent;
+      font-family: 'Lato', sans-serif;
+      font-size: 14px; color: var(--ink); width: 100%;
+    }
+    .search-field-v5 select option { color: var(--ink); }
+    .search-submit-row {
+      border-top: 1px solid var(--ink);
+    }
+    .search-btn-v5 {
+      width: 100%; padding: 16px 22px;
+      background: var(--ink); color: #fff;
+      border: none;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s;
+    }
+    .search-btn-v5:hover { background: var(--coral); }
+    .search-btn-v5 svg { width: 14px; height: 14px; }
+
+    .hero-meta {
+      display: flex; align-items: center; gap: 40px;
+      margin-top: 32px;
+    }
+    .hero-meta-item { display: flex; flex-direction: column; gap: 2px; }
+    .hero-meta-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 800; letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .hero-meta-label {
+      font-size: 11px; font-weight: 400; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .hero-meta-div { width: 1px; height: 40px; background: var(--border-solid); }
+
+    .hero-right {
+      height: 100vh; position: relative; overflow: hidden;
+    }
+    .hero-img-strip {
+      position: absolute; inset: 0;
+    }
+    .hero-img-strip img {
+      width: 100%; height: 100%; object-fit: cover; object-position: center;
+    }
+    .hero-img-strip::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(to right, var(--bg) 0%, transparent 20%);
+    }
+    .hero-img-caption {
+      position: absolute; bottom: 40px; left: 28px; z-index: 2;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.6);
+    }
+
+    /* ── PRESS BAR ────────────────────────────────────────────── */
+    #press {
+      border-top: 1px solid var(--border-solid);
+      border-bottom: 1px solid var(--border-solid);
+      padding: 32px 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .press-wrapper {
+      display: flex; align-items: center; gap: 0;
+    }
+    .press-label-v5 {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--muted);
+      white-space: nowrap; padding-right: 48px;
+      border-right: 1px solid var(--border-solid);
+      margin-right: 48px; flex-shrink: 0;
+    }
+    .marquee-outer {
+      overflow: hidden; flex: 1;
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+    }
+    .marquee-track {
+      display: flex; gap: 72px; align-items: center;
+      animation: marquee 28s linear infinite; width: max-content;
+    }
+    .press-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px; font-weight: 600; letter-spacing: 0.01em;
+      color: #C8C3B9; white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .press-name:hover { color: var(--ink); }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ── FEATURED POOLS ───────────────────────────────────────── */
+    #pools { background: var(--bg); }
+    .pools-header-v5 {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 64px;
+    }
+    .pools-header-left {}
+    .pools-kicker {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--coral);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .pools-kicker::before { content: '—'; }
+    .pools-title-v5 {
+      font-size: clamp(36px, 4.5vw, 64px);
+      font-weight: 900; letter-spacing: -0.03em;
+      color: var(--ink); line-height: 1.0;
+    }
+    .pools-title-v5 em { font-style: italic; color: var(--coral); }
+    .pools-link-v5 {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ink);
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 3px; white-space: nowrap;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .pools-link-v5:hover { color: var(--coral); border-color: var(--coral); }
+
+    .pools-grid-v5 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto;
+      gap: 2px;
+    }
+    .pool-card-v5 {
+      background: var(--bg);
+      overflow: hidden; position: relative;
+      transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .pool-card-v5:hover { transform: scale(0.985); }
+    .pool-card-v5.wide { grid-column: 1 / 3; }
+    .pool-img-v5 {
+      overflow: hidden; position: relative;
+    }
+    .pool-img-v5 img {
+      object-fit: cover; width: 100%;
+      transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .pool-card-v5:hover .pool-img-v5 img { transform: scale(1.04); }
+    .pool-card-v5.wide .pool-img-v5 { height: 360px; }
+    .pool-card-v5:not(.wide):not(.tall) .pool-img-v5 { height: 280px; }
+    .pool-card-v5.tall { grid-row: 1 / 3; }
+    .pool-card-v5.tall .pool-img-v5 { height: 100%; min-height: 560px; }
+
+    .pool-price-v5 {
+      position: absolute; top: 20px; left: 20px;
+      background: var(--coral); color: #fff;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+      padding: 5px 12px;
+    }
+    .pool-info-v5 {
+      padding: 20px 24px 24px; border-top: 1px solid var(--border-solid);
+    }
+    .pool-location-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .pool-name-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+      color: var(--ink); margin-bottom: 10px;
+    }
+    .pool-footer-v5 {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pool-rating-v5 { font-size: 13px; color: var(--muted); }
+    .pool-book-v5 {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink);
+      border-bottom: 1px solid var(--ink); padding-bottom: 2px;
+      background: none; border-left: none; border-right: none; border-top: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .pool-book-v5:hover { color: var(--coral); border-color: var(--coral); }
+
+    /* ── HOW IT WORKS ─────────────────────────────────────────── */
+    #how { background: var(--warm-gray); }
+    .how-header-v5 { margin-bottom: 80px; }
+    .how-kicker {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--coral);
+      margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .how-kicker::before { content: '—'; }
+    .how-title-v5 {
+      font-size: clamp(40px, 5vw, 72px);
+      font-weight: 900; letter-spacing: -0.03em; color: var(--ink);
+    }
+    .how-title-v5 em { font-style: italic; color: var(--coral); }
+    .steps-v5 {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .step-v5 {
+      padding: 48px 48px 48px 0;
+      border-right: 1px solid var(--border-solid);
+      padding-right: 48px;
+    }
+    .step-v5:first-child { padding-left: 0; }
+    .step-v5:last-child { border-right: none; padding-right: 0; padding-left: 48px; }
+    .step-v5:nth-child(2) { padding: 48px; }
+    .step-num-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 96px; font-weight: 900; letter-spacing: -0.05em;
+      color: var(--coral); line-height: 1;
+      margin-bottom: 8px; display: block;
+    }
+    .step-title-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px; font-weight: 700; color: var(--ink);
+      margin-bottom: 16px;
+    }
+    .step-desc-v5 {
+      font-size: 15px; font-weight: 300; color: var(--muted);
+      line-height: 1.8;
+    }
+
+    /* ── OCCASIONS ────────────────────────────────────────────── */
+    #occasions { background: var(--bg); }
+    .occasions-header-v5 { margin-bottom: 48px; }
+    .occasions-kicker {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--coral);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .occasions-kicker::before { content: '—'; }
+    .occasions-title-v5 {
+      font-size: clamp(36px, 4.5vw, 64px);
+      font-weight: 900; letter-spacing: -0.03em; color: var(--ink);
+    }
+    .occasions-grid-v5 {
+      display: flex; gap: 16px;
+      overflow-x: auto; scroll-snap-type: x mandatory;
+      scrollbar-width: none; padding-bottom: 4px;
+    }
+    .occasions-grid-v5::-webkit-scrollbar { display: none; }
+    .occasion-card-v5 {
+      flex-shrink: 0; width: 240px; height: 380px;
+      position: relative; overflow: hidden;
+      scroll-snap-align: start;
+      transition: transform 0.4s ease;
+    }
+    .occasion-card-v5:hover { transform: scale(0.97); }
+    .occasion-card-v5 img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+    .occasion-card-v5:hover img { transform: scale(1.06); }
+    .occasion-overlay-v5 {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.2) 50%, transparent 100%);
+    }
+    .occasion-text-v5 {
+      position: absolute; bottom: 24px; left: 20px; right: 20px;
+    }
+    .occasion-text-v5 h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 700; font-style: italic;
+      color: #fff; margin-bottom: 4px;
+    }
+    .occasion-text-v5 p {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.6);
+    }
+
+    /* ── TRUST & SAFETY ───────────────────────────────────────── */
+    #trust {
+      background: var(--ink);
+      padding: 120px 0;
+    }
+    .trust-header-v5 { margin-bottom: 80px; }
+    .trust-kicker-dark {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--coral);
+      margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .trust-kicker-dark::before { content: '—'; }
+    .trust-title-v5 {
+      font-size: clamp(40px, 5vw, 72px);
+      font-weight: 900; letter-spacing: -0.03em; color: #fff;
+    }
+    .trust-title-v5 em { font-style: italic; color: var(--coral); }
+    .trust-grid-v5 {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .trust-item-v5 {
+      padding: 0 60px 0 0;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      margin-right: 60px;
+    }
+    .trust-item-v5:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+    .trust-stat-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 80px; font-weight: 900; letter-spacing: -0.05em;
+      color: var(--coral); line-height: 1; margin-bottom: 8px;
+    }
+    .trust-item-title-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 600; color: #fff;
+      margin-bottom: 14px;
+    }
+    .trust-item-desc-v5 {
+      font-size: 15px; font-weight: 300; color: rgba(255,255,255,0.45);
+      line-height: 1.8;
+    }
+
+    /* ── TESTIMONIALS ─────────────────────────────────────────── */
+    #testimonials { background: var(--bg); }
+    .testimonials-header-v5 { margin-bottom: 72px; }
+    .testimonials-kicker {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--coral);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .testimonials-kicker::before { content: '—'; }
+    .testimonials-title-v5 {
+      font-size: clamp(36px, 4.5vw, 64px);
+      font-weight: 900; letter-spacing: -0.03em; color: var(--ink);
+    }
+    .testimonials-title-v5 em { font-style: italic; color: var(--coral); }
+    .testimonials-grid-v5 {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .t-card-v5 {
+      padding: 0 56px 0 0;
+      border-right: 1px solid var(--border-solid);
+      margin-right: 56px;
+    }
+    .t-card-v5:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+    .t-big-quote {
+      font-family: 'Playfair Display', serif;
+      font-size: 80px; font-weight: 900; color: var(--coral);
+      line-height: 0.8; margin-bottom: 16px; display: block;
+    }
+    .t-text-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; font-weight: 400; font-style: italic;
+      color: var(--ink); line-height: 1.65; margin-bottom: 32px;
+    }
+    .t-rule { width: 32px; height: 1px; background: var(--coral); margin-bottom: 20px; }
+    .t-author-v5 {}
+    .t-name-v5 {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink); margin-bottom: 3px;
+    }
+    .t-loc-v5 { font-size: 12px; color: var(--muted); }
+    .t-stars-v5 { font-size: 12px; color: var(--coral); margin-top: 4px; letter-spacing: 2px; }
+
+    /* ── HOST CTA ──────────────────────────────────────────────── */
+    #host {
+      background: var(--bg);
+      padding: 0;
+    }
+    .host-grid-v5 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      min-height: 640px;
+    }
+    .host-left-v5 {
+      background: var(--ink);
+      padding: 80px 80px 80px 80px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .host-kicker-v5 {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: rgba(255,255,255,0.4);
+      margin-bottom: 28px; display: flex; align-items: center; gap: 10px;
+    }
+    .host-kicker-v5::before { content: '—'; color: var(--coral); }
+    .host-headline-v5 {
+      font-size: clamp(40px, 4.5vw, 68px);
+      font-weight: 900; letter-spacing: -0.03em; color: var(--coral);
+      line-height: 1.0; margin-bottom: 28px;
+    }
+    .host-headline-v5 span { display: block; color: #fff; }
+    .host-desc-v5 {
+      font-size: 17px; font-weight: 300; color: rgba(255,255,255,0.55);
+      line-height: 1.8; margin-bottom: 48px; max-width: 420px;
+    }
+    .host-nums-v5 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0; margin-bottom: 48px;
+    }
+    .host-num-v5 {
+      padding: 24px 24px 24px 0;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .host-num-v5:nth-child(even) { padding-left: 24px; border-right: none; }
+    .host-num-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px; font-weight: 900; letter-spacing: -0.04em;
+      color: #fff; display: block; margin-bottom: 4px;
+    }
+    .host-num-label {
+      font-size: 11px; font-weight: 400; letter-spacing: 0.06em;
+      text-transform: uppercase; color: rgba(255,255,255,0.35);
+    }
+    .btn-host-coral {
+      display: inline-flex; align-items: center; gap: 12px;
+      padding: 18px 32px;
+      background: var(--coral); color: #fff;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; border: none;
+      transition: opacity 0.2s, transform 0.2s;
+      align-self: flex-start;
+    }
+    .btn-host-coral:hover { opacity: 0.88; transform: translateY(-2px); }
+    .host-right-v5 { position: relative; overflow: hidden; }
+    .host-right-v5 img { width: 100%; height: 100%; object-fit: cover; }
+    .host-right-v5::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(10,10,10,0.3) 0%, transparent 40%);
+    }
+
+    /* ── FOOTER ───────────────────────────────────────────────── */
+    #footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border-solid);
+      padding: 80px 0 40px;
+    }
+    .footer-top-v5 {
+      display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr;
+      gap: 64px; margin-bottom: 64px;
+      padding-bottom: 64px; border-bottom: 1px solid var(--border-solid);
+    }
+    .footer-brand-v5 {}
+    .footer-logo-v5 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 700; color: var(--ink);
+      margin-bottom: 16px; display: block;
+    }
+    .footer-logo-v5 span { font-style: italic; color: var(--coral); }
+    .footer-desc-v5 {
+      font-size: 14px; font-weight: 300; color: var(--muted);
+      line-height: 1.8; max-width: 260px; margin-bottom: 28px;
+    }
+    .footer-socials-v5 { display: flex; gap: 20px; }
+    .social-link-v5 {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--border-solid); padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .social-link-v5:hover { color: var(--coral); border-color: var(--coral); }
+    .footer-col-v5 h4 {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--ink);
+      margin-bottom: 24px;
+      padding-bottom: 14px; border-bottom: 1px solid var(--border-solid);
+    }
+    .footer-col-v5 ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .footer-col-v5 li a {
+      font-size: 14px; font-weight: 300; color: var(--muted);
+      transition: color 0.2s;
+    }
+    .footer-col-v5 li a:hover { color: var(--ink); }
+    .footer-bottom-v5 {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-copy-v5 { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+    .footer-legal-v5 { display: flex; gap: 28px; }
+    .footer-legal-v5 a {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      transition: color 0.2s;
+    }
+    .footer-legal-v5 a:hover { color: var(--ink); }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      #hero { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .hero-left { padding: 80px 0; }
+      .pools-grid-v5 { grid-template-columns: 1fr 1fr; }
+      .pool-card-v5.wide { grid-column: 1 / -1; }
+      .pool-card-v5.tall { grid-row: auto; }
+      .pool-card-v5.tall .pool-img-v5 { min-height: 280px; height: 280px; }
+      .trust-grid-v5, .testimonials-grid-v5 { grid-template-columns: 1fr; }
+      .trust-item-v5, .t-card-v5 {
+        border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding: 0 0 40px 0; margin: 0 0 40px 0;
+      }
+      .trust-item-v5:last-child, .t-card-v5:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+      .t-card-v5 { border-bottom-color: var(--border-solid); }
+      .steps-v5 { grid-template-columns: 1fr; }
+      .step-v5, .step-v5:nth-child(2), .step-v5:last-child {
+        padding: 40px 0; border-right: none;
+        border-bottom: 1px solid var(--border-solid);
+      }
+      .step-v5:last-child { border-bottom: none; }
+      .footer-top-v5 { grid-template-columns: 1fr 1fr; gap: 40px; }
+    }
+    @media (max-width: 768px) {
+      .section { padding: 80px 0; }
+      .container { padding: 0 20px; }
+      .nav-links { display: none; }
+      .btn-nav-ghost { display: none; }
+      .pools-grid-v5 { grid-template-columns: 1fr; }
+      .pool-card-v5.wide { grid-column: auto; }
+      .pool-card-v5.wide .pool-img-v5 { height: 260px; }
+      .host-grid-v5 { grid-template-columns: 1fr; }
+      .host-right-v5 { height: 320px; }
+      .host-left-v5 { padding: 60px 32px; }
+      .footer-top-v5 { grid-template-columns: 1fr; gap: 32px; }
+      .footer-bottom-v5 { flex-direction: column; gap: 20px; }
+      .search-row { flex-direction: column; }
+      .search-field-v5 { border-right: none; border-bottom: 1px solid var(--border); }
+      .search-field-v5:last-child { border-bottom: none; }
+      .hero-meta { flex-wrap: wrap; gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ── NAVBAR ──────────────────────────────────────────────── -->
+  <nav id="navbar">
+    <div class="container">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">poolrental<span>nearme</span></a>
+        <ul class="nav-links">
+          <li><a href="#pools">Pools</a></li>
+          <li><a href="#occasions">Occasions</a></li>
+          <li><a href="#how">How It Works</a></li>
+          <li><a href="#host">Host</a></li>
+        </ul>
+        <div class="nav-actions">
+          <button class="btn-nav-ghost">Sign in</button>
+          <button class="btn-nav-coral">Book a Pool</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── HERO ────────────────────────────────────────────────── -->
+  <section id="hero">
+    <div class="hero-left container" style="max-width:640px; margin-left:auto; margin-right:0; padding-right:60px; width:50%;">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-line"></span>
+        <span>Private Pool Rentals</span>
+      </div>
+      <h1 class="hero-headline">
+        Your Private
+        <em>Pool.</em>
+        <span class="line2">Around the Corner.</span>
+      </h1>
+      <p class="hero-sub">
+        We curate extraordinary private pools — for an hour, an afternoon, or an entire evening. No memberships. No compromises.
+      </p>
+      <div class="search-form">
+        <div class="search-row">
+          <div class="search-field-v5">
+            <label for="v5-location">Location</label>
+            <input type="text" id="v5-location" placeholder="Where are you?" />
+          </div>
+          <div class="search-field-v5">
+            <label for="v5-date">Date</label>
+            <input type="date" id="v5-date" />
+          </div>
+          <div class="search-field-v5" style="border-right:none;">
+            <label for="v5-guests">Guests</label>
+            <select id="v5-guests">
+              <option>2 guests</option>
+              <option>4 guests</option>
+              <option>6 guests</option>
+              <option>10 guests</option>
+              <option>15+ guests</option>
+            </select>
+          </div>
+        </div>
+        <div class="search-submit-row">
+          <button class="search-btn-v5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            Find your pool
+          </button>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <span class="hero-meta-num">5,200+</span>
+          <span class="hero-meta-label">Curated pools</span>
+        </div>
+        <div class="hero-meta-div"></div>
+        <div class="hero-meta-item">
+          <span class="hero-meta-num">200+</span>
+          <span class="hero-meta-label">Cities</span>
+        </div>
+        <div class="hero-meta-div"></div>
+        <div class="hero-meta-item">
+          <span class="hero-meta-num">4.97</span>
+          <span class="hero-meta-label">Avg. rating</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-img-strip">
+        <img src="https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=1920&q=90" alt="Luxury private pool" loading="eager" />
+      </div>
+      <div class="hero-img-caption">Private pool, Malibu, CA</div>
+    </div>
+  </section>
+
+  <!-- ── PRESS BAR ───────────────────────────────────────────── -->
+  <div id="press">
+    <div class="container">
+      <div class="press-wrapper">
+        <span class="press-label-v5">— As Seen In —</span>
+        <div class="marquee-outer">
+          <div class="marquee-track" id="marqueeTrack">
+            <span class="press-name">Forbes</span>
+            <span class="press-name">TechCrunch</span>
+            <span class="press-name">Vogue Living</span>
+            <span class="press-name">Architectural Digest</span>
+            <span class="press-name">The New York Times</span>
+            <span class="press-name">Business Insider</span>
+            <span class="press-name">Condé Nast Traveller</span>
+            <span class="press-name">Harper's Bazaar</span>
+            <span class="press-name">Forbes</span>
+            <span class="press-name">TechCrunch</span>
+            <span class="press-name">Vogue Living</span>
+            <span class="press-name">Architectural Digest</span>
+            <span class="press-name">The New York Times</span>
+            <span class="press-name">Business Insider</span>
+            <span class="press-name">Condé Nast Traveller</span>
+            <span class="press-name">Harper's Bazaar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURED POOLS ──────────────────────────────────────── -->
+  <section id="pools" class="section">
+    <div class="container">
+      <div class="pools-header-v5 reveal">
+        <div class="pools-header-left">
+          <div class="pools-kicker">Curated selection</div>
+          <h2 class="pools-title-v5">Pools that make<br /><em>memories.</em></h2>
+        </div>
+        <a href="#" class="pools-link-v5">View all pools &rarr;</a>
+      </div>
+
+      <div class="pools-grid-v5">
+        <!-- Wide card -->
+        <div class="pool-card-v5 wide reveal reveal-d1">
+          <div class="pool-img-v5">
+            <img src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80" alt="Infinity pool" loading="lazy" />
+            <div class="pool-price-v5">$85 / hr</div>
+          </div>
+          <div class="pool-info-v5">
+            <div class="pool-location-label">Malibu, California</div>
+            <div class="pool-name-v5">The Infinity Terrace</div>
+            <div class="pool-footer-v5">
+              <span class="pool-rating-v5">★★★★★ &nbsp;4.98 · 142 reviews</span>
+              <button class="pool-book-v5">Reserve →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tall card -->
+        <div class="pool-card-v5 tall reveal reveal-d2">
+          <div class="pool-img-v5">
+            <img src="https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&q=80" alt="Resort pool" loading="lazy" />
+            <div class="pool-price-v5">$120 / hr</div>
+          </div>
+          <div class="pool-info-v5">
+            <div class="pool-location-label">Scottsdale, Arizona</div>
+            <div class="pool-name-v5">The Resort Oasis</div>
+            <div class="pool-footer-v5">
+              <span class="pool-rating-v5">★★★★★ &nbsp;5.0</span>
+              <button class="pool-book-v5">Reserve →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standard card 2 -->
+        <div class="pool-card-v5 reveal reveal-d1">
+          <div class="pool-img-v5">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80" alt="Modern pool" loading="lazy" />
+            <div class="pool-price-v5">$65 / hr</div>
+          </div>
+          <div class="pool-info-v5">
+            <div class="pool-location-label">Beverly Hills, California</div>
+            <div class="pool-name-v5">Modernist Retreat</div>
+            <div class="pool-footer-v5">
+              <span class="pool-rating-v5">★★★★★ &nbsp;4.94</span>
+              <button class="pool-book-v5">Reserve →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standard card 3 -->
+        <div class="pool-card-v5 reveal reveal-d2">
+          <div class="pool-img-v5">
+            <img src="https://images.unsplash.com/photo-1519046904884-53103b34b206?w=600&q=80" alt="Tropical pool" loading="lazy" />
+            <div class="pool-price-v5">$55 / hr</div>
+          </div>
+          <div class="pool-info-v5">
+            <div class="pool-location-label">Miami Beach, Florida</div>
+            <div class="pool-name-v5">The Tropical Lagoon</div>
+            <div class="pool-footer-v5">
+              <span class="pool-rating-v5">★★★★★ &nbsp;4.91</span>
+              <button class="pool-book-v5">Reserve →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standard card 4 -->
+        <div class="pool-card-v5 reveal reveal-d3" style="grid-column: 1 / -1;">
+          <div class="pool-img-v5" style="height:320px;">
+            <img src="https://images.unsplash.com/photo-1561501900-3701fa6a0864?w=600&q=80" alt="Rooftop pool" loading="lazy" />
+            <div class="pool-price-v5">$95 / hr</div>
+          </div>
+          <div class="pool-info-v5">
+            <div class="pool-location-label">Austin, Texas</div>
+            <div class="pool-name-v5">Skyline Plunge — Rooftop Pool &amp; Lounge</div>
+            <div class="pool-footer-v5">
+              <span class="pool-rating-v5">★★★★★ &nbsp;4.96 · 88 reviews</span>
+              <button class="pool-book-v5">Reserve →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ────────────────────────────────────────── -->
+  <section id="how" class="section">
+    <div class="container">
+      <div class="how-header-v5 reveal">
+        <div class="how-kicker">The process</div>
+        <h2 class="how-title-v5">Three steps.<br /><em>Infinite memories.</em></h2>
+      </div>
+      <div class="steps-v5">
+        <div class="step-v5 reveal reveal-d1">
+          <span class="step-num-v5">01</span>
+          <h3 class="step-title-v5">Search your city</h3>
+          <p class="step-desc-v5">Enter your location, your date, and how many guests. Filter by pool type, amenities, price, and occasion. We'll surface the best options in your area — instantly.</p>
+        </div>
+        <div class="step-v5 reveal reveal-d2">
+          <span class="step-num-v5">02</span>
+          <h3 class="step-title-v5">Book with confidence</h3>
+          <p class="step-desc-v5">Secure your booking with a few clicks. Every listing is verified and every payment is protected. No back-and-forth, no uncertainty — just a confirmed reservation.</p>
+        </div>
+        <div class="step-v5 reveal reveal-d3">
+          <span class="step-num-v5">03</span>
+          <h3 class="step-title-v5">Arrive and enjoy</h3>
+          <p class="step-desc-v5">Receive your private access instructions ahead of arrival. Show up, dive in, and create the kind of memories that make people ask "how did you find this place?"</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── OCCASIONS ───────────────────────────────────────────── -->
+  <section id="occasions" class="section">
+    <div class="container">
+      <div class="occasions-header-v5 reveal">
+        <div class="occasions-kicker">Every occasion</div>
+        <h2 class="occasions-title-v5">Whatever the <em>moment</em>,<br />we have the pool.</h2>
+      </div>
+      <div class="occasions-grid-v5" id="occasionsV5">
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80" alt="Pool Party" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Pool Party</h3>
+            <p>12 pools available</p>
+          </div>
+        </div>
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1572331165267-854da2b10ccc?w=400&q=80" alt="Date Night" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Date Night</h3>
+            <p>8 pools available</p>
+          </div>
+        </div>
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80" alt="Family Fun" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Family Fun</h3>
+            <p>22 pools available</p>
+          </div>
+        </div>
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80" alt="Work Retreat" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Work Retreat</h3>
+            <p>15 pools available</p>
+          </div>
+        </div>
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&q=80" alt="Birthdays" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Birthdays</h3>
+            <p>18 pools available</p>
+          </div>
+        </div>
+        <div class="occasion-card-v5">
+          <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80" alt="Bachelorette" loading="lazy" />
+          <div class="occasion-overlay-v5"></div>
+          <div class="occasion-text-v5">
+            <h3>Bachelorette</h3>
+            <p>10 pools available</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TRUST & SAFETY ──────────────────────────────────────── -->
+  <section id="trust">
+    <div class="container">
+      <div class="trust-header-v5 reveal">
+        <div class="trust-kicker-dark">Protection &amp; peace of mind</div>
+        <h2 class="trust-title-v5">We take safety<br /><em>seriously.</em></h2>
+      </div>
+      <div class="trust-grid-v5">
+        <div class="trust-item-v5 reveal reveal-d1">
+          <div class="trust-stat-v5">$5M</div>
+          <div class="trust-item-title-v5">Host Protection</div>
+          <p class="trust-item-desc-v5">Every booking is automatically covered by up to $5 million in liability insurance. Hosts and guests are both protected — no extra steps required.</p>
+        </div>
+        <div class="trust-item-v5 reveal reveal-d2">
+          <div class="trust-stat-v5">100%</div>
+          <div class="trust-item-title-v5">Verified Hosts</div>
+          <p class="trust-item-desc-v5">Before any pool goes live on our platform, the host completes identity verification, a safety inspection, and a background check. No shortcuts.</p>
+        </div>
+        <div class="trust-item-v5 reveal reveal-d3">
+          <div class="trust-stat-v5">24/7</div>
+          <div class="trust-item-title-v5">Always On Support</div>
+          <p class="trust-item-desc-v5">Our support team is available around the clock — by phone, chat, and email. Real humans, real answers, whenever you need them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ────────────────────────────────────────── -->
+  <section id="testimonials" class="section">
+    <div class="container">
+      <div class="testimonials-header-v5 reveal">
+        <div class="testimonials-kicker">Real voices</div>
+        <h2 class="testimonials-title-v5">They dove in.<br /><em>Here's what they said.</em></h2>
+      </div>
+      <div class="testimonials-grid-v5">
+        <div class="t-card-v5 reveal reveal-d1">
+          <span class="t-big-quote">"</span>
+          <p class="t-text-v5">We rented a pool for my daughter's birthday and it was genuinely the best money we've ever spent on a party. Stunning, private, and the kids talk about it every week.</p>
+          <div class="t-rule"></div>
+          <div class="t-author-v5">
+            <div class="t-name-v5">Sarah L.</div>
+            <div class="t-loc-v5">Austin, Texas</div>
+            <div class="t-stars-v5">★★★★★</div>
+          </div>
+        </div>
+        <div class="t-card-v5 reveal reveal-d2">
+          <span class="t-big-quote">"</span>
+          <p class="t-text-v5">I organized a surprise proposal at one of the sunset pool villas in Malibu. Everything from booking to the big moment was flawless. She said yes — partly because of the view.</p>
+          <div class="t-rule"></div>
+          <div class="t-author-v5">
+            <div class="t-name-v5">Marcus R.</div>
+            <div class="t-loc-v5">Los Angeles, California</div>
+            <div class="t-stars-v5">★★★★★</div>
+          </div>
+        </div>
+        <div class="t-card-v5 reveal reveal-d3">
+          <span class="t-big-quote">"</span>
+          <p class="t-text-v5">Our team of 15 booked a pool for a quarterly offsite. Four hours of sun, swimming, and actual connection. Best team-building we've done in years — and far cheaper than a hotel.</p>
+          <div class="t-rule"></div>
+          <div class="t-author-v5">
+            <div class="t-name-v5">Jamie K.</div>
+            <div class="t-loc-v5">San Francisco, California</div>
+            <div class="t-stars-v5">★★★★★</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOST CTA ─────────────────────────────────────────────── -->
+  <section id="host">
+    <div class="host-grid-v5 reveal">
+      <div class="host-left-v5">
+        <div class="host-kicker-v5">For pool owners</div>
+        <h2 class="host-headline-v5">
+          YOUR POOL.
+          <span>YOUR INCOME.</span>
+        </h2>
+        <p class="host-desc-v5">
+          Join thousands of hosts who earn consistent passive income from their underused pools. Set your hours. Set your price. We handle everything else — payments, insurance, support.
+        </p>
+        <div class="host-nums-v5">
+          <div class="host-num-v5">
+            <span class="host-num-val">$2,400</span>
+            <span class="host-num-label">Avg. monthly earnings</span>
+          </div>
+          <div class="host-num-v5">
+            <span class="host-num-val">3 hrs</span>
+            <span class="host-num-label">Avg. booking length</span>
+          </div>
+          <div class="host-num-v5" style="border-right:none;">
+            <span class="host-num-val">$0</span>
+            <span class="host-num-label">To list your pool</span>
+          </div>
+          <div class="host-num-v5">
+            <span class="host-num-val">72hrs</span>
+            <span class="host-num-label">To first booking</span>
+          </div>
+        </div>
+        <button class="btn-host-coral">
+          List your pool free
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="host-right-v5">
+        <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900&q=85" alt="Luxury pool estate" loading="lazy" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ───────────────────────────────────────────────── -->
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-top-v5">
+        <div class="footer-brand-v5">
+          <span class="footer-logo-v5">poolrental<span>nearme</span></span>
+          <p class="footer-desc-v5">The curated marketplace for extraordinary private pool rentals. Every occasion. Every city. Every time.</p>
+          <div class="footer-socials-v5">
+            <a href="#" class="social-link-v5">Instagram</a>
+            <a href="#" class="social-link-v5">Twitter</a>
+            <a href="#" class="social-link-v5">Pinterest</a>
+          </div>
+        </div>
+        <div class="footer-col-v5">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">How it works</a></li>
+            <li><a href="#">Press</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Journal</a></li>
+          </ul>
+        </div>
+        <div class="footer-col-v5">
+          <h4>For Guests</h4>
+          <ul>
+            <li><a href="#">Browse pools</a></li>
+            <li><a href="#">Occasions</a></li>
+            <li><a href="#">Gift cards</a></li>
+            <li><a href="#">Trust &amp; safety</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+        </div>
+        <div class="footer-col-v5">
+          <h4>For Hosts</h4>
+          <ul>
+            <li><a href="#">List your pool</a></li>
+            <li><a href="#">Host resources</a></li>
+            <li><a href="#">Protection</a></li>
+            <li><a href="#">Earnings calculator</a></li>
+            <li><a href="#">Community</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom-v5">
+        <span class="footer-copy-v5">© 2026 PoolRentalNearMe, Inc. — All rights reserved.</span>
+        <div class="footer-legal-v5">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Cookies</a>
+          <a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ── Custom Cursor ──────────────────────────────────────────
+    const dot = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mx = 0, my = 0, dx = 0, dy = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top = my + 'px';
+    });
+
+    function animateRing() {
+      dx += (mx - dx) * 0.12;
+      dy += (my - dy) * 0.12;
+      ring.style.left = dx + 'px';
+      ring.style.top = dy + 'px';
+      requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    // ── Navbar scroll ──────────────────────────────────────────
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // ── IntersectionObserver ───────────────────────────────────
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    revealEls.forEach(el => observer.observe(el));
+
+    // ── Occasions drag scroll ──────────────────────────────────
+    const occEl = document.getElementById('occasionsV5');
+    let dragging = false, startX2, scrollLeft2;
+
+    occEl.addEventListener('mousedown', e => {
+      dragging = true;
+      occEl.style.cursor = 'grabbing';
+      startX2 = e.pageX - occEl.offsetLeft;
+      scrollLeft2 = occEl.scrollLeft;
+    });
+    ['mouseleave','mouseup'].forEach(ev => {
+      occEl.addEventListener(ev, () => {
+        dragging = false; occEl.style.cursor = '';
+      });
+    });
+    occEl.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      e.preventDefault();
+      const x = e.pageX - occEl.offsetLeft;
+      occEl.scrollLeft = scrollLeft2 - (x - startX2) * 1.4;
+    });
+
+    // ── Date input default ─────────────────────────────────────
+    const di = document.getElementById('v5-date');
+    if (di) {
+      const today = new Date().toISOString().split('T')[0];
+      di.min = today; di.value = today;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  background: #0b0f14;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px 20px;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0) 80%);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.14);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d4af37;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #f7f1df;
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.description {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(247, 241, 223, 0.72);
+  margin: 0;
+  max-width: 720px;
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(247, 241, 223, 0.06);
+  border: 1px solid rgba(247, 241, 223, 0.16);
+  color: rgba(247, 241, 223, 0.85);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.closeBtn:hover {
+  background: rgba(212, 175, 55, 0.16);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+.frameWrap {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  background: #000;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.placeholder {
+  padding: 56px 32px;
+  text-align: center;
+  background: #0b0f14;
+  color: rgba(247, 241, 223, 0.76);
+}
+
+.placeholderIcon {
+  font-size: 32px;
+  color: #d4af37;
+  margin-bottom: 16px;
+}
+
+.placeholderTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  color: #f7f1df;
+  margin-bottom: 10px;
+}
+
+.placeholderText {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+  .header {
+    padding: 20px 18px 16px;
+  }
+  .title {
+    font-size: 22px;
+  }
+}

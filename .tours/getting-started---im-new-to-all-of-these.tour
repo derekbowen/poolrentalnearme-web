@@ -1,0 +1,387 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Getting Started - I'm new to all of these.",
+  "steps": [
+    {
+      "file": "package.json",
+      "description": "Welcome to Sharetribe and the Sharetribe Horizon template,\n\nI am Tam! Your virtual guide and I would dedicate this tour to any developer that is looking to utilise the template, and we would also assume you are not familiar with how Sharetribe works. \n\nIf you already are, please move to the \"experienced tour\" where we give brief on notable difference compare to existing Sharetribe template.",
+      "line": 1
+    },
+    {
+      "file": "package.json",
+      "description": "In the template, we would be using Vite as you can see as our tooling. There are many reasons for it, but our number one reason is that they have good optimisation for faster build time! \n\nhttps://vitejs.dev/",
+      "line": 71
+    },
+    {
+      "file": "package.json",
+      "description": "I hope that you like to eat bun as we would also use Bun as our engine instead of Nodejs V8 engine to make the code build faster and more efficient as well. T\n\nhe reason why that we opt in for Bun is because of their blazingly hot (No Bun intended! ;)) runtime because they are written in Zig. You can checkout there amazing project and install Bun here: \n\nhttps://bun.sh/\n\nPlease proceed after you have bun installed! You would not regret it.\n",
+      "line": 146
+    },
+    {
+      "file": "package.json",
+      "description": "We would have the dev command, you can run\n```\nyarn run dev\n```\nor\n```\nbun run dev\n```\nand they would all run fine as in the scripts, we are already interate bun!",
+      "line": 151
+    },
+    {
+      "file": "package.json",
+      "description": "This build step is the necessary step for when you building production, let proceed to go to the Dockerfile, so I can explain the needed build step incase you need to go to production.",
+      "line": 158
+    },
+    {
+      "file": "Dockerfile",
+      "description": "Our template comes with a Dockerfile that allows you to build docker images of your web and make is as a container. With a good devops, auto-scaling will no longer just be a buzz word!",
+      "line": 1
+    },
+    {
+      "file": "Dockerfile",
+      "description": "As you can see, in one sentence we have NPM, Yarn and Bun package manager unite. Isn't that amazing? \n\nThe reasons for this one is because at Journeu Horizon, we found that NPM has awesome support for local and global packages comparing to Yarn. As we have various internal packages that is not published to private NVM. \n\nWhere as Yarn is excellent for installing dependencies and Bun is awesome in building all of those together.",
+      "line": 5
+    },
+    {
+      "file": "Dockerfile",
+      "description": "Our docker would expose port 3000 and 443 per our deployment stack, but please feel free to update them if you prefer",
+      "line": 17
+    },
+    {
+      "file": ".env-template",
+      "description": "After understanding how to build the code, run the code. It's time to get your attention to the ENV file. This should be where you gather the much needed credentials. Take your time if you want to continues the tour with runnable code so you can relate with the UIs. \n\nOtherwise, proceed!",
+      "line": 1
+    },
+    {
+      "file": "server/apiServer.js",
+      "description": "There are 2 server file that you need to take note. This `apiServer.js` is the development server when you run\n`yarn run dev` or `bun run dev`. If you need to add any code to the development server, remember to add them here.",
+      "line": 50
+    },
+    {
+      "file": "server/index.js",
+      "description": "Where as this file, is the main server that would be used when you run `bun run start`. And it is configured for production usage",
+      "line": 22
+    },
+    {
+      "file": "server/index.js",
+      "description": "The production server comes with sitemap",
+      "line": 139
+    },
+    {
+      "file": "server/apiServer.js",
+      "description": "And so is the test server",
+      "line": 48
+    },
+    {
+      "file": "server/index.js",
+      "description": "But the production server has Basic Auth if you needed",
+      "line": 156
+    },
+    {
+      "file": "server/apiServer.js",
+      "description": "While the dev server does not, so even if you have basic auth even setup, it would not be added for development server!",
+      "line": 33
+    },
+    {
+      "file": "server/index.js",
+      "description": "This would be where all the logic for reundering HTML happen.",
+      "line": 181
+    },
+    {
+      "file": "server/dataLoader.js",
+      "description": "When a page is returned to the client, it would be inclined to load app assets. This is where most of the the low code/no code configuration are loaded. And also one of the reason why the site seem a little bit slow to return data if there are too may configuration.",
+      "line": 53
+    },
+    {
+      "file": "server/index.js",
+      "description": "The Vite template like Sharetribe default template also offer the ability for server side renderring. This features is crucial for handling SEO, as we don't want Google to see just an empty site (it would be sad!)",
+      "line": 214
+    },
+    {
+      "file": "server/index.js",
+      "description": "The server side renderring would also check if the current URL is accessible or if there are any authentication required (login required!). You can add your logic here for any additional checks.",
+      "line": 224
+    },
+    {
+      "file": "src/routing/routeConfiguration.js",
+      "description": "All the routing for the template both Vite and Sharetribe default would be in here. You can declare new routing or modify the existing one.",
+      "line": 61
+    },
+    {
+      "file": "src/routing/routeConfiguration.js",
+      "description": "Note that the Vite template come with imported component while the Sharetribe template come with loadable. This is also one the big difference between the 2 template and this is where most have conflict with when you merge from upstream of Sharetribe.",
+      "line": 12
+    },
+    {
+      "file": "src/containers/LandingPage/LandingPage.js",
+      "description": "This is the fore-front of everything, the LandingPage, Sharetribe offer a simple CMS, so you can see the PageBuilder component beneath. It would load the assets fetched from Sharetribe and display.",
+      "line": 21
+    },
+    {
+      "file": "src/routing/routeConfiguration.js",
+      "description": "The next page come in mind would be the Search Page `/s` but because on configuration, there are 2 possible search layout, one with a map either in Mapbox or Googlemap and one with no map for online products.",
+      "line": 62
+    },
+    {
+      "file": "src/containers/SearchPage/SearchPageWithMap.js",
+      "description": "This is where the SearchPageWithMap resides",
+      "line": 59
+    },
+    {
+      "file": "src/containers/SearchPage/SearchPageWithMap.js",
+      "description": "The Filters would be dynamic and comes from the console but this would be where the code to render available filter happens.",
+      "line": 418
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.js",
+      "description": "For the listings to be visible on the SearchPage, most of them must go through the EditListingPage. This is also where the configuration from Sharetribe console is pulled and displayed to the provider.",
+      "line": 85
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.js",
+      "description": "A listing would have 6 states:\n- New (not saved in Sharetribe DB). It would only be on the first tab as the listing is created after the first tab is finished.\n- Draft\n- In Approval\n- Published \n- Closed\n- Deleted",
+      "line": 118
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.js",
+      "description": "You can turn on the approval flow on the Sharetribe console.",
+      "line": 133
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.js",
+      "description": "This component would be where all the tabs are placed.",
+      "line": 207
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js",
+      "description": "This is where the logic for checking if a tab have enough data and can be proceed or not.",
+      "line": 222
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js",
+      "description": "On the console, you would have different listing type, this would be where the configuration for the corresponding listing type is added",
+      "line": 323
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js",
+      "description": "This is where all the tab resides",
+      "line": 587
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizardTab.js",
+      "description": "This is the details tab that would pull in the listing configuration from console and render out all the needed fields.",
+      "line": 182
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js",
+      "description": "Each time when a tab have just finished, this function would be called.",
+      "line": 368
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js",
+      "description": "It would also check if the provider has their Stripe connected account yet.",
+      "line": 379
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.duck.js",
+      "description": "This is a .duck file. All of our actions and recuders would be in .duck file, as you can see, the action for publishListingDraft would be in here.",
+      "line": 687
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.duck.js",
+      "description": "With this pattern, we would dispatch updates of entities to reducer in .duck file as well",
+      "line": 694
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.duck.js",
+      "description": "As example when a listing has been pubished, this would be dispatched",
+      "line": 489
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.duck.js",
+      "description": "And the state would be updated accordingly",
+      "line": 251
+    },
+    {
+      "file": "src/containers/EditListingPage/EditListingPage.js",
+      "description": "So in summary a page would usually consist of 3 essentials part:\n- The Page that compose all UI components.\n- A duck that handles our underlying communication logic\n- a CSS file that would use SCSS for you to do the styling",
+      "line": 25
+    },
+    {
+      "file": "src/containers/ManageListingsPage/ManageListingsPage.js",
+      "description": "This is the page where providers can close published listings.",
+      "line": 27
+    },
+    {
+      "file": "src/containers/ManageListingsPage/ManageListingsPage.js",
+      "description": "A common pattern you would encounter (which is also true for SearchPage) is that for a list of items, we would create Card component for them.",
+      "line": 143
+    },
+    {
+      "file": "src/routing/routeConfiguration.js",
+      "description": "This is one of the core page of Sharetribe, the listing page. There would be 2 types of available layout as you can see.",
+      "line": 65
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPageCarousel.js",
+      "description": "So when you update a listing's layout, remember to choose the correct layout and let the marketplace admin knows what variant you are changing.",
+      "line": 87
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPageCarousel.js",
+      "description": "Becareful with sharable components like this as they are shared across multiple components",
+      "line": 309
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPage.duck.js",
+      "description": "Again, the duck file is used here.",
+      "line": 196
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPage.duck.js",
+      "description": "By now, you should be able to notice there are multiple type of entities in our codes.",
+      "line": 243
+    },
+    {
+      "file": "src/ducks/marketplaceData.duck.js",
+      "description": "Listing type entity",
+      "line": 46
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPageCoverPhoto.js",
+      "description": "And back to where are at, this would be where the magic of money happen. This would be our Booking Panel where the customer of the marketplace can book the current listing",
+      "line": 393
+    },
+    {
+      "file": "src/ducks/user.duck.js",
+      "description": "currentUser type entity",
+      "line": 87
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPage.duck.js",
+      "description": "Transaction type entity and so on...",
+      "line": 70
+    },
+    {
+      "file": "src/containers/ListingPage/ListingPageCarousel.js",
+      "description": "This would be our booking panel where the user can start a transaction",
+      "line": 394
+    },
+    {
+      "file": "src/components/OrderPanel/OrderPanel.js",
+      "description": "There would be 4 types of form for booking panel\n- Time\n- Dates\n- Product\n- Inquiry (Just message)\n\nOut of the 4, be default inquiry does not require the user to spend real money",
+      "line": 295
+    },
+    {
+      "file": "src/components/OrderPanel/OrderPanel.js",
+      "description": "The date time picker library is now under maintained only, so we might soon changes it up",
+      "line": 319
+    },
+    {
+      "file": "src/containers/CheckoutPage/CheckoutPage.js",
+      "description": "After all the details are dealt, they would be guided to the checkout page",
+      "line": 57
+    },
+    {
+      "file": "src/containers/CheckoutPage/CheckoutPage.duck.js",
+      "description": "This is the very first action that would happen in the checkout page and it would happen right when the user enter it. The page would speculate the transaction to determine how much should the user pay.",
+      "line": 381
+    },
+    {
+      "file": "server/api/initiate-privileged.js",
+      "description": "The speculation and the initiation of a transaction would be passed onto the server. This is the server files, which is completely separate from the client.",
+      "line": 11
+    },
+    {
+      "file": "server/api/initiate-privileged.js",
+      "description": "This concept for trustedSdk is an extra steps for our server to authenticate the current requests and prevent any malicous unauthorised requests. It would take the cookies from the user's request and authenticate that cookie into a trustedSdk which usually last for around 10 minutes top.",
+      "line": 35
+    },
+    {
+      "file": "server/api/initiate-privileged.js",
+      "description": "the response would also be in transit json (they are different from Json).",
+      "line": 56
+    },
+    {
+      "file": "src/util/api.js",
+      "description": "The transit json would already be decoded on the front-end in this page. This page is where we declare call to API of our backend and it would be where most of our backend responses are parsed before passing out to use.",
+      "line": 82
+    },
+    {
+      "file": "server/api/initiate-privileged.js",
+      "description": "The type of transition that requires a server would usually be called privileged transition. \n\nNote that in Sharetribe, when you create transaction there are some common terms that follow:\n- Transaction - refer to the act of creating a relationship data entity to represent an actual agreement between the provider and the customer of the marketplace.\n- Transition - These are the proceeding steps for a transaction process. There would be multiple steps for a transaction process",
+      "line": 10
+    },
+    {
+      "file": "src/containers/CheckoutPage/CheckoutPage.js",
+      "description": "We are using Stripe as our checkout processor. This component would be handled saving CC card and handling SCA as well.",
+      "line": 140
+    },
+    {
+      "file": "src/containers/CheckoutPage/CheckoutPageTransactionHelpers.js",
+      "description": "You should read up on Stripe to know about how payment intent work. But in simple term, this is the definition of the steps that each Checkout must go through:\n- Creating request on Sharetribe\n- Confirm card payment on Stripe\n- Confirm on Sharetribe (transitioning)\n- Send additional message\n- Save Payment method (if the customer want to)",
+      "line": 345
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPage.js",
+      "description": "Upon a success transaction creation, the customer would be guided to the transaction details here.",
+      "line": 85
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPage.js",
+      "description": "There would be multiple components inside the transaction page, the panel would be one of the key part",
+      "line": 418
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPanel/TransactionPanel.js",
+      "description": "It would have a heading",
+      "line": 210
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPanel/TransactionPanel.js",
+      "description": "A box for typing message",
+      "line": 228
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPanel/TransactionPanel.js",
+      "description": "A section to show a list of past actions",
+      "line": 275
+    },
+    {
+      "file": "src/containers/TransactionPage/TransactionPage.duck.js",
+      "description": "This duck file would contains all the actions that related to transactions:\n- Transitioning\n- Sending messages\n- Fetch transactions\n- ...etc",
+      "line": 65
+    },
+    {
+      "file": "src/transactions/transaction.js",
+      "description": "As I have mentioned, Sharetribe utilise a concept called transaction state machine. You can search and read more about it, but put in simple terms a state machine would contains multiple stages and can be represented as belows",
+      "line": 34
+    },
+    {
+      "file": "src/transactions/transactionProcessPurchase.js",
+      "description": "This is the definition for purchase process. Each process would have its own definition, in this guide I would select this state machine to talk about",
+      "line": 15
+    },
+    {
+      "file": "src/transactions/transactionProcessPurchase.js",
+      "description": "If you update this initial transactional state, this would also be the places where you edit them to match with the one you have done on the console",
+      "line": 95
+    },
+    {
+      "file": "src/transactions/transactionProcessPurchase.js",
+      "description": "And this graph right here would be where the state are declared",
+      "line": 120
+    },
+    {
+      "file": "src/transactions/transactionProcessPurchase.js",
+      "description": "From inital with 2 possible action - inquire or request payment",
+      "line": 131
+    },
+    {
+      "file": "src/transactions/transactionProcessPurchase.js",
+      "description": "Till completion state with review from either provider or customer",
+      "line": 186
+    },
+    {
+      "file": "package.json",
+      "description": "That should be it for the tour, this would be the first versions out of many, so we are open to receive feedbacks. Please feel free to put up in our company Discord channel or email tam.vu@journeyh.io if you just purchased this templates.",
+      "line": 2
+    }
+  ],
+  "ref": "main"
+}

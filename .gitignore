@@ -1,0 +1,22 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+
+# testing
+coverage
+
+# production
+build
+
+# misc
+.DS_Store
+.env
+.env.*
+npm-debug.log
+yarn-error.log
+dist
+
+# Server-side lead capture store (JSONL append-only). Swap for a real
+# database before production — this is a file-based fallback.
+server/data/

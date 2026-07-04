@@ -299,7 +299,12 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
   const datesMaybe = datesSearchParams(dates);
   const stockMaybe = stockFilters(datesMaybe);
   const seatsMaybe = seatsSearchParams(seats, datesMaybe);
-  const sortMaybe = sort === config.search.sortConfig.relevanceKey ? {} : { sort };
+  // 'distance' is not a valid Marketplace API sort value: the API sorts by
+  // distance when 'origin' is sent without 'sort', and returns 400 if both
+  // are sent ("'sort' can not be used in combination with 'origin'").
+  const isImplicitSort =
+    sort === config.search.sortConfig.relevanceKey || sort === SORT_BY_DISTANCE;
+  const sortMaybe = isImplicitSort ? {} : { sort };
 
   const params = {
     // The rest of the params except invalid nested category-related params

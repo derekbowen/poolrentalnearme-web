@@ -11,6 +11,7 @@ import { ensureCurrentUser } from '../../../util/data';
 import * as validators from '../../../util/validators';
 import { isUploadImageOverLimitError } from '../../../util/errors';
 import { getPropsForCustomUserFieldInputs } from '../../../util/userHelpers';
+import { ensureUploadableImage } from '../../../util/heic';
 
 import {
   Form,
@@ -24,7 +25,7 @@ import {
 
 import css from './ProfileSettingsForm.module.css';
 
-const ACCEPT_IMAGES = 'image/*';
+const ACCEPT_IMAGES = 'image/*,.heic,.heif';
 const UPLOAD_CHANGE_DELAY = 2000; // Show spinner so that browser has time to load img srcset
 
 const DisplayNameMaybe = props => {
@@ -294,14 +295,17 @@ class ProfileSettingsFormComponent extends Component {
                   {fieldProps => {
                     const { accept, id, input, label, disabled, uploadImageError } = fieldProps;
                     const { name, type } = input;
-                    const onChange = e => {
-                      const file = e.target.files[0];
+                    const onChange = async e => {
+                      const raw = e.target.files[0];
+                      if (raw == null) {
+                        return;
+                      }
+                      // Transcode iPhone HEIC/HEIF avatars to JPEG before upload.
+                      const file = await ensureUploadableImage(raw);
                       form.change(`profileImage`, file);
                       form.blur(`profileImage`);
-                      if (file != null) {
-                        const tempId = `${file.name}_${Date.now()}`;
-                        onImageUpload({ id: tempId, file });
-                      }
+                      const tempId = `${file.name}_${Date.now()}`;
+                      onImageUpload({ id: tempId, file });
                     };
 
                     let error = null;

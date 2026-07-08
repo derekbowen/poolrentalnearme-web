@@ -25,6 +25,7 @@ import {
 import { FormattedMessage, useIntl } from '../../../../util/reactIntl';
 import { nonEmptyArray, composeValidators } from '../../../../util/validators';
 import { isUploadImageOverLimitError } from '../../../../util/errors';
+import { ensureUploadableImage } from '../../../../util/heic';
 
 // Import shared components
 import { Button, Form, AspectRatioWrapper } from '../../../../components';
@@ -33,7 +34,7 @@ import { Button, Form, AspectRatioWrapper } from '../../../../components';
 import ListingImage from './ListingImage';
 import css from './EditListingPhotosForm.module.css';
 
-const ACCEPT_IMAGES = 'image/*';
+const ACCEPT_IMAGES = 'image/*,.heic,.heif';
 
 const ImageUploadError = (props) => {
   return props.uploadOverLimit ? (
@@ -173,9 +174,15 @@ const EditListingPhotosForm = ({
     if (file) {
       setState({ imageUploadRequested: true });
 
-      onImageUpload({ id: `${file.name}_${Date.now()}`, file }, listingImageConfig).finally(() => {
-        setState({ imageUploadRequested: false });
-      });
+      // iPhone HEIC/HEIF photos are transcoded to JPEG before upload (Sharetribe
+      // rejects HEIC). Non-HEIC files pass through unchanged.
+      ensureUploadableImage(file)
+        .then(uploadable =>
+          onImageUpload({ id: `${uploadable.name}_${Date.now()}`, file: uploadable }, listingImageConfig)
+        )
+        .finally(() => {
+          setState({ imageUploadRequested: false });
+        });
     }
   };
   const intl = useIntl();

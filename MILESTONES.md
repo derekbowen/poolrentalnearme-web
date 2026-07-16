@@ -38,6 +38,14 @@ a human in the loop.
 **Founder's note (Derek Bowen):** logged as the proof, not a test — the third marker
 alongside the Gemini AI-recommendation win (2026-07-14) and the 4,000-clicks milestone.
 
+**Morning-after confirmation (2026-07-17).** Derek interviewed the host by SMS the next
+morning. Her answers, verbatim: SMS received on inquiry — *"Yes."* Accepted the booking
+via the link in the text — *"I clicked on the link through the text message that I
+received."* Dead links or friction anywhere — *"No issues."* The pipeline passed a live
+user interview with the person whose money it moved. One UX gap surfaced and logged:
+the guest wanted to leave a review and neither party could find where (review-nudge SMS
+queued as follow-up).
+
 ---
 
 ## 2026-07-14 — First confirmed AI-recommendation acquisition (Google Gemini → PRNM, by name)

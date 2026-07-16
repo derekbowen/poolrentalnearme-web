@@ -5,6 +5,41 @@ Newest first.
 
 ---
 
+## 2026-07-16 — First real-money booking through the full automated pipeline (host paid, both sides notified)
+
+**Milestone:** The first genuine, paying booking to travel the entire marketplace +
+notification pipeline end-to-end with **real money and two real people** — not a test
+transaction. The money path is proven in production.
+
+**What happened.** A guest, **Jorge**, booked and **paid** for the pool listing
+**"Country oasis"** (host **Stacie**) for an 11 PM–12 AM slot. Every automated
+notification fired correctly, in order:
+
+1. `23:57:02 UTC` — payment cleared (`confirm-payment`) → host texted the paid
+   booking-request ("Guest already paid. Accept before it expires…"). **sent.**
+2. `23:57:03` — guest's intro message ("I can't wait to enjoy your pool") relayed to
+   the host by SMS. **sent.**
+3. `00:01:50` — host **accepted** (~5 min later) → guest texted the confirmation
+   ("Your booking… is confirmed!"). **sent.**
+4. `00:02:28` — host's reply ("thanks see you soon 😊") relayed to the guest. **sent.**
+5. `00:06:06` — host texted back into the system — **proving live two-way delivery.**
+
+All four outbound messages: status `sent`, Twilio SIDs assigned, **zero errors**. Poller
+healthy (`consecutive_failures: 0`), zero failed sends across the prior 24h. Delivery
+confirmed behaviorally — both parties replied through the pipeline.
+
+**Why it matters.** Every prior proof was a self-run test transaction. This is the first
+time the whole chain — Stripe payment → Sharetribe transition events → SMS poller →
+Twilio → real host + real guest, both replying — worked for **someone else's money**. It
+validates the c105/c106 inquiry/notification hardening in the only way that counts: a
+stranger paid, the host got the ping, accepted, and the guest was confirmed, all without
+a human in the loop.
+
+**Founder's note (Derek Bowen):** logged as the proof, not a test — the third marker
+alongside the Gemini AI-recommendation win (2026-07-14) and the 4,000-clicks milestone.
+
+---
+
 ## 2026-07-14 — First confirmed AI-recommendation acquisition (Google Gemini → PRNM, by name)
 
 **Milestone:** The first confirmed evidence that Google Gemini recommends "Pool Rental

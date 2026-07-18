@@ -22,6 +22,7 @@ import {
   LISTING_STATE_PUBLISHED,
 } from '../../util/types';
 import { formatMoney } from '../../util/currency';
+import { types as sdkTypes } from '../../util/sdkLoader';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
 import {
@@ -49,6 +50,8 @@ import css from './OrderPanel.module.css';
 // This defines when ModalInMobile shows content as Modal
 const MODAL_BREAKPOINT = 1023;
 const TODAY = new Date();
+
+const { Money } = sdkTypes;
 
 const isPublishedListing = listing => {
   return listing.attributes.state === LISTING_STATE_PUBLISHED;
@@ -148,14 +151,23 @@ const PriceMaybe = (props) => {
   const isPriceVariationsInUse = !!publicData?.priceVariationsEnabled;
   const hasMultiplePriceVariants = publicData?.priceVariants?.length > 1;
 
-  if (!showPrice || !price || (isPriceVariationsInUse && hasMultiplePriceVariants)) {
+  if (!showPrice || !price) {
     return null;
   }
 
+  // With multiple price variants, surface the cheapest variant as a "From {price}" price
+  // instead of hiding the price until an option is picked.
+  const showFromPrefix = isPriceVariationsInUse && hasMultiplePriceVariants;
+  const cheapestVariant = showFromPrefix ? getCheapestPriceVariant(publicData.priceVariants) : null;
+  const displayMoney =
+    cheapestVariant?.priceInSubunits != null
+      ? new Money(cheapestVariant.priceInSubunits, price.currency)
+      : price;
+
   // Get formatted price or currency code if the currency does not match with marketplace currency
-  const { formattedPrice, priceTitle } = priceData(price, marketplaceCurrency, intl);
+  const { formattedPrice, priceTitle } = priceData(displayMoney, marketplaceCurrency, intl);
   const priceValue = (
-    <span className={css.priceValue}>{formatMoneyIfSupportedCurrency(price, intl)}</span>
+    <span className={css.priceValue}>{formatMoneyIfSupportedCurrency(displayMoney, intl)}</span>
   );
   const pricePerUnit = (
     <span className={css.perUnit}>
@@ -169,7 +181,7 @@ const PriceMaybe = (props) => {
     <div className={css.priceContainerInCTA}>
       <div className={css.priceValueInCTA} title={priceTitle}>
         <FormattedMessage
-          id="OrderPanel.priceInMobileCTA"
+          id={showFromPrefix ? 'OrderPanel.priceFromInMobileCTA' : 'OrderPanel.priceInMobileCTA'}
           values={{ priceValue: formattedPrice }}
         />
       </div>
@@ -180,7 +192,10 @@ const PriceMaybe = (props) => {
   ) : (
     <div className={css.priceContainer}>
       <p className={css.price}>
-        <FormattedMessage id="OrderPanel.price" values={{ priceValue, pricePerUnit }} />
+        <FormattedMessage
+          id={showFromPrefix ? 'OrderPanel.priceFrom' : 'OrderPanel.price'}
+          values={{ priceValue, pricePerUnit }}
+        />
       </p>
     </div>
   );
@@ -249,6 +264,7 @@ const hasValidPriceVariants = priceVariants => {
  * @param {listingType.user|listingType.currentUser} props.author - The listing author's user data
  * @param {ReactNode} [props.authorLink] - Custom component for rendering the author link
  * @param {ReactNode} [props.payoutDetailsWarning] - Warning message about payout details
+ * @param {ReactNode} [props.trustRow] - Compact trust row (review score or hosted-since) shown under the price
  * @param {Function} props.onSubmit - Handler for form submission
  * @param {ReactNode|string} props.title - Title of the panel
  * @param {ReactNode} [props.titleDesktop] - Alternative title for desktop view
@@ -295,6 +311,7 @@ const OrderPanel = (props) => {
     fetchLineItemsError,
     payoutDetailsWarning,
     currentPage,
+    trustRow,
   } = props;
 
   const intl = useIntl();
@@ -440,6 +457,8 @@ const OrderPanel = (props) => {
           intl={intl}
           marketplaceCurrency={marketplaceCurrency}
         />
+
+        {trustRow}
 
         <div className={css.row}>
           <div className={css.author}>

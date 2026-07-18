@@ -33,6 +33,7 @@ import {
   userDisplayNameAsString,
 } from '../../util/data';
 import { richText } from '../../util/richText';
+import { formatMoney } from '../../util/currency';
 import {
   isBookingProcess,
   isPurchaseProcess,
@@ -45,7 +46,14 @@ import { manageDisableScrolling, isScrollingDisabled } from '../../ducks/ui.duck
 import { initializeCardPaymentData } from '../../ducks/stripe.duck';
 
 // Shared components
-import { H4, Page, NamedLink, NamedRedirect, LayoutSingleColumn } from '../../components';
+import {
+  H4,
+  Page,
+  NamedLink,
+  NamedRedirect,
+  LayoutSingleColumn,
+  IconReviewStar,
+} from '../../components';
 
 // Related components and modules
 import TopbarContainer from '../TopbarContainer/TopbarContainer';
@@ -84,7 +92,7 @@ import css from './ListingPage.module.css';
 
 const MIN_LENGTH_FOR_LONG_WORDS_IN_TITLE = 16;
 
-const { UUID } = sdkTypes;
+const { Money, UUID } = sdkTypes;
 
 export const ListingPageComponent = (props) => {
   const [inquiryModalOpen, setInquiryModalOpen] = useState(
@@ -228,6 +236,61 @@ export const ListingPageComponent = (props) => {
 
   const { formattedPrice } = priceData(price, config.currency, intl);
 
+  // Surface a price in the main column: the base price, or the cheapest bookable
+  // option as a "From {price}" when multiple price variants exist. This mirrors
+  // how OrderPanel resolves publicData.priceVariants.
+  const { priceVariants = [], priceVariationsEnabled } = publicData;
+  const hasMultiplePriceVariants = !!priceVariationsEnabled && priceVariants.length > 1;
+  const cheapestPriceVariant = hasMultiplePriceVariants
+    ? priceVariants.reduce(
+        (cheapest, current) =>
+          current.priceInSubunits < cheapest.priceInSubunits ? current : cheapest,
+        priceVariants[0]
+      )
+    : null;
+  let headerFormattedPrice = formattedPrice;
+  if (cheapestPriceVariant?.priceInSubunits != null && price) {
+    try {
+      headerFormattedPrice = formatMoney(
+        intl,
+        new Money(cheapestPriceVariant.priceInSubunits, price.currency)
+      );
+    } catch (e) {
+      // Fall back to the base price if the variant price can't be formatted
+    }
+  }
+
+  // Trust signals for the title bar and the booking card: review score when
+  // reviews exist, "Hosted since {year}" otherwise — never an empty stars row.
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0
+      ? Math.round(
+          (reviews.reduce((sum, r) => sum + (r?.attributes?.rating || 0), 0) / reviewCount) * 10
+        ) / 10
+      : null;
+  const hostedSince = ensuredAuthor?.attributes?.createdAt
+    ? intl.formatDate(ensuredAuthor.attributes.createdAt, { year: 'numeric' })
+    : null;
+  const trustRow =
+    averageRating || hostedSince ? (
+      <div className={css.trustRow}>
+        {averageRating ? (
+          <>
+            <IconReviewStar rootClassName={css.trustStar} isFilled />
+            <span className={css.trustRating}>{averageRating}</span>
+            <span className={css.trustReviewCount}>
+              <FormattedMessage id="ListingPage.trustReviewCount" values={{ count: reviewCount }} />
+            </span>
+          </>
+        ) : (
+          <span className={css.trustHostedSince}>
+            <FormattedMessage id="ListingPage.trustHostedSince" values={{ joined: hostedSince }} />
+          </span>
+        )}
+      </div>
+    ) : null;
+
   const commonParams = { params, navigate, routes: routeConfiguration };
   const onContactUser = handleContactUser({
     ...commonParams,
@@ -364,6 +427,7 @@ export const ListingPageComponent = (props) => {
                 </H4>
               }
               payoutDetailsWarning={payoutDetailsWarning}
+              trustRow={trustRow}
               author={ensuredAuthor}
               onManageDisableScrolling={onManageDisableScrolling}
               onContactUser={onContactUser}
@@ -413,6 +477,22 @@ export const ListingPageComponent = (props) => {
                   <H4 as="h1" className={css.orderPanelTitle}>
                     <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
                   </H4>
+                </div>
+                <div className={css.headerMeta}>
+                  {headerFormattedPrice ? (
+                    <p className={css.headerPrice}>
+                      {hasMultiplePriceVariants ? (
+                        <span className={css.headerPriceFrom}>
+                          <FormattedMessage id="ListingPage.headerPriceFrom" />
+                        </span>
+                      ) : null}
+                      <span className={css.headerPriceValue}>{headerFormattedPrice}</span>
+                      <span className={css.headerPerUnit}>
+                        <FormattedMessage id="OrderPanel.perUnit" values={{ unitType }} />
+                      </span>
+                    </p>
+                  ) : null}
+                  {trustRow}
                 </div>
                 <SectionTextMaybe text={description} showAsIngress />
 

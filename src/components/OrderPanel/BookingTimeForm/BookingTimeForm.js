@@ -290,18 +290,7 @@ export const BookingTimeForm = props => {
               </PrimaryButton>
             </div>
 
-            {isOwnListing || currentPage !== LISTING_PAGE ? null : (
-              <div className={css.contactButtonWrapper}>
-                <SecondaryButton
-                  type="button"
-                  onClick={() => onContactUser(listingAuthor)}
-                  className={css.contactButton}
-                >
-                  <FormattedMessage id="UserCard.contactUser" />
-                </SecondaryButton>
-              </div>
-            )}
-
+            {/* Reassurance line directly under the CTA */}
             <p className={css.finePrint}>
               {payoutDetailsWarning ? (
                 payoutDetailsWarning
@@ -315,6 +304,18 @@ export const BookingTimeForm = props => {
                 />
               )}
             </p>
+
+            {isOwnListing || currentPage !== LISTING_PAGE ? null : (
+              <div className={css.contactButtonWrapper}>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => onContactUser(listingAuthor)}
+                  className={css.contactButton}
+                >
+                  <FormattedMessage id="UserCard.contactUser" />
+                </SecondaryButton>
+              </div>
+            )}
           </Form>
         );
       }}

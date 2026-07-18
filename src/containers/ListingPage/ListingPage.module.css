@@ -535,6 +535,73 @@
   }
 }
 
+/* Header meta: price + trust row in the title bar area of the main column */
+.headerMeta {
+  padding: 0 24px;
+  margin-bottom: 24px;
+
+  @media (--viewportMedium) {
+    padding: 0;
+  }
+}
+
+.headerPrice {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 6px 0;
+  padding: 0;
+}
+
+.headerPriceFrom {
+  composes: h5 from global;
+  color: var(--colorGrey600);
+  margin: 0;
+  padding: 0;
+}
+
+.headerPriceValue {
+  composes: h2 from global;
+  font-family: 'Manrope', var(--fontFamily);
+  font-weight: var(--fontWeightBold);
+  color: #0ea5e9; /* PRNM blue */
+  margin: 0;
+  padding: 0;
+}
+
+.headerPerUnit {
+  composes: h5 from global;
+  color: var(--colorGrey600);
+  margin: 0;
+  padding: 0;
+}
+
+/* Compact trust row: star + score + review count, or "Hosted since {year}" */
+.trustRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.trustStar {
+  width: 16px;
+  height: 16px;
+  fill: #f5b301; /* PRNM gold */
+  flex-shrink: 0;
+}
+
+.trustRating {
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.trustReviewCount,
+.trustHostedSince {
+  color: var(--colorGrey600);
+}
+
 .sectionText {
   padding: 0 24px;
   margin-bottom: 36px;

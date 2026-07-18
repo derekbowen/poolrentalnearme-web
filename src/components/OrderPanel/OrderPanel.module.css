@@ -87,7 +87,7 @@
 
 .author {
   composes: p from global;
-  margin: 0px 24px 32px 24px;
+  margin: 0px 24px 24px 24px;
 
   display: flex;
   flex-direction: row;
@@ -95,7 +95,7 @@
 
   @media (--viewportMedium) {
     width: 100%;
-    margin: 12px 0 36px 0;
+    margin: 12px 0 24px 0;
     color: var(--colorGrey700);
   }
 }

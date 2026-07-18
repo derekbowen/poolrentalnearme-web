@@ -303,8 +303,8 @@
     flex-direction: row;
     max-width: unset;
     width: min(calc(var(--contentMaxWidth) + 72px), 100vw);
-    padding: 64px 36px 0 36px;
-    margin: 0 auto 117px auto;
+    padding: 48px 36px 0 36px;
+    margin: 0 auto 64px auto;
   }
 }
 
@@ -356,6 +356,14 @@
   @media (--viewportLarge) {
     display: block;
     margin-top: 24px;
+
+    /* Card treatment: visually bounds the sticky panel so the column below
+       it doesn't read as dead whitespace */
+    padding: 24px;
+    background-color: var(--colorWhite);
+    border: 1px solid var(--colorGrey100);
+    border-radius: var(--borderRadiusMedium);
+    box-shadow: var(--boxShadowListingCard);
   }
 
   /* Note: panel height might be too much on small viewport - hence min-height */
@@ -664,7 +672,7 @@
 .sectionMultiEnum,
 .sectionEmbeddedYoutubeVideo {
   padding: 0 24px;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 
   @media (--viewportMedium) {
     padding: 0;
@@ -674,11 +682,11 @@
 
 .sectionMap {
   padding: 0 24px;
-  margin-bottom: 35px;
+  margin-bottom: 36px;
 
   @media (--viewportMedium) {
     padding: 0;
-    margin-bottom: 0;
+    margin-bottom: 40px;
   }
 }
 

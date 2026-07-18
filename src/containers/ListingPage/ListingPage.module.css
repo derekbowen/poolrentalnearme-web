@@ -699,6 +699,61 @@
   }
 }
 
+/* Multi-enum listing fields as clean icon + text rows (no gradient tiles, no emoji icons) */
+.featureList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px 24px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.featureItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-family: 'Manrope', var(--fontFamily);
+  font-weight: var(--fontWeightMedium);
+  line-height: 24px;
+}
+
+.featureItemUnselected {
+  color: var(--colorGrey300);
+  font-weight: var(--fontWeightRegular);
+}
+
+.featureIconChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background-color: rgba(14, 165, 233, 0.12); /* PRNM blue tint */
+  color: #0ea5e9; /* PRNM blue */
+}
+
+.featureIconChipMuted {
+  background-color: var(--colorGrey50);
+  color: var(--colorGrey300);
+}
+
+.featureIcon {
+  display: block;
+}
+
+.featureLabel {
+  overflow-wrap: anywhere;
+}
+
 .details {
   padding-bottom: 1px;
   margin: 0;

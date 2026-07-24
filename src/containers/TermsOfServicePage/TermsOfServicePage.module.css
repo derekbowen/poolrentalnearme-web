@@ -1,0 +1,202 @@
+/* Terms of Service — legal-document treatment.
+   Readable measure, semantic hierarchy, per-section anchors, and a print
+   stylesheet so the page exports cleanly to PDF for underwriting copies. */
+
+.layout {
+  min-height: 100vh;
+}
+
+.topbar {
+  position: relative;
+  z-index: 1;
+}
+
+.main {
+  display: flex;
+  justify-content: center;
+  padding: 32px 24px 96px;
+  background: var(--colorWhite, #ffffff);
+}
+
+/* The document itself: constrained to a comfortable reading measure. */
+.legalDoc {
+  width: 100%;
+  max-width: 760px; /* ~70–75 characters per line */
+  color: var(--colorGrey900, #1a2b3b);
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Document title (the single H1) + version stamp beneath it. */
+.docTitle {
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 8px 0 4px;
+  color: var(--colorGrey900, #10151b);
+}
+.version {
+  margin: 0 0 28px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--colorGrey500, #6b7684);
+}
+
+/* Section headings with hover-revealed self-anchors. scroll-margin keeps the
+   target clear of the sticky topbar when jumping to an anchor. */
+.heading {
+  position: relative;
+  scroll-margin-top: 96px;
+  font-weight: 700;
+  color: var(--colorGrey900, #10151b);
+}
+h2.heading {
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 44px 0 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--colorGrey100, #e6e9ee);
+}
+h3.heading {
+  font-size: 17px;
+  line-height: 1.35;
+  margin: 28px 0 8px;
+}
+
+.anchorLink {
+  position: absolute;
+  left: -1.1em;
+  top: 0;
+  padding-top: inherit;
+  color: var(--colorGrey300, #b8c0cc);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+h2.heading:hover .anchorLink,
+h3.heading:hover .anchorLink,
+.anchorLink:focus {
+  opacity: 1;
+}
+
+/* Body elements. */
+.legalDoc p {
+  margin: 0 0 14px;
+}
+.legalDoc ul,
+.legalDoc ol {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+.legalDoc li {
+  margin: 4px 0;
+}
+.legalDoc strong {
+  font-weight: 700;
+  color: var(--colorGrey900, #10151b);
+}
+.legalDoc hr {
+  border: none;
+  border-top: 1px solid var(--colorGrey100, #e6e9ee);
+  margin: 32px 0;
+}
+.legalDoc blockquote {
+  margin: 20px 0;
+  padding: 14px 18px;
+  border-left: 3px solid var(--marketplaceColor, #1f7a8c);
+  background: var(--colorGrey50, #f6f8fa);
+  border-radius: 0 8px 8px 0;
+  color: var(--colorGrey700, #3d4a5a);
+}
+.legalDoc blockquote p:last-child {
+  margin-bottom: 0;
+}
+.legalDoc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 15px;
+}
+.legalDoc th,
+.legalDoc td {
+  border: 1px solid var(--colorGrey100, #e6e9ee);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.link {
+  color: var(--marketplaceColor, #1f7a8c);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .main {
+    padding: 20px 18px 72px;
+  }
+  .docTitle {
+    font-size: 27px;
+  }
+  h2.heading {
+    font-size: 20px;
+  }
+  .anchorLink {
+    display: none; /* no hover on touch; keep the measure clean */
+  }
+}
+
+/* ---- Print: clean PDF export for underwriting copies ---- */
+@media print {
+  .topbar,
+  .anchorLink {
+    display: none !important;
+  }
+  .main {
+    padding: 0;
+    display: block;
+  }
+  .legalDoc {
+    max-width: none;
+    width: 100%;
+    color: #000;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  .docTitle {
+    font-size: 20pt;
+    color: #000;
+  }
+  .version {
+    color: #000;
+  }
+  h2.heading,
+  h3.heading {
+    color: #000;
+    break-after: avoid;
+    page-break-after: avoid;
+    border-top: none;
+  }
+  .legalDoc p,
+  .legalDoc li {
+    orphans: 3;
+    widows: 3;
+  }
+  .legalDoc blockquote {
+    background: none;
+    border-left: 2px solid #000;
+  }
+  .link {
+    color: #000;
+    text-decoration: underline;
+  }
+  /* Footer is site chrome; keep it off the printed contract. */
+  footer {
+    display: none !important;
+  }
+}

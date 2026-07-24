@@ -7,6 +7,7 @@ import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { createResourceLocatorString } from '../../util/routes';
 import { isMainSearchTypeKeywords } from '../../util/search';
+import { sanitizeSearchAddress } from '../../util/sanitize';
 import { isScrollingDisabled } from '../../ducks/ui.duck';
 
 import { Heading, Page, LayoutSingleColumn } from '../../components';
@@ -48,7 +49,9 @@ export class NotFoundPageComponent extends Component {
       const { keywords, location } = values;
       const { search, selectedPlace } = location || {};
       const { origin, bounds } = selectedPlace || {};
-      const searchParams = keywords ? { keywords } : { address: search, origin, bounds };
+      const searchParams = keywords
+        ? { keywords }
+        : { address: sanitizeSearchAddress(search), origin, bounds };
       navigate(createResourceLocatorString('SearchPage', routeConfiguration, {}, searchParams));
     };
 

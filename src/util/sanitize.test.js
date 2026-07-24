@@ -1,6 +1,50 @@
-import { sanitizeUrl } from './sanitize';
+import { sanitizeUrl, sanitizeSearchAddress } from './sanitize';
 
 describe('sanitize utils', () => {
+
+  // Regression: literal newline/tab characters were reaching indexable search
+  // URLs (e.g. `/s?address=Houston \nTX&bounds=...`), generating duplicate
+  // canonical + crawled-not-indexed URLs in Search Console.
+  describe('sanitizeSearchAddress', () => {
+    it('strips the literal newline seen in the GSC /s?address= export', () => {
+      expect(sanitizeSearchAddress('Houston \nTX')).toBe('Houston TX');
+    });
+
+    it('strips CR, LF and tab characters', () => {
+      expect(sanitizeSearchAddress('Austin\r\n\tTX')).toBe('Austin TX');
+    });
+
+    it('collapses whitespace runs', () => {
+      expect(sanitizeSearchAddress('Los   Angeles    CA')).toBe('Los Angeles CA');
+    });
+
+    it('normalizes comma spacing', () => {
+      expect(sanitizeSearchAddress('Miami ,   FL')).toBe('Miami, FL');
+      expect(sanitizeSearchAddress('Miami,FL')).toBe('Miami, FL');
+    });
+
+    it('trims leading and trailing whitespace', () => {
+      expect(sanitizeSearchAddress('  Dallas, TX \n')).toBe('Dallas, TX');
+    });
+
+    it('strips non-breaking and other unicode whitespace', () => {
+      expect(sanitizeSearchAddress('San\u00a0Diego,\u2009CA')).toBe('San Diego, CA');
+    });
+
+    it('returns an empty string for non-string input', () => {
+      expect(sanitizeSearchAddress(undefined)).toBe('');
+      expect(sanitizeSearchAddress(null)).toBe('');
+    });
+
+    // ACCEPTANCE: no encoded whitespace can survive into a query string.
+    it('produces a query param with no encoded whitespace characters', () => {
+      const dirty = 'Houston \nTX';
+      const encoded = encodeURIComponent(sanitizeSearchAddress(dirty));
+      expect(encodeURIComponent(dirty)).toMatch(/%0A/); // proves the defect existed
+      expect(encoded).not.toMatch(/%0A|%0D|%09/);
+      expect(encoded).toBe('Houston%20TX');
+    });
+  });
   // Originates to https://github.com/braintree/sanitize-url/
   describe('sanitizeUrl', () => {
     it('does not alter http URLs with alphanumeric characters', () => {

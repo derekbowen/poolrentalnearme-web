@@ -25,6 +25,30 @@ const sanitizeText = (str) =>
       ? str.replace(ESCAPE_TEXT_REGEXP, (ch) => ESCAPE_TEXT_REPLACEMENTS[ch])
       : '';
 
+// Whitespace that must never reach a search URL. Literal newlines/tabs pasted
+// into the location field (or returned by a geocoder prediction) were leaking
+// into `/s?address=...`, producing indexable duplicate URLs such as
+// `/s?address=Houston \nTX&bounds=...`. Sanitize at the point the value is
+// turned into a query param so the defect cannot recur per-component.
+const SEARCH_WHITESPACE_REGEXP = /[\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g;
+
+/**
+ * Normalize a free-text location string for use as a URL query parameter.
+ * Strips CR/LF/tab (and other Unicode whitespace), collapses whitespace runs,
+ * normalizes comma spacing, and trims.
+ *
+ * @param {string} str raw user/geocoder supplied address
+ * @returns {string} URL-safe, normalized address text
+ */
+export const sanitizeSearchAddress = (str) =>
+  typeof str === 'string'
+    ? str
+        .replace(SEARCH_WHITESPACE_REGEXP, ' ')
+        .replace(/\s*,\s*/g, ', ')
+        .replace(/,(?:\s*,)+/g, ',')
+        .trim()
+    : '';
+
 // Enum and multi-enum work with predefined option configuration
 const sanitizeEnum = (str, options) =>
   options.map((o) => `${o.option}`).includes(str) ? str : null;

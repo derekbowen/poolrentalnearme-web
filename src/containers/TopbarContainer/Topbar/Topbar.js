@@ -7,6 +7,7 @@ import { useConfiguration } from '../../../context/configurationContext';
 import { useRouteConfiguration } from '../../../context/routeConfigurationContext';
 
 import { FormattedMessage, useIntl } from '../../../util/reactIntl';
+import { sanitizeSearchAddress } from '../../../util/sanitize';
 import { isMainSearchTypeKeywords, isOriginInUse } from '../../../util/search';
 import { parse } from '../../../util/urlHelpers';
 import { createResourceLocatorString, matchPathname, pathByRouteName } from '../../../util/routes';
@@ -167,7 +168,7 @@ const TopbarComponent = (props) => {
 
       return {
         ...originMaybe,
-        address: search,
+        address: sanitizeSearchAddress(search),
         bounds,
       };
     };

@@ -25,7 +25,7 @@ You must be at least 18 years old and capable of forming a legally binding contr
 - Business Phone: (909) 272-8096
 - Email: support@poolrentalnearme.com
 - Website: www.poolrentalnearme.com
-- Mailing Address: PRNM Corp, c/o 10,000 Solutions LLC, «MAILING ADDRESS — FILL IN»
+- Mailing Address: PRNM Corp, c/o 10,000 Solutions LLC, 7785 Halbrook Terrace, Riverside, CA 92509
 
 ---
 
@@ -393,7 +393,7 @@ PRNM respects intellectual property rights and complies with the Digital Millenn
 PRNM Corp, c/o 10,000 Solutions LLC
 Email: support@poolrentalnearme.com
 Phone: (909) 272-8096
-Mailing Address: «MAILING ADDRESS — FILL IN»
+Mailing Address: 7785 Halbrook Terrace, Riverside, CA 92509
 
 Our agent registration is on file with the U.S. Copyright Office. We will terminate, in appropriate circumstances, the Accounts of repeat infringers.
 

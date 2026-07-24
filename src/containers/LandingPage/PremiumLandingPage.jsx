@@ -931,7 +931,7 @@ export default function PremiumLandingPage({
 
             <div className={css.trustItems}>
               {[
-                { icon: '🛡️', title: '$2M Protection', desc: 'Every booking is covered by our comprehensive $2 million host guarantee and guest protection policy.', value: '$2M' },
+                { icon: '🛡️', title: 'Host Protection', desc: 'Every confirmed booking is backed by the PRNM Host Protection Program.', value: 'Included' },
                 { icon: '✅', title: 'Verified Hosts', desc: 'Every pool and host is manually reviewed, identity-verified, and inspected before going live on the platform.', value: '100%' },
                 { icon: '💬', title: '24/7 Support', desc: 'Real humans available around the clock. Before, during, or after your swim — we\'re always here.', value: '24/7' },
               ].map((item, i) => (
@@ -998,7 +998,7 @@ export default function PremiumLandingPage({
               <p className={css.hostDesc}>
                 It's <strong>easier than you think</strong>. Snap a few photos, set your price, and
                 you could be approving your first booking this weekend. Our AI writes your listing,
-                we handle bookings and payments, and every swim is backed by $2M in protection —
+                we handle bookings and payments, and every swim is backed by the PRNM Host Protection Program —
                 you just collect the check.
               </p>
             </Reveal>
@@ -1050,7 +1050,7 @@ export default function PremiumLandingPage({
               <div className={css.hostReassure}>
                 <span className={css.hostReassureCheck}>✓</span> No fees to list
                 <span className={css.hostReassureCheck}>✓</span> Cancel anytime
-                <span className={css.hostReassureCheck}>✓</span> $2M protection included
+                <span className={css.hostReassureCheck}>✓</span> Host Protection Program included
               </div>
             </Reveal>
           </div>

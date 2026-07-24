@@ -550,7 +550,7 @@ const PoolBookingExperience = ({ listing = null, marketSnapshot = null }) => {
             <div className={css.bookAssurances}>
               <div className={css.bookAssurance}>
                 <span className={css.bookAssuranceIcon}>🛡️</span>
-                <span>$2M protection</span>
+                <span>Host Protection</span>
               </div>
               <div className={css.bookAssurance}>
                 <span className={css.bookAssuranceIcon}>💬</span>

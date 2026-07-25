@@ -1,11 +1,11 @@
 const { asyncRequestHandler } = require('extensions/common/utils/request');
 const { INVALID_OTP_CODE } = require('extensions/phone-number-verification/config/otp');
 const { createError } = require('extensions/common/utils/response');
-const verify = require('../../mod/otplib/verify');
+const otpStore = require('../../mod/otpStore');
 
 const verifyOTP = asyncRequestHandler(async (req) => {
   const { otp, email } = req.body;
-  const isValid = verify({ email, otp });
+  const isValid = otpStore.consume({ email, otp });
 
   if (!isValid) {
     throw createError({

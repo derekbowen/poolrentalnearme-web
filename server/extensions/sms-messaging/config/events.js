@@ -13,6 +13,17 @@ const TRANSITION_CANCEL = 'transition/cancel';
 const TRANSITION_COMPLETE = 'transition/complete';
 const TRANSITION_OPERATOR_COMPLETE = 'transition/operator-complete';
 
+// Manual-capture booking request paths (provider must accept-with-payment)
+const TRANSITION_REQUEST = 'transition/request';
+const TRANSITION_REQUEST_AFTER_INQUIRY = 'transition/request-after-inquiry';
+const TRANSITION_ACCEPT_WITH_PAYMENT = 'transition/accept-with-payment';
+const TRANSITION_DECLINE_WITHOUT_PAYMENT = 'transition/decline-without-payment';
+const TRANSITION_OPERATOR_ACCEPT_WITH_PAYMENT = 'transition/operator-accept-with-payment';
+const TRANSITION_OPERATOR_DECLINE_WITHOUT_PAYMENT = 'transition/operator-decline-without-payment';
+
+// Host package deal / custom price offer
+const TRANSITION_SEND_OFFER = 'transition/send-offer';
+
 const USER_ROLE_PROVIDER = 'provider';
 const USER_ROLE_CUSTOMER = 'customer';
 
@@ -28,6 +39,13 @@ module.exports = {
   TRANSITION_CANCEL,
   TRANSITION_COMPLETE,
   TRANSITION_OPERATOR_COMPLETE,
+  TRANSITION_REQUEST,
+  TRANSITION_REQUEST_AFTER_INQUIRY,
+  TRANSITION_ACCEPT_WITH_PAYMENT,
+  TRANSITION_DECLINE_WITHOUT_PAYMENT,
+  TRANSITION_OPERATOR_ACCEPT_WITH_PAYMENT,
+  TRANSITION_OPERATOR_DECLINE_WITHOUT_PAYMENT,
+  TRANSITION_SEND_OFFER,
   USER_ROLE_PROVIDER,
   USER_ROLE_CUSTOMER,
 };

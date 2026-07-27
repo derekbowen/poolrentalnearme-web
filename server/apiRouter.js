@@ -18,20 +18,24 @@ const transactionLineItems = require('./api/transaction-line-items');
 const initiatePrivileged = require('./api/initiate-privileged');
 const transitionPrivileged = require('./api/transition-privileged');
 const acceptTxViaOperator = require('./api/accept-tx-via-operator');
-
-const generateListing = require('./api/generate-listing');
-const evaluateHostApplication = require('./api/evaluate-host-application');
-const leadCapture = require('./api/lead-capture');
-
-const boostPurchase = require('./api/boost/purchase');
-const boostBeacon = require('./api/boost/beacon');
-const boostAttribute = require('./api/boost/attribute');
-
-const calendarIcalExport = require('./api/calendar/ical-export');
-const calendarIcalImport = require('./api/calendar/ical-import');
-const calendarDemandForecast = require('./api/calendar/demand-forecast');
-
-const weatherPoolForecast = require('./api/weather/pool-forecast');
+const aiGenerateListing = require('./api/ai-generate-listing');
+const sendOffer = require('./api/send-offer');
+const acceptOffer = require('./api/accept-offer');
+const createDeal = require('./api/create-deal');
+const acceptDeal = require('./api/accept-deal');
+const dealGet = require('./api/deal-get');
+const syncIcal = require('./api/sync-ical');
+const additionalChargeRequest = require('./api/additional-charge-request');
+const additionalChargeInitiate = require('./api/additional-charge-initiate');
+const notifySignup = require('./api/notify-signup');
+const listingBookedDates = require('./api/listing-booked-dates');
+const icalFeed = require('./api/ical-feed');
+const icalLink = require('./api/ical-link');
+const icalRegenerate = require('./api/ical-regenerate');
+const calendarApplyExceptions = require('./api/calendar-apply-exceptions');
+const wizardTelemetry = require('./api/wizard-telemetry');
+const createVerificationSession = require('./api/create-verification-session');
+const checkVerificationStatus = require('./api/check-verification-status');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
 
@@ -73,52 +77,43 @@ router.post('/initiate-privileged', initiatePrivileged);
 router.post('/transition-privileged', transitionPrivileged);
 router.post('/accept-tx-via-operator', authenticatedUser(), acceptTxViaOperator);
 
-// AI listing generation
-router.post('/generate-listing', authenticatedUser(), generateListing);
+// Host package deal: send custom-price offer (JSON body, provider session auth)
+router.post('/send-offer', bodyParser.json({ limit: '16kb' }), sendOffer);
 
-// AI host application evaluator — always approves, returns a tiered polish plan.
-// The door never closes: every applicant is welcomed onto the platform, then
-// handed concrete fixes that unlock the next tier.
-router.post('/evaluate-host-application', authenticatedUser(), evaluateHostApplication);
+// Customer accepts a package deal offer (Transit body, privileged — sets line items)
+router.post('/accept-offer', acceptOffer);
 
-// Lead capture (email + geo context). Uses a dedicated JSON body parser
-// since the router's default body parser is `application/transit+json`.
-router.post('/lead-capture', bodyParser.json({ limit: '32kb' }), leadCapture);
+// Host "package deal" LINK flow (thread-independent). Host creates a link
+// (provider session), guest opens it and accepts — priced server-side from the
+// stored deal, never the client.
+router.post('/create-deal', bodyParser.json({ limit: '8kb' }), authenticatedUser(), createDeal);
+router.get('/deal/:token', dealGet);
+router.post('/accept-deal', acceptDeal);
 
-// ─── Promotion (marketplace ads, eBay-style pay-per-booking) ──────────────
-// Host toggles promotion ON/OFF. No money changes hands at activation —
-// the host only pays 25% of the booking subtotal when a guest books
-// after clicking the promoted listing from a Sponsored slot.
-//
-// `/boost/purchase` is the legacy route name kept for client compatibility
-// during the transition. `/boost/promote` is the new preferred alias and
-// points at the same handler.
-router.post('/boost/purchase', authenticatedUser(), bodyParser.json({ limit: '8kb' }), boostPurchase);
-router.post('/boost/promote', authenticatedUser(), bodyParser.json({ limit: '8kb' }), boostPurchase);
+// Swimply iCal two-way sync: fetch Swimply .ics feed and block times in Sharetribe
+router.post('/sync-ical', bodyParser.json({ limit: '4kb' }), syncIcal);
+router.post('/additional-charge/request', bodyParser.json({ limit: '4kb' }), additionalChargeRequest);
+router.post('/additional-charge/initiate', bodyParser.json({ limit: '4kb' }), additionalChargeInitiate);
+router.post('/notify-signup', bodyParser.json({ limit: '2kb' }), notifySignup);
 
-// Post-booking attribution — charges 25% of subtotal when a guest books
-// after clicking a promoted slot within the 14-day attribution window.
-// Called from a Sharetribe transaction transition webhook OR manually
-// for backfill. Authenticated — not publicly exposed.
-router.post('/boost/attribute', authenticatedUser(), bodyParser.json({ limit: '8kb' }), boostAttribute);
+// Host calendar: booked-date markers + per-day closed/hours enforcement.
+router.post('/listing-booked-dates', bodyParser.json({ limit: '2kb' }), listingBookedDates);
 
-// Impression / click beacon — PUBLIC (no auth) because logged-out visitors
-// generate impressions too. Abuse protection via in-memory debounce.
-router.post('/boost/beacon', bodyParser.json({ limit: '4kb' }), boostBeacon);
+// iCal calendar feeds (Jeremy): public token-authorized read-only feed + owner-gated link/rotate.
+// Rate limiting is handled inside ical-feed.js (self-contained, no extra dep).
+router.get('/ical/:listingId/:token.ics', icalFeed);
+router.post('/ical/link', bodyParser.json({ limit: '1kb' }), icalLink);
+router.post('/ical/regenerate', bodyParser.json({ limit: '1kb' }), icalRegenerate);
+router.post('/calendar-apply-exceptions', bodyParser.json({ limit: '2kb' }), calendarApplyExceptions);
+router.post('/wizard-telemetry', bodyParser.json({ limit: '2kb' }), wizardTelemetry);
 
-// ─── Calendar ─────────────────────────────────────────────────────────────
-// iCal export — public, no auth (listing ID is the "secret" for the feed URL)
-router.get('/calendar/ical/:listingId', calendarIcalExport);
-// iCal import from external URL (Google, Airbnb, VRBO) — authenticated
-router.post('/calendar/ical-import', authenticatedUser(), bodyParser.json({ limit: '8kb' }), calendarIcalImport);
-// AI demand forecast — authenticated
-router.get('/calendar/demand/:listingId', authenticatedUser(), calendarDemandForecast);
+// Stripe Identity verification: create a session and check its result
+router.post('/create-verification-session', bodyParser.json({ limit: '1kb' }), createVerificationSession);
+router.post('/check-verification-status', bodyParser.json({ limit: '1kb' }), checkVerificationStatus);
 
-// ─── Weather + AI water temp ────────────────────────────────
-// Public endpoint — guests on listing pages hit this to see live water
-// temperature. Underlying services are cached (1h forecast, 6h water temp)
-// and debounced per IP+listing to protect against abuse.
-router.get('/weather/pool-forecast', weatherPoolForecast);
+// AI "list a pool in 30 seconds": host uploads photos → Claude vision returns a
+// pre-filled listing. JSON body (not Transit); auth-gated so it can't burn AI credits.
+router.post('/ai-generate-listing', bodyParser.json({ limit: '256kb' }), authenticatedUser(), aiGenerateListing);
 
 // Create user with identity provider (e.g. Facebook or Google)
 // This endpoint is called to create a new user after user has confirmed
@@ -146,5 +141,18 @@ router.get('/auth/google', authenticateGoogle);
 router.get('/auth/google/callback', authenticateGoogleCallback);
 
 require('./loadExtensionsRouter')(router);
+
+// Twilio inbound SMS webhook: STOP/START/HELP → opt-out mirror (reply-to-accept later).
+const { inboundRoute } = require('extensions/sms-messaging/mod/notify/inbound');
+router.post('/sms/inbound', ...inboundRoute);
+// SMS Concierge: admin command layer + transparent pass-through of all other
+// inbound (customers/STOP/START/booking replies) to /api/sms/inbound.
+const { conciergeInbound } = require('./concierge/route');
+router.post('/concierge/inbound', bodyParser.urlencoded({ extended: false }), conciergeInbound);
+
+// Manual-address fallback: server-side geocoding so a Maps script failure can
+// never block signup or listing creation (auth-gated; listing flow requires login).
+const geocodeAddress = require('./api/geocode');
+router.post('/geocode', bodyParser.json({ limit: '2kb' }), authenticatedUser(), geocodeAddress);
 
 module.exports = router;

@@ -57,7 +57,7 @@ const expressConfig = (app) => {
     express.static('dist/client', {
       index: false,
       etag: false,
-      setHeaders: (res) => {
+      setHeaders: (res, p) => { if (p.includes('/assets/')) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); return; }
         // Avoid 304 Not Modified responses for static assets
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');

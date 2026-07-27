@@ -134,81 +134,6 @@ const getAmenityLineItems = (amenities, listing) => {
   return lineItems;
 };
 
-/**
- * Per-guest surcharge for pool bookings.
- *
- * Reads the selected price variant from the listing's publicData and the
- * orderData.guestCount sent by the client. If guestCount > includedGuests,
- * adds a `line-item/guest-surcharge` for the excess guests.
- *
- * Expected shape of a priceVariant with guest fields:
- *   {
- *     name: 'Pool Party',
- *     priceInSubunits: 42000,           // $420 base
- *     durationHours: 4,
- *     includedGuests: 12,
- *     extraGuestPriceInSubunits: 2500,  // $25 / extra guest
- *     maxGuests: 20,
- *   }
- */
-const getGuestSurchargeLineItems = (priceVariant, orderData, currency) => {
-  if (!priceVariant || !orderData) return [];
-  const guestCount = Number(orderData.guestCount) || 0;
-  const included = Number(priceVariant.includedGuests) || 0;
-  const extraPriceSubunits = Number(priceVariant.extraGuestPriceInSubunits) || 0;
-  const extras = Math.max(0, guestCount - included);
-  if (extras === 0 || extraPriceSubunits === 0) return [];
-  return [
-    {
-      code: 'line-item/guest-surcharge',
-      unitPrice: new Money(extraPriceSubunits, currency),
-      quantity: extras,
-      includeFor: ['customer', 'provider'],
-    },
-  ];
-};
-
-/**
- * Apply a dynamic pricing surge multiplier to the unit price.
- *
- * Reads listing.attributes.publicData.dynamicPricing.surgeMultiplier.
- * If absent or 1, returns the base price unchanged. Otherwise multiplies
- * the unit subunits by the factor (rounded to nearest subunit).
- *
- * The multiplier is normally written by a nightly cron that reads market
- * supply/demand signals. Hosts can opt-out by not enabling dynamic pricing.
- */
-const applyDynamicPricingMultiplier = (basePrice, listing) => {
-  const { dynamicPricing } = listing.attributes.publicData || {};
-  const surge = Number(dynamicPricing?.surgeMultiplier);
-  if (!surge || surge === 1) return basePrice;
-  const surged = Math.round(basePrice.amount * surge);
-  return new Money(surged, basePrice.currency);
-};
-
-/**
- * Flat cleaning fee declared on the listing. Appears as a separate line item.
- *
- * Expected shape:
- *   listing.attributes.publicData.cleaningFee = {
- *     amount: 4000,
- *     currency: 'USD',
- *   }
- */
-const getCleaningFeeLineItem = listing => {
-  const { cleaningFee = {} } = listing.attributes.publicData || {};
-  const { amount, currency } = cleaningFee;
-  if (!Number.isInteger(amount) || amount <= 0 || !currency) return [];
-  return [
-    {
-      code: 'line-item/cleaning-fee',
-      unitPrice: new Money(amount, currency),
-      quantity: 1,
-      includeFor: ['customer', 'provider'],
-    },
-  ];
-};
-
 const getRefundableDepositLineItem = (listing) => {
   const { refundableDeposit = {} } = listing.attributes.publicData;
   const { amount, currency } = refundableDeposit;
@@ -253,6 +178,18 @@ const getRefundableDepositLineItem = (listing) => {
  * @returns {Array} lineItems
  */
 exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
+  // Normalize booking window shape. The listing page sends {bookingStart, bookingEnd}
+  // at the top level, but the checkout/post-login handoff (and stored sessionStorage
+  // data) nests them under {bookingDates: {bookingStart, bookingEnd}}. Without this,
+  // the nested shape yields zero units -> HTTP 400 and the guest cannot book.
+  // Backward-compatible: only fills top-level fields when they are absent.
+  if (orderData && orderData.bookingDates && !orderData.bookingStart && !orderData.bookingEnd) {
+    orderData = {
+      ...orderData,
+      bookingStart: orderData.bookingDates.bookingStart,
+      bookingEnd: orderData.bookingDates.bookingEnd,
+    };
+  }
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
   // day, night, hour, fixed, or item (these are related to payment processes)
@@ -262,6 +199,114 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const priceAttribute = listing.attributes.price;
   const currency = priceAttribute.currency;
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Additional charge (the "host charges more after booking" feature).
+  // A separate, payout-safe transaction in the `additional-charge` process for
+  // a flat host-requested amount (in subunits). No booking units. The amount is
+  // validated server-side in the initiate endpoint against the host's request
+  // stored on the original booking, so the guest cannot change what they owe.
+  // Early-return: this case never touches the booking unit-pricing below.
+  // ─────────────────────────────────────────────────────────────────────────
+  const additionalChargeAmount = orderData ? orderData.additionalChargeAmount : null;
+  if (Number.isInteger(additionalChargeAmount) && additionalChargeAmount > 0) {
+    const addOrder = {
+      code: 'line-item/additional-charge',
+      unitPrice: new Money(additionalChargeAmount, currency),
+      quantity: 1,
+      includeFor: ['customer', 'provider'],
+    };
+    const addProviderCommissionMaybe = hasCommissionPercentage(providerCommission)
+      ? [
+          {
+            code: 'line-item/provider-commission',
+            unitPrice: calculateTotalFromLineItems([addOrder]),
+            percentage: -1 * providerCommission.percentage,
+            includeFor: ['provider'],
+          },
+        ]
+      : [];
+    const addCustomerCommissionMaybe = hasCommissionPercentage(customerCommission)
+      ? [
+          {
+            code: 'line-item/customer-commission',
+            unitPrice: calculateTotalFromLineItems([addOrder]),
+            percentage: customerCommission.percentage,
+            includeFor: ['customer'],
+          },
+        ]
+      : [];
+    return [addOrder, ...addProviderCommissionMaybe, ...addCustomerCommissionMaybe];
+  }
+
+  // ── Enforce host booking rules (min/max hours + advance notice) ──
+  // The wizard collects these into publicData.availability.{minHours,maxHours,
+  // advanceNoticeDays} (and a flattened copy on publicData). Enforce them
+  // server-side so an out-of-range booking is rejected at price-preview AND
+  // checkout. No-op when a listing has no rules set → zero impact on existing
+  // listings. (Buffer needs adjacent-booking data; enforced separately.)
+  const bookingRules = publicData.availability || {};
+  // Robust numeric read: the wizard has saved these as strings in the past, and
+  // Number.isInteger silently disabled enforcement for those listings.
+  const ruleVal = key => {
+    const raw = publicData[key] != null ? publicData[key] : bookingRules[key];
+    const n = typeof raw === 'string' ? parseFloat(raw) : raw;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const minHours = ruleVal('minHours');
+  const maxHours = ruleVal('maxHours');
+  const advanceNoticeDays = ruleVal('advanceNoticeDays');
+  const advanceNoticeHours = ruleVal('advanceNoticeHours');
+  const ruleError = msg => {
+    const e = new Error(msg);
+    e.status = 400;
+    e.statusText = msg;
+    e.data = {};
+    return e;
+  };
+  if (isBookable && orderData && orderData.bookingStart && orderData.bookingEnd) {
+    const startMs = new Date(orderData.bookingStart).getTime();
+    const endMs = new Date(orderData.bookingEnd).getTime();
+    const hours = (endMs - startMs) / (1000 * 60 * 60);
+    if (Number.isFinite(hours) && hours > 0) {
+      if (minHours && hours < minHours) {
+        throw ruleError(`This pool has a ${minHours}-hour minimum booking.`);
+      }
+      if (maxHours && hours > maxHours) {
+        throw ruleError(`This pool allows up to ${maxHours} hours per booking.`);
+      }
+    }
+    // Universal floor, independent of any host rule: a booking can never start
+    // in the past. Defense-in-depth alongside Sharetribe's own validation, with
+    // a human-readable error instead of a raw API failure.
+    if (Number.isFinite(startMs) && startMs < Date.now()) {
+      throw ruleError('That start time has already passed \u2014 please pick a time in the future.');
+    }
+    // advanceNoticeHours (finer-grained) wins over advanceNoticeDays.
+    const noticeMs = advanceNoticeHours
+      ? advanceNoticeHours * 60 * 60 * 1000
+      : advanceNoticeDays
+      ? advanceNoticeDays * 24 * 60 * 60 * 1000
+      : null;
+    if (noticeMs && Number.isFinite(startMs) && startMs < Date.now() + noticeMs) {
+      const label = advanceNoticeHours
+        ? `${advanceNoticeHours} hour${advanceNoticeHours > 1 ? 's' : ''}`
+        : `${advanceNoticeDays} day${advanceNoticeDays > 1 ? 's' : ''}`;
+      const tz =
+        (listing.attributes.availabilityPlan &&
+          listing.attributes.availabilityPlan.timezone) ||
+        'Etc/UTC';
+      const earliestStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      }).format(new Date(Date.now() + noticeMs));
+      throw ruleError(
+        `This pool requires ${label} advance notice \u2014 the earliest available date is ${earliestStr}.`
+      );
+    }
+  }
+
   const { priceVariantName } = orderData || {};
   const priceVariantConfig = priceVariants
     ? priceVariants.find(pv => pv.name === priceVariantName)
@@ -269,14 +314,32 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const { priceInSubunits } = priceVariantConfig || {};
   const isPriceInSubunitsValid = Number.isInteger(priceInSubunits) && priceInSubunits >= 0;
 
-  const baseUnitPrice =
-    isBookable && priceVariationsEnabled && isPriceInSubunitsValid
+  // Per-date custom pricing (Swimply calendar): if the booked date has an
+  // override in publicData.availability.dateOverrides, that hourly rate wins.
+  const dateOverrides =
+    (publicData.availability && publicData.availability.dateOverrides) || {};
+  const listingTimeZone =
+    (listing.attributes.availabilityPlan && listing.attributes.availabilityPlan.timezone) ||
+    'Etc/UTC';
+  const overrideBookingStart = orderData && orderData.bookingStart ? orderData.bookingStart : null;
+  const bookedDateKey =
+    isBookable && overrideBookingStart
+      ? new Intl.DateTimeFormat('en-CA', { timeZone: listingTimeZone }).format(
+          new Date(overrideBookingStart)
+        )
+      : null;
+  const dateOverride = bookedDateKey ? dateOverrides[bookedDateKey] : null;
+  const overridePriceInSubunits =
+    dateOverride && Number.isInteger(dateOverride.pricePerHour) && dateOverride.pricePerHour >= 0
+      ? dateOverride.pricePerHour
+      : null;
+
+  const unitPrice =
+    overridePriceInSubunits != null
+      ? new Money(overridePriceInSubunits, currency)
+      : isBookable && priceVariationsEnabled && isPriceInSubunitsValid
       ? new Money(priceInSubunits, currency)
       : priceAttribute;
-
-  // Apply dynamic pricing multiplier (from nightly market snapshot).
-  // No-op when surgeMultiplier is absent or 1.
-  const unitPrice = applyDynamicPricingMultiplier(baseUnitPrice, listing);
 
   /**
    * Pricing starts with order's base price:
@@ -354,28 +417,12 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
 
   const refundableDepositLineItemMaybe = getRefundableDepositLineItem(listing);
   const amenityLineItemsMaybe = getAmenityLineItems(orderData.amenities, listing);
-  const guestSurchargeLineItemsMaybe = getGuestSurchargeLineItems(
-    priceVariantConfig,
-    orderData,
-    currency
-  );
-  const cleaningFeeLineItemMaybe = getCleaningFeeLineItem(listing);
-
-  // Commissions are computed off the revenue-generating line items:
-  // base order + amenities + guest surcharge + cleaning fee.
-  // Refundable deposit is excluded — it's held and returned, not earned.
-  const commissionableItems = [
-    order,
-    ...amenityLineItemsMaybe,
-    ...guestSurchargeLineItemsMaybe,
-    ...cleaningFeeLineItemMaybe,
-  ];
 
   const providerCommissionMaybe = hasCommissionPercentage(providerCommission)
     ? [
         {
           code: 'line-item/provider-commission',
-          unitPrice: calculateTotalFromLineItems(commissionableItems),
+          unitPrice: calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]),
           percentage: getNegation(providerCommission.percentage),
           includeFor: ['provider'],
         },
@@ -385,7 +432,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     ? [
         {
           code: 'line-item/customer-commission',
-          unitPrice: calculateTotalFromLineItems(commissionableItems),
+          unitPrice: calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]),
           percentage: customerCommission.percentage,
           includeFor: ['customer'],
         },
@@ -397,8 +444,6 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const lineItems = [
     order,
     ...extraLineItems,
-    ...guestSurchargeLineItemsMaybe,
-    ...cleaningFeeLineItemMaybe,
     ...providerCommissionMaybe,
     ...customerCommissionMaybe,
     ...refundableDepositLineItemMaybe,

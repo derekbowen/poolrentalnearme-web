@@ -40,6 +40,37 @@
    :from :state/inquiry,
    :to :state/requested,
    :privileged? true}
+  ;; Provider sends a custom-price package deal offer from an inquiry thread
+  {:name :transition/send-offer,
+   :actor :actor.role/provider,
+   :actions [{:name :action/update-protected-data}],
+   :from :state/inquiry,
+   :to :state/offer-sent}
+  ;; Customer accepts the offer (privileged — server sets flat-rate line items)
+  {:name :transition/accept-offer,
+   :actor :actor.role/customer,
+   :actions
+   [{:name :action/update-protected-data}
+    {:name :action/create-pending-booking, :config {:type :time}}
+    {:name :action/privileged-set-line-items}
+    {:name :action/stripe-create-payment-intent}],
+   :from :state/offer-sent,
+   :to :state/pending-payment,
+   :privileged? true}
+  {:name :transition/decline-offer,
+   :actor :actor.role/customer,
+   :actions [],
+   :from :state/offer-sent,
+   :to :state/declined}
+  ;; Offer expires after 3 days if customer hasn't responded
+  {:name :transition/expire-offer,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/offer-sent]}
+     {:fn/period ["P3D"]}]},
+   :actions [],
+   :from :state/offer-sent,
+   :to :state/expired}
   {:name :transition/expire-payment,
    :at
    {:fn/plus
@@ -220,7 +251,11 @@
    :from :state/reviewed-by-provider,
    :to :state/reviewed}],
  :notifications
- [{:name :notification/booking-new-request,
+ [{:name :notification/booking-offer-sent,
+   :on :transition/send-offer,
+   :to :actor.role/customer,
+   :template :booking-offer-sent}
+  {:name :notification/booking-new-request,
    :on :transition/confirm-payment,
    :to :actor.role/provider,
    :template :booking-new-request}

@@ -40,7 +40,8 @@ const defaultDirectives = {
   connectSrc: [
     self,
     baseUrl,
-    assetCdnBaseUrl,
+    // Unset env var must be omitted, not stringified as undefined in the header
+    ...(assetCdnBaseUrl ? [assetCdnBaseUrl] : []),
     '*.st-api.com',
     'maps.googleapis.com',
     'places.googleapis.com',

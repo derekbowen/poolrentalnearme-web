@@ -36,6 +36,31 @@ module.exports = (req, res) => {
         .end();
     })
     .catch(e => {
+      // TEMP DIAG (remove after root-causing checkout 400s): capture exactly what
+      // the booking form sent when pricing fails, so we can see the bad field.
+      try {
+        const od = orderData || {};
+        const bs = od.bookingStart ? new Date(od.bookingStart).toISOString() : null;
+        const be = od.bookingEnd ? new Date(od.bookingEnd).toISOString() : null;
+        const hrs = bs && be ? (new Date(be) - new Date(bs)) / 3600000 : null;
+        console.error(
+          "LINEITEMS_400_DIAG",
+          JSON.stringify({
+            listingId,
+            status: e && e.status,
+            reason: (e && (e.statusText || e.message)) ? String(e.statusText || e.message).slice(0, 160) : null,
+            bookingStart: bs,
+            bookingEnd: be,
+            durationHours: hrs,
+            priceVariantName: od.priceVariantName || null,
+            seats: od.seats != null ? od.seats : null,
+            quantity: od.quantity != null ? od.quantity : null,
+            hasBookingDates: !!od.bookingDates,
+          })
+        );
+      } catch (logErr) {
+        console.error("LINEITEMS_400_DIAG log failed", logErr && logErr.message);
+      }
       handleError(res, e);
     });
 };

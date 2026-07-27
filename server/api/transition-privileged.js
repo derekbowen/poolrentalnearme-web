@@ -12,8 +12,31 @@ const {
 } = require('../api-util/sdk');
 const { denormalisedResponseEntities } = require('../api-util/data');
 
+// Offer transitions must NEVER be priced here. This endpoint builds line items
+// from the listing's hourly rate + caller-supplied dates, so allowing
+// transition/accept-offer through would let a customer accept a package deal at
+// 1 hour × hourly price instead of the negotiated offer. accept-offer has a
+// dedicated, offer-priced endpoint (/api/accept-offer); the others are
+// non-privileged and never belong here. Fail closed.
+const BLOCKED_TRANSITIONS = [
+  'transition/accept-offer',
+  'transition/send-offer',
+  'transition/decline-offer',
+  'transition/expire-offer',
+];
+
 module.exports = async (req, res) => {
   const { isSpeculative, orderData, bodyParams, queryParams } = req.body;
+
+  if (bodyParams && BLOCKED_TRANSITIONS.includes(bodyParams.transition)) {
+    console.warn('[transition-privileged] REJECTED offer transition', {
+      transition: bodyParams.transition,
+      txId: bodyParams?.id?.uuid || bodyParams?.id,
+    });
+    return res
+      .status(403)
+      .json({ error: 'This transition is not allowed here. Package deals are accepted via /api/accept-offer.' });
+  }
 
   const sdk = getSdk(req, res);
   let lineItems = null;

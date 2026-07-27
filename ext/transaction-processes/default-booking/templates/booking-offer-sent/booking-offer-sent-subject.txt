@@ -1,0 +1,1 @@
+{{set-translations (asset "content/email-texts.json")}}{{t "BookingOfferSent.Subject" "{providerDisplayName} sent you a package deal for {listingTitle}" providerDisplayName=transaction.provider.display-name listingTitle=transaction.listing.title}}

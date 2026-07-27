@@ -31,11 +31,14 @@ const configureEnv = () => {
   dotenvFiles.forEach(dotenvFile => {
     if (fs.existsSync(dotenvFile)) {
       console.log('Loading env from file:' + dotenvFile);
-      require('dotenv-expand')(
-        require('dotenv').config({
-          path: dotenvFile,
-        })
-      );
+      const result = require('dotenv').config({ path: dotenvFile });
+      // dotenv-expand 5.x always calls process.env.hasOwnProperty, but bun's
+      // process.env is a native Proxy that lacks it. ignoreProcessEnv skips
+      // that code path; we then merge the expanded values ourselves.
+      const expanded = require('dotenv-expand')({ ...result, ignoreProcessEnv: true });
+      if (expanded.parsed) {
+        Object.assign(process.env, expanded.parsed);
+      }
     }
   });
 };

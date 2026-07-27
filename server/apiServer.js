@@ -9,9 +9,16 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const getBroker = require('extensions/common/mod/broker');
-const { SHARETRIBE_EVENT } = require('extensions/event-handler/common/config/events');
-const createTransactionEventHandler = require('extensions/sms-messaging/mod/event-handlers');
+// RabbitMQ + Twilio extensions require full env vars not present in local dev.
+// Guard the require so missing config logs a warning instead of crashing the process.
+let getBroker, SHARETRIBE_EVENT, createTransactionEventHandler;
+try {
+  getBroker = require('extensions/common/mod/broker');
+  ({ SHARETRIBE_EVENT } = require('extensions/event-handler/common/config/events'));
+  createTransactionEventHandler = require('extensions/sms-messaging/mod/event-handlers');
+} catch (e) {
+  console.warn('[dev] Extensions not loaded (missing RabbitMQ/Twilio config):', e.message);
+}
 const apiRouter = require('./apiRouter');
 const wellKnownRouter = require('./wellKnownRouter');
 const webmanifestResourceRoute = require('./resources/webmanifest');
@@ -53,7 +60,13 @@ app.get('/sitemap-:resource', sitemapResourceRoute);
 app.listen(PORT, async () => {
   console.log(`API server listening on ${PORT}`);
 
-  const broker = await getBroker();
-  app.set('broker', broker);
-  broker.handler.add({ eventType: SHARETRIBE_EVENT, handler: createTransactionEventHandler });
+  if (getBroker) {
+    try {
+      const broker = await getBroker();
+      app.set('broker', broker);
+      broker.handler.add({ eventType: SHARETRIBE_EVENT, handler: createTransactionEventHandler });
+    } catch (e) {
+      console.warn('[dev] Broker connection failed (RabbitMQ not running locally):', e.message);
+    }
+  }
 });

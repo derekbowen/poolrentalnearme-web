@@ -74,5 +74,8 @@ app.listen(port, async () => {
 
   const broker = await getBroker();
   app.set('broker', broker);
-  broker.handler.add({ eventType: SHARETRIBE_EVENT, handler: createTransactionEventHandler });
+  // SMS notifications moved OFF the (dead) RabbitMQ broker onto a self-contained
+  // Integration API events poller. Broker stays connected but no longer drives SMS.
+  // broker.handler.add({ eventType: SHARETRIBE_EVENT, handler: createTransactionEventHandler });
+  require('extensions/sms-messaging/mod/notify/poller').startPoller();
 });

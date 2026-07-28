@@ -371,6 +371,13 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       },
     },
     {
+      path: '/host-preparedness-policy',
+      name: 'HostPreparednessPolicyPage',
+      loaders: {
+        page: () => import('../containers/HostPreparednessPolicyPage/HostPreparednessPolicyPage'),
+      },
+    },
+    {
       path: '/privacy-policy',
       name: 'PrivacyPolicyPage',
       loaders: {

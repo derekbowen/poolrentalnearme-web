@@ -25,10 +25,13 @@
 //         no-clawback promise.
 //   §9    Enforcement table rewritten as a list: the markdown pipeline has no
 //         remark-gfm, so a pipe table renders as literal text.
-//   §10   "0% host fees" -> no host service fee through December 31, 2026,
-//         tied to the ToS §4.3 thirty-day notice requirement. NOTE: ToS §4.1
-//         still reads "Host Service Fee: Ten percent (10%)" and needs a counsel
-//         edit to match live pricing (provider commission is 0% today).
+//   §10   "0% host fees" -> the standard 10% Host Service Fee in ToS §4.1,
+//         waived in full as a promotion through 2026-12-31, with the fee
+//         resuming after and any change bound by the ToS §4.3 thirty-day
+//         notice. This is the founder's framing (2026-07-28) and it removes
+//         what would otherwise be a conflict with ToS §4.1: the published fee
+//         schedule stays 10%, the promotion is the reason live provider
+//         commission is 0%.
 //   §11   14 days' notice -> 30 days, to match ToS §24 for material changes.
 //
 // Do not edit the policy text here without counsel review.
@@ -263,7 +266,7 @@ Pool Rental Near Me reserves the right to remove any listing or account at its d
 
 Hosts are the reason this marketplace exists. Our commitments:
 
-- **No host service fee through December 31, 2026.** Pool Rental Near Me currently charges Hosts no platform service fee on bookings — you keep what your listing earns. Any change to that is prospective only and takes at least thirty (30) days' advance notice under Section 4.3 of the Terms of Service.
+- **0% host fees through 2026.** Our standard Host Service Fee is ten percent (10%), as stated in Section 4.1 of the Terms of Service. We are waiving it in full as a promotion: through **December 31, 2026**, Hosts pay no platform service fee on bookings and keep what the listing earns. When the promotion ends the standard fee resumes, and any change to the fee schedule is prospective only and takes at least thirty (30) days' advance notice under Section 4.3 of the Terms of Service.
 - **We handle Guests.** Escalate to us and we'll take the conversation.
 - **We defend your payout.** Follow this policy and we fight disputes on your behalf, as described in Section 7.3.
 - **We own our failures.** When our software breaks, that's on us, not on you.

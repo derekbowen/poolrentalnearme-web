@@ -47,7 +47,7 @@ const dev = process.env.REACT_APP_ENV === 'development';
 const defaultPublicPaths = {
   landingPage: { url: '/' },
   termsOfService: { url: '/terms-of-service' },
-  hostPreparednessPolicy: { url: '/host-preparedness-policy' },
+  hostPreparednessPolicy: { url: '/host-standards' },
   privacyPolicy: { url: '/privacy-policy' },
   signup: { url: '/signup' },
   login: { url: '/login' },

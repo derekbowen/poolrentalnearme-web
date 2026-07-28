@@ -15,7 +15,7 @@ import css from '../TermsOfServicePage/TermsOfServicePage.module.css';
 const PAGE_TITLE = 'Host Preparedness & Issue Resolution Policy | Pool Rental Near Me';
 const PAGE_DESCRIPTION =
   'Preparedness standards for pool hosts, guest count and additional guest charges, how to escalate an issue during a booking, damage and cleaning claims, and payment dispute handling on Pool Rental Near Me.';
-const CANONICAL_URL = 'https://www.poolrentalnearme.com/host-preparedness-policy';
+const CANONICAL_URL = 'https://www.poolrentalnearme.com/host-standards';
 const VERSION_LINE = 'Version 2026.1 — Effective August 27, 2026';
 
 // Flatten React children (markdown headings can contain inline nodes) to text.

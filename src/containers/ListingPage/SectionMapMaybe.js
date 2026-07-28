@@ -5,6 +5,7 @@ import { obfuscatedCoordinates } from '../../util/maps';
 import { Heading, Map } from '../../components';
 
 import css from './ListingPage.module.css';
+import { stripStreetAddress } from '../../util/address';
 
 /**
  * The SectionMapMaybe component.
@@ -30,7 +31,9 @@ class SectionMapMaybe extends Component {
       return null;
     }
 
-    const address = publicData && publicData.location ? publicData.location.address : '';
+    const address = stripStreetAddress(
+      publicData && publicData.location ? publicData.location.address : ''
+    );
     const classes = classNames(rootClassName || css.sectionMap, className);
     const cacheKey = listingId ? `${listingId.uuid}_${geolocation.lat}_${geolocation.lng}` : null;
 

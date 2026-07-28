@@ -10,24 +10,28 @@ import { H3, ListingLink } from '../../../../components';
 
 // Import modules from this directory
 import EditListingLocationForm from './EditListingLocationForm';
+import { splitAddressForPrivacy } from '../../../../util/address';
 import css from './EditListingLocationPanel.module.css';
 
 const getInitialValues = (props) => {
   const { listing } = props;
-  const { geolocation, publicData } = listing?.attributes || {};
+  const { geolocation, publicData, privateData } = listing?.attributes || {};
 
   // Only render current search if full place object is available in the URL params
   // TODO bounds are missing - those need to be queried directly from Google Places
   const locationFieldsPresent = publicData?.location?.address && geolocation;
   const location = publicData?.location || {};
   const { address, building } = location;
+  // publicData only carries the city-level label, so show the host their own
+  // exact address when they come back to edit it.
+  const editableAddress = privateData?.exactAddress || address;
 
   return {
     building,
     location: locationFieldsPresent
       ? {
-          search: address,
-          selectedPlace: { address, origin: geolocation },
+          search: editableAddress,
+          selectedPlace: { address: editableAddress, origin: geolocation },
         }
       : null,
   };
@@ -91,15 +95,25 @@ const EditListingLocationPanel = props => {
         onSubmit={(values) => {
           const { building = '', location } = values;
           const {
-            selectedPlace: { address, origin, city },
+            selectedPlace: { address, origin, city, state, zip },
           } = location;
+
+          // The street address is the host's home. Keep it out of publicData -
+          // guests browsing the site see the city only, and the exact address is
+          // shared with a guest once the host accepts their booking.
+          const { publicLabel, exactAddress } = splitAddressForPrivacy(address, {
+            city,
+            state,
+            zip,
+          });
 
           // New values for listing attributes
           const updateValues = {
             geolocation: origin,
             publicData: {
-              location: { address, building, city },
+              location: { address: publicLabel, building, city },
             },
+            privateData: { exactAddress },
           };
 
           // Save the initialValues to state

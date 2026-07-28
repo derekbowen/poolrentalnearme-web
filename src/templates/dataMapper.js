@@ -1,3 +1,4 @@
+import { stripStreetAddress } from '../util/address';
 /**
  * Maps Sharetribe SDK entities into the templateProps shape
  * expected by all listing page templates.
@@ -51,7 +52,10 @@ export const mapListingToTemplateProps = (listing, author, reviews = [], config,
 
   // --- Location ---
   const location = (() => {
-    const address = publicData?.location?.address || publicData?.address || '';
+    // Backstop: never hand a street address to a public template.
+    const address = stripStreetAddress(
+      publicData?.location?.address || publicData?.address || ''
+    );
     const coords = geolocation
       ? { lat: geolocation.lat, lng: geolocation.lng }
       : null;

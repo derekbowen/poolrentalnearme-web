@@ -35,6 +35,7 @@ import {
 } from '../../util/data';
 import { richText } from '../../util/richText';
 import {
+import { cityStateFromLocation } from '../../util/address';
   isBookingProcess,
   isPurchaseProcess,
   resolveLatestProcessName,
@@ -273,10 +274,9 @@ export const ListingPageComponent = (props) => {
   const { marketplaceName } = config;
 
   // Build geo-aware title: "Pool Name in Austin, TX | Pool Rental Near Me"
-  const locationAddress = publicData?.location?.address || '';
-  const addrParts = locationAddress.split(',').map(p => p.trim());
-  const city = addrParts[1] || '';
-  const state = (addrParts[2] || '').split(' ')[0] || '';
+  // publicData carries a city-level label only, so read the structured
+  // fields rather than assuming a leading street segment.
+  const { city, state } = cityStateFromLocation(publicData?.location);
   const cityState = city && state ? `${city}, ${state}` : city;
   const schemaTitle = cityState
     ? `${title} in ${cityState} | ${marketplaceName}`

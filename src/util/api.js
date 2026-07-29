@@ -178,3 +178,30 @@ export const autoAcceptTxViaOperator = (body) => {
 export const signUpApi = (body) => {
   return post('/api/auth/sign-up', body);
 };
+
+// ── Payout dashboard ────────────────────────────────────────────────────────
+// GET helpers for the payouts endpoints (server/api/payouts.js). These return
+// plain JSON (not transit); the axios interceptor parses by content type.
+const get = (path) => {
+  return request(path, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+};
+
+export const getPayoutSummary = () => {
+  return get('/api/payouts/summary');
+};
+
+export const getPayoutList = ({ limit, startingAfter } = {}) => {
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', limit);
+  if (startingAfter) params.set('starting_after', startingAfter);
+  const qs = params.toString();
+  return get(`/api/payouts/list${qs ? `?${qs}` : ''}`);
+};
+
+export const getPayoutActivity = ({ limit, startingAfter } = {}) => {
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', limit);
+  if (startingAfter) params.set('starting_after', startingAfter);
+  const qs = params.toString();
+  return get(`/api/payouts/activity${qs ? `?${qs}` : ''}`);
+};

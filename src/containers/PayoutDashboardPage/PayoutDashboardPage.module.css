@@ -1,0 +1,176 @@
+@import '../../styles/customMediaQueries.css';
+
+.content {
+  margin: 0 24px 48px 24px;
+
+  @media (--viewportMedium) {
+    margin: 0;
+    max-width: 650px;
+    padding: 0 24px 48px 24px;
+  }
+
+  @media (--viewportLarge) {
+    padding: 0 36px 48px 36px;
+  }
+}
+
+.spinnerWrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.stateBox,
+.warningBox {
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+
+.stateBox {
+  background-color: var(--colorGrey50);
+  border: 1px solid var(--colorGrey100);
+}
+
+.warningBox {
+  background-color: var(--colorAttentionLight, #fff7f0);
+  border: 1px solid var(--colorAttention);
+  margin-bottom: 24px;
+}
+
+.stateText {
+  composes: textSmall from global;
+  margin: 0 0 8px 0;
+}
+
+.errorText {
+  composes: textSmall from global;
+  color: var(--colorFail);
+  margin-top: 16px;
+}
+
+.ctaLink {
+  composes: textSmall from global;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.balanceCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.balanceCard {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--colorGrey50);
+  border: 1px solid var(--colorGrey100);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.balanceLabel {
+  composes: textXSmall from global;
+  color: var(--colorGrey500);
+}
+
+.balanceAmount {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: var(--fontWeightBold);
+  font-variant-numeric: tabular-nums;
+}
+
+.scheduleValue {
+  composes: textSmall from global;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.sectionTitle {
+  margin-top: 32px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.table th {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: var(--fontWeightMedium);
+  text-align: left;
+  color: var(--colorGrey500);
+  border-bottom: 1px solid var(--colorGrey100);
+  padding: 8px 12px 8px 0;
+}
+
+.table td {
+  font-size: 14px;
+  line-height: 20px;
+  border-bottom: 1px solid var(--colorGrey100);
+  padding: 10px 12px 10px 0;
+  vertical-align: top;
+}
+
+.amountCell {
+  font-weight: var(--fontWeightSemiBold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.statusPaid,
+.statusInTransit,
+.statusFailed {
+  display: inline-block;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: var(--fontWeightSemiBold);
+  text-transform: capitalize;
+}
+
+.statusPaid {
+  background-color: #e6f6ec;
+  color: #1a7f37;
+}
+
+.statusInTransit {
+  background-color: #eef4fb;
+  color: #0b6ea8;
+}
+
+.statusFailed {
+  background-color: #fdeceb;
+  color: var(--colorFail);
+}
+
+.failureNote {
+  composes: textXSmall from global;
+  color: var(--colorFail);
+  display: block;
+  margin-top: 2px;
+}
+
+.loadMore {
+  composes: textSmall from global;
+  margin-top: 16px;
+  padding: 8px 20px;
+  border: 1px solid var(--colorGrey300);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.loadMore:hover {
+  border-color: var(--colorGrey700);
+}

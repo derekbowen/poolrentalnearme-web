@@ -32,6 +32,7 @@ const listingBookedDates = require('./api/listing-booked-dates');
 const icalFeed = require('./api/ical-feed');
 const icalLink = require('./api/ical-link');
 const icalRegenerate = require('./api/ical-regenerate');
+const payouts = require('./api/payouts');
 const calendarApplyExceptions = require('./api/calendar-apply-exceptions');
 const wizardTelemetry = require('./api/wizard-telemetry');
 const createVerificationSession = require('./api/create-verification-session');
@@ -94,6 +95,9 @@ router.post('/accept-deal', acceptDeal);
 router.post('/sync-ical', bodyParser.json({ limit: '4kb' }), syncIcal);
 router.post('/additional-charge/request', bodyParser.json({ limit: '4kb' }), additionalChargeRequest);
 router.post('/additional-charge/initiate', bodyParser.json({ limit: '4kb' }), additionalChargeInitiate);
+router.get('/payouts/summary', payouts.summary);
+router.get('/payouts/list', payouts.list);
+router.get('/payouts/activity', payouts.activity);
 router.post('/notify-signup', bodyParser.json({ limit: '2kb' }), notifySignup);
 
 // Host calendar: booked-date markers + per-day closed/hours enforcement.

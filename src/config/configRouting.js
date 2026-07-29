@@ -3,6 +3,7 @@ export const ACCOUNT_SETTINGS_PAGES = [
   'PasswordChangePage',
   'StripePayoutPage',
   'PaymentMethodsPage',
+  'PayoutDashboardPage',
 ];
 
 export const LISTING_PAGE = 'ListingPage';

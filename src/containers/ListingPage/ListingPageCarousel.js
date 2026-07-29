@@ -34,8 +34,8 @@ import {
 } from '../../util/data';
 import { richText } from '../../util/richText';
 import { formatMoney } from '../../util/currency';
-import {
 import { cityStateFromLocation } from '../../util/address';
+import {
   isBookingProcess,
   isPurchaseProcess,
   resolveLatestProcessName,

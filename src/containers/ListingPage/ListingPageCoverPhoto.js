@@ -34,8 +34,8 @@ import {
   userDisplayNameAsString,
 } from '../../util/data';
 import { richText } from '../../util/richText';
-import {
 import { cityStateFromLocation } from '../../util/address';
+import {
   isBookingProcess,
   isPurchaseProcess,
   resolveLatestProcessName,

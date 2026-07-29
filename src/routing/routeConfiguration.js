@@ -312,6 +312,15 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       element: <NamedRedirect name="ContactDetailsPage" />,
     },
     {
+      path: '/account/payouts',
+      name: 'PayoutDashboardPage',
+      auth: true,
+      authPage: 'LoginPage',
+      loaders: {
+        page: () => import('../containers/PayoutDashboardPage/PayoutDashboardPage'),
+      },
+    },
+    {
       path: '/account/contact-details',
       name: 'ContactDetailsPage',
       auth: true,

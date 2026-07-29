@@ -44,8 +44,8 @@
 }
 
 @keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
 }
 
 @keyframes pulseDot {
@@ -525,10 +525,17 @@
 }
 
 .marqueeTrack {
-  display: inline-flex;
+  /* Block-level flex with an explicit max-content width: Firefox would not
+     animate the percentage translate on the shrink-wrapped inline-flex box. */
+  display: flex;
+  width: max-content;
   align-items: center;
   gap: 56px;
-  animation: marquee 28s linear infinite;
+  animation-name: marquee;
+  animation-duration: 28s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
   padding-right: 56px;
 }
 
@@ -548,12 +555,14 @@
 
 .trustBrand {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 19px;
+  font-size: 17px;
+  font-style: italic;
   font-weight: 600;
-  color: rgba(245, 240, 232, 0.3);
+  color: rgba(245, 240, 232, 0.45);
   letter-spacing: -0.01em;
   transition: color 0.3s;
   cursor: none;
+  flex-shrink: 0;
 }
 
 .trustBrand:hover {

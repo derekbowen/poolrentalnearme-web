@@ -646,10 +646,14 @@ export default function PremiumLandingPage({
     scrollRef.current.scrollLeft = dragScrollLeft.current - (x - dragStartX.current) * 1.8;
   };
 
+  // Real texts from real hosts (SMS replies; first names only).
   const marqueeItems = [
-    'Forbes', 'TechCrunch', 'Good Morning America',
-    'Business Insider', 'The New York Times', 'Vogue Living',
-    'Fast Company', 'Architectural Digest', 'Wired',
+    '“That is amazing that there are zero host fees!!” — Katherine',
+    '“Ok awesome, tysm!!” — Trish, Kansas',
+    '“Perfect — thanks so much!” — Nicole',
+    '“Looks great!” — Adam & Connie',
+    '“Thanks so much for your help!!” — Esther',
+    '“Thanks Derek!” — Rob & Evette',
   ];
 
   return (
@@ -796,7 +800,7 @@ export default function PremiumLandingPage({
       {/* ── TRUST MARQUEE ── */}
       <div className={css.trustBar}>
         <div className={css.marqueeTrack}>
-          <span className={css.trustLabel}>As Seen In</span>
+          <span className={css.trustLabel}>Real texts from our hosts</span>
           <span className={css.trustSep}>—</span>
           {[...marqueeItems, ...marqueeItems].map((brand, i) => (
             <React.Fragment key={i}>

@@ -1,0 +1,52 @@
+;; Additional charge (host-requested extra guests / hours / add-ons).
+;;
+;; v2 — on-session payment. v1 charged the guest's *saved default* card
+;; (:use-customer-default-payment-method?), which almost no guest has, so every
+;; initiate failed with 409 transaction-stripe-customer-missing-default-payment-method
+;; (0 successful transactions ever). v2 matches the flow the client was built
+;; for: create the payment intent at request, guest confirms with their card via
+;; Stripe.js, confirm + capture in one step (no provider-accept for an add-on
+;; the host already asked for), payout after two days, operator refund kept.
+{:format :v3,
+ :transitions
+ [{:name :transition/request,
+   :actor :actor.role/customer,
+   :actions
+   [{:name :action/update-protected-data}
+    {:name :action/privileged-set-line-items}
+    {:name :action/stripe-create-payment-intent}],
+   :to :state/pending-payment,
+   :privileged? true}
+  {:name :transition/expire-payment,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/pending-payment]}
+     {:fn/period ["PT15M"]}]},
+   :actions
+   [{:name :action/calculate-full-refund}
+    {:name :action/stripe-refund-payment}],
+   :from :state/pending-payment,
+   :to :state/payment-expired}
+  {:name :transition/confirm-payment,
+   :actor :actor.role/customer,
+   :actions
+   [{:name :action/stripe-confirm-payment-intent}
+    {:name :action/stripe-capture-payment-intent}],
+   :from :state/pending-payment,
+   :to :state/paid}
+  {:name :transition/complete,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/paid]}
+     {:fn/period ["P2D"]}]},
+   :actions [{:name :action/stripe-create-payout}],
+   :from :state/paid,
+   :to :state/completed}
+  {:name :transition/refund,
+   :actor :actor.role/operator,
+   :actions
+   [{:name :action/calculate-full-refund}
+    {:name :action/stripe-refund-payment}],
+   :from :state/paid,
+   :to :state/refunded}],
+ :notifications []}

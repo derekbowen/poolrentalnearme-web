@@ -241,3 +241,99 @@ Top 10 host-journey friction points, ranked by revenue impact:
 - **Derek actions:** (1) Stripe restricted-key permission (Issue 3, 1 click);
   (2) optional Console customLinks pruning; (3) GO/no-GO on shipping this as
   the next WEST bundle; (4) GO on promo-codes v1 (#119).
+
+---
+
+# ADDENDUM — c135 staging + Stripe audit + reply-gate repro (2026-08-01, later)
+
+## 1. Stripe dues sweep: BLOCKED — the sk_live key does not exist on our boxes
+
+Searched EAST and WEST exhaustively (all `.env*` files, pm2 process env, shell
+histories, systemd units, `/etc/environment`, full `/home/ubuntu`, `/root`,
+`/var/www` content grep): **zero `sk_live_` keys anywhere.** The only Stripe
+key on any box is the restricted `rk_live_…Do1Cjx` inside the WEST container —
+almost certainly the key from ~7/30 (restricted keys live on the same Stripe
+"API keys" page and are easy to mistake for the secret key). If a true sk_live
+was pasted into chat at some point, it was never stored — per our
+no-credentials-in-chat rule.
+
+**Two ways to unblock the dues table (Derek picks one):**
+- **A (recommended, 1 minute, no new secret):** Stripe Dashboard → API keys →
+  the restricted key `…Do1Cjx` → Edit → enable **"Basic Business Contact
+  Information Read"** and **"Accounts Read"**. I then run the full
+  every-connected-account dues sweep with the already-deployed key.
+- **B:** SSH to EAST yourself and drop a full-access secret key at
+  `/home/ubuntu/.stripe-audit.env` (line: `STRIPE_AUDIT_KEY=sk_live_…`),
+  `chmod 600`, then tell me "key's on east". CLI reads only, never relocated,
+  never committed; I can shred it after the sweep.
+
+## 2. WEST key stance (unchanged)
+
+`rk_…Do1Cjx` stays the web-tier key. Runtime requirements-reads stay dark
+until it gains the accounts read scope (Dashboard-side, Derek's list,
+non-blocking) — the Issue-3 patch staged in c135 makes that gap cosmetic-only
+(balances and payout history render; "details unavailable" instead of a false
+setup prompt).
+
+## 3. c135 STAGED on the box — built, smoke-tested, NOT flipped
+
+- 9 exact-string edits applied to the box tree (atomic dry-check first, then
+  write; backups `*.bak-c135-<ts>`): mobile-menu order Dashboard → Inbox →
+  Your Listings → **Payouts(new)**, Issue-2 headline/CTA/empty-state truthing,
+  Issue-3 client error-state + `server/api/payouts.js` resilience.
+- Image **`current135-hostux`** built from the tree.
+- Smoke test on 127.0.0.1:4100 (cloned prod env, nginx untouched): healthy 200
+  in ~6s; bundle markers all present (mobile Payouts link, "sent you a
+  message" copy, payout error copy, `accountDetailsAvailable` server-side);
+  `/dashboard` 200, `/account/payouts` 200, c133 Census geocoder answering.
+  Smoke container removed, env file shredded. **No flip.**
+
+## 4. THE GATE — inquiry reply repro: **PASS** (with one big new finding)
+
+Built a real end-to-end fixture on prod: QA host ("QA Cody-Test",
+qa135-host@poolrentalnearme.com), published QA listing, QA guest, real
+`transition/inquire` transaction + guest message ("is the BBQ available?").
+Phone-viewport (iPhone 390×844) Chromium from the box (clean TLS).
+
+- **Run 1 FAILED — and caught a real wall:** the **"Please verify your email
+  address" modal** re-opens on *every* page for unverified users and swallows
+  every tap (menu button, Send button — all timeouts; every screenshot was
+  pixel-identical because the modal covered everything). A granny who doesn't
+  spot the small "LATER" is fully locked out. (Screenshot 1.)
+- **Run 2 PASSED after dismissing the modal:** opened the inquiry thread,
+  typed the reply, tapped "Send message" — reply posted and visible in the
+  thread (screenshot 3). **Reply machinery is sound on mobile web.**
+- The no-Stripe banner ("You cannot respond to this booking request…") renders
+  for unconnected hosts and disables accept/decline buttons only — messaging
+  still works. Its backend (`/api/off-session-payment/stripe-connected/:id`)
+  uses the Integration SDK, NOT the crippled rk key — returns
+  `stripeConnected:false` correctly for the QA host, `true` for Shawn.
+- **Not the additional-charge gap** — that code path is unrelated to this.
+- **Shawn specifically:** `emailVerified: true`, `stripeConnected: true` — so
+  neither the modal nor the Stripe gate blocks him. With reply machinery
+  proven working, his "I can't get it to work" resolves to the Issue-2
+  mispointing: the dashboard told him "someone wants to swim", the matching
+  section said "All quiet", and the actual thread hid under "People saying
+  hello" (screenshots 4–5 — his exact state reproduced live on prod with the
+  QA account). c135 fixes exactly this.
+
+## 5. Verdict: **READY TO FLIP** (holding for Derek's word, per spec)
+
+Flip = the usual gated script pointed at `current135-hostux` (gate container →
+markers → nginx cutover → edge verify). Promos v1 also still holding.
+
+## New backlog items surfaced by the repro
+
+1. **Email-verify modal wall** — re-opens on every page; "LATER" is small.
+   Soften: once-per-session snooze + banner instead of modal on repeat views.
+2. **`TransactionPanel.stripeNotConnected` copy** is broken English and reads
+   like a system error. Rewrite warm + correct.
+3. **offSessionPayment duck treats fetch errors as "not connected"** (same
+   anti-pattern as Issue 3) — accept buttons would grey out on a flaky
+   connection. Rider candidate for c136.
+
+## QA hygiene
+
+QA listing closed (out of search). QA accounts retained — **we finally have a
+working test-host login** (creds at `/home/ubuntu/qa135-creds.json`, mode 600,
+box-only), which unblocks the Screenshot Help Center (#72) capture pipeline.

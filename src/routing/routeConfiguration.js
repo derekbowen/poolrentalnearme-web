@@ -297,6 +297,16 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       authPage: 'LoginPage',
     },
     {
+      path: '/dashboard',
+      name: 'HostDashboardPage',
+      auth: true,
+      authPage: 'LoginPage',
+      loaders: {
+        page: () => import('../containers/HostDashboardPage/HostDashboardPage'),
+        duck: () => import('../containers/HostDashboardPage/HostDashboardPage.duck'),
+      },
+    },
+    {
       path: '/listings',
       name: 'ManageListingsPage',
       auth: true,

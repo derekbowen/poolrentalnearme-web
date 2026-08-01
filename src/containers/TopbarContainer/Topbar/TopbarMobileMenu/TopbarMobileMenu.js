@@ -156,6 +156,26 @@ const TopbarMobileMenu = props => {
     </NamedLink>
   ) : null;
 
+  // Host utility links lead the menu (Dashboard → Inbox → Listings → Payouts);
+  // marketing links render after them in customLinksWrapper.
+  const dashboardLinkMaybe = showCreateListingsLink ? (
+    <NamedLink
+      className={classNames(css.navigationLink, currentPageClass('HostDashboardPage'))}
+      name="HostDashboardPage"
+    >
+      Dashboard
+    </NamedLink>
+  ) : null;
+
+  const payoutsLinkMaybe = showCreateListingsLink ? (
+    <NamedLink
+      className={classNames(css.navigationLink, currentPageClass('PayoutDashboardPage'))}
+      name="PayoutDashboardPage"
+    >
+      Payouts
+    </NamedLink>
+  ) : null;
+
   return (
     <div className={css.root}>
       <AvatarLarge className={css.avatar} user={currentUser} />
@@ -168,6 +188,7 @@ const TopbarMobileMenu = props => {
         </InlineTextButton>
 
         <div className={css.accountLinksWrapper}>
+          {dashboardLinkMaybe}
           <NamedLink
             className={classNames(css.inbox, currentPageClass(`InboxPage:${inboxTab}`))}
             name="InboxPage"
@@ -177,6 +198,7 @@ const TopbarMobileMenu = props => {
             {notificationCountBadge}
           </NamedLink>
           {manageListingsLinkMaybe}
+          {payoutsLinkMaybe}
           <NamedLink
             className={classNames(css.navigationLink, currentPageClass('ProfileSettingsPage'))}
             name="ProfileSettingsPage"

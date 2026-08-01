@@ -65,6 +65,17 @@ const ProfileMenu = ({ currentPage, currentUser, onLogout, showManageListingsLin
       </MenuLabel>
       <MenuContent className={css.profileMenuContent}>
         {showManageListingsLink ? (
+          <MenuItem key="HostDashboardPage">
+            <NamedLink
+              className={classNames(css.menuLink, currentPageClass('HostDashboardPage'))}
+              name="HostDashboardPage"
+            >
+              <span className={css.menuItemBorder} />
+              Dashboard
+            </NamedLink>
+          </MenuItem>
+        ) : null}
+        {showManageListingsLink ? (
           <MenuItem key="ManageListingsPage">
             <NamedLink
               className={classNames(css.menuLink, currentPageClass('ManageListingsPage'))}
@@ -148,6 +159,13 @@ const TopbarDesktop = (props) => {
   const giveSpaceForSearch = customLinks == null || customLinks?.length === 0;
   const classes = classNames(rootClassName || css.root, className);
 
+  const dashboardLinkMaybe =
+    isAuthenticated && showCreateListingsLink ? (
+      <NamedLink className={css.topbarLink} name="HostDashboardPage">
+        <span className={css.topbarLinkLabel}>Dashboard</span>
+      </NamedLink>
+    ) : null;
+
   const inboxLinkMaybe = isAuthenticated ? (
     <InboxLink notificationCount={notificationCount} inboxTab={inboxTab} />
   ) : null;
@@ -201,6 +219,7 @@ const TopbarDesktop = (props) => {
       />
       {wishlistLinkMaybe}
 
+      {dashboardLinkMaybe}
       {inboxLinkMaybe}
       {profileMenuMaybe}
       {signupLinkMaybe}

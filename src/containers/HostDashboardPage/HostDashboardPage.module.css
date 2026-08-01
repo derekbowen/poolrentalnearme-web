@@ -1,0 +1,405 @@
+@import '../../styles/customMediaQueries.css';
+
+/* Birthday-skin foundation (c130) — ported from Derek's approved Magic Patterns
+   export (upload3). Tailwind tokens → CSS custom properties, verbatim. */
+
+.root {
+  --pBlue: #009ed8;
+  --pBlueDark: #007eb7;
+  --pSky: #e4f4fc;
+  --pWater: #c9edf9;
+  --pCoral: #ff6f52;
+  --pCoralSoft: #fff0ec;
+  --pSun: #ffb020;
+  --pSunSoft: #fff6e3;
+  --pSuccess: #239954;
+  --pInk: #22303c;
+  --pMuted: #6b7a86;
+  --pHairline: #e8edf1;
+  --shadowPhoto: 0 6px 18px rgba(34, 48, 60, 0.14);
+  --shadowSoft: 0 2px 6px rgba(34, 48, 60, 0.06), 0 12px 28px rgba(34, 48, 60, 0.07);
+  --shadowPill: 0 10px 22px rgba(0, 158, 216, 0.35);
+
+  background-color: #fff;
+  color: var(--pInk);
+  padding-bottom: 64px;
+}
+
+.content {
+  margin: 0 auto;
+  max-width: 650px;
+  padding: 0 24px;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding-top: 32px;
+}
+
+/* ---- party header ---- */
+.partyHeadline {
+  margin: 24px 0 0 0;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--pInk);
+
+  @media (--viewportMedium) {
+    font-size: 44px;
+  }
+}
+
+.partyHeadlineAccent {
+  color: var(--pBlue);
+}
+
+.tagline {
+  margin: 16px 0 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pMuted);
+}
+
+.collage {
+  position: relative;
+  margin-top: 32px;
+  height: 286px;
+
+  @media (--viewportMedium) {
+    height: 320px;
+  }
+}
+
+.polaroid {
+  overflow: hidden;
+  border-radius: 22px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: var(--shadowPhoto);
+}
+
+.polaroid img {
+  width: 100%;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+}
+
+.shotMain { position: absolute; left: 0; top: 40px; width: 58%; transform: rotate(-3deg); }
+.shotMain img { height: 170px; }
+.shotTall { position: absolute; right: 0; top: 8px; width: 46%; transform: rotate(2deg); }
+.shotTall img { height: 218px; }
+.shotSmall { position: absolute; bottom: 0; left: 18%; width: 38%; transform: rotate(3deg); }
+.shotSmall img { height: 110px; border-radius: 16px; }
+
+@media (--viewportMedium) {
+  .shotMain img { height: 200px; }
+  .shotTall img { height: 250px; }
+}
+
+.swimBadge {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  border-radius: 999px;
+  background: var(--pBlue);
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.heartBadge {
+  position: absolute;
+  bottom: 64px;
+  right: 4px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: var(--pCoral);
+  color: #fff;
+  box-shadow: var(--shadowPhoto);
+}
+
+.heartBadgeNum {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heartsCaption {
+  position: absolute;
+  bottom: 24px;
+  right: 0;
+  z-index: 20;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pMuted);
+}
+
+.hostAvatarRing {
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  z-index: 20;
+  border-radius: 50%;
+  background: #fff;
+  padding: 4px;
+  box-shadow: var(--shadowPhoto);
+  border: 3px solid var(--pBlue);
+}
+
+.hostAvatarRing :global(img),
+.hostAvatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.hostName {
+  margin: 24px 0 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pInk);
+}
+
+.hostMeta {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pMuted);
+}
+
+.floatEmoji {
+  position: absolute;
+  z-index: 10;
+  font-size: 26px;
+  pointer-events: none;
+}
+
+/* ---- one fat happy button ---- */
+.bigHappy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 76px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--pBlue);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadowPill);
+}
+
+.bigHappy:hover { background: var(--pBlueDark); text-decoration: none; }
+.bigHappyTitle { font-size: 19px; font-weight: 800; line-height: 1.2; }
+.bigHappyAction { margin-top: 2px; font-size: 15px; font-weight: 700; opacity: 0.95; }
+
+/* ---- cards ---- */
+.card {
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--pHairline);
+  box-shadow: var(--shadowSoft);
+  padding: 24px;
+}
+
+.cardSky { background: var(--pSky); border: none; }
+.cardSun { background: var(--pSunSoft); border: none; }
+.cardCoral { background: var(--pCoralSoft); border: none; }
+
+.sectionTitle {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--pInk);
+}
+
+.sectionSub {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pMuted);
+}
+
+/* guest polaroid rows */
+.guestCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--pHairline);
+  box-shadow: var(--shadowSoft);
+  padding: 16px;
+}
+
+.guestPhoto {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 3px;
+  box-shadow: var(--shadowPhoto);
+}
+
+.tiltL { transform: rotate(-2deg); }
+.tiltR { transform: rotate(3deg); }
+
+.pillQuiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 2px solid var(--pBlue);
+  background: #fff;
+  color: var(--pBlue);
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pillQuiet:hover { background: var(--pSky); text-decoration: none; }
+
+.pillSolid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: 999px;
+  border: none;
+  background: var(--pBlue);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--shadowPill);
+}
+
+.pillSolid:hover { background: var(--pBlueDark); text-decoration: none; }
+
+/* money */
+.moneyGrid { display: flex; gap: 14px; }
+.moneyTile { flex: 1; border-radius: 16px; padding: 20px; }
+.moneyTileGreen { background: #e9f7ef; }
+.moneyTileSun { background: var(--pSunSoft); }
+.moneyBig { font-size: 30px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.moneyBigGreen { color: var(--pSuccess); }
+.moneyLabel { margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--pMuted); }
+
+/* hearts row (reach) */
+.heartsRow { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--pInk); margin-top: 10px; }
+
+.redDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background-color: #ff3b30;
+  vertical-align: middle;
+}
+
+/* ---- rows & cards shared bits ---- */
+.rowMain { flex: 1; min-width: 0; }
+.rowTitle { font-size: 16px; font-weight: 700; color: var(--pInk); line-height: 1.35; }
+.rowMeta { margin-top: 3px; font-size: 14px; font-weight: 600; color: var(--pMuted); }
+.earnGreen { color: var(--pSuccess); font-weight: 800; }
+.cardList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.cardHint { margin: 14px 0 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--pMuted); }
+
+.guestCard .rowMain .pillQuiet { margin-top: 12px; width: 100%; }
+.guestPhotoImg { width: 100%; height: 100%; border-radius: 11px; }
+.collageAvatar { width: 100%; height: 218px; border-radius: 18px; display: block; }
+
+.newChip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--pCoral);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+/* happening-now */
+.eyebrow { margin: 0 0 14px 0; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pBlueDark); }
+.liveDot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: var(--pCoral); vertical-align: middle; }
+.hnRow { display: flex; align-items: center; gap: 16px; }
+.hnTitle { font-size: 19px; font-weight: 800; color: var(--pInk); }
+
+/* pools */
+.poolCards { display: flex; flex-direction: column; gap: 18px; }
+.poolCardImg { width: 100%; height: 190px; object-fit: cover; display: block; }
+.closedNote { margin: 10px 0 0 0; padding: 10px 14px; border-radius: 12px; background: var(--pSunSoft); font-size: 14px; font-weight: 700; color: var(--pInk); }
+.pillRow { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.pillRow > * { flex: 1; min-width: 150px; }
+
+.moneyLink { display: inline-block; margin-top: 14px; color: var(--pBlue); font-weight: 800; font-size: 15px; }
+
+/* pool school */
+.schoolRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadowSoft);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pInk);
+  text-decoration: none;
+}
+.schoolRow:hover { text-decoration: none; box-shadow: var(--shadowPhoto); }
+
+/* love footer */
+.loveFooter { text-align: center; padding: 8px 0 24px; }
+.loveFooterTitle { margin: 0 0 12px 0; font-size: 15px; font-weight: 800; color: var(--pInk); }
+.loveFooterLinks { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+.loveFooterLinks a { font-size: 14px; font-weight: 700; color: var(--pMuted); }
+
+.loading { display: flex; justify-content: center; padding: 48px 0; }
+.error { font-size: 14px; color: #b91c1c; }
+
+/* gentle float for the header emoji */
+@keyframes prnmFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50% { transform: translateY(-7px) rotate(var(--tilt, 0deg)); }
+}
+.floatEmoji { animation: prnmFloat 4.5s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(34, 48, 60, 0.18)); }
+@media (prefers-reduced-motion: reduce) {
+  .floatEmoji { animation: none; }
+}
+
+.collageAvatarSmall {
+  width: 100%;
+  height: 110px;
+  border-radius: 16px;
+  display: block;
+}

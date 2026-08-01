@@ -64,11 +64,14 @@ const guard = (handler) => async (req, res) => {
 
 // GET /api/payouts/summary — balances, payout schedule, onboarding state.
 const summary = guard(async (req, res, acct) => {
+  // The account read requires extra key permissions (accounts_kyc_basic_read /
+  // "Basic Business Contact Information Read"). A restricted key without it
+  // gets a 403 here — that must degrade to "details unavailable", never sink
+  // the whole summary: the UI treats a failed summary as "no payout account"
+  // and tells an already-connected host to set up payouts again.
   const [balance, account] = await Promise.all([
     stripeGet('/balance', null, acct),
-    // Platform key can read its own connected account without Stripe-Account,
-    // but the scoped call works for both and keeps the shape uniform.
-    stripeGet(`/accounts/${acct}`, null, undefined),
+    stripeGet(`/accounts/${acct}`, null, undefined).catch(() => null),
   ]);
   const sum = (arr) => (arr || []).reduce((t, b) => t + (b.amount || 0), 0);
   const currency = balance.available?.[0]?.currency || 'usd';
@@ -77,9 +80,11 @@ const summary = guard(async (req, res, acct) => {
     currency,
     availableAmount: sum(balance.available),
     pendingAmount: sum(balance.pending),
-    payoutsEnabled: !!account.payouts_enabled,
-    requirementsCurrentlyDue: account.requirements?.currently_due || [],
-    payoutSchedule: account.settings?.payouts?.schedule || null,
+    // null = unknown (account read unavailable), not "disabled".
+    payoutsEnabled: account ? !!account.payouts_enabled : null,
+    requirementsCurrentlyDue: account?.requirements?.currently_due || [],
+    payoutSchedule: account?.settings?.payouts?.schedule || null,
+    accountDetailsAvailable: !!account,
   });
 });
 

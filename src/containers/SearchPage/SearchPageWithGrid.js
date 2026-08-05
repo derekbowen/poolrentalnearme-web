@@ -57,7 +57,6 @@ import SearchFiltersMobile from './SearchFiltersMobile/SearchFiltersMobile';
 import SortBy from './SortBy/SortBy';
 import SearchResultsPanel from './SearchResultsPanel/SearchResultsPanel';
 import NoSearchResultsMaybe from './NoSearchResultsMaybe/NoSearchResultsMaybe';
-import SponsoredResultsBar from '../../components/SponsoredResultsBar/SponsoredResultsBar';
 
 import css from './SearchPageWithGrid.module.css';
 
@@ -218,7 +217,6 @@ export class SearchPageComponent extends Component {
     const {
       intl,
       listings = [],
-      boostedListings = [],
       location,
       onManageDisableScrolling,
       pagination,
@@ -473,7 +471,6 @@ export class SearchPageComponent extends Component {
                     <FormattedMessage id="SearchPage.invalidDatesFilter" />
                   </H5>
                 ) : null}
-                <SponsoredResultsBar listings={boostedListings} />
                 <SearchResultsPanel
                   className={css.searchListingsPanel}
                   listings={listings}
@@ -564,19 +561,16 @@ const mapStateToProps = state => {
   const { currentUser } = state.user;
   const {
     currentPageResultIds,
-    boostedResultIds = [],
     pagination,
     searchInProgress,
     searchListingsError,
     searchParams,
   } = state.SearchPage;
   const listings = getListingsById(state, currentPageResultIds);
-  const boostedListings = getListingsById(state, boostedResultIds);
 
   return {
     currentUser,
     listings,
-    boostedListings,
     pagination,
     scrollingDisabled: isScrollingDisabled(state),
     searchInProgress,

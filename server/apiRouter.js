@@ -91,6 +91,16 @@ router.post('/create-deal', bodyParser.json({ limit: '8kb' }), authenticatedUser
 router.get('/deal/:token', dealGet);
 router.post('/accept-deal', acceptDeal);
 
+// ─── Promotion / boost: PARKED ────────────────────────────────────────────
+// The pay-per-booking promotion feature is shelved: its 25% host-side fee
+// contradicts the 0% host fee positioning. Code preserved on the
+// `feature/boost-parked` branch. Any caller of the former endpoints
+// (purchase, promote, attribute webhook, beacon) gets 410 Gone so nothing
+// external mistakes them for live-but-broken.
+router.all(/^\/boost(\/.*)?$/, (req, res) => {
+  res.status(410).json({ error: 'gone', detail: 'The promotion feature has been retired.' });
+});
+
 // Swimply iCal two-way sync: fetch Swimply .ics feed and block times in Sharetribe
 router.post('/sync-ical', bodyParser.json({ limit: '4kb' }), syncIcal);
 router.post('/additional-charge/request', bodyParser.json({ limit: '4kb' }), additionalChargeRequest);

@@ -28,13 +28,6 @@ export const SEARCH_LISTINGS_REQUEST = 'app/SearchPage/SEARCH_LISTINGS_REQUEST';
 export const SEARCH_LISTINGS_SUCCESS = 'app/SearchPage/SEARCH_LISTINGS_SUCCESS';
 export const SEARCH_LISTINGS_ERROR = 'app/SearchPage/SEARCH_LISTINGS_ERROR';
 
-// Sponsored / boosted band — runs as a parallel query alongside the main
-// search so the "pay to be up top" band is visually separate from the
-// earned-trust cluster. See src/util/listingBoost.js for the design
-// rationale (paid placement and social proof are two different axes).
-export const SEARCH_BOOSTED_SUCCESS = 'app/SearchPage/SEARCH_BOOSTED_SUCCESS';
-export const SEARCH_BOOSTED_ERROR = 'app/SearchPage/SEARCH_BOOSTED_ERROR';
-
 export const SEARCH_MAP_LISTINGS_REQUEST = 'app/SearchPage/SEARCH_MAP_LISTINGS_REQUEST';
 export const SEARCH_MAP_LISTINGS_SUCCESS = 'app/SearchPage/SEARCH_MAP_LISTINGS_SUCCESS';
 export const SEARCH_MAP_LISTINGS_ERROR = 'app/SearchPage/SEARCH_MAP_LISTINGS_ERROR';
@@ -49,10 +42,6 @@ const initialState = {
   searchInProgress: false,
   searchListingsError: null,
   currentPageResultIds: [],
-  // Boosted result IDs live in a separate bucket so the UI can render a
-  // dedicated Sponsored band above the organic results.
-  boostedResultIds: [],
-  boostedError: null,
 };
 
 const resultIds = (data) => {
@@ -85,19 +74,6 @@ const listingPageReducer = (state = initialState, action = {}) => {
       console.error(payload);
       return { ...state, searchInProgress: false, searchListingsError: payload };
 
-    case SEARCH_BOOSTED_SUCCESS:
-      return {
-        ...state,
-        boostedResultIds: resultIds(payload.data),
-        boostedError: null,
-      };
-    case SEARCH_BOOSTED_ERROR:
-      // Boost failures are non-blocking — log and move on. A missing
-      // Sponsored band is never worse than a broken search page.
-      // eslint-disable-next-line no-console
-      console.warn('[SearchPage] boosted query failed:', payload);
-      return { ...state, boostedResultIds: [], boostedError: payload };
-
     case SEARCH_MAP_SET_ACTIVE_LISTING:
       return {
         ...state,
@@ -124,17 +100,6 @@ export const searchListingsSuccess = (response) => ({
 
 export const searchListingsError = (e) => ({
   type: SEARCH_LISTINGS_ERROR,
-  error: true,
-  payload: e,
-});
-
-export const searchBoostedSuccess = (response) => ({
-  type: SEARCH_BOOSTED_SUCCESS,
-  payload: { data: response.data },
-});
-
-export const searchBoostedError = (e) => ({
-  type: SEARCH_BOOSTED_ERROR,
   error: true,
   payload: e,
 });
@@ -331,35 +296,6 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
     perPage,
   };
 
-  // Parallel Sponsored query. Same filters as the organic search, but with
-  // `pub_boostActive: true` to pull only listings with an active paid boost.
-  // Runs in parallel (not chained) so Sponsored loads as fast as the main
-  // results — and if it errors, the organic search is unaffected.
-  // Capped at 6 results — more than that starts to feel like an ad farm.
-  const boostedParams = {
-    ...params,
-    pub_boostActive: true,
-    perPage: 6,
-    // Sort is intentionally ignored on the boosted query — the Sponsored
-    // band has its own ranking (tier rank + jitter) applied client-side
-    // via mergeBoostedResults in src/util/listingBoost.js.
-  };
-
-  const boostedQuery = sdk.listings
-    .query(boostedParams)
-    .then((response) => {
-      const listingFields = config?.listing?.listingFields;
-      const sanitizeConfig = { listingFields };
-      dispatch(addMarketplaceEntities(response, sanitizeConfig));
-      dispatch(searchBoostedSuccess(response));
-      return response;
-    })
-    .catch((e) => {
-      // Swallow: boost query must never break the main search page.
-      dispatch(searchBoostedError(storableError(e)));
-      return null;
-    });
-
   const mainQuery = sdk.listings
     .query(params)
     .then((response) => {
@@ -378,10 +314,6 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
       }
     });
 
-  // Return the main query's promise so existing callers (loadData, SSR)
-  // still await it. The boosted query runs alongside but is fire-and-forget
-  // from the caller's perspective.
-  boostedQuery.catch(() => {}); // already handled; silence unhandled rejection
   return mainQuery;
 };
 

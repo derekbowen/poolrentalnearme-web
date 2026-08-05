@@ -82,6 +82,23 @@ Only include amenities/safety visible in photos. Do not fabricate.`;
 // Simple in-memory rate limiting (1 generation per listing)
 const generatedListings = new Map();
 
+// Sliding-hour budget of paid AI generations per client. In-memory is fine
+// here: the worst case after a restart is a fresh budget, not an open faucet.
+const GEN_BUDGET_PER_HOUR = 6;
+const genBudget = new Map(); // key -> [timestamps]
+const consumeGenerationBudget = key => {
+  const now = Date.now();
+  const cutoff = now - 60 * 60 * 1000;
+  const hits = (genBudget.get(key) || []).filter(t => t > cutoff);
+  if (hits.length >= GEN_BUDGET_PER_HOUR) return false;
+  hits.push(now);
+  genBudget.set(key, hits);
+  if (genBudget.size > 5000) {
+    for (const [k, v] of genBudget) if (!v.some(t => t > cutoff)) genBudget.delete(k);
+  }
+  return true;
+};
+
 module.exports = async (req, res) => {
   try {
     const { imageUrls, address, city, state, coordinates, listingId } = req.body;
@@ -98,6 +115,16 @@ module.exports = async (req, res) => {
     if (listingId && generatedListings.has(listingId)) {
       return res.status(429).json({
         message: 'Listing has already been generated. Edit fields manually.',
+      });
+    }
+
+    // Rate limit that cannot be bypassed by omitting listingId: cap paid
+    // model calls per client (per authenticated session via forwarded IP,
+    // which the auth wrapper guarantees exists) within a rolling hour.
+    const limiterKey = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (!consumeGenerationBudget(limiterKey)) {
+      return res.status(429).json({
+        message: 'Generation limit reached. Please try again in an hour.',
       });
     }
 

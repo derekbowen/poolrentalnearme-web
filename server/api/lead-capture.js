@@ -29,6 +29,34 @@ const ensureDataDir = () => {
   }
 };
 
+// ── Abuse protection ──────────────────────────────────────────────────────
+// This endpoint is intentionally public (anonymous visitors submit emails),
+// so it gets a per-IP sliding-window rate limit and a hard cap on the leads
+// file size. Without these, a loop of valid-looking emails could fill the
+// disk and poison the CRM export.
+const LEADS_PER_IP_PER_HOUR = 5;
+const LEADS_FILE_MAX_BYTES = 25 * 1024 * 1024; // 25MB ≈ hundreds of thousands of leads
+const leadHits = new Map(); // ip -> [timestamps]
+const allowLead = (ip) => {
+  const now = Date.now();
+  const cutoff = now - 60 * 60 * 1000;
+  const hits = (leadHits.get(ip) || []).filter((t) => t > cutoff);
+  if (hits.length >= LEADS_PER_IP_PER_HOUR) return false;
+  hits.push(now);
+  leadHits.set(ip, hits);
+  if (leadHits.size > 10000) {
+    for (const [k, v] of leadHits) if (!v.some((t) => t > cutoff)) leadHits.delete(k);
+  }
+  return true;
+};
+const leadsFileFull = () => {
+  try {
+    return fs.existsSync(LEADS_FILE) && fs.statSync(LEADS_FILE).size > LEADS_FILE_MAX_BYTES;
+  } catch {
+    return false;
+  }
+};
+
 const writeLead = (record) =>
   new Promise((resolve, reject) => {
     ensureDataDir();
@@ -68,6 +96,18 @@ module.exports = async (req, res) => {
 
     if (!email || !EMAIL_RE.test(email) || email.length > 320) {
       return res.status(400).json({ error: 'invalid_email' });
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (!allowLead(ip)) {
+      // Rate-limited clients get a success-shaped response: a lead form
+      // should never teach a scraper the limiter's shape, and a real human
+      // double-submitting still sees the thank-you state.
+      return res.status(200).json({ ok: true });
+    }
+    if (leadsFileFull()) {
+      console.error('[lead-capture] leads file exceeds size cap; dropping lead');
+      return res.status(200).json({ ok: true });
     }
 
     const record = {

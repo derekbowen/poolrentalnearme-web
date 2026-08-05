@@ -71,8 +71,16 @@ module.exports = async (req, res) => {
   if (!listingId) return res.status(400).json({ error: 'listingId required' });
 
   const today = new Date().toISOString().split('T')[0];
-  const from = req.query.from || today;
-  const to = req.query.to || addDays(today, 59); // default 60-day window
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  let from = DATE_RE.test(req.query.from || '') ? req.query.from : today;
+  let to = DATE_RE.test(req.query.to || '') ? req.query.to : addDays(today, 59); // default 60-day window
+
+  // Bound the window server-side: from/to are caller-controlled, and an
+  // unbounded range turns buildDateRange into a multi-million-element
+  // allocation (and a prompt to match). Clamp to [1, 92] days, forward-only.
+  const MAX_WINDOW_DAYS = 92;
+  if (to < from) to = from;
+  if (to > addDays(from, MAX_WINDOW_DAYS - 1)) to = addDays(from, MAX_WINDOW_DAYS - 1);
 
   const cacheKey = `${listingId}:${from}:${to}`;
   const cached = cache.get(cacheKey);

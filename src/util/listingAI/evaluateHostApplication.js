@@ -35,12 +35,21 @@ export const evaluateHostApplication = async ({
     }),
   });
 
-  // Even on a non-200 we try to parse the body; the server is designed to
-  // always return an approval payload. If parsing fails we throw so the UI
-  // can show a retry affordance — but this should effectively never happen.
+  // A non-OK response is NEVER an evaluation result. Rendering an error
+  // payload as an approval screen tells the applicant they applied when
+  // nothing was recorded — so anything but a real approval throws, and the
+  // wizard shows the error banner with their answers intact for retry.
   const body = await response.json().catch(() => null);
-  if (!body) {
-    throw new Error('Could not reach host evaluation service. Please retry.');
+  if (!response.ok || !body || body.approved !== true) {
+    const detail = body?.errors?.[0]?.message || body?.message || null;
+    if (response.status === 401 || detail === 'Unauthorized') {
+      throw new Error(
+        'Please log in (or create your free account) and then tap Submit again — your answers are saved on this page.'
+      );
+    }
+    throw new Error(
+      `We couldn't process your application just now${detail ? ` (${detail})` : ''}. Nothing was lost — please tap Submit again.`
+    );
   }
   return body;
 };

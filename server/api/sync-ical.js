@@ -248,8 +248,14 @@ module.exports = async (req, res) => {
   const errors = [];
 
   for (const ev of limited) {
-    const start = ev.start instanceof Date ? ev.start : new Date(ev.start);
+    let start = ev.start instanceof Date ? ev.start : new Date(ev.start);
     const end = ev.end instanceof Date ? ev.end : new Date(ev.end);
+    // The window filter admits in-progress events (end > now) so a live
+    // Swimply booking still blocks the calendar - but Sharetribe rejects a
+    // past start with 400. Clamp like the background sweep does, and skip
+    // events that would collapse to an empty range.
+    if (start <= new Date()) start = new Date(Date.now() + 60e3);
+    if (start >= end) continue;
     try {
       await trustedSdk.availabilityExceptions.create(
         {

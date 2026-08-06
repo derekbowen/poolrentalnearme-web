@@ -1,0 +1,132 @@
+@import '../../styles/customMediaQueries.css';
+
+/* Wall of destination tiles behind the auth card.
+   Presentational only - never intercepts a tap on the form. */
+.root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  background-color: #eaf4fa;
+}
+
+.grid {
+  position: absolute;
+  /* Overscan so the rotation never exposes a bare corner. */
+  inset: -14% -10%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  transform: rotate(-8deg);
+
+  @media (--viewportSmall) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (--viewportMedium) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+  @media (--viewportLarge) {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  border-radius: 16px;
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(10, 60, 90, 0.14);
+  /* Each tile drifts on its own offset so the wall breathes. */
+  animation: drift 18s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.9s);
+}
+
+.city {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+
+  @media (--viewportMedium) {
+    font-size: 19px;
+  }
+}
+
+/* Waterline: a soft band across the lower third, so every tile reads as a pool
+   rather than a flat colour swatch. */
+.wave {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 46%;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0));
+  -webkit-mask-image: radial-gradient(120% 80% at 50% 120%, #000 55%, transparent 70%);
+  mask-image: radial-gradient(120% 80% at 50% 120%, #000 55%, transparent 70%);
+}
+
+/* ================ Tile tones ================ */
+
+.sun {
+  background-image: linear-gradient(150deg, #ffb347 0%, #ff7e5f 100%);
+}
+.lagoon {
+  background-image: linear-gradient(150deg, #2bd4d9 0%, #0a8fd8 100%);
+}
+.dusk {
+  background-image: linear-gradient(150deg, #7f7fd5 0%, #3b6ec9 100%);
+}
+.palm {
+  background-image: linear-gradient(150deg, #34d399 0%, #0f8b7e 100%);
+}
+.sunset {
+  background-image: linear-gradient(150deg, #fa709a 0%, #fe8c4b 100%);
+}
+.deep {
+  background-image: linear-gradient(150deg, #1d76c4 0%, #0b3f78 100%);
+}
+.surf {
+  background-image: linear-gradient(150deg, #56ccf2 0%, #2f80ed 100%);
+}
+
+/* Softens the wall so the white auth card stays the obvious focal point and
+   the form keeps its contrast. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      120% 90% at 50% 45%,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 255, 255, 0.62) 42%,
+      rgba(255, 255, 255, 0.34) 100%
+    ),
+    linear-gradient(to bottom, rgba(234, 244, 250, 0.55), rgba(234, 244, 250, 0.15));
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+/* Motion is decoration here - drop it entirely when the user asks for less. */
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    animation: none;
+  }
+}

@@ -50,6 +50,7 @@ import ConfirmSignupForm from './ConfirmSignupForm/ConfirmSignupForm';
 import LoginForm from './LoginForm/LoginForm';
 import SignupForm from './SignupForm/SignupForm';
 import EmailVerificationInfo from './EmailVerificationInfo';
+import AuthBackdrop from './AuthBackdrop';
 
 // We need to get ToS asset and get it rendered for the modal on this page.
 import { TermsOfServiceContent } from '../TermsOfServicePage/TermsOfServicePage';
@@ -600,6 +601,7 @@ export const AuthenticationPageComponent = (props) => {
           sizes="100%"
           useOverlay
         >
+          <AuthBackdrop className={css.backdrop} />
           {showEmailVerification ? (
             <EmailVerificationInfo
               name={user.attributes.profile.firstName}

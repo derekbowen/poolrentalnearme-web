@@ -5,12 +5,22 @@
 
 .root {
   flex-grow: 1;
+  /* Anchors the absolutely-positioned destination wall. */
+  position: relative;
+}
+
+/* Sits behind everything on the page; AuthBackdrop itself is pointer-events:none. */
+.backdrop {
+  z-index: 0;
 }
 
 .contentContainer {
   composes: marketplaceModalRootStyles from global;
   min-height: calc(100vh - 60px);
   height: auto;
+  /* Lift the card off the wall so the form stays clickable and on top. */
+  position: relative;
+  z-index: 1;
 
   @media (--viewportMedium) {
     height: unset;
@@ -21,6 +31,11 @@
 .content {
   composes: marketplaceModalBaseStyles from global;
   padding-top: 29px;
+  /* The wall shows through a transparent modal background, which kills the
+     form's contrast - keep the card opaque and give it a lift. */
+  background-color: var(--colorWhite);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(10, 60, 90, 0.16);
 
   @media (--viewportMedium) {
     margin-top: 5vh;

@@ -23,6 +23,11 @@ people who may be named as company voices.
    (`noreply@poolrentalnearme.com`, reply-to `support@`).
 6. James Martin (Cypress River Oasis) is **do-not-contact**. Listing stays
    live; never initiate outreach.
+7. **Never write a token, credential, or "log in as" session into source.**
+   `app/lib/main.dart` saved a hardcoded `isLoggedInAs` operator token for a
+   real host on every app launch — under the same storage key as the user's own
+   token — so every cold start logged everyone out, on every install, for
+   months. See `app-patches/`.
 
 ## Infrastructure
 
@@ -65,8 +70,22 @@ replace MAIN. An abort leaves production untouched. Never skip the gate.
 - Listing types must match a configured `listingType`+`unitType` pair or the
   host sees "Outdated listing" and cannot edit.
 
+**Mobile app** (separate repo, Flutter/melos; patches staged in `app-patches/`)
+- Its unit-type enum is `{item, hour, day, night, inquiry}`. Console listing
+  types on `fixed` (`rentalslots`) or `request` (`needzone-request`) make
+  `isValidListingType()` return false → **"Outdated listing!"**, unfixable by the
+  host. Its `supportedProcess` list also omits `default-negotiation`.
+  Keep hosts on `hourly-pool`/`hour` until the app ships a build that knows them.
+- Sessions: nothing may write to the SDK token store during startup.
+
 **Twilio / SMS** — US 10DLC sender: `twsend` skips non-US numbers by design.
 International hosts are email-only until that changes.
+
+**Session cookies** — `VITE_SHARETRIBE_USING_SSL` is a **build-time** var baked
+into the client bundle; setting it only in the container does nothing (this is
+why the first c158 flip aborted). Both `src/config/settings.js` and
+`server/api-util/sdk.js` now default it on in production so a missing env var
+cannot silently drop `Secure` from every session cookie.
 
 **Stripe** — payouts reach 36 countries in local currency; guests worldwide can
 pay in USD. Platform account is US.

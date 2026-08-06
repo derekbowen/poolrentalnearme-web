@@ -1,0 +1,93 @@
+diff --git a/app/lib/main.dart b/app/lib/main.dart
+index 2e222eb..f6dc3f0 100644
+--- a/app/lib/main.dart
++++ b/app/lib/main.dart
+@@ -18,7 +18,6 @@ import 'package:sharetribe_horizon_account_deletion_module/sharetribe_horizon_ac
+ import 'package:sharetribe_horizon_common/common.dart';
+ import 'package:sharetribe_horizon_socials_sign_in_module/sharetribe_horizon_socials_sign_in_module.dart';
+ import 'package:sharetribe_horizon_wishlist_module/sharetribe_horizon_wishlist_module.dart';
+-import 'package:sharetribe_sdk/sharetribe_sdk.dart';
+ import 'package:timezone/data/latest_10y.dart' as tz;
+ import 'package:timezone/timezone.dart';
+ 
+@@ -99,16 +98,11 @@ Future<ProviderContainer> mainInitializer() async {
+   unawaited(container.read(staticAssetsPagesProvider.future).suppressError());
+   unawaited(container.read(stripeConfigurationProvider.future).suppressError());
+ 
+-  await container
+-      .read(sdkTokenStoreProvider('f812b9fc-645b-4363-86ae-404da7f6fac8'))
+-      .save(Oauth2Token.fromJson({
+-        'access_token':
+-            'eyJhbGciOiJIUzI1NiJ9.eyJjbGllbnQtaWQiOiJmODEyYjlmYy02NDViLTQzNjMtODZhZS00MDRkYTdmNmZhYzgiLCJleHAiOjE3NjEyMDkxMTYsInVzZXItaWQiOiI2ODM1Mjg3YS00ZmExLTQ0MDQtYjZmZS1jZTVjMDMyOWJkMjIiLCJlbnYiOiJwcm9kIiwic2NvcGUiOiJ1c2VyOmxpbWl0ZWQiLCJhZG1pbi1pZCI6IjYwM2UwNjIzLThhNjctNDAzNC05ODM2LWMyMzE2MzVjZjM0ZSIsInVzZXItcm9sZXMiOlsidXNlci5yb2xlL3Byb3ZpZGVyIiwidXNlci5yb2xlL2N1c3RvbWVyIl0sImlkZW50IjoicG9vbHJlbnRhbG5lYXJtZSIsInRlbmFuY3ktaWQiOiI2NzI0NDRlMi05OTY5LTQzM2EtYjg4NS03NDM3NzVhNjgyNGMifQ.8bxPrpT3vZUn0mbL6I0k8_z_EfapqcPMTTx82ZxTKFA',
+-        'scope': 'user:limited',
+-        'token_type': 'bearer',
+-        'expires_in': 1800,
+-        'isLoggedInAs': true
+-      }));
++  // NOTE: a hardcoded `isLoggedInAs` operator token used to be saved here on
++  // every launch. `save()` writes under the clientId key - the same key the
++  // signed-in user's own token lives under - so each cold start destroyed the
++  // real session and forced the user to log in again. Never write to the token
++  // store during startup; the SDK restores the persisted token by itself.
+ 
+   await container.read(advantageStateProvider.future);
+ 
+diff --git a/common/lib/infrastructure/network/sdk/sdk_token_storage.dart b/common/lib/infrastructure/network/sdk/sdk_token_storage.dart
+index 0feed80..c98c401 100644
+--- a/common/lib/infrastructure/network/sdk/sdk_token_storage.dart
++++ b/common/lib/infrastructure/network/sdk/sdk_token_storage.dart
+@@ -58,12 +58,18 @@ class SdkTokenStorage extends TokenStore {
+ 
+   @override
+   Future<Oauth2Token?> read() async {
+-    final token = await _flutterSecureStorageFacade.read(key: _clientId);
+-    final oauth2Token = token != null
+-        ? Oauth2Token.fromJson(jsonDecode(token) as Map<String, dynamic>)
+-        : null;
+-
+-    return oauth2Token;
++    // A throw here reads as "no session" to every caller, so an unreadable or
++    // half-written entry would silently sign the user out. Swallow it and let
++    // the SDK fall back to the anonymous flow instead of losing the session.
++    try {
++      final token = await _flutterSecureStorageFacade.read(key: _clientId);
++      if (token == null) {
++        return null;
++      }
++      return Oauth2Token.fromJson(jsonDecode(token) as Map<String, dynamic>);
++    } catch (_) {
++      return null;
++    }
+   }
+ 
+   @override
+diff --git a/common/lib/services/flutter_secure_storage/flutter_secure_storage.dart b/common/lib/services/flutter_secure_storage/flutter_secure_storage.dart
+index ab91af5..806a766 100644
+--- a/common/lib/services/flutter_secure_storage/flutter_secure_storage.dart
++++ b/common/lib/services/flutter_secure_storage/flutter_secure_storage.dart
+@@ -3,9 +3,24 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
+ 
+ part 'flutter_secure_storage.g.dart';
+ 
++// Android: the default backend keeps an RSA key in the Android Keystore, which
++// is invalidated by OS upgrades and backup/restore - reads then return null and
++// the user is silently signed out. EncryptedSharedPreferences survives both.
++//
++// iOS/macOS: the default accessibility is `unlocked`, so a read fails whenever
++// the app starts before the device's first unlock (push wake, background
++// refresh, restart). `first_unlock` stays readable from then on, and
++// `ThisDeviceOnly` keeps the token out of iCloud Keychain backups.
++const _androidOptions = AndroidOptions(encryptedSharedPreferences: true);
++const _iosOptions =
++    IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device);
++
+ @Riverpod(keepAlive: true)
+ FlutterSecureStorage _flutterSecureStorage(_FlutterSecureStorageRef ref) {
+-  return const FlutterSecureStorage();
++  return const FlutterSecureStorage(
++    aOptions: _androidOptions,
++    iOptions: _iosOptions,
++  );
+ }
+ 
+ @Riverpod(keepAlive: true)

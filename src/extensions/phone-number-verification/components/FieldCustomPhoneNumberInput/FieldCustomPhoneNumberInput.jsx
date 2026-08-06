@@ -24,7 +24,7 @@ const FieldCustomPhoneNumberInput = (props) => {
             defaultCountry={SUPPORTED_COUNTRY}
             placeholder={placeholder}
             limitMaxLength
-            countryCallingCodeEditable={false}
+            countryCallingCodeEditable={true}
           />
           {meta.error && meta.touched && <span className={css.error}>{meta.error}</span>}
         </div>

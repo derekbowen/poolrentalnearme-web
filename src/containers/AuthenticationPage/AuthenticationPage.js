@@ -624,6 +624,13 @@ export const AuthenticationPageComponent = (props) => {
                 keepSignUpValues.current = signUpValues;
                 const { email, protectedData } = signUpValues;
                 const { phoneNumber } = protectedData;
+                // SMS OTP is only deliverable to US (+1) numbers today.
+                // International signups skip the OTP and rely on the standard
+                // email verification instead of being locked out at the door.
+                if (phoneNumber && !String(phoneNumber).startsWith('+1')) {
+                  submitSignup(signUpValues);
+                  return;
+                }
                 dispatch(sendOTP({ email, phoneNumber }));
                 onOpenModalPhoneNumberVerification({ email, phoneNumber });
               }}

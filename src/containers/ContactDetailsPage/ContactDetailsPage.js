@@ -105,7 +105,11 @@ export const ContactDetailsPageComponent = props => {
         keepSubmitValues.current = submitValues;
         const { phoneNumber } = submitValues;
 
-        if (phoneNumber !== currentPhoneNumber) {
+        // SMS OTP is only deliverable to US (+1) numbers - international
+        // phone changes save directly instead of dead-ending in a modal
+        // whose code can never arrive.
+        const otpDeliverable = phoneNumber && String(phoneNumber).startsWith('+1');
+        if (phoneNumber !== currentPhoneNumber && otpDeliverable) {
           dispatch(sendOTP({ email: currentEmail, phoneNumber }));
           onOpenModalPhoneNumberVerification({ phoneNumber, email: currentEmail });
         } else {

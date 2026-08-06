@@ -62,7 +62,10 @@ export const verify = verificationToken => async (dispatch, getState, sdk) => {
   // Fetch current user to check if the email is already verified
   await dispatch(fetchCurrentUser({ enforce: true }));
   const { currentUser } = getState().user;
-  const { emailVerified, pendingEmail } = currentUser.attributes;
+  // currentUser is null when the verification link is opened in a browser
+  // without a session (common when signup happened in an in-app browser and
+  // the email link opens in the default browser) - don't crash the SSR.
+  const { emailVerified, pendingEmail } = currentUser?.attributes || {};
 
   // If the email is already verified, we don't need to do anything
   if (emailVerified && !pendingEmail) {

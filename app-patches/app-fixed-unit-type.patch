@@ -1,0 +1,115 @@
+diff --git a/app/lib/features/edit_listing/presentation/widgets/edit_listing_details_panel/edit_listing_details_panel.utils.dart b/app/lib/features/edit_listing/presentation/widgets/edit_listing_details_panel/edit_listing_details_panel.utils.dart
+index 4efeacd..476d79f 100644
+--- a/app/lib/features/edit_listing/presentation/widgets/edit_listing_details_panel/edit_listing_details_panel.utils.dart
++++ b/app/lib/features/edit_listing/presentation/widgets/edit_listing_details_panel/edit_listing_details_panel.utils.dart
+@@ -96,7 +96,11 @@ bool isValidListingType({
+         unitType.value == existingUnitType,
+       ListingTypePurchase() => existingUnitType == 'item',
+       ListingTypeFreeMessaging() => existingUnitType == 'inquiry',
+-      _ => false
++      // A listing type the marketplace defines but this build does not model
++      // yet. It is still a configured, legitimate type, so treat a matching id
++      // as valid and let the host edit. Returning false here is what showed
++      // every such host "Outdated listing!" with no way out.
++      _ => true
+     };
+ 
+     return listingTypesMatch && unitTypesMatch;
+diff --git a/common/lib/config/line_items.dart b/common/lib/config/line_items.dart
+index af4d7e4..98d38b2 100644
+--- a/common/lib/config/line_items.dart
++++ b/common/lib/config/line_items.dart
+@@ -4,6 +4,7 @@ class LineItemTypes {
+   static String get lineItemItem => 'line-item/item';
+   static String get lineItemHour => 'line-item/hour';
+   static String get lineItemDay => 'line-item/day';
++  static String get lineItemFixed => 'line-item/fixed';
+   static String get lineItemCustomerCommission =>
+       'line-item/customer-commission';
+   static String get lineItemProviderCommission =>
+@@ -17,6 +18,7 @@ class LineItemTypes {
+         lineItemUnit,
+         lineItemHour,
+         lineItemDay,
++        lineItemFixed,
+         lineItemItem,
+         lineItemCustomerCommission,
+         lineItemProviderCommission,
+@@ -24,8 +26,14 @@ class LineItemTypes {
+         lineItemPickupFee,
+       ];
+ 
+-  static List<String> get listingUnitTypes =>
+-      [lineItemNight, lineItemDay, lineItemHour, lineItemUnit, lineItemItem];
++  static List<String> get listingUnitTypes => [
++        lineItemNight,
++        lineItemDay,
++        lineItemHour,
++        lineItemFixed,
++        lineItemUnit,
++        lineItemItem,
++      ];
+ 
+   static List<String> get commissionLineItems =>
+       [lineItemCustomerCommission, lineItemProviderCommission];
+diff --git a/common/lib/domain/models/listing_types/listing_type.dart b/common/lib/domain/models/listing_types/listing_type.dart
+index a4c98b9..6344241 100644
+--- a/common/lib/domain/models/listing_types/listing_type.dart
++++ b/common/lib/domain/models/listing_types/listing_type.dart
+@@ -10,6 +10,7 @@ enum UnitTypes {
+   hour,
+   day,
+   night,
++  fixed,
+   inquiry,
+ }
+ 
+@@ -24,6 +25,8 @@ extension UnitTypesX on UnitTypes {
+         return 'day';
+       case UnitTypes.night:
+         return 'night';
++      case UnitTypes.fixed:
++        return 'fixed';
+       case UnitTypes.inquiry:
+         return 'inquiry';
+     }
+@@ -53,7 +56,12 @@ enum BookingUnitTypes {
+   @JsonValue('night')
+   night,
+   @JsonValue('hour')
+-  hour
++  hour,
++  // Sharetribe's "fixed" unit type: a time booking whose length comes from the
++  // selected price variant's `bookingLengthInMinutes` rather than from the
++  // number of units picked. Console calls it "Preset Booking Windows".
++  @JsonValue('fixed')
++  fixed
+ }
+ 
+ extension BookingUnitTypesX on BookingUnitTypes {
+@@ -110,8 +118,13 @@ sealed class ListingType with _$ListingType {
+       case 'hour':
+       case 'day':
+       case 'night':
++      case 'fixed':
+         return ListingTypeBooking.fromJson(json);
+       default:
++        // Still reachable for a unit type this build predates (e.g. `request`,
++        // used by the default-negotiation process). It parses into the plain
++        // member rather than throwing, so callers must treat an unrecognised
++        // type as "limited support", never as "invalid listing".
+         return _ListingType.fromJson(json);
+     }
+   }
+diff --git a/common/lib/domain/models/listing_types/listing_type.g.dart b/common/lib/domain/models/listing_types/listing_type.g.dart
+index 001e0ff..3a86b83 100644
+--- a/common/lib/domain/models/listing_types/listing_type.g.dart
++++ b/common/lib/domain/models/listing_types/listing_type.g.dart
+@@ -56,6 +56,7 @@ const _$BookingUnitTypesEnumMap = {
+   BookingUnitTypes.day: 'day',
+   BookingUnitTypes.night: 'night',
+   BookingUnitTypes.hour: 'hour',
++  BookingUnitTypes.fixed: 'fixed',
+ };
+ 
+ _$ListingTypeFreeMessagingImpl _$$ListingTypeFreeMessagingImplFromJson(

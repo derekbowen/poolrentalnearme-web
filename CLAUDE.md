@@ -55,6 +55,14 @@ replace MAIN. An abort leaves production untouched. Never skip the gate.
 - Key: `/home/ubuntu/switchy/switchy.env`. Host links: `host_links.json`
   (consumed by `send_host_links.js`, which self-guards quiet hours 10am–noon
   recipient-local, dedupes on `sms_log`, honors opt-outs).
+- **Live cron, bulk SMS:** `0 20 * * 4` (Thu 4pm ET) runs
+  `run_weekly_stats.sh` → `weekly_stats.js`, texting every host their click
+  count. First run 2026-08-06 sent **91 texts to 90 hosts**. Kill switch:
+  `touch /home/ubuntu/switchy/WEEKLY_STOP`. Report every run to Derek.
+  A failed Switchy lookup used to read as a genuine zero and send the harshest
+  "nobody has seen your pool" message — Stephanie Frey got it while her link
+  had 2 clicks. Now it skips the host instead. Never let a lookup failure and
+  a real zero produce the same message.
 
 **Sharetribe**
 - Integration SDK creds on WEST are `SHARETRIBE_INTEGRATION_SDK_CLIENT_ID/SECRET`;

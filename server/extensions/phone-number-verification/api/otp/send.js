@@ -7,6 +7,12 @@ const otpStore = require('../../mod/otpStore');
 const sendOTP = asyncRequestHandler(async (req) => {
   const { email, phoneNumber } = req.body;
 
+  // International numbers can't reliably receive our US-originated OTP SMS.
+  // Non-+1 requests get a success-shaped skip so no client dead-ends here.
+  if (phoneNumber && !String(phoneNumber).startsWith('+1')) {
+    return { status: 200, data: 'OTP skipped for non-US number' };
+  }
+
   const otp = otpStore.issue({ email, phoneNumber });
   if (!otp) {
     throw createError({

@@ -158,6 +158,71 @@ export const transitionPrivileged = (body) => {
   return post('/api/transition-privileged', body);
 };
 
+// Accept a host package deal (Custom Offer).
+//
+// Like `transitionPrivileged`, but the backend prices the transaction from the
+// negotiated offer stored in the transaction's protectedData.pendingOffer
+// (flat package price) instead of the listing's hourly rate. This is the ONLY
+// client path allowed to run transition/accept-offer — the generic
+// transition-privileged endpoint rejects that transition (see
+// server/api/transition-privileged.js) so a crafted request cannot re-price the
+// offer at the hourly rate.
+//
+// See `server/api/accept-offer.js`.
+export const transitionAcceptOffer = (body) => {
+  return post('/api/accept-offer', body);
+};
+
+// Host "package deal" LINK flow (thread-independent — works from any state).
+// Host creates a deal for one of their listings and gets a shareable link;
+// guest opens it, picks a date, and pays at the deal price. See
+// server/api/create-deal.js, deal-get.js, accept-deal.js.
+export const createDeal = (body) => post('/api/create-deal', body);
+
+// c152: host promo codes (owner-gated server-side).
+export const savePromoCode = (body) => post('/api/promo-codes/save', body);
+export const deactivatePromoCode = (body) => post('/api/promo-codes/deactivate', body);
+export const listPromoCodes = (listingId) =>
+  get(`/api/promo-codes?listingId=${encodeURIComponent(listingId)}`);
+
+// c153: share-link click stats (owner-gated server-side).
+export const getShareLinkStats = (listingId) =>
+  get(`/api/share-link-stats?listingId=${encodeURIComponent(listingId)}`);
+export const acceptDeal = (body) => post('/api/accept-deal', body);
+export const getDeal = (token) =>
+  request(`/api/deal/${encodeURIComponent(token)}`, { method: 'GET', headers: {} });
+
+// Additional charge (host charges more after booking — extra guests/hours).
+// Host requests an amount on the booking; guest pays it as a separate,
+// payout-safe transaction. See server/api/additional-charge-*.js.
+export const requestAdditionalCharge = (body) => {
+  return post('/api/additional-charge/request', body);
+};
+export const initiateAdditionalCharge = (body) => {
+  return post('/api/additional-charge/initiate', body);
+};
+export const confirmAdditionalCharge = (body) => {
+  return post('/api/additional-charge/confirm', body);
+};
+
+// Host calendar: dates with an accepted booking on a listing.
+export const listingBookedDates = (body) => {
+  return post('/api/listing-booked-dates', body);
+};
+
+export const icalGetLink = (body) => {
+  return post('/api/ical/link', body);
+};
+
+export const icalRegenerate = (body) => {
+  return post('/api/ical/regenerate', body);
+};
+
+// Host calendar: enforce per-day closed/hours via availability exceptions.
+export const applyCalendarExceptions = (body) => {
+  return post('/api/calendar-apply-exceptions', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp
@@ -178,6 +243,7 @@ export const autoAcceptTxViaOperator = (body) => {
 export const signUpApi = (body) => {
   return post('/api/auth/sign-up', body);
 };
+
 
 // ── Payout dashboard ────────────────────────────────────────────────────────
 // GET helpers for the payouts endpoints (server/api/payouts.js). These return

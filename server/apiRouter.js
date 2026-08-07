@@ -27,12 +27,13 @@ const dealGet = require('./api/deal-get');
 const syncIcal = require('./api/sync-ical');
 const additionalChargeRequest = require('./api/additional-charge-request');
 const additionalChargeInitiate = require('./api/additional-charge-initiate');
+const additionalChargeConfirm = require('./api/additional-charge-confirm');
+const payouts = require('./api/payouts');
 const notifySignup = require('./api/notify-signup');
 const listingBookedDates = require('./api/listing-booked-dates');
 const icalFeed = require('./api/ical-feed');
 const icalLink = require('./api/ical-link');
 const icalRegenerate = require('./api/ical-regenerate');
-const payouts = require('./api/payouts');
 const calendarApplyExceptions = require('./api/calendar-apply-exceptions');
 const wizardTelemetry = require('./api/wizard-telemetry');
 const createVerificationSession = require('./api/create-verification-session');
@@ -91,20 +92,11 @@ router.post('/create-deal', bodyParser.json({ limit: '8kb' }), authenticatedUser
 router.get('/deal/:token', dealGet);
 router.post('/accept-deal', acceptDeal);
 
-// ─── Promotion / boost: PARKED ────────────────────────────────────────────
-// The pay-per-booking promotion feature is shelved: its 25% host-side fee
-// contradicts the 0% host fee positioning. Code preserved on the
-// `feature/boost-parked` branch. Any caller of the former endpoints
-// (purchase, promote, attribute webhook, beacon) gets 410 Gone so nothing
-// external mistakes them for live-but-broken.
-router.all(/^\/boost(\/.*)?$/, (req, res) => {
-  res.status(410).json({ error: 'gone', detail: 'The promotion feature has been retired.' });
-});
-
 // Swimply iCal two-way sync: fetch Swimply .ics feed and block times in Sharetribe
 router.post('/sync-ical', bodyParser.json({ limit: '4kb' }), syncIcal);
 router.post('/additional-charge/request', bodyParser.json({ limit: '4kb' }), additionalChargeRequest);
 router.post('/additional-charge/initiate', bodyParser.json({ limit: '4kb' }), additionalChargeInitiate);
+router.post('/additional-charge/confirm', bodyParser.json({ limit: '4kb' }), additionalChargeConfirm);
 router.get('/payouts/summary', payouts.summary);
 router.get('/payouts/list', payouts.list);
 router.get('/payouts/activity', payouts.activity);
@@ -167,6 +159,21 @@ router.post('/concierge/inbound', bodyParser.urlencoded({ extended: false }), co
 // Manual-address fallback: server-side geocoding so a Maps script failure can
 // never block signup or listing creation (auth-gated; listing flow requires login).
 const geocodeAddress = require('./api/geocode');
+const geocodeSuggest = require('./api/geocodeSuggest');
 router.post('/geocode', bodyParser.json({ limit: '2kb' }), authenticatedUser(), geocodeAddress);
+router.get('/geocode-suggest', geocodeSuggest);
+
+// c152: host promo codes (owner-gated CRUD; pricing engine applies them)
+const promoCodes = require('./api/promo-codes');
+router.post('/promo-codes/save', bodyParser.json({ limit: '4kb' }), authenticatedUser(), promoCodes.save);
+router.post('/promo-codes/deactivate', bodyParser.json({ limit: '2kb' }), authenticatedUser(), promoCodes.deactivate);
+router.get('/promo-codes', authenticatedUser(), promoCodes.list);
+
+// c153: owner-gated share-link click stats
+const shareLinkStats = require('./api/share-link-stats');
+router.get('/share-link-stats', authenticatedUser(), shareLinkStats);
+
+const resumeListing = require('./api/resume-listing');
+router.get('/resume-listing', resumeListing);
 
 module.exports = router;

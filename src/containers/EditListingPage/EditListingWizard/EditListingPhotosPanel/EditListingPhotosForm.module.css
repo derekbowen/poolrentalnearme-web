@@ -22,6 +22,73 @@
   background-color: var(--colorGrey50);
 }
 
+/* Draggable photo wrapper (reorder + cover photo) */
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  cursor: grab;
+}
+.imageWrapper:active {
+  cursor: grabbing;
+}
+.dragging {
+  opacity: 0.4;
+}
+.dropTarget {
+  outline: 3px solid var(--marketplaceColor, #1f7fbf);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.coverBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--marketplaceColor, #1f7fbf);
+  color: #fff;
+  font-size: 12px;
+  font-weight: var(--fontWeightSemiBold, 600);
+  pointer-events: none;
+}
+.makeCoverButton {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 12px;
+  font-weight: var(--fontWeightSemiBold, 600);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.makeCoverButton:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+.imageWrapper:hover .makeCoverButton {
+  opacity: 1;
+}
+/* Touch devices have no hover — always show the action */
+@media (hover: none) {
+  .makeCoverButton {
+    opacity: 1;
+  }
+}
+.reorderHint {
+  composes: h5 from global;
+  color: var(--colorGrey300);
+  margin: 0 0 12px 0;
+}
+
 .addImageWrapper {
   float: left;
   position: relative;
@@ -111,13 +178,6 @@
   display: none;
 }
 
-.reorderHint {
-  composes: marketplaceTinyFontStyles from global;
-  color: var(--colorGrey300);
-  margin-top: 0;
-  margin-bottom: 12px;
-}
-
 .tip {
   composes: h5 from global;
 
@@ -165,4 +225,45 @@
     width: 241px;
     margin-top: 100px;
   }
+}
+
+/* Mobile-friendly reorder arrows (touch works everywhere; drag is desktop-only).
+   Always visible — unlike the hover-only "Make cover" button — so they work on
+   touch. Top-right so they never overlap the top-left cover badge. */
+.reorderControls {
+  position: absolute;
+  /* Vertically centered on the right edge — clears the delete X (top-right)
+     and the "Make cover" button (bottom-left) so it never covers either. */
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reorderBtn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.reorderBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.reorderBtn:active:not(:disabled) {
+  background: #e2e8f0;
 }

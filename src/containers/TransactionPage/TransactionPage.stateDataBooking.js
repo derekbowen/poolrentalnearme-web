@@ -15,7 +15,7 @@ import {
 export const getStateDataForBookingProcess = (txInfo, processInfo) => {
   const { transaction, transactionRole, nextTransitions } = txInfo;
   const isProviderBanned = transaction?.provider?.attributes?.banned;
-  const isCustomerBanned = transaction?.provider?.attributes?.banned;
+  const isCustomerBanned = transaction?.customer?.attributes?.banned;
   const _ = CONDITIONAL_RESOLVER_WILDCARD;
 
   const {
@@ -39,6 +39,37 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
       return { processName, processState, showOrderPanel };
     })
     .cond([states.INQUIRY, PROVIDER], () => {
+      return { processName, processState, showDetailCardHeadings: true, showSendOfferPanel: true };
+    })
+    .cond([states.OFFER_SENT, CUSTOMER], () => {
+      const pendingOffer = transaction?.attributes?.protectedData?.pendingOffer;
+      const secondary = actionButtonProps(transitions.DECLINE_OFFER, CUSTOMER);
+      // The guest accepts by picking a date/time in the OrderPanel and
+      // continuing to checkout, where the transaction is priced from the
+      // negotiated offer (getRequestTransition returns ACCEPT_OFFER for an
+      // offer-sent tx; CheckoutPage routes it to /api/accept-offer). The
+      // offerAccept context tells the OrderPanel to show the agreed package
+      // price instead of the hourly estimate.
+      const canAccept = !isProviderBanned && !!pendingOffer?.negotiatedPriceCents;
+      const offerAccept = canAccept
+        ? {
+            negotiatedPriceCents: pendingOffer.negotiatedPriceCents,
+            currency: pendingOffer.currency || 'USD',
+          }
+        : null;
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showPendingOffer: true,
+        pendingOffer,
+        showOrderPanel: canAccept,
+        offerAccept,
+        showActionButtons: !!secondary,
+        secondaryButtonProps: secondary,
+      };
+    })
+    .cond([states.OFFER_SENT, PROVIDER], () => {
       return { processName, processState, showDetailCardHeadings: true };
     })
     .cond([states.PREAUTHORIZED, CUSTOMER], () => {

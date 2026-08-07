@@ -218,7 +218,11 @@ export const EditListingPageComponent = props => {
           },
         };
 
-    return <NamedRedirect {...redirectProps} />;
+    // c134 (#101): flag the arrival so ListingPage can confirm the publish out loud.
+    // page.redirectToListing is only true right after PUBLISH_LISTING_SUCCESS, so a
+    // plain revisit to a stale draft URL redirects without the celebration.
+    const redirectState = page.redirectToListing ? { justPublished: true } : null;
+    return <NamedRedirect {...redirectProps} state={redirectState} />;
   } else if (showWizard) {
     const {
       createListingDraftError = null,

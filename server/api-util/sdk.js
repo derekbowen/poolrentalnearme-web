@@ -7,9 +7,6 @@ const wrapInstanceWithResponseTransformer = require('./wrapInstanceWithResponseT
 
 const CLIENT_ID = process.env.VITE_SHARETRIBE_SDK_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHARETRIBE_SDK_CLIENT_SECRET;
-// Drives the `Secure` flag on the session cookie written by expressCookieStore.
-// Defaults to on in production so a missing env var cannot silently downgrade
-// every session cookie; set it to 'false' explicitly for plain-http local dev.
 const USING_SSL =
   process.env.VITE_SHARETRIBE_USING_SSL != null && process.env.VITE_SHARETRIBE_USING_SSL !== ''
     ? process.env.VITE_SHARETRIBE_USING_SSL === 'true'

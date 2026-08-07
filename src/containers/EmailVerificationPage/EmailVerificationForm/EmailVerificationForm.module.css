@@ -37,3 +37,13 @@
 .modalIcon {
   composes: marketplaceModalIconStyles from global;
 }
+
+/* Helper links (same pattern as AuthenticationPage.module.css) */
+.modalHelperLink {
+  composes: a from global;
+  composes: marketplaceModalHelperLink from global;
+}
+
+.modalHelperText {
+  composes: marketplaceModalHelperText from global;
+}

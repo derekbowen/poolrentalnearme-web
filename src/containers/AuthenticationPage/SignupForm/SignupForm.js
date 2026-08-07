@@ -7,7 +7,13 @@ import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import * as validators from '../../../util/validators';
 import { getPropsForCustomUserFieldInputs } from '../../../util/userHelpers';
 
-import { Form, PrimaryButton, FieldTextInput, CustomExtendedDataField } from '../../../components';
+import {
+  Form,
+  PrimaryButton,
+  FieldTextInput,
+  FieldCheckboxGroup,
+  CustomExtendedDataField,
+} from '../../../components';
 
 import FieldSelectUserType from '../FieldSelectUserType';
 import UserFieldDisplayName from '../UserFieldDisplayName';
@@ -35,6 +41,7 @@ const SignupFormComponent = props => (
         termsAndConditions,
         preselectedUserType,
         userTypes,
+        renderSocialLoginButtons,
         userFields,
         values,
       } = formRenderProps;
@@ -109,6 +116,16 @@ const SignupFormComponent = props => (
             hasExistingUserType={!!preselectedUserType}
             intl={intl}
           />
+
+          {/* Without this, an unselected form is three cards, two checkboxes
+              and a dead button - no fields, no explanation. */}
+          {!showDefaultUserFields ? (
+            <p className={css.pickOneHint}>
+              <FormattedMessage id="SignupForm.pickOneToContinue" />
+            </p>
+          ) : null}
+
+          {renderSocialLoginButtons ? renderSocialLoginButtons(userType) : null}
 
           {showDefaultUserFields ? (
             <div className={css.defaultUserFields}>
@@ -204,10 +221,28 @@ const SignupFormComponent = props => (
           ) : null}
 
           <div className={css.bottomWrapper}>
+            {/* Optional marketing SMS. Deliberately NOT required and NOT
+                pre-ticked: service texts ride the terms checkbox, promo texts
+                need consent that is not a condition of signing up. */}
+            <FieldCheckboxGroup
+              name="smsMarketing"
+              id={formId ? `${formId}.smsMarketing` : 'smsMarketing'}
+              options={[
+                {
+                  key: 'yes',
+                  label: intl.formatMessage({ id: 'SignupForm.smsMarketingLabel' }),
+                },
+              ]}
+            />
             {termsAndConditions}
             <PrimaryButton type="submit" inProgress={submitInProgress} disabled={submitDisabled}>
               <FormattedMessage id="SignupForm.signUp" />
             </PrimaryButton>
+            {submitDisabled && !submitInProgress && !userType ? (
+              <p className={css.whyDisabled}>
+                <FormattedMessage id="SignupForm.chooseTypeFirst" />
+              </p>
+            ) : null}
           </div>
         </Form>
       );

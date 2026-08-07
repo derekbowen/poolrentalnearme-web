@@ -1,7 +1,5 @@
 import React from 'react';
 import classNames from 'classnames';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 // Import shared components
 import {
@@ -58,31 +56,6 @@ const RemoveImageButton = props => {
  * @param {string} [props.variantPrefix] - The variant prefix
  * @returns {JSX.Element}
  */
-// Drag handle icon (6-dot grip)
-const DragHandle = ({ listeners, attributes }) => (
-  <button
-    className={css.dragHandle}
-    {...listeners}
-    {...attributes}
-    type="button"
-    aria-label="Drag to reorder"
-  >
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-      <circle cx="5" cy="3" r="1.5" />
-      <circle cx="11" cy="3" r="1.5" />
-      <circle cx="5" cy="8" r="1.5" />
-      <circle cx="11" cy="8" r="1.5" />
-      <circle cx="5" cy="13" r="1.5" />
-      <circle cx="11" cy="13" r="1.5" />
-    </svg>
-  </button>
-);
-
-// Cover image badge
-const CoverBadge = () => (
-  <span className={css.coverBadge}>Cover</span>
-);
-
 const ListingImage = props => {
   const {
     className,
@@ -92,29 +65,7 @@ const ListingImage = props => {
     aspectWidth = 1,
     aspectHeight = 1,
     variantPrefix = 'listing-card',
-    id,
-    sortable = false,
-    isCoverImage = false,
   } = props;
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: id || 'placeholder', disabled: !sortable });
-
-  const sortableStyle = sortable
-    ? {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 10 : 'auto',
-      }
-    : {};
-
   const handleRemoveClick = e => {
     e.stopPropagation();
     onRemoveImage(image.id);
@@ -132,20 +83,16 @@ const ListingImage = props => {
     ) : null;
 
     return (
-      <div ref={setNodeRef} style={sortableStyle}>
-        <ImageFromFile
-          id={image.id}
-          className={className}
-          file={image.file}
-          aspectWidth={aspectWidth}
-          aspectHeight={aspectHeight}
-        >
-          {sortable && image.imageId ? <DragHandle listeners={listeners} attributes={attributes} /> : null}
-          {isCoverImage ? <CoverBadge /> : null}
-          {removeButton}
-          {uploadingOverlay}
-        </ImageFromFile>
-      </div>
+      <ImageFromFile
+        id={image.id}
+        className={className}
+        file={image.file}
+        aspectWidth={aspectWidth}
+        aspectHeight={aspectHeight}
+      >
+        {removeButton}
+        {uploadingOverlay}
+      </ImageFromFile>
     );
   } else {
     const classes = classNames(css.root, className);
@@ -155,6 +102,9 @@ const ListingImage = props => {
       : [];
     const imgForResponsiveImage = image.imageId ? { ...image, id: image.imageId } : image;
 
+    // This is shown when image is uploaded,
+    // but the new responsive image is not yet downloaded by the browser.
+    // This is absolutely positioned behind the actual image.
     const fallbackWhileDownloading = image.file ? (
       <ImageFromFile
         id={image.id}
@@ -170,7 +120,7 @@ const ListingImage = props => {
     ) : null;
 
     return (
-      <div ref={setNodeRef} style={sortableStyle} className={classes}>
+      <div className={classes}>
         <div className={css.wrapper}>
           {fallbackWhileDownloading}
           <AspectRatioWrapper width={aspectWidth} height={aspectHeight}>
@@ -181,8 +131,6 @@ const ListingImage = props => {
               variants={variants}
             />
           </AspectRatioWrapper>
-          {sortable ? <DragHandle listeners={listeners} attributes={attributes} /> : null}
-          {isCoverImage ? <CoverBadge /> : null}
           <RemoveImageButton onClick={handleRemoveClick} />
         </div>
       </div>

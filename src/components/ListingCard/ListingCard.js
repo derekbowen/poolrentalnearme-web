@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import classNames from 'classnames';
 import { bool, func, object, string } from 'prop-types';
 
@@ -8,7 +8,7 @@ import { isBookingProcessAlias } from '../../transactions/transaction';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { displayPrice, isPriceVariationsEnabled } from '../../util/configHelpers';
 import { lazyLoadWithDimensions } from '../../util/uiHelpers';
-import { formatMoney } from '../../util/currency';
+import { formatMoney, priceWithBookingFee } from '../../util/currency';
 import { ensureListing, ensureUser } from '../../util/data';
 import { richText } from '../../util/richText';
 import { propTypes } from '../../util/types';
@@ -56,7 +56,7 @@ const PriceMaybe = (props) => {
   const hasMultiplePriceVariants = isPriceVariationsInUse && publicData?.priceVariants?.length > 1;
 
   const isBookable = isBookingProcessAlias(publicData?.transactionProcessAlias);
-  const { formattedPrice, priceTitle } = priceData(price, config.currency, intl);
+  const { formattedPrice, priceTitle } = priceData(priceWithBookingFee(price), config.currency, intl);
 
   const shortenUnitType = (unitType) => {
     switch (unitType) {
@@ -125,6 +125,38 @@ export const ListingCard = props => {
   const authorName = author.attributes.profile.displayName;
   const firstImage =
     currentListing.images && currentListing.images.length > 0 ? currentListing.images[0] : null;
+  const images = currentListing.images || [];
+  const [activeSlide, setActiveSlide] = useState(0);
+  // Only photos the user has actually reached get loaded (perf: the first paint of /s
+  // loads 1 image per card, not all 5). maxReached grows as they arrow/swipe.
+  const [maxReached, setMaxReached] = useState(0);
+  const slideCount = images.length;
+  const setSlide = ns => {
+    const clamped = Math.max(0, Math.min(slideCount - 1, ns));
+    setActiveSlide(clamped);
+    setMaxReached(m => Math.max(m, clamped));
+  };
+  // Transform-driven carousel: a CSS scroll-snap container inside the card's <a> link
+  // swallowed both swipe and arrow clicks, so we drive it with state instead.
+  const go = dir => e => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setSlide(activeSlide + dir);
+  };
+  const touchX = useRef(null);
+  const onTouchStart = e => {
+    touchX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = e => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 40) {
+      setSlide(activeSlide - Math.sign(dx));
+    }
+    touchX.current = null;
+  };
   const geolocation = currentListing.attributes?.geolocation;
   const location = currentListing.attributes?.publicData?.location || {};
 
@@ -182,6 +214,69 @@ export const ListingCard = props => {
   };
 
   const city = location?.city || getCityFromLocation() || '';
+  const guests = publicData?.guestallowed;
+  const isInstantBooking = !!publicData?.isInstantBooking;
+  const category = publicData?.categoryLevel2 || publicData?.categoryLevel1;
+  const categoryLabel = category
+    ? String(category)
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+    : null;
+  const avgRating = publicData?.avgRating;
+  const reviewCount = publicData?.reviewCount;
+  // Honest badges: Customer Fav (top native rating) > Pro Host (proven operator,
+  // stamped by the ratings cron or a linked Swimply calendar) > New (first 60
+  // days only) > nothing. Replaces the old blanket "New" on every unrated card.
+  const NEW_WINDOW_MS = 60 * 24 * 60 * 60 * 1000;
+  const listingCreatedAt = currentListing.attributes.createdAt;
+  const isNewListing = listingCreatedAt
+    ? Date.now() - new Date(listingCreatedAt).getTime() <= NEW_WINDOW_MS
+    : false;
+  const isProHost = !!(publicData?.proHost || publicData?.swimplyIcalUrl);
+  const isCustomerFav = typeof avgRating === 'number' && avgRating >= 4.7;
+  const distanceLabel = distance != null ? `${Math.round(distance * 10) / 10} mi` : null;
+
+  const imageContent =
+    images.length > 1 ? (
+      <div className={css.carousel} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div
+          className={css.carouselTrack}
+          style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+        >
+          {images.map((img, i) => (
+            <div className={css.carouselSlide} key={img.id?.uuid || i}>
+              {i > maxReached ? null : i === 0 ? (
+                <LazyImage
+                  rootClassName={css.rootForImage}
+                  alt={`${title} — photo 1`}
+                  image={img}
+                  variants={variants}
+                  sizes={renderSizes}
+                />
+              ) : (
+                // Slides past the first only mount once the user reaches them, so eager-
+                // load them (the lazy loader leaves a transform-revealed slide blank).
+                <ResponsiveImage
+                  rootClassName={css.rootForImage}
+                  alt={`${title} — photo ${i + 1}`}
+                  image={img}
+                  variants={variants}
+                  sizes={renderSizes}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <LazyImage
+        rootClassName={css.rootForImage}
+        alt={title}
+        image={firstImage}
+        variants={variants}
+        sizes={renderSizes}
+      />
+    );
 
   return (
     <NamedLink className={classes} name="ListingPage" params={{ id, slug }}>
@@ -191,34 +286,85 @@ export const ListingCard = props => {
         height={aspectHeight}
         {...setActivePropsMaybe}
       >
+        {distanceLabel ? (
+          <div className={css.distancePill}>
+            <span className={css.distancePin} aria-hidden="true">📍</span>
+            {distanceLabel}
+          </div>
+        ) : null}
         <BookmarkButton listingId={id} listingAuthor={author} />
+        {isInstantBooking ? (
+          <div className={css.instantBadge}>
+            <span className={css.instantBolt} aria-hidden="true">⚡</span> INSTANT
+          </div>
+        ) : null}
         {price ? (
           <PriceMaybe price={price} publicData={publicData} config={config} intl={intl} />
         ) : null}
-        <LazyImage
-          rootClassName={css.rootForImage}
-          alt={title}
-          image={firstImage}
-          variants={variants}
-          sizes={renderSizes}
-        />
+        {imageContent}
+        {images.length > 1 ? (
+          <button
+            type="button"
+            className={css.navArrowPrev}
+            aria-label="Previous photo"
+            onClick={go(-1)}
+          >
+            ‹
+          </button>
+        ) : null}
+        {images.length > 1 ? (
+          <button
+            type="button"
+            className={css.navArrowNext}
+            aria-label="Next photo"
+            onClick={go(1)}
+          >
+            ›
+          </button>
+        ) : null}
+        {images.length > 1 ? (
+          <div className={css.dots} aria-hidden="true">
+            {images.map((img, i) => (
+              <span
+                key={img.id?.uuid || i}
+                className={i === activeSlide ? css.dotActive : css.dot}
+              />
+            ))}
+          </div>
+        ) : null}
       </AspectRatioWrapper>
       <div className={css.info}>
         <div className={css.mainInfo}>
-          <div className={css.title}>
-            {richText(title, {
-              longWordMinLength: MIN_LENGTH_FOR_LONG_WORDS,
-              longWordClass: css.longWord,
-            })}
+          <div className={css.titleRow}>
+            <div className={css.title}>
+              {richText(title, {
+                longWordMinLength: MIN_LENGTH_FOR_LONG_WORDS,
+                longWordClass: css.longWord,
+              })}
+            </div>
+            <div className={css.rating}>
+              {avgRating ? (
+                <>
+                  <span className={css.star} aria-hidden="true">★</span>
+                  {avgRating}
+                  {reviewCount ? <span className={css.reviewCount}>({reviewCount})</span> : null}
+                  {isCustomerFav ? <span className={css.badgeFav}>Customer Fav</span> : null}
+                </>
+              ) : isProHost ? (
+                <span className={css.badgePro}>Pro Host</span>
+              ) : isNewListing ? (
+                <span className={css.newLabel}>New</span>
+              ) : null}
+            </div>
           </div>
-          <div className={css.cityInfo}>
-            {city && distance
-              ? intl.formatMessage(
-                  { id: 'ListingCard.cityAndDistance' },
-                  { city, distance: Math.round(distance * 10) / 10 }
-                )
-              : null}
-            {city && !distance ? city : null}
+          {city ? <div className={css.cityInfo}>{city}</div> : null}
+          <div className={css.metaRow}>
+            {categoryLabel ? <span className={css.categoryChip}>{categoryLabel}</span> : null}
+            {guests ? (
+              <span className={css.guests}>
+                <span className={css.guestsIcon} aria-hidden="true">👥</span> {guests}
+              </span>
+            ) : null}
           </div>
           {showAuthorInfo ? (
             <div className={css.authorInfo}>

@@ -20,7 +20,19 @@ const FooterComponent = () => {
     linkLogoToExternalSite: topbar?.logoLink,
   };
 
-  return <SectionBuilder sections={[footerSection]} />;
+  return (
+    <>
+      <SectionBuilder sections={[footerSection]} />
+      <div style={{ background: '#0b2733', textAlign: 'center', padding: '14px 16px' }}>
+        <a
+          href="/public-pools"
+          style={{ color: '#9fd6ef', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+        >
+          Browse the free public pools directory →
+        </a>
+      </div>
+    </>
+  );
 };
 
 // NOTE: if you want to add dynamic data to FooterComponent,

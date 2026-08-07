@@ -57,15 +57,18 @@ export const verify = verificationToken => async (dispatch, getState, sdk) => {
   if (verificationInProgress(getState())) {
     return Promise.reject(new Error('Email verification already in progress'));
   }
+  // No token given (e.g. /verify-email opened without ?t=): the API call could
+  // only fail. Bail out before VERIFICATION_REQUEST so the page stays in its
+  // neutral "check your inbox" state instead of in-progress or error.
+  if (!verificationToken) {
+    return Promise.resolve();
+  }
   dispatch(verificationRequest());
 
   // Fetch current user to check if the email is already verified
   await dispatch(fetchCurrentUser({ enforce: true }));
   const { currentUser } = getState().user;
-  // currentUser is null when the verification link is opened in a browser
-  // without a session (common when signup happened in an in-app browser and
-  // the email link opens in the default browser) - don't crash the SSR.
-  const { emailVerified, pendingEmail } = currentUser?.attributes || {};
+  const { emailVerified, pendingEmail } = currentUser.attributes;
 
   // If the email is already verified, we don't need to do anything
   if (emailVerified && !pendingEmail) {

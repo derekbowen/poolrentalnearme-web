@@ -7,14 +7,16 @@ const saleLink = txId => `${ROOT}/sale/${txId}`;
 const orderLink = txId => `${ROOT}/order/${txId}`;
 
 // "Sat Jul 12, 1–4pm"
-const when = booking => {
+const when = (booking, tz) => {
+  const zone = tz || 'America/New_York';
   if (!booking?.start) return 'your requested time';
   try {
     const s = new Date(booking.start);
     const e = booking.end ? new Date(booking.end) : null;
-    const day = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-    const t = d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: d.getMinutes() ? '2-digit' : undefined, timeZone: 'America/New_York' }).replace(':00', '');
-    return e ? `${day}, ${t(s)}–${t(e)}` : `${day} ${t(s)}`;
+    const day = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: zone });
+    const t = d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: d.getMinutes() ? '2-digit' : undefined, timeZone: zone }).replace(':00', '');
+    const abbr = s.toLocaleTimeString('en-US', { timeZone: zone, timeZoneName: 'short' }).split(' ').pop();
+    return e ? `${day}, ${t(s)}–${t(e)} ${abbr}` : `${day} ${t(s)} ${abbr}`;
   } catch (err) {
     return 'your requested time';
   }
@@ -28,7 +30,7 @@ const clip = (s, n) => {
 // kind → (ctx) => string. ctx: { listing, booking, txId, guestName, hostName, snippet }
 const TEMPLATES = {
   HOST_NEW_REQUEST: c =>
-    `🏊 New booking request for ${clip(c.listing, 40)} — ${when(c.booking)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}`,
+    `🏊 New booking request for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}`,
 
   // Fires ONLY for message-less inquiries (poller skips it when the inquiry
   // carried a message — the 💬 NEW_MESSAGE text covers that case).
@@ -39,28 +41,36 @@ const TEMPLATES = {
     `⏰ Heads up — your booking request for ${clip(c.listing, 40)} expires in ~3 hrs. Accept or decline: ${saleLink(c.txId)}`,
 
   HOST_CANCELLED: c =>
-    `❌ ${c.guestName || 'Your guest'} cancelled the booking for ${clip(c.listing, 40)} (${when(c.booking)}).`,
+    `❌ ${c.guestName || 'Your guest'} cancelled the booking for ${clip(c.listing, 40)} (${when(c.booking, c.tz)}).`,
 
   HOST_PAYOUT: c =>
     `💰 You've been paid for ${clip(c.listing, 45)}. Nice work! ${saleLink(c.txId)}`,
 
   GUEST_ACCEPTED: c =>
-    `✅ Your booking for ${clip(c.listing, 40)} on ${when(c.booking)} is confirmed! Details: ${orderLink(c.txId)}`,
+    `✅ Your booking for ${clip(c.listing, 40)} on ${when(c.booking, c.tz)} is confirmed! Details: ${orderLink(c.txId)}`,
 
   GUEST_DECLINED: c =>
     `Your request for ${clip(c.listing, 40)} wasn't accepted. Your card was only authorized, not charged — the hold releases automatically (your bank may show it pending a few days). ${orderLink(c.txId)}`,
 
   // c109: the guest paid and previously heard NOTHING until the host acted.
   GUEST_REQUEST_RECEIVED: c =>
-    `🏊 Got your request for ${clip(c.listing, 40)} — ${when(c.booking)}! ${c.hostName || 'The host'} has been notified and usually replies fast. Your card is only authorized until they accept. Track it: ${orderLink(c.txId)}`,
+    `🏊 Got your request for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}! ${c.hostName || 'The host'} has been notified and usually replies fast. Your card is only authorized until they accept. Track it: ${orderLink(c.txId)}`,
 
   // c109: cancels only texted the host; the guest could show up to a cancelled pool.
   GUEST_CANCELLED: c =>
-    `❌ Your booking for ${clip(c.listing, 40)} (${when(c.booking)}) was cancelled. Any charge is refunded automatically. Find another great pool: ${ROOT}`,
+    `❌ Your booking for ${clip(c.listing, 40)} (${when(c.booking, c.tz)}) was cancelled. Any charge is refunded automatically. Find another great pool: ${ROOT}`,
 
   // c109: day-before reminder, sent by sweepReminders.
   GUEST_REMINDER: c =>
-    `🏊 Reminder: your swim at ${clip(c.listing, 40)} is tomorrow — ${when(c.booking)}. Details & house rules: ${orderLink(c.txId)}. Have fun!`,
+    `🏊 Reminder: your swim at ${clip(c.listing, 40)} is tomorrow — ${when(c.booking, c.tz)}. Details & house rules: ${orderLink(c.txId)}. Have fun!`,
+
+  // c154: review window opens at completion and quietly closes ~7 days later.
+  GUEST_REVIEW_INVITE: c =>
+    `⭐ How was your swim at ${clip(c.listing, 40)}? Reviews just opened — it takes a minute and means the world to ${c.hostName || 'your host'}. Leave yours: ${orderLink(c.txId)} (reviews close in 7 days)`,
+
+  // c148: hosts previously got NO day-before reminder (guests only) - backwards.
+  HOST_REMINDER: c =>
+    `🏊 Reminder: ${c.guestName || 'your guest'} booked ${clip(c.listing, 40)} tomorrow — ${when(c.booking, c.tz)}. Time to get the pool ready! Details: ${saleLink(c.txId)}`,
 
   // Custom Offers — host sends a package deal from an inquiry thread.
   // OFFER_RECEIVED → guest; OFFER_ACCEPTED → host. offerAmount is a "$150" string.

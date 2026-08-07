@@ -18,7 +18,8 @@ import twitterImage from '../assets/biketribe-twitter-sharing-600x314.jpg';
 // This is saved as CSS Property: --marketplaceColor in src/app.js
 // Also --marketplaceColorDark and --marketplaceColorLight are generated from this one
 // by adding +/- 10% to lightness.
-export const marketplaceColor = '#1d7595';
+// PRNM redesign: brand pool blue = PSEO app's oklch(0.65 0.15 230). Was '#7c3aed'.
+export const marketplaceColor = '#009ed8';
 
 // Logo is used in Topbar on mobile and desktop, where height is the limiting factor.
 // Therefore, we strongly suggest that your image file for desktop logo is in landscape!

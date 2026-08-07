@@ -252,7 +252,15 @@ export const BookingFixedDurationForm = props => {
 
             {fetchLineItemsError ? (
               <span className={css.sideBarError}>
-                <FormattedMessage id="BookingFixedDurationForm.fetchLineItemsError" />
+                {fetchLineItemsError.status === 400 &&
+                typeof fetchLineItemsError.statusText === 'string' &&
+                /advance notice|minimum booking|hours per booking|in advance/i.test(
+                  fetchLineItemsError.statusText
+                ) ? (
+                  fetchLineItemsError.statusText
+                ) : (
+                  <FormattedMessage id="BookingFixedDurationForm.fetchLineItemsError" />
+                )}
               </span>
             ) : null}
 

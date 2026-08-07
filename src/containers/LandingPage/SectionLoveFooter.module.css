@@ -1,0 +1,151 @@
+.root {
+  width: 100%;
+  background: #fff;
+}
+
+.inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px 40px;
+}
+
+.derekCard {
+  border-radius: 24px;
+  background: #ffb8d9;
+  border: 3px dashed #ffd21f;
+  padding: 28px;
+  text-align: center;
+}
+
+.derekEmoji {
+  font-size: 26px;
+}
+
+.derekTitle {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #22303c;
+}
+
+.derekText {
+  margin: 4px auto 0;
+  max-width: 480px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7a86;
+}
+
+.quietBtn {
+  display: inline-flex;
+  width: 100%;
+  max-width: 420px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  margin-top: 16px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  border: 2px solid var(--marketplaceColor, #009ed8);
+  background: #fff;
+  color: var(--marketplaceColor, #009ed8);
+}
+
+.quietBtn:hover {
+  background: #e4f4fc;
+  text-decoration: none;
+}
+
+.socialCard {
+  margin-top: 24px;
+  border-radius: 24px;
+  border: 1px solid #e8edf1;
+  background: #fff;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(34, 48, 60, 0.06), 0 12px 28px rgba(34, 48, 60, 0.07);
+}
+
+.socialTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #22303c;
+}
+
+.socialRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.socialChip {
+  border-radius: 999px;
+  background: #e4f4fc;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--marketplaceColorDark, #007eb7);
+  text-decoration: none;
+}
+
+.socialChip:hover {
+  background: #c9edf9;
+  text-decoration: none;
+}
+
+.appBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  margin-top: 18px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: #0b2733;
+  text-decoration: none;
+}
+
+.appBtn:hover {
+  text-decoration: none;
+  opacity: 0.92;
+}
+
+.storeRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.storeLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7a86;
+  text-decoration: none;
+}
+
+.storeLink:hover {
+  color: var(--marketplaceColor, #009ed8);
+  text-decoration: none;
+}
+
+.loveNote {
+  margin: 28px 0 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #22303c;
+}

@@ -118,7 +118,34 @@ const requestAction = actionType => params => ({ type: actionType, payload: { pa
 
 const successAction = actionType => result => ({ type: actionType, payload: result.data });
 
-const errorAction = actionType => payload => ({ type: actionType, payload, error: true });
+// Wizard air-file beacon: every listing-wizard error (draft save, publish,
+// update, image upload, …) fires ONE fire-and-forget report to our server so
+// a stuck host is visible to ops without contacting support. Never throws,
+// never blocks the UI, silently no-ops during SSR.
+const wizardBeacon = (actionType, payload) => {
+  try {
+    if (typeof window === 'undefined' || typeof window.fetch !== 'function') return;
+    const status = payload?.status || payload?.statusCode || payload?.error?.status || '';
+    const fi = payload?.error?.fileInfo ? ` [${payload.error.fileInfo}]` : '';
+    const msg = (String(
+      payload?.message || payload?.name || payload?.error?.message || payload?.error?.name || ''
+    ).slice(0, 180) + fi).slice(0, 230);
+    window.fetch('/api/wizard-telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step: actionType, error: `${status} ${msg}`.trim() }),
+      keepalive: true,
+      credentials: 'same-origin',
+    }).catch(() => {});
+  } catch (e) {
+    // never interfere with the wizard
+  }
+};
+
+const errorAction = actionType => payload => {
+  wizardBeacon(actionType, payload);
+  return { type: actionType, payload, error: true };
+};
 
 // ================ Action types ================ //
 
@@ -667,8 +694,23 @@ export function requestUpdateListing(tab, data, config) {
 
     // Note: if update values include stockUpdate, we'll do that first
     // That way we get updated currentStock info among ownListings.update
+    const submitUpdate = () => sdk.ownListings.update(ownListingUpdateValues, queryParams);
+
     return updateStockOfListingMaybe(id, stockUpdate, dispatch)
-      .then(() => sdk.ownListings.update(ownListingUpdateValues, queryParams))
+      .then(submitUpdate)
+      // Version-conflict recovery: if the listing changed underneath us (HTTP 409 —
+      // e.g. a booking, or the background iCal/availability sync bumped the listing
+      // while the host had the edit form open), refetch the fresh listing and retry
+      // the update once before surfacing an error. This is a partial update (only the
+      // edited fields are sent), so re-submitting after a refetch preserves the fresh
+      // server state instead of clobbering it.
+      .catch(e => {
+        if (e && e.status === 409) {
+          log.error(e, 'update-listing-409-retrying', { listingId: id.uuid });
+          return sdk.ownListings.show({ id }).then(submitUpdate);
+        }
+        throw e;
+      })
       .then(response => {
         dispatch(updateListingSuccess(response));
         dispatch(addMarketplaceEntities(response));
@@ -730,7 +772,16 @@ export function requestImageUpload(actionPayload, listingImageConfig) {
           uploadImageSuccess({ data: { ...img, id, imageId: img.id, file: actionPayload.file } })
         );
       })
-      .catch(e => dispatch(uploadImageError({ id, error: storableError(e) })));
+      .catch(e => {
+        const err = storableError(e);
+        try {
+          const f = actionPayload.file;
+          err.fileInfo = `${(f && f.type) || '?'}|${((f && f.name) || '').slice(-28)}|${Math.round(((f && f.size) || 0) / 1024)}KB`;
+        } catch (ignored) {
+          // best-effort only
+        }
+        return dispatch(uploadImageError({ id, error: err }));
+      });
   };
 }
 

@@ -25,7 +25,7 @@ import {
 
 import css from './ProfileSettingsForm.module.css';
 
-const ACCEPT_IMAGES = 'image/*,.heic,.heif';
+const ACCEPT_IMAGES = 'image/*'; // stock cross-platform; extension tokens broke Android/Samsung picker. HEIC still selectable on iOS + transcoded post-select.
 const UPLOAD_CHANGE_DELAY = 2000; // Show spinner so that browser has time to load img srcset
 
 const DisplayNameMaybe = props => {
@@ -408,6 +408,11 @@ class ProfileSettingsFormComponent extends Component {
               >
                 <FormattedMessage id="ProfileSettingsForm.saveChanges" />
               </Button>
+              {submitDisabled && !submitInProgress ? (
+                <p style={{ fontSize: '13px', lineHeight: '18px', color: 'var(--colorGrey600)', marginTop: '10px' }}>
+                  This button lights up blue once you&rsquo;ve changed something above.
+                </p>
+              ) : null}
             </Form>
           );
         }}

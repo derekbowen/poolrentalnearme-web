@@ -14,7 +14,7 @@ import AppleLogo from '../SocialLogos/Apple';
 import TwitterLogo from '../SocialLogos/Twitter';
 import LinkedIn from '../SocialLogos/LinkedIn';
 
-const getDefaultRoutes = ({ from, routeConfiguration }) => {
+const getDefaultRoutes = ({ from, userType, routeConfiguration }) => {
   const baseUrl = apiBaseUrl();
   const fromParam = from || '';
   const defaultReturn = pathByRouteName('LandingPage', routeConfiguration);
@@ -27,6 +27,9 @@ const getDefaultRoutes = ({ from, routeConfiguration }) => {
     from: fromParam,
     defaultReturn: defaultReturnParam,
     defaultConfirm: defaultConfirmParam,
+    // server/api/auth/{facebook,google}.js already read this; until now the
+    // frontend never sent it, so every social signup arrived with no user type.
+    userType: userType || '',
   };
 };
 
@@ -38,9 +41,10 @@ const SocialLoginButtonsMaybe = ({
   showTwitterLogin,
   showLinkedInLogin,
   from,
+  userType,
 }) => {
   const routeConfiguration = useRouteConfiguration();
-  const data = getDefaultRoutes({ from, routeConfiguration });
+  const data = getDefaultRoutes({ from, userType, routeConfiguration });
 
   const queryParams = new URLSearchParams(pickBy(data, (v) => v !== '')).toString();
 
@@ -153,6 +157,7 @@ SocialLoginButtonsMaybe.propTypes = {
   showTwitterLogin: bool,
   showLinkedInLogin: bool,
   from: string,
+  userType: string,
 };
 
 SocialLoginButtonsMaybe.defaultProps = {
@@ -163,6 +168,7 @@ SocialLoginButtonsMaybe.defaultProps = {
   showTwitterLogin: false,
   showLinkedInLogin: false,
   from: null,
+  userType: null,
 };
 
 export default SocialLoginButtonsMaybe;

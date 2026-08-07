@@ -7,7 +7,6 @@ import { useConfiguration } from '../../../context/configurationContext';
 import { useRouteConfiguration } from '../../../context/routeConfigurationContext';
 
 import { FormattedMessage, useIntl } from '../../../util/reactIntl';
-import { sanitizeSearchAddress } from '../../../util/sanitize';
 import { isMainSearchTypeKeywords, isOriginInUse } from '../../../util/search';
 import { parse } from '../../../util/urlHelpers';
 import { createResourceLocatorString, matchPathname, pathByRouteName } from '../../../util/routes';
@@ -24,6 +23,7 @@ import SearchIcon from './SearchIcon';
 import TopbarSearchForm from './TopbarSearchForm/TopbarSearchForm';
 import TopbarMobileMenu from './TopbarMobileMenu/TopbarMobileMenu';
 import TopbarDesktop from './TopbarDesktop/TopbarDesktop';
+import BottomNav from './BottomNav/BottomNav';
 
 import css from './Topbar.module.css';
 import { getCurrentUserTypeRoles, showCreateListingLinkForUser } from '../../../util/userHelpers';
@@ -168,7 +168,7 @@ const TopbarComponent = (props) => {
 
       return {
         ...originMaybe,
-        address: sanitizeSearchAddress(search),
+        address: search,
         bounds,
       };
     };
@@ -192,7 +192,11 @@ const TopbarComponent = (props) => {
     });
   };
 
-  const showCreateListingsLink = showCreateListingLinkForUser(config, currentUser);
+  // Always give logged-in users a path to their listings ("Your listings" in
+  // the avatar + mobile menus). The Console user-type accountLinksVisibility
+  // toggle was hiding it for hosts, leaving no visible way to edit a listing.
+  const showCreateListingsLink =
+    showCreateListingLinkForUser(config, currentUser) || !!currentUser;
   const { customer: isCustomer, provider: isProvider } = getCurrentUserTypeRoles(
     config,
     currentUser
@@ -337,6 +341,11 @@ const TopbarComponent = (props) => {
           inboxTab={topbarInboxTab}
         />
       </div>
+      <BottomNav
+        currentPage={resolvedCurrentPage}
+        isAuthenticated={isAuthenticated}
+        inboxTab={topbarInboxTab}
+      />
       <Modal
         id="TopbarMobileMenu"
         containerClassName={css.modalContainer}

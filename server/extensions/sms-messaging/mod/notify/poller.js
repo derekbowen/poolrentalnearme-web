@@ -47,13 +47,18 @@ const K = {
   [T.TRANSITION_ACCEPT]: [{ role: 'customer', kind: 'GUEST_ACCEPTED' }],
   [T.TRANSITION_ACCEPT_WITH_PAYMENT]: [{ role: 'customer', kind: 'GUEST_ACCEPTED' }],
   [T.TRANSITION_OPERATOR_ACCEPT_WITH_PAYMENT]: [{ role: 'customer', kind: 'GUEST_ACCEPTED' }],
+  // c148: Console/inbound accepts fire plain operator-accept - guests heard nothing.
+  'transition/operator-accept': [{ role: 'customer', kind: 'GUEST_ACCEPTED' }],
+  'transition/operator-decline': [{ role: 'customer', kind: 'GUEST_DECLINED' }],
   [T.TRANSITION_DECLINE]: [{ role: 'customer', kind: 'GUEST_DECLINED' }],
   [T.TRANSITION_DECLINE_WITHOUT_PAYMENT]: [{ role: 'customer', kind: 'GUEST_DECLINED' }],
   [T.TRANSITION_OPERATOR_DECLINE_WITHOUT_PAYMENT]: [{ role: 'customer', kind: 'GUEST_DECLINED' }],
   [T.TRANSITION_EXPIRE]: [{ role: 'customer', kind: 'GUEST_DECLINED' }],
   [T.TRANSITION_CANCEL]: [{ role: 'provider', kind: 'HOST_CANCELLED' }, { role: 'customer', kind: 'GUEST_CANCELLED' }],
-  [T.TRANSITION_COMPLETE]: [{ role: 'provider', kind: 'HOST_PAYOUT' }],
-  [T.TRANSITION_OPERATOR_COMPLETE]: [{ role: 'provider', kind: 'HOST_PAYOUT' }],
+  // c154: completion opens the review window (expires ~7 days) - guests heard
+  // nothing and reviews were silently lost. Text them the direct link.
+  [T.TRANSITION_COMPLETE]: [{ role: 'provider', kind: 'HOST_PAYOUT' }, { role: 'customer', kind: 'GUEST_REVIEW_INVITE' }],
+  [T.TRANSITION_OPERATOR_COMPLETE]: [{ role: 'provider', kind: 'HOST_PAYOUT' }, { role: 'customer', kind: 'GUEST_REVIEW_INVITE' }],
   // Custom Offers: host sends a package deal → text the guest; guest accepts → text the host.
   'transition/send-offer': [{ role: 'customer', kind: 'OFFER_RECEIVED' }],
   'transition/accept-offer': [{ role: 'provider', kind: 'OFFER_ACCEPTED' }],
@@ -97,6 +102,7 @@ const ctxFrom = r => {
   return {
     listing: r.listing?.attributes?.title || 'your pool',
     booking: r.booking?.attributes || null,
+    tz: r.listing?.attributes?.availabilityPlan?.timezone || null,
     txId: r.txId,
     guestName: r.customer?.attributes?.profile?.firstName || '',
     hostName: r.provider?.attributes?.profile?.firstName || '',
@@ -177,6 +183,11 @@ const deliver = async ({ seq, eventType, transition, txId, role, user, kind, ctx
 
 const processTransaction = async (seq, resource) => {
   const transition = resource.attributes.lastTransition;
+  // Additional-charge transactions reuse booking transition names
+  // (transition/request, transition/confirm-payment). Their events must not
+  // masquerade as new bookings to the host or the guest.
+  const processName = resource.attributes.processName || '';
+  if (processName.indexOf('additional-charge') === 0) return;
   let targets = K[transition];
   if (!targets) return;
   targets = targets.filter(t => !(t.kind === 'HOST_PAYOUT' && !PAYOUT_SMS));
@@ -317,6 +328,7 @@ const sweepExpiring = async () => {
         const ctx = {
           listing: listing?.attributes?.title || 'your pool',
           booking: booking?.attributes || null,
+          tz: listing?.attributes?.availabilityPlan?.timezone || null,
           txId,
         };
         let body = buildMessage('HOST_EXPIRING_SOON', ctx);
@@ -346,7 +358,7 @@ const sweepExpiring = async () => {
 // Texts the guest once when their accepted booking starts in ~20-28h. Runs
 // every 30 min inside 16:00-24:00 UTC (9AM-5PM PT / noon-8PM ET); one reminder
 // per transaction ever (sms_log transition='reminder_24h', fail-closed dedupe).
-const ACCEPTED_TRANSITIONS = [T.TRANSITION_ACCEPT, T.TRANSITION_ACCEPT_WITH_PAYMENT, T.TRANSITION_OPERATOR_ACCEPT_WITH_PAYMENT];
+const ACCEPTED_TRANSITIONS = [T.TRANSITION_ACCEPT, T.TRANSITION_ACCEPT_WITH_PAYMENT, T.TRANSITION_OPERATOR_ACCEPT_WITH_PAYMENT, 'transition/operator-accept'];
 const REMIND_MIN_MS = 20 * 3600e3;
 const REMIND_MAX_MS = 28 * 3600e3;
 const reminderWindowOk = () => { const h = new Date().getUTCHours(); return h >= 16 && h < 24; };
@@ -355,7 +367,7 @@ const sweepReminders = async () => {
   if (!smsEnabled() || !reminderWindowOk()) return;
   try {
     const res = await integrationSdk.transactions.query(
-      { lastTransitions: ACCEPTED_TRANSITIONS, include: ['booking', 'listing', 'customer'], perPage: 100 },
+      { lastTransitions: ACCEPTED_TRANSITIONS, include: ['booking', 'listing', 'customer', 'provider'], perPage: 100 },
       { allowRawResponse: true }
     );
     const raw = res._raw.data;
@@ -376,7 +388,7 @@ const sweepReminders = async () => {
         const phone = getPhoneNumber({ user: customer });
         if (!phone || (await store.isOptedOut(phone)) || !isAllowlisted(phone)) continue;
         if (await store.hasReminded(txId)) continue;
-        const ctx = { listing: listing?.attributes?.title || 'your pool', booking: booking?.attributes || null, txId };
+        const ctx = { listing: listing?.attributes?.title || 'your pool', booking: booking?.attributes || null, txId, tz: listing?.attributes?.availabilityPlan?.timezone || null };
         let body = buildMessage('GUEST_REMINDER', ctx);
         if (await store.claimFirstMessage(phone)) body += FIRST_MSG_FOOTER;
         const msg = await twsend({ body, phoneNumber: phone });
@@ -386,6 +398,33 @@ const sweepReminders = async () => {
           status: 'sent', twilio_sid: msg?.sid || null, body_preview: body.slice(0, 120),
         });
         log('booking reminder sent', txId.slice(0, 8));
+        // c148: same-day heads-up for the HOST too (they're the ones prepping a pool).
+        try {
+          const provider = find(rel.provider?.data);
+          if (provider && !isTestAccount(provider)) {
+            const hphone = getPhoneNumber({ user: provider });
+            if (hphone && !(await store.isOptedOut(hphone)) && isAllowlisted(hphone) && !(await store.hasRemindedHost(txId))) {
+              const hctx = {
+                listing: listing?.attributes?.title || 'your pool',
+                booking: booking?.attributes || null,
+                txId,
+                tz: listing?.attributes?.availabilityPlan?.timezone || null,
+                guestName: customer?.attributes?.profile?.displayName || null,
+              };
+              let hbody = buildMessage('HOST_REMINDER', hctx);
+              if (await store.claimFirstMessage(hphone)) hbody += FIRST_MSG_FOOTER;
+              const hmsg = await twsend({ body: hbody, phoneNumber: hphone });
+              await store.logOutcome({
+                event_type: 'reminder_24h_host', transition: 'reminder_24h_host', transaction_id: txId,
+                recipient_role: 'provider', recipient_user_id: provider.id.uuid, phone: hphone,
+                status: 'sent', twilio_sid: hmsg?.sid || null, body_preview: hbody.slice(0, 120),
+              });
+              log('host reminder sent', txId.slice(0, 8));
+            }
+          }
+        } catch (he) {
+          log('host reminder error', txId.slice(0, 8), he.message);
+        }
       } catch (e) {
         if (e && (e.code === 21610 || /opted out/i.test(e.message || ''))) {
           const p = getPhoneNumber({ user: find(tx.relationships?.customer?.data) });

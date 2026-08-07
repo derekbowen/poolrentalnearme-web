@@ -1,5 +1,16 @@
 import pick from 'lodash/pick';
-import { autoAcceptTxViaOperator, initiatePrivileged, transitionPrivileged } from '../../util/api';
+import {
+  autoAcceptTxViaOperator,
+  initiatePrivileged,
+  transitionPrivileged,
+  transitionAcceptOffer,
+} from '../../util/api';
+
+// The accept-offer transition is priced from the negotiated offer (flat
+// package price), so it must go through /api/accept-offer rather than the
+// hourly-priced /api/transition-privileged. Keep in sync with
+// transactions/transactionProcessBooking.js ACCEPT_OFFER.
+const ACCEPT_OFFER_TRANSITION = 'transition/accept-offer';
 import { denormalisedResponseEntities } from '../../util/data';
 import { storableError } from '../../util/errors';
 import * as log from '../../util/log';
@@ -241,7 +252,12 @@ export const initiateOrder =
       throw e;
     };
 
-    if (isTransition && isPrivilegedTransition) {
+    if (isTransition && transitionName === ACCEPT_OFFER_TRANSITION) {
+      // Accept a package deal — priced from the negotiated offer, not hourly.
+      return transitionAcceptOffer({ isSpeculative: false, orderData, bodyParams, queryParams })
+        .then(handleSucces)
+        .catch(handleError);
+    } else if (isTransition && isPrivilegedTransition) {
       // transition privileged
       return transitionPrivileged({ isSpeculative: false, orderData, bodyParams, queryParams })
         .then(handleSucces)
@@ -447,7 +463,12 @@ export const speculateTransaction =
       return dispatch(speculateTransactionError(storableError(e)));
     };
 
-    if (isTransition && isPrivilegedTransition) {
+    if (isTransition && transitionName === ACCEPT_OFFER_TRANSITION) {
+      // Accept a package deal — priced from the negotiated offer, not hourly.
+      return transitionAcceptOffer({ isSpeculative: true, orderData, bodyParams, queryParams })
+        .then(handleSuccess)
+        .catch(handleError);
+    } else if (isTransition && isPrivilegedTransition) {
       // transition privileged
       return transitionPrivileged({ isSpeculative: true, orderData, bodyParams, queryParams })
         .then(handleSuccess)

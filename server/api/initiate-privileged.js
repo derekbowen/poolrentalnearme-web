@@ -43,6 +43,20 @@ module.exports = async (req, res) => {
     const trustedSdk = await getTrustedSdk(req);
 
     const { params } = bodyParams;
+    // c151: the promo code is an INPUT to our pricing, not a Sharetribe param.
+    // Strip it from what we forward to their API (an unknown key could 400 a
+    // real booking) and keep it on protectedData for host visibility/audit.
+    const promoCodeUsed = (params && params.promoCode) || (orderData && orderData.promoCode) || null;
+    if (params && 'promoCode' in params) {
+      delete params.promoCode;
+    }
+    const promoAppliedSubunits = (lineItems || [])
+      .filter(li => li.code === 'line-item/promo-discount')
+      .reduce((t, li) => t + Math.abs(li.unitPrice.amount * (li.quantity || 1)), 0);
+    const promoProtectedMaybe =
+      promoCodeUsed && promoAppliedSubunits > 0
+        ? { promoCodeUsed: String(promoCodeUsed).toUpperCase(), promoDiscountSubunits: promoAppliedSubunits }
+        : {};
 
     const amenityLineItems = getAmenityLineItemsWithName(lineItems, listing);
     const amenityLineItemsInUnit = getAmenityLineItemsWithNameInUnit(lineItems, listing);
@@ -54,6 +68,7 @@ module.exports = async (req, res) => {
         ...params,
         protectedData: {
           ...(params.protectedData ?? {}),
+          ...promoProtectedMaybe,
           amenityLineItems,
           amenityLineItemsInUnit,
           saleInfo,

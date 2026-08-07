@@ -16,6 +16,7 @@ import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 import { getListingsById } from '../../ducks/marketplaceData.duck';
 import { isScrollingDisabled, manageDisableScrolling } from '../../ducks/ui.duck';
 import { FormattedMessage, intlShape, useIntl } from '../../util/reactIntl';
+import { types as sdkTypes } from '../../util/sdkLoader';
 import { createResourceLocatorString, pathByRouteName } from '../../util/routes';
 import {
   getQueryParamNames,
@@ -164,7 +165,7 @@ export class SearchPageComponent extends Component {
       const { sort } = rest;
 
       const originMaybe = isOriginInUse(this.props.config)
-        ? { origin: sort === SORT_BY_DISTANCE ? currentLocation : viewportMapCenter }
+        ? { origin: sort === SORT_BY_DISTANCE ? currentLocation || viewportMapCenter : viewportMapCenter }
         : {};
       const dropNonFilterParams = false;
 
@@ -325,8 +326,22 @@ export class SearchPageComponent extends Component {
     const { navigate, routeConfiguration, currentLocation } = this.props;
     const urlQueryParams = validUrlQueryParamsFromProps(this.props);
 
-    if (values === SORT_BY_DISTANCE && currentLocation) {
-      const queryParams = { ...urlQueryParams, [urlParam]: values, origin: currentLocation };
+    if (values === SORT_BY_DISTANCE) {
+      // Distance sort needs an origin. Prefer the user's shared geolocation; if it's
+      // not available, fall back to the center of the currently-viewed map area so
+      // "Closest first" still actually sorts (previously it no-op'd without geo).
+      const b = urlQueryParams.bounds;
+      const distanceOrigin =
+        currentLocation ||
+        (b && b.ne && b.sw
+          ? new sdkTypes.LatLng((b.ne.lat + b.sw.lat) / 2, (b.ne.lng + b.sw.lng) / 2)
+          : null);
+      const originParam = distanceOrigin ? { origin: distanceOrigin } : {};
+      // Closest distance means nearest to the origin, period. Drop the map
+      // viewport bounds so sparse regions (no pools inside the visible box)
+      // still show the nearest listings instead of an empty page.
+      const { bounds, address, mapSearch, ...restParams } = urlQueryParams;
+      const queryParams = { ...restParams, [urlParam]: values, ...originParam };
       navigate(createResourceLocatorString('SearchPage', routeConfiguration, {}, queryParams));
     } else {
       const { origin, ...rest } = urlQueryParams;
@@ -504,6 +519,27 @@ export class SearchPageComponent extends Component {
     );
 
     const { bounds, origin } = searchParamsInURL || {};
+
+    // Frame the map to the result listings when the search has no location
+    // bounds — otherwise the map defaults to a zoomed-out whole-world view.
+    const fitBoundsFromListings = ls => {
+      const coords = (ls || [])
+        .map(l => l && l.attributes && l.attributes.geolocation)
+        .filter(g => g && typeof g.lat === 'number' && typeof g.lng === 'number');
+      if (!coords.length) return null;
+      const lats = coords.map(c => c.lat);
+      const lngs = coords.map(c => c.lng);
+      const pad = coords.length === 1 ? 0.4 : 0.08;
+      try {
+        return new sdkTypes.LatLngBounds(
+          new sdkTypes.LatLng(Math.max(...lats) + pad, Math.max(...lngs) + pad),
+          new sdkTypes.LatLng(Math.min(...lats) - pad, Math.min(...lngs) - pad)
+        );
+      } catch (e) {
+        return null;
+      }
+    };
+    const mapBounds = bounds || fitBoundsFromListings(listings);
     const { title, description, schema } = createSearchResultSchema(
       listings,
       searchParamsInURL || {},
@@ -582,6 +618,7 @@ export class SearchPageComponent extends Component {
               searchListingsError={searchListingsError}
               noResultsInfo={noResultsInfo}
               currentLocation={currentLocation}
+              searchAddress={searchParamsInURL?.address}
             >
               <SearchFiltersPrimary {...propsForSecondaryFiltersToggle}>
                 {availablePrimaryFilters.map((filterConfig) => {
@@ -662,6 +699,7 @@ export class SearchPageComponent extends Component {
                   isMapVariant
                   currentLocation={currentLocation}
                   listingTypeParam={listingTypePathParam}
+                  searchInProgress={searchInProgress}
                 />
               </div>
             )}
@@ -680,7 +718,7 @@ export class SearchPageComponent extends Component {
                   reusableContainerClassName={css.map}
                   rootClassName={css.mapRoot}
                   activeListingId={activeListingId}
-                  bounds={bounds}
+                  bounds={mapBounds}
                   center={origin}
                   isSearchMapOpenOnMobile={this.state.isSearchMapOpenOnMobile}
                   location={location}
@@ -735,6 +773,33 @@ const EnhancedSearchPage = props => {
       setCurrentLocation(userCurrentLocation);
     });
   }, []);
+
+  // Default to the visitor's location on a fresh /s visit (no search yet) so
+  // they land on nearby pools + a local map — like Swimply's "Current location".
+  // Respects any existing search; falls back silently if geolocation is denied.
+  useEffect(() => {
+    if (!currentLocation) return;
+    const parsed = parse(location.search, { latlng: ['origin'], latlngBounds: ['bounds'] });
+    if (parsed.address || parsed.bounds || parsed.keywords) return;
+    const lat = currentLocation.lat;
+    const lng = currentLocation.lng;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+    try {
+      // No bounds on purpose: in sparse regions a viewport box around the user
+      // is often empty. Origin + distance sort shows the nearest pools however
+      // far away they are; the distance pill on each card sets expectations.
+      navigate(
+        createResourceLocatorString('SearchPage', routeConfiguration, {}, {
+          address: 'Current location',
+          origin: currentLocation,
+          sort: SORT_BY_DISTANCE,
+        })
+      );
+    } catch (e) {
+      /* geolocation default is best-effort */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLocation]);
 
   const { searchListingsError } = props;
   if (isForbiddenError(searchListingsError)) {

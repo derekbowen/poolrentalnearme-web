@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import classNames from 'classnames';
 
 import { injectIntl } from '../../../util/reactIntl';
-import { formatMoney } from '../../../util/currency';
+import { formatMoney, priceWithBookingFee } from '../../../util/currency';
 import { ensureListing } from '../../../util/data';
 import { isPriceVariationsEnabled } from '../../../util/configHelpers';
 
@@ -49,11 +49,13 @@ class SearchMapPriceLabel extends Component {
     const { price, publicData } = currentListing.attributes;
 
     // Create formatted price if currency is known or alternatively show just the unknown currency.
+    // Display the all-in price (host price + mandatory booking fee) per CA SB 478.
+    const allInPrice = priceWithBookingFee(price);
     const formattedPrice =
-      price && price.currency === config.currency
-        ? formatMoney(intl, price)
-        : price?.currency
-        ? price.currency
+      allInPrice && allInPrice.currency === config.currency
+        ? formatMoney(intl, allInPrice)
+        : allInPrice?.currency
+        ? allInPrice.currency
         : null;
 
     const priceValue = formattedPrice

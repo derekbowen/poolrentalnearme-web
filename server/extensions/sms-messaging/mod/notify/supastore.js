@@ -234,6 +234,14 @@ const hasReminded = async txId => {
 };
 module.exports.hasReminded = hasReminded;
 
+// c148: independent dedupe for the host-side day-before reminder.
+const hasRemindedHost = async txId => {
+  const r = await rest(`sms_log?transaction_id=eq.${enc(txId)}&transition=eq.reminder_24h_host&limit=1&select=id`);
+  if (!r.ok) return true; // fail-closed
+  return (await r.json()).length > 0;
+};
+module.exports.hasRemindedHost = hasRemindedHost;
+
 // ---- onboarding nudge queue (sms_nudge_queue) ---------------------------
 // One-shot "finish your listing" text, enqueued at phone-verification time
 // (best-effort call from otp/verify.js) and sent by the poller sweep ~4h

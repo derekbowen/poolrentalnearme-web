@@ -250,6 +250,14 @@ export const EditListingPricingForm = props => (
               id: 'EditListingPricingForm.amenitiesDesc',
             })}
           </p>
+          <a
+            href="https://www.poolrentalnearme.com/p/course/maximizing-revenue-upselling-pool-amenities?utm_source=host_dashboard&utm_medium=help_link&utm_campaign=feature_course&utm_content=amenities"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-block', margin: '0 0 12px', fontSize: '13px', fontWeight: 600, color: 'var(--marketplaceColor, #009ed8)', textDecoration: 'none' }}
+          >
+            Learn how: Upselling Pool Amenities →
+          </a>
 
           <div className={css.amenities}>
             <FieldArray name="amenities">

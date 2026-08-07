@@ -196,6 +196,18 @@ export const StripePayoutPageComponent = props => {
           <H3 as="h1" className={css.heading}>
             <FormattedMessage id="StripePayoutPage.heading" />
           </H3>
+          <p
+            style={{
+              fontSize: '15px',
+              lineHeight: 1.5,
+              color: '#334155',
+              maxWidth: '540px',
+              margin: '0 0 24px',
+            }}
+          >
+            Connect your bank account with Stripe so you get paid automatically when a guest books your
+            pool. It only takes about 5 minutes — and it&apos;s required before you can receive payouts.
+          </p>
           {!currentUserLoaded || fetchStripeAccountInProgress ? (
             <FormattedMessage id="StripePayoutPage.loadingData" />
           ) : returnedAbnormallyFromStripe && !getAccountLinkError ? (

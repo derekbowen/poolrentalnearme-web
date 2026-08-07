@@ -495,13 +495,14 @@ export const createSearchResultSchema = (
   const schemaDescription = intl.formatMessage({
     id: 'SearchPage.schemaDescription',
   });
-
-  // Pool-specific title: "Private Pools in Austin, TX | Pool Rental Near Me"
+  // Keyword-real titles for the indexable search page (was the generic
+  // "Search results for a query"). City searches get "Pool Rentals in {City}",
+  // the base search gets a near-me title, keyword searches keep a labeled title.
   const schemaTitle = address
-    ? `Private Pools in ${address} | ${marketplaceName}`
+    ? intl.formatMessage({ id: 'SearchPage.schemaTitleCity' }, { searchTitle: address, marketplaceName })
     : keywordsMaybe
-      ? `Pool Rentals for ${keywordsMaybe} | ${marketplaceName}`
-      : `Private Pool Rentals Near You | ${marketplaceName}`;
+      ? intl.formatMessage({ id: 'SearchPage.schemaTitle' }, { searchTitle: keywordsMaybe, marketplaceName })
+      : intl.formatMessage({ id: 'SearchPage.schemaTitleBase' }, { marketplaceName });
 
   const schemaListings = listings.map((l, i) => {
     const { title } = l.attributes;

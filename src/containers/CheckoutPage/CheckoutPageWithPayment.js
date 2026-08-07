@@ -29,6 +29,7 @@ import {
 import { getErrorMessages } from './ErrorMessages';
 
 import CustomTopbar from './CustomTopbar';
+import IdentityVerificationGate from './IdentityVerificationGate';
 import StripePaymentForm from './StripePaymentForm/StripePaymentForm';
 import DetailsSideCard from './DetailsSideCard';
 import MobileListingImage from './MobileListingImage';
@@ -106,7 +107,20 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
   const amenities = pageData.orderData?.amenities;
   const amenitiesMaybe = amenities ? { amenities } : {};
-  const { listingType, unitType, priceVariants } = pageData?.listing?.attributes?.publicData || {};
+  // c150: promo code travels to the privileged initiate endpoint, which rebuilds
+  // line items server-side — the client never states the discounted price.
+  const promoCode = pageData.orderData?.promoCode;
+  const promoCodeMaybe = promoCode ? { promoCode } : {};
+  const publicDataForOrder = pageData?.listing?.attributes?.publicData || {};
+  const { listingType, unitType, priceVariants } = publicDataForOrder;
+  // Party size (soft/informational — never affects price). Persisted to
+  // protectedData so the host sees the group size; partySizeMax carries the
+  // listing's maxGuests so the host can be shown an over-capacity flag.
+  const partySize = parseInt(pageData.orderData?.partySize, 10) || null;
+  const partySizeMax = parseInt(publicDataForOrder.maxGuests, 10) || null;
+  const partySizeMaybe = partySize
+    ? { partySize, ...(partySizeMax ? { partySizeMax } : {}) }
+    : {};
 
   // price variant data for fixed duration bookings
   const priceVariantName = pageData.orderData?.priceVariantName;
@@ -120,6 +134,7 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
       ...deliveryMethodMaybe,
       ...shippingDetails,
       ...priceVariantMaybe,
+      ...partySizeMaybe,
     },
   };
 
@@ -142,6 +157,7 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
     ...protectedDataMaybe,
     ...optionalPaymentParams,
     ...amenitiesMaybe,
+    ...promoCodeMaybe,
   };
   return orderParams;
 };
@@ -421,6 +437,8 @@ export const CheckoutPageWithPayment = (props) => {
   const [submitting, setSubmitting] = useState(false);
   // Initialized stripe library is saved to state - if it's needed at some point here too.
   const [stripe, setStripe] = useState(null);
+  // Identity verification gate state
+  const [idGateCleared, setIdGateCleared] = useState(false);
 
   const {
     scrollingDisabled,
@@ -485,6 +503,15 @@ export const CheckoutPageWithPayment = (props) => {
 
   const totalPrice =
     tx?.attributes?.lineItems?.length > 0 ? getFormattedTotalPrice(tx, intl) : null;
+
+  // ── Identity verification gate ──────────────────────────────────────────
+  // Every renter must verify their ID once before checking out.
+  // You're entering someone's private property — we need to know who you are.
+  const alreadyIdVerified = !!currentUser?.attributes?.protectedData?.idVerifiedAt;
+  const idGateNeeded = false; // ID gate disabled 2026-06-28 (non-blocking)
+  const idGateReason =
+    'You\'re booking access to a private property. A one-time ID check is required for all renters — your info is verified by Stripe and never shared with Pool Rental Near Me.';
+  // ────────────────────────────────────────────────────────────────────────
 
   const process = processName ? getProcess(processName) : null;
   const transitions = process.transitions;
@@ -601,7 +628,15 @@ export const CheckoutPageWithPayment = (props) => {
             {errorMessages.retrievePaymentIntentErrorMessage}
             {errorMessages.paymentExpiredMessage}
 
-            {showPaymentForm ? (
+            {showPaymentForm && idGateNeeded ? (
+              <IdentityVerificationGate
+                publishableKey={config.stripe.publishableKey}
+                reason={idGateReason}
+                onVerified={() => setIdGateCleared(true)}
+              />
+            ) : null}
+
+            {showPaymentForm && !idGateNeeded ? (
               <StripePaymentForm
                 isOffSessionPayment={!stripeConnected}
                 className={css.paymentForm}

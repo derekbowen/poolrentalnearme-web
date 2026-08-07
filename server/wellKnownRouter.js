@@ -43,7 +43,7 @@ if (appleTeamId && appleBundleId) {
         details: [
           {
             appID: `${appleTeamId}.${appleBundleId}`,
-            paths: ['*'],
+            paths: ['NOT /order/*', 'NOT /sale/*', '*'],
           },
         ],
       },

@@ -15,6 +15,26 @@ import {
 
 import css from './CheckoutPage.module.css';
 
+// Local rule rejections (advance notice, min/max hours, past start) arrive as
+// status 400 with the human-readable reason in statusText. Show the host's
+// actual rule to the guest instead of a generic failure.
+const HTTP_PHRASES = [
+  'Bad Request',
+  'Unprocessable Entity',
+  'Forbidden',
+  'Not Found',
+  'Internal Server Error',
+  'Local API request failed',
+];
+const humanReason = err =>
+  err &&
+  err.status === 400 &&
+  typeof err.statusText === 'string' &&
+  err.statusText.length > 15 &&
+  !HTTP_PHRASES.includes(err.statusText)
+    ? err.statusText
+    : null;
+
 // Collect error message checks to a single function.
 export const getErrorMessages = (
   listingNotFound,
@@ -72,6 +92,8 @@ export const getErrorMessages = (
   } else if (isTooManyRequestsError(initiateOrderError)) {
     // 429 Too Many Requests
     initiateOrderErrorMessage = <FormattedMessage id="CheckoutPage.tooManyRequestsError" />;
+  } else if (humanReason(initiateOrderError)) {
+    initiateOrderErrorMessage = <>{humanReason(initiateOrderError)}</>;
   } else if (initiateOrderError) {
     // Generic initiate order error
     initiateOrderErrorMessage = (
@@ -94,6 +116,8 @@ export const getErrorMessages = (
     speculateErrorMessage = (
       <FormattedMessage id="CheckoutPage.correctQuantityInformationMissing" />
     );
+  } else if (humanReason(speculateTransactionError)) {
+    speculateErrorMessage = <>{humanReason(speculateTransactionError)}</>;
   } else if (speculateTransactionError) {
     speculateErrorMessage = <FormattedMessage id="CheckoutPage.speculateFailedMessage" />;
   }

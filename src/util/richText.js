@@ -93,6 +93,17 @@ export const linkifyOrWrapLinkSplit = (word, key, options = {}) => {
   }
   const { linkify, linkClass } = options;
 
+  // TODO This can't handle links that contain parenthesis:
+  // '(http://example.org/path_(etc))'
+  // Currently extracts:
+  // '(<a href=\"http://example.org/path_\" ...>http://example.org/path_</a>(etc))'
+  //
+  // We need to
+  // 1) track whether token before link contains parenthesis as a last character
+  //    before link token ("word.split(urlRegex)[linkIndex - 1]") and
+  // 2) add enough characters to the end of link-token from the next token
+  //    after link ("word.split(urlRegex)[linkIndex + 1]")
+
   // urlRegex modified from examples in
   // https://stackoverflow.com/questions/1500260/detect-urls-in-text-with-javascript
 

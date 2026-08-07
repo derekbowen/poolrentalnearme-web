@@ -177,6 +177,44 @@ const getRefundableDepositLineItem = (listing) => {
  * @param {Object} customerCommission
  * @returns {Array} lineItems
  */
+// c150: resolve a guest-entered promo code against the codes the host stored on
+// this listing (publicData.promoCodes). Returns a discount amount in subunits
+// (>=0) or null. Validation is server-authoritative: the client only passes the
+// code string; every rule (active, expiry, redemptions, min subtotal, per-code
+// value) is enforced here from listing data the client cannot alter.
+const resolvePromoDiscount = (listing, orderData, baseSubtotalSubunits) => {
+  const raw = orderData && orderData.promoCode;
+  if (!raw || typeof raw !== 'string') return null;
+  const code = raw.trim().toUpperCase();
+  if (!code) return null;
+  const codes = (listing.attributes.publicData && listing.attributes.publicData.promoCodes) || [];
+  const match = Array.isArray(codes)
+    ? codes.find(c => c && String(c.code || '').trim().toUpperCase() === code)
+    : null;
+  if (!match) return null;
+  if (match.active === false) return null;
+  if (match.expires) {
+    const exp = new Date(match.expires).getTime();
+    if (Number.isFinite(exp) && exp < Date.now()) return null;
+  }
+  const max = Number.isInteger(match.maxRedemptions) ? match.maxRedemptions : null;
+  const used = Number.isInteger(match.redeemed) ? match.redeemed : 0;
+  if (max != null && used >= max) return null;
+  const minSub = Number.isInteger(match.minSubtotal) ? match.minSubtotal : 0;
+  if (baseSubtotalSubunits < minSub) return null;
+  // percent (1-100) or fixed subunits
+  let discount = 0;
+  if (match.type === 'percent' && Number.isFinite(match.value)) {
+    const pct = Math.max(0, Math.min(100, match.value));
+    discount = Math.round(baseSubtotalSubunits * (pct / 100));
+  } else if (match.type === 'fixed' && Number.isInteger(match.value)) {
+    discount = Math.max(0, match.value);
+  }
+  // never discount below zero, and cap at the subtotal
+  discount = Math.min(discount, baseSubtotalSubunits);
+  return discount > 0 ? { code, discount, label: match.label || `Promo ${code}` } : null;
+};
+
 exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
   // Normalize booking window shape. The listing page sends {bookingStart, bookingEnd}
   // at the top level, but the checkout/post-login handoff (and stored sessionStorage
@@ -418,6 +456,22 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const refundableDepositLineItemMaybe = getRefundableDepositLineItem(listing);
   const amenityLineItemsMaybe = getAmenityLineItems(orderData.amenities, listing);
 
+  // c150: host promo code. Discount is computed on the base booking subtotal
+  // (order + paid amenities) and reduces BOTH payin and payout — the host funds
+  // their own promotion. includeFor customer+provider keeps the ledger balanced.
+  const promoBaseSubtotal = calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]).amount;
+  const promo = resolvePromoDiscount(listing, orderData, promoBaseSubtotal);
+  const promoLineItemMaybe = promo
+    ? [
+        {
+          code: 'line-item/promo-discount',
+          unitPrice: new Money(-1 * promo.discount, currency),
+          quantity: 1,
+          includeFor: ['customer', 'provider'],
+        },
+      ]
+    : [];
+
   const providerCommissionMaybe = hasCommissionPercentage(providerCommission)
     ? [
         {
@@ -448,6 +502,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     ...customerCommissionMaybe,
     ...refundableDepositLineItemMaybe,
     ...amenityLineItemsMaybe,
+    ...promoLineItemMaybe,
   ];
 
   return lineItems;

@@ -47,9 +47,9 @@ const Heading = (props) => {
         <FormattedMessage id="ManageListingsPage.noResults" />
       </H3>
       <p className={css.createListingParagraph}>
-        <NamedLink className={css.createListingLink} name="NewListingPage">
+        <a className={css.createListingLink} href="/wizard">
           <FormattedMessage id="ManageListingsPage.createListing" />
-        </NamedLink>
+        </a>
       </p>
     </div>
   ) : null;

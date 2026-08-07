@@ -264,12 +264,7 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
   const datesMaybe = datesSearchParams(dates);
   const stockMaybe = stockFilters(datesMaybe);
   const seatsMaybe = seatsSearchParams(seats, datesMaybe);
-  // 'distance' is not a valid Marketplace API sort value: the API sorts by
-  // distance when 'origin' is sent without 'sort', and returns 400 if both
-  // are sent ("'sort' can not be used in combination with 'origin'").
-  const isImplicitSort =
-    sort === config.search.sortConfig.relevanceKey || sort === SORT_BY_DISTANCE;
-  const sortMaybe = isImplicitSort ? {} : { sort };
+  const sortMaybe = sort === config.search.sortConfig.relevanceKey || sort === SORT_BY_DISTANCE ? {} : { sort };
 
   const params = {
     // The rest of the params except invalid nested category-related params
@@ -296,7 +291,7 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
     perPage,
   };
 
-  const mainQuery = sdk.listings
+  return sdk.listings
     .query(params)
     .then((response) => {
       const listingFields = config?.listing?.listingFields;
@@ -313,8 +308,6 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
         throw e;
       }
     });
-
-  return mainQuery;
 };
 
 export const setActiveListing = (listingId) => ({
@@ -344,8 +337,14 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
   const { page = 1, address, origin, ...rest } = queryParams;
   const { sort } = rest;
 
+  const isDistanceSort = sort === SORT_BY_DISTANCE;
+  // Keep `sort` in the params handed to searchListings: the Redux searchParams
+  // must mirror the URL, or searchParamsAreInSync stays false and the page never
+  // leaves its loading state. The API-invalid 'distance' value is stripped at
+  // the SDK-call layer inside searchListings (see sortMaybe).
+
   const originMaybe =
-    isOriginInUse(config) && origin && sort === SORT_BY_DISTANCE ? { origin } : {};
+    isOriginInUse(config) && origin && isDistanceSort ? { origin } : {};
 
   const listingTypeVariantMaybe = listingTypePathParam
     ? { listingTypePathParam, isListingTypeVariant: true }
@@ -382,6 +381,18 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
         'publicData.location',
         'publicData.priceVariationsEnabled',
         'publicData.priceVariants',
+        // Card enrichment: guest capacity + instant-book badge on /s cards
+        'publicData.guestallowed',
+        'publicData.isInstantBooking',
+        // Card design: category chip + rating (avgRating/reviewCount filled by aggregation job)
+        'publicData.categoryLevel1',
+        'publicData.categoryLevel2',
+        'publicData.avgRating',
+        'publicData.reviewCount',
+        // Honest card badges: Pro Host + New need these
+        'publicData.swimplyIcalUrl',
+        'publicData.proHost',
+        'createdAt',
       ],
       'fields.user': ['profile.displayName', 'profile.abbreviatedName'],
       'fields.image': [
@@ -392,7 +403,7 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
       ],
       ...createImageVariantConfig(`${variantPrefix}`, 400, aspectRatio),
       ...createImageVariantConfig(`${variantPrefix}-2x`, 800, aspectRatio),
-      'limit.images': 1,
+      'limit.images': 5,
     },
     config
   );

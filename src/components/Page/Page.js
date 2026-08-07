@@ -213,6 +213,20 @@ class PageComponent extends Component {
     const hasSchema = schema != null;
     const schemaFromProps = hasSchema && Array.isArray(schema) ? schema : hasSchema ? [schema] : [];
     const addressMaybe = config.address?.streetAddress ? { address: config.address } : {};
+
+    const organizationContactTelephone = intl.formatMessage({
+      id: 'Page.organizationContactTelephone',
+    });
+    const organizationContactType = intl.formatMessage({
+      id: 'Page.organizationContactType',
+    });
+    const organizationAreaServed = intl.formatMessage({
+      id: 'Page.organizationAreaServed',
+    });
+    const organizationFoundingDate = intl.formatMessage({
+      id: 'Page.organizationFoundingDate',
+    });
+
     const schemaArrayJSONString = JSON.stringify({
       '@context': 'http://schema.org',
       '@graph': [
@@ -225,6 +239,13 @@ class PageComponent extends Component {
           name: marketplaceName,
           sameAs: sameOrganizationAs,
           logo: config.branding.logoImageMobileURL,
+          contactPoint: {
+            '@type': 'ContactPoint',
+            telephone: organizationContactTelephone,
+            contactType: organizationContactType,
+            areaServed: organizationAreaServed,
+          },
+          foundingDate: organizationFoundingDate,
           ...addressMaybe,
         },
         {

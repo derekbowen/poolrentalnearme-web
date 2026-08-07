@@ -69,9 +69,11 @@ export const IncludeScripts = (props) => {
     // Add Google Maps library
     mapLibraries.push(
       <script
+        async
+        defer
         id={GOOGLE_MAPS_SCRIPT_ID}
         key="GoogleMapsApi"
-        src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsAPIKey}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsAPIKey}&libraries=places&loading=async`}
         crossOrigin
       ></script>
     );

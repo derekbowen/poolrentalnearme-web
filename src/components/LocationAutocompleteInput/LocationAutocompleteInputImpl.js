@@ -12,6 +12,7 @@ import IconCurrentLocation from './IconCurrentLocation';
 import * as geocoderMapbox from './GeocoderMapbox';
 import * as geocoderGoogleMaps from './GeocoderGoogleMaps';
 import * as geocoderGoogleMapsNew from './GeocoderGoogleMapsNew';
+import * as geocoderCensus from './GeocoderCensus';
 
 import css from './LocationAutocompleteInput.module.css';
 
@@ -34,6 +35,11 @@ const getTouchCoordinates = (nativeEvent) => {
 
 // Get correct geocoding variant: geocoderGoogleMaps or geocoderMapbox
 const getGeocoderVariant = (mapProvider) => {
+  // c133: Google billing is disabled (REQUEST_DENIED on every lookup) and no Mapbox
+  // token exists, so both stock geocoders are dead. Use the keyless Census-backed
+  // geocoder (US street addresses) until a paid provider is enabled; then delete
+  // this early return.
+  return geocoderCensus;
   const isGoogleMapsInUse = mapProvider === 'googleMaps';
 
   return isGoogleMapsInUse ? geocoderGoogleMaps : geocoderMapbox;

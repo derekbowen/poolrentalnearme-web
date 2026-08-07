@@ -548,6 +548,7 @@ export const TransactionPageComponent = (props) => {
           author={provider}
           onSubmit={handleSubmitOrderRequest}
           onManageDisableScrolling={onManageDisableScrolling}
+          offerAccept={stateData.offerAccept}
           {...restOfProps}
           validListingTypes={config.listing.listingTypes}
           marketplaceCurrency={config.currency}

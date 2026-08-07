@@ -27,6 +27,8 @@ import FeedSection from './FeedSection';
 import ActionButtonsMaybe from './ActionButtonsMaybe';
 import DiminishedActionButtonMaybe from './DiminishedActionButtonMaybe';
 import PanelHeading from './PanelHeading';
+import SendOfferPanel from './SendOfferPanel';
+import AdditionalCharge from './AdditionalCharge';
 import AddToCalendarBtn from '../AddToCalendarButton';
 
 import css from './TransactionPanel.module.css';
@@ -445,6 +447,58 @@ export class TransactionPanelComponent extends Component {
                   intl={intl}
                 />
                 {showOrderPanel ? orderPanel : null}
+                {isCustomer &&
+                String(stateData.processState || '').toLowerCase() === 'inquiry' &&
+                !showOrderPanel ? (
+                  <div
+                    style={{
+                      background: '#f0f9ff',
+                      border: '1px solid #bae6fd',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      margin: '12px 0 4px',
+                    }}
+                  >
+                    <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 6px' }}>
+                      Ready to book this pool?
+                    </p>
+                    <NamedLink
+                      name="ListingPage"
+                      params={{ id: listing?.id?.uuid, slug: createSlug(listingTitle || '') }}
+                      style={{ fontSize: '14px', fontWeight: 600 }}
+                    >
+                      Pick your date &amp; time on the pool&apos;s page &rarr;
+                    </NamedLink>
+                  </div>
+                ) : null}
+                {stateData.showSendOfferPanel ? (
+                  <SendOfferPanel listingId={listing?.id?.uuid} />
+                ) : null}
+                <AdditionalCharge
+                  transaction={transaction}
+                  currentUser={currentUser}
+                  provider={provider}
+                  customer={customer}
+                />
+                {stateData.showPendingOffer && stateData.pendingOffer ? (
+                  <div style={{ marginTop: '16px', padding: '16px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                    <p style={{ fontSize: '13px', fontWeight: '600', color: '#0369a1', marginBottom: '4px' }}>
+                      Special Package Offer
+                    </p>
+                    <p style={{ fontSize: '22px', fontWeight: '700', color: '#0c4a6e', margin: '4px 0' }}>
+                      ${(stateData.pendingOffer.negotiatedPriceCents / 100).toFixed(2)}
+                    </p>
+                    {stateData.pendingOffer.note ? (
+                      <p style={{ fontSize: '13px', color: '#374151', margin: '8px 0' }}>
+                        {stateData.pendingOffer.note}
+                      </p>
+                    ) : null}
+                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                      Pick your date &amp; time above and continue to payment to accept this deal
+                      &mdash; or &quot;Decline&quot; below to pass.
+                    </p>
+                  </div>
+                ) : null}
                 <BreakdownMaybe
                   className={css.breakdownContainer}
                   orderBreakdown={orderBreakdown}
@@ -452,6 +506,24 @@ export class TransactionPanelComponent extends Component {
                   priceVariantName={priceVariantName}
                 />
 
+                {isProvider && stateData.showActionButtons ? (
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      lineHeight: 1.5,
+                      color: '#4b5563',
+                      background: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      margin: '12px 0 4px',
+                    }}
+                  >
+                    Declining never keeps your guest&apos;s money &mdash; they&apos;re refunded
+                    automatically and in full. If a request doesn&apos;t work for you, decline
+                    with a clear conscience.
+                  </p>
+                ) : null}
                 {stateData.showActionButtons ? (
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}

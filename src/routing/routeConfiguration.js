@@ -49,15 +49,6 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
         duck: () => import('../containers/CMSPage/CMSPage.duck'),
       },
     },
-    {
-      // Public demo of the PoolCalendar (smart calendar product).
-      // No auth, no listing required — renders with mock data.
-      path: '/calendar-demo',
-      name: 'CalendarDemoPage',
-      loaders: {
-        page: () => import('../containers/CalendarDemoPage/CalendarDemoPage'),
-      },
-    },
     // NOTE: when the private marketplace feature is enabled, the '/s' route is disallowed by the robots.txt resource.
     // If you add new routes that start with '/s*' (e.g. /support), you should add them to the robotsPrivateMarketplace.txt file.
     {
@@ -136,6 +127,15 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       ),
     },
     {
+      // Swim-lessons "coming soon" waitlist landing (public). Captures leads via
+      // /api/notify-signup (source: 'lessons').
+      path: '/lessons',
+      name: 'LessonsPage',
+      loaders: {
+        page: () => import('../containers/LessonsPage/LessonsPage'),
+      },
+    },
+    {
       path: '/l/:slug/:id/:type/:tab',
       name: 'EditListingPage',
       duckName: 'EditListingPage',
@@ -192,20 +192,6 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       loaders: {
         page: () => import('../containers/ProfilePage/ProfilePage'),
         duck: () => import('../containers/ProfilePage/ProfilePage.duck'),
-      },
-    },
-    {
-      path: '/apply-to-host',
-      name: 'HostApplicationPage',
-      loaders: {
-        page: () => import('../containers/HostApplicationPage/HostApplicationPage'),
-      },
-    },
-    {
-      path: '/host-academy',
-      name: 'HostAcademyPage',
-      loaders: {
-        page: () => import('../containers/HostAcademyPage/HostAcademyPage'),
       },
     },
     {
@@ -297,16 +283,6 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       authPage: 'LoginPage',
     },
     {
-      path: '/dashboard',
-      name: 'HostDashboardPage',
-      auth: true,
-      authPage: 'LoginPage',
-      loaders: {
-        page: () => import('../containers/HostDashboardPage/HostDashboardPage'),
-        duck: () => import('../containers/HostDashboardPage/HostDashboardPage.duck'),
-      },
-    },
-    {
       path: '/listings',
       name: 'ManageListingsPage',
       auth: true,
@@ -320,6 +296,16 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       path: '/account',
       name: 'AccountSettingsPage',
       element: <NamedRedirect name="ContactDetailsPage" />,
+    },
+    {
+      path: '/dashboard',
+      name: 'HostDashboardPage',
+      auth: true,
+      authPage: 'LoginPage',
+      loaders: {
+        page: () => import('../containers/HostDashboardPage/HostDashboardPage'),
+        duck: () => import('../containers/HostDashboardPage/HostDashboardPage.duck'),
+      },
     },
     {
       path: '/account/payouts',

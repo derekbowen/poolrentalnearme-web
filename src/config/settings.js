@@ -32,13 +32,7 @@ const appSettings = {
   // Sentry DSN (Data Source Name), a client key for authenticating calls to Sentry
   sentryDsn: import.meta.env.VITE_SENTRY_DSN,
 
-  // If webapp is using SSL (i.e. it's behind 'https' protocol).
-  // This drives the `Secure` flag on the session cookie the browser SDK writes.
-  // It is a VITE_ var, so it is baked in at build time - if the build forgets to
-  // set it, every production session cookie ships without `Secure`, which both
-  // leaks the token to any http:// request on the domain and makes Safari treat
-  // it as short-lived. Default to on in a production build; only an explicit
-  // 'false' turns it off (needed for plain-http local dev).
+  // If webapp is using SSL (i.e. it's behind 'https' protocol)
   usingSSL:
     import.meta.env.VITE_SHARETRIBE_USING_SSL != null &&
     import.meta.env.VITE_SHARETRIBE_USING_SSL !== ''

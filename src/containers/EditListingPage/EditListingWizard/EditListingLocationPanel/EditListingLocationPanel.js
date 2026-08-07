@@ -10,8 +10,8 @@ import { H3, ListingLink } from '../../../../components';
 
 // Import modules from this directory
 import EditListingLocationForm from './EditListingLocationForm';
-import { splitAddressForPrivacy } from '../../../../util/address';
 import css from './EditListingLocationPanel.module.css';
+import { splitAddressForPrivacy } from '../../../../util/address';
 
 const getInitialValues = (props) => {
   const { listing } = props;

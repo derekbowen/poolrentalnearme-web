@@ -20,7 +20,7 @@ import css from './ListingPage.module.css';
  * This file contains shared functions from each ListingPage variants.
  */
 
-const { UUID } = sdkTypes;
+const { UUID, Money } = sdkTypes;
 
 /**
  * Helper to get formattedPrice and priceTitle for SectionHeading component.
@@ -61,6 +61,55 @@ export const priceForSchemaMaybe = price => {
 };
 
 /**
+ * Helper to get price variants for schema.
+ * @param {Object} price listing's price
+ * @param {Array} priceVariants listing's price variants
+ * @param {String} currency listing's currency
+ * @param {Object} intl React Intl instance
+ * @returns Object literal containing price variants for schema
+ */
+export const priceVariantsForSchemaMaybe = ({ price, priceVariants, currency, intl }) => {
+  const validPriceVariants = priceVariants?.filter((v) => v?.priceInSubunits);
+
+  const hasVariantsWithPrice = validPriceVariants?.length > 1;
+
+  const formattedPriceVariants = validPriceVariants?.map((v) => {
+    const { priceInSubunits } = v;
+    const priceVariantInMoneyType = new Money(priceInSubunits, currency);
+    return priceVariantInMoneyType;
+  });
+  const { minPriceVariant, maxPriceVariant } =
+    formattedPriceVariants?.reduce(
+      (acc, v) => {
+        const currentPriceVariant = v?.amount;
+        return {
+          minPriceVariant:
+            acc?.minPriceVariant?.amount < currentPriceVariant ? acc?.minPriceVariant : v,
+          maxPriceVariant:
+            acc?.maxPriceVariant?.amount > currentPriceVariant ? acc?.maxPriceVariant : v,
+        };
+      },
+      {
+        minPriceVariant: formattedPriceVariants?.[0],
+        maxPriceVariant: formattedPriceVariants?.[0],
+      }
+    ) || {};
+
+  return hasVariantsWithPrice
+    ? {
+        price: intl.formatMessage(
+          { id: 'ListingPage.schemaPriceVariants' },
+          {
+            minPriceVariant: convertMoneyToNumber(minPriceVariant)?.toFixed(2),
+            maxPriceVariant: convertMoneyToNumber(maxPriceVariant)?.toFixed(2),
+          }
+        ),
+        priceCurrency: currency,
+      }
+    : priceForSchemaMaybe(price);
+};
+
+/**
  * Get category's label.
  *
  * @param {Array} categories array of category objects (key & label)
@@ -94,6 +143,54 @@ export const listingImages = (listing, variantName) =>
       return variant || size;
     })
     .filter(variant => variant != null);
+
+/**
+ * Derive a privacy-safe "City, ST" label from a full listing address.
+ *
+ * Hosts store a full street address in publicData.location.address (e.g.
+ * "16721 104th Ave NE, Bothell, WA 98011, USA"). We must NEVER surface that
+ * exact street address in a shareable link preview / meta description, so this
+ * strips it down to just the city and 2-letter state. If the city can't be
+ * confidently parsed (e.g. it still looks like a street line), we return only
+ * the state, or null — better to omit the location than leak an address.
+ *
+ * @param {string} address the full address string
+ * @returns {string|null} "City, ST", "City", "ST", or null
+ */
+export const shortLocationLabel = address => {
+  if (!address || typeof address !== 'string') {
+    return null;
+  }
+  const countryTokens = ['usa', 'us', 'u.s.', 'u.s.a.', 'united states', 'united states of america'];
+  let parts = address
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  // Drop a trailing country token.
+  if (parts.length > 1 && countryTokens.includes(parts[parts.length - 1].toLowerCase())) {
+    parts = parts.slice(0, -1);
+  }
+  if (parts.length === 0) {
+    return null;
+  }
+  const last = parts[parts.length - 1];
+  const stateMatch = last.match(/\b([A-Z]{2})\b/);
+  const state = stateMatch ? stateMatch[1] : null;
+  // City is the part before the "ST zip" chunk when we have multiple parts;
+  // for a single part like "Austin TX" strip the trailing state code.
+  let city =
+    parts.length >= 2
+      ? parts[parts.length - 2]
+      : last.replace(/\s*\b[A-Z]{2}\b.*$/, '').trim();
+  // Guard against leaking a street line (starts with a house number).
+  if (/^\d/.test(city)) {
+    return state || null;
+  }
+  if (!city) {
+    return state || null;
+  }
+  return state ? `${city}, ${state}` : city;
+};
 
 /**
  * Callback for the "contact" button on ListingPage to open inquiry modal.
@@ -185,6 +282,7 @@ export const handleSubmit = parameters => values => {
     priceVariantName, // relevant for bookings
     quantity: quantityRaw,
     seats: seatsRaw,
+    partySize: partySizeRaw,
     deliveryMethod,
     amenities,
     ...otherOrderData
@@ -211,8 +309,11 @@ export const handleSubmit = parameters => values => {
   const quantityMaybe = Number.isInteger(quantity) ? { quantity } : {};
   const seats = Number.parseInt(seatsRaw, 10);
   const seatsMaybe = Number.isInteger(seats) ? { seats } : {};
+  const partySize = Number.parseInt(partySizeRaw, 10);
+  const partySizeMaybe = Number.isInteger(partySize) ? { partySize } : {};
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
   const amenitiesMaybe = amenities ? { amenities } : {};
+  const promoCodeMaybe = values.promoCode ? { promoCode: values.promoCode } : {};
 
   const initialValues = {
     listing,
@@ -221,9 +322,11 @@ export const handleSubmit = parameters => values => {
       ...priceVariantNameMaybe,
       ...quantityMaybe,
       ...seatsMaybe,
+      ...partySizeMaybe,
       ...deliveryMethodMaybe,
       ...otherOrderData,
       ...amenitiesMaybe,
+      ...promoCodeMaybe,
     },
     confirmPaymentError: null,
   };

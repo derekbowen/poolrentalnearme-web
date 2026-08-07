@@ -16,7 +16,6 @@ import EditListingLocationPanel from './EditListingLocationPanel/EditListingLoca
 import EditListingPhotosPanel from './EditListingPhotosPanel/EditListingPhotosPanel';
 import EditListingPricingPanel from './EditListingPricingPanel/EditListingPricingPanel';
 import EditListingPricingAndStockPanel from './EditListingPricingAndStockPanel/EditListingPricingAndStockPanel';
-import EditListingReviewPanel from './EditListingReviewPanel/EditListingReviewPanel';
 
 import css from './EditListingWizardTab.module.css';
 
@@ -27,7 +26,6 @@ export const DELIVERY = 'delivery';
 export const LOCATION = 'location';
 export const AVAILABILITY = 'availability';
 export const PHOTOS = 'photos';
-export const REVIEW = 'review';
 
 // EditListingWizardTab component supports these tabs
 export const SUPPORTED_TABS = [
@@ -38,7 +36,6 @@ export const SUPPORTED_TABS = [
   LOCATION,
   AVAILABILITY,
   PHOTOS,
-  REVIEW,
 ];
 
 const pathParamsToNextTab = (params, tab, marketplaceTabs) => {
@@ -159,7 +156,19 @@ const EditListingWizardTab = props => {
         }
       })
       .catch(e => {
-        // No need for extra actions
+        // c134 (#101): this catch used to swallow every error in the save->publish
+        // chain, so a host could tap Publish and watch nothing happen. Beacon the
+        // failure so stuck hosts surface in the ops air files.
+        try {
+          window.fetch('/api/wizard-telemetry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              step: `publish-chain/${tab}`,
+              error: String((e && e.message) || e).slice(0, 200),
+            }),
+          });
+        } catch (ignore) {}
       });
   };
 
@@ -255,23 +264,11 @@ const EditListingWizardTab = props => {
           images={images}
           onImageUpload={onImageUpload}
           onRemoveImage={onRemoveImage}
-        />
-      );
-    }
-    case REVIEW: {
-      return (
-        <EditListingReviewPanel
-          {...panelProps(REVIEW)}
-          images={images}
-          config={config}
-          marketplaceCurrency={config.currency}
-          listingMinimumPriceSubUnits={config.listingMinimumPriceSubUnits}
-          allExceptions={allExceptions}
-          weeklyExceptionQueries={weeklyExceptionQueries}
-          monthlyExceptionQueries={monthlyExceptionQueries}
-          onFetchExceptions={onFetchExceptions}
-          onAddAvailabilityException={onAddAvailabilityException}
-          onDeleteAvailabilityException={onDeleteAvailabilityException}
+          onAutofill={
+            currentListing && currentListing.id
+              ? values => onUpdateListing(PHOTOS, { ...values, id: currentListing.id }, config)
+              : null
+          }
         />
       );
     }

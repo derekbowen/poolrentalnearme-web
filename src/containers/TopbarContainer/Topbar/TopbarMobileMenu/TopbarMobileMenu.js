@@ -92,9 +92,9 @@ const TopbarMobileMenu = props => {
   });
 
   const createListingsLinkMaybe = showCreateListingsLink ? (
-    <NamedLink className={css.createNewListingLink} name="NewListingPage">
+    <a className={css.createNewListingLink} href="/wizard">
       <FormattedMessage id="TopbarMobileMenu.newListingLink" />
-    </NamedLink>
+    </a>
   ) : null;
 
   if (!isAuthenticated) {
@@ -147,17 +147,6 @@ const TopbarMobileMenu = props => {
     return currentPage === page || isAccountSettingsPage || isInboxPage ? css.currentPage : null;
   };
 
-  const manageListingsLinkMaybe = showCreateListingsLink ? (
-    <NamedLink
-      className={classNames(css.navigationLink, currentPageClass('ManageListingsPage'))}
-      name="ManageListingsPage"
-    >
-      <FormattedMessage id="TopbarMobileMenu.yourListingsLink" />
-    </NamedLink>
-  ) : null;
-
-  // Host utility links lead the menu (Dashboard → Inbox → Listings → Payouts);
-  // marketing links render after them in customLinksWrapper.
   const dashboardLinkMaybe = showCreateListingsLink ? (
     <NamedLink
       className={classNames(css.navigationLink, currentPageClass('HostDashboardPage'))}
@@ -173,6 +162,15 @@ const TopbarMobileMenu = props => {
       name="PayoutDashboardPage"
     >
       Payouts
+    </NamedLink>
+  ) : null;
+
+  const manageListingsLinkMaybe = showCreateListingsLink ? (
+    <NamedLink
+      className={classNames(css.navigationLink, currentPageClass('ManageListingsPage'))}
+      name="ManageListingsPage"
+    >
+      <FormattedMessage id="TopbarMobileMenu.yourListingsLink" />
     </NamedLink>
   ) : null;
 

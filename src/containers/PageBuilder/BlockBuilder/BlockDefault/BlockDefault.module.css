@@ -1,10 +1,26 @@
+/* PRNM redesign: give PageBuilder blocks the www "card" look — white rounded cards with a
+   soft shadow and lift on hover. The colored city tiles use a colored IMAGE (block media),
+   not a CSS background, so the white card frame is safe and just rounds/frames them. */
 .root {
+  height: 100%;
+  background: var(--colorWhite, #ffffff);
+  border: 1px solid #e7eef2;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(11, 39, 51, 0.07);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.root:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(11, 39, 51, 0.13);
 }
 
 .media {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 0;
+  overflow: hidden;
 }
 
 .text {

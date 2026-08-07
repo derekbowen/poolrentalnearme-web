@@ -22,6 +22,7 @@ const SectionAuthorMaybe = props => {
     onSubmitInquiry,
     currentUser,
     onManageDisableScrolling,
+    showCard = true,
   } = props;
 
   if (!listing.author) {
@@ -33,16 +34,20 @@ const SectionAuthorMaybe = props => {
   const isInquiryProcess = processName === INQUIRY_PROCESS_NAME;
 
   return (
-    <section id="author" className={css.sectionAuthor}>
-      <Heading as="h2" rootClassName={css.sectionHeadingWithExtraMargin}>
-        <FormattedMessage id="ListingPage.aboutProviderTitle" />
-      </Heading>
-      <UserCard
-        user={listing.author}
-        currentUser={currentUser}
-        onContactUser={onContactUser}
-        showContact={!isInquiryProcess}
-      />
+    <section id={showCard ? 'author' : undefined} className={css.sectionAuthor}>
+      {showCard ? (
+        <>
+          <Heading as="h2" rootClassName={css.sectionHeadingWithExtraMargin}>
+            <FormattedMessage id="ListingPage.aboutProviderTitle" />
+          </Heading>
+          <UserCard
+            user={listing.author}
+            currentUser={currentUser}
+            onContactUser={onContactUser}
+            showContact={!isInquiryProcess}
+          />
+        </>
+      ) : null}
       <Modal
         id="ListingPage.inquiry"
         contentClassName={css.inquiryModalContent}

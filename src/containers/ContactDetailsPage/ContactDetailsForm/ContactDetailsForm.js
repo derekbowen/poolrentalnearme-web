@@ -416,6 +416,11 @@ class ContactDetailsFormComponent extends Component {
                 >
                   <FormattedMessage id="ContactDetailsForm.saveChanges" />
                 </PrimaryButton>
+                {submitDisabled && !inProgress ? (
+                  <p style={{ fontSize: '13px', lineHeight: '18px', color: 'var(--colorGrey600)', marginTop: '10px' }}>
+                    This button lights up blue once you&rsquo;ve changed something above.
+                  </p>
+                ) : null}
               </div>
             </Form>
           );

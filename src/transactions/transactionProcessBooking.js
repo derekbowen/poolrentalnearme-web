@@ -59,6 +59,12 @@ export const transitions = {
   COMPLETE: 'transition/complete',
   OPERATOR_COMPLETE: 'transition/operator-complete',
 
+  // Host package deal / custom price offer
+  SEND_OFFER: 'transition/send-offer',
+  ACCEPT_OFFER: 'transition/accept-offer',
+  DECLINE_OFFER: 'transition/decline-offer',
+  EXPIRE_OFFER: 'transition/expire-offer',
+
   // Reviews are given through transaction transitions. Review 1 can be
   // by provider or customer, and review 2 will be the other party of
   // the transaction.
@@ -83,6 +89,7 @@ export const transitions = {
 export const states = {
   INITIAL: 'initial',
   INQUIRY: 'inquiry',
+  OFFER_SENT: 'offer-sent',
   PENDING_PAYMENT: 'pending-payment',
   REQUESTED: 'requested',
   PAYMENT_EXPIRED: 'payment-expired',
@@ -128,6 +135,14 @@ export const graph = {
       on: {
         [transitions.REQUEST_PAYMENT_AFTER_INQUIRY]: states.PENDING_PAYMENT,
         [transitions.REQUEST_AFTER_INQUIRY]: states.REQUESTED,
+        [transitions.SEND_OFFER]: states.OFFER_SENT,
+      },
+    },
+    [states.OFFER_SENT]: {
+      on: {
+        [transitions.ACCEPT_OFFER]: states.PENDING_PAYMENT,
+        [transitions.DECLINE_OFFER]: states.DECLINED,
+        [transitions.EXPIRE_OFFER]: states.EXPIRED,
       },
     },
     [states.REQUESTED]: {
@@ -213,6 +228,8 @@ export const isRelevantPastTransition = (transition) => {
     transitions.OPERATOR_DECLINE_WITHOUT_PAYMENT,
     transitions.EXPIRE,
     transitions.EXPIRE_NO_PAYMENT,
+    transitions.SEND_OFFER,
+    transitions.DECLINE_OFFER,
     transitions.REVIEW_1_BY_CUSTOMER,
     transitions.REVIEW_1_BY_PROVIDER,
     transitions.REVIEW_2_BY_CUSTOMER,
@@ -244,6 +261,7 @@ export const isPrivileged = (transition) => {
     transitions.REQUEST_PAYMENT_AFTER_INQUIRY,
     transitions.REQUEST,
     transitions.REQUEST_AFTER_INQUIRY,
+    transitions.ACCEPT_OFFER,
   ].includes(transition);
 };
 
@@ -278,8 +296,17 @@ export const isRefunded = (transition) => {
 export const statesNeedingProviderAttention = [states.PREAUTHORIZED, states.REQUESTED];
 
 export const getRequestTransition = (tx) => {
-  const isInquiryInPaymentProcess = tx?.attributes?.lastTransition === transitions.INQUIRE;
+  const lastTransition = tx?.attributes?.lastTransition;
 
+  // A transaction sitting in state/offer-sent is a host package deal awaiting
+  // the guest. The payment-initiating transition here is accept-offer (which is
+  // priced from the negotiated offer, not the listing's hourly rate — see
+  // server/api/accept-offer.js). CheckoutPage routes this through /api/accept-offer.
+  if (lastTransition === transitions.SEND_OFFER) {
+    return transitions.ACCEPT_OFFER;
+  }
+
+  const isInquiryInPaymentProcess = lastTransition === transitions.INQUIRE;
   if (isInquiryInPaymentProcess) {
     return transitions.REQUEST_PAYMENT_AFTER_INQUIRY;
   }

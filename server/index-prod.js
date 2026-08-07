@@ -33,6 +33,10 @@ app.use('/.well-known', wellKnownRouter);
 
 app.use('/api', apiRouter);
 
+// c153: tracked host share links — must sit before the '*' renderer catch-all.
+import goRedirect from './api/go-redirect';
+app.get('/go/:token', goRedirect);
+
 app.use(
   /.*(\.php|\.php7|\/wp-.*\/.*|cgi-bin.*|htdocs\.rar|htdocs\.zip|root\.7z|root\.rar|root\.zip|www\.7z|www\.rar|wwwroot\.7z)$/,
   (req, res) => {

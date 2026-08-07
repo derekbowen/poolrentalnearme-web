@@ -47,3 +47,24 @@
 .bottomWrapper {
   composes: marketplaceModalBottomWrapper from global;
 }
+
+
+/* ---- c144: never leave the form silent or the button unexplained ---- */
+.pickOneHint {
+  margin: 0 0 22px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: var(--colorSurfaceAccent, #eef4f8);
+  color: var(--colorGrey700);
+  font-size: 16px;
+  font-weight: var(--fontWeightSemiBold);
+  line-height: 1.4;
+  text-align: center;
+}
+.whyDisabled {
+  margin: 10px 0 0 0;
+  color: var(--colorGrey500);
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+}

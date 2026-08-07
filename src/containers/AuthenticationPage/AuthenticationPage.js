@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { connect, useDispatch } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { connect } from 'react-redux';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import classNames from 'classnames';
@@ -7,7 +7,6 @@ import isEmpty from 'lodash/isEmpty';
 
 import Modal from 'components/Modal/Modal';
 import { LinkTabNavHorizontal } from 'components/TabNavHorizontal/TabNavHorizontal';
-import ModalPhoneNumberVerification from '../../extensions/phone-number-verification/components/ModalPhoneNumberVerification/ModalPhoneNumberVerification';
 import { useConfiguration } from '../../context/configurationContext';
 import { camelize } from '../../util/string';
 import { propTypes } from '../../util/types';
@@ -26,7 +25,6 @@ import {
   authenticationInProgress,
   signup,
   signupWithIdp,
-  sendOTP,
 } from '../../ducks/auth.duck';
 import { isScrollingDisabled, manageDisableScrolling } from '../../ducks/ui.duck';
 import { sendVerificationEmail } from '../../ducks/user.duck';
@@ -154,6 +152,13 @@ export const AuthenticationForms = (props) => {
       protectedData: {
         ...pickUserFieldsData(rest, 'protected', userType, userFields),
         ...getNonUserFieldParams(rest, userFields),
+        // Written explicitly rather than inferred from raw form values, so the
+        // record states what was consented to and when.
+        smsConsentService: true,
+        smsConsentMarketing:
+          Array.isArray(rest.smsMarketing) && rest.smsMarketing.includes('yes'),
+        smsConsentAt: new Date().toISOString(),
+        smsConsentSource: 'signup-form-v1',
       },
     };
 
@@ -197,7 +202,19 @@ export const AuthenticationForms = (props) => {
       {loginOrSignupError}
 
       {isLogin ? (
-        <LoginForm className={css.loginForm} onSubmit={submitLogin} inProgress={authInProgress} />
+        <>
+          <SocialLoginButtonsMaybe
+            isLogin={isLogin}
+            showFacebookLogin={showFacebookLogin}
+            showGoogleLogin={showGoogleLogin}
+            from={from}
+            showAppleLogin={showAppleLogin}
+            showTwitterLogin={showTwitterLogin}
+            showLinkedInLogin={showLinkedInLogin}
+            {...userTypeMaybe}
+          />
+          <LoginForm className={css.loginForm} onSubmit={submitLogin} inProgress={authInProgress} />
+        </>
       ) : (
         <SignupForm
           className={css.signupForm}
@@ -207,19 +224,22 @@ export const AuthenticationForms = (props) => {
           preselectedUserType={preselectedUserType}
           userTypes={userTypes}
           userFields={userFields}
+          /* Rendered inside the form, directly under the user-type cards, so the
+             choice a host just made travels with the IdP redirect. */
+          renderSocialLoginButtons={selectedUserType => (
+            <SocialLoginButtonsMaybe
+              isLogin={isLogin}
+              showFacebookLogin={showFacebookLogin}
+              showGoogleLogin={showGoogleLogin}
+              from={from}
+              showAppleLogin={showAppleLogin}
+              showTwitterLogin={showTwitterLogin}
+              showLinkedInLogin={showLinkedInLogin}
+              userType={selectedUserType || preselectedUserType || null}
+            />
+          )}
         />
       )}
-
-      <SocialLoginButtonsMaybe
-        isLogin={isLogin}
-        showFacebookLogin={showFacebookLogin}
-        showGoogleLogin={showGoogleLogin}
-        from={from}
-        showAppleLogin={showAppleLogin}
-        showTwitterLogin={showTwitterLogin}
-        showLinkedInLogin={showLinkedInLogin}
-        {...userTypeMaybe}
-      />
     </div>
   );
 };
@@ -397,6 +417,7 @@ const BlankPage = (props) => {
   return (
     <Page
       title={schemaTitle}
+      description={schemaDescription}
       scrollingDisabled={scrollingDisabled}
       schema={{
         '@context': 'http://schema.org',
@@ -455,8 +476,6 @@ export const AuthenticationPageComponent = (props) => {
   const [mounted, setMounted] = useState(false);
 
   const config = useConfiguration();
-  const keepSignUpValues = useRef({});
-  const dispatch = useDispatch();
   const intl = useIntl();
 
   useEffect(() => {
@@ -495,10 +514,6 @@ export const AuthenticationPageComponent = (props) => {
   } = props;
   const location = useLocation();
   const pathParams = useParams();
-  const modalPhoneNumberVerificationRef = useRef();
-  const onOpenModalPhoneNumberVerification = (params) => {
-    modalPhoneNumberVerificationRef.current.onOpen(params);
-  };
 
   // History API has potentially state tied to this route
   // We have used that state to store previous URL ("from"),
@@ -530,10 +545,10 @@ export const AuthenticationPageComponent = (props) => {
   const marketplaceName = config.marketplaceName;
   const schemaTitle = isLogin
     ? intl.formatMessage({ id: 'AuthenticationPage.schemaTitleLogin' }, { marketplaceName })
-    : intl.formatMessage({ id: 'AuthenticationPage.schemaTitleSignup' }, { marketplaceName });
+    : `List Your Pool Free \u2014 0% Host Fees | ${marketplaceName}`;
   const schemaDescription = isLogin
     ? intl.formatMessage({ id: 'AuthenticationPage.schemaDescriptionLogin' }, { marketplaceName })
-    : intl.formatMessage({ id: 'AuthenticationPage.schemaDescriptionSignup' }, { marketplaceName });
+    : 'List your pool free and earn by the hour \u2014 0% host fees. No listing fees, liability coverage included. Join hosts on Pool Rental Near Me.';
   const topbarClasses = classNames({
     [css.hideOnMobile]: showEmailVerification,
   });
@@ -541,6 +556,19 @@ export const AuthenticationPageComponent = (props) => {
   const shouldRedirectToFrom = isAuthenticated && from;
   const shouldRedirectToLandingPage =
     isAuthenticated && currentUserLoaded && !showEmailVerification;
+  // Returning host: already authenticated, but re-entering signup through a
+  // "become a host" acquisition link (/signup/provider). Redirecting them to the
+  // landing page would strand them, so send them onward to the listing wizard.
+  // The wizard is a separate app behind nginx (merlin), not a react-router route,
+  // so this needs a full-page redirect. Same pattern as EmailVerificationPage.
+  const shouldRedirectHostToWizard =
+    shouldRedirectToLandingPage && !shouldRedirectToFrom && userType === 'provider';
+  useEffect(() => {
+    if (shouldRedirectHostToWizard && typeof window !== 'undefined') {
+      window.location.replace('/wizard/');
+    }
+  }, [shouldRedirectHostToWizard]);
+
   if (!mounted && shouldRedirectToLandingPage) {
     // Show a blank page for already authenticated users,
     // when the first rendering on client side is not yet done
@@ -557,9 +585,22 @@ export const AuthenticationPageComponent = (props) => {
   if (shouldRedirectToFrom) {
     // Already authenticated, redirect back to the page the user tried to access
     return <Navigate to={from} replace />;
+  } else if (shouldRedirectHostToWizard) {
+    // The effect above is doing a full-page replace to /wizard/;
+    // render the blank page while the browser navigates.
+    return (
+      <BlankPage
+        schemaTitle={schemaTitle}
+        schemaDescription={schemaDescription}
+        topbarClasses={topbarClasses}
+      />
+    );
   } else if (shouldRedirectToLandingPage) {
-    // Already authenticated, redirect to the landing page (this was direct access to /login or /signup)
-    return <NamedRedirect name="LandingPage" />;
+    // Already authenticated after direct /login or /signup access. Hosts land
+    // on their dashboard — their one home screen; everyone else keeps the
+    // public landing page.
+    const landsHome = user.attributes?.profile?.publicData?.userType === 'provider';
+    return <NamedRedirect name={landsHome ? 'HostDashboardPage' : 'LandingPage'} />;
   } else if (show404) {
     // User type not found, show 404
     return <NotFoundPage staticContext={props.staticContext} />;
@@ -579,6 +620,7 @@ export const AuthenticationPageComponent = (props) => {
   return (
     <Page
       title={schemaTitle}
+      description={schemaDescription}
       scrollingDisabled={scrollingDisabled}
       schema={{
         '@context': 'http://schema.org',
@@ -622,20 +664,7 @@ export const AuthenticationPageComponent = (props) => {
               showTwitterLogin={!!import.meta.env.VITE_TWITTER_CLIENT_ID}
               showLinkedInLogin={!!import.meta.env.VITE_LINKED_IN_CLIENT_ID}
               submitLogin={submitLogin}
-              submitSignup={(signUpValues) => {
-                keepSignUpValues.current = signUpValues;
-                const { email, protectedData } = signUpValues;
-                const { phoneNumber } = protectedData;
-                // SMS OTP is only deliverable to US (+1) numbers today.
-                // International signups skip the OTP and rely on the standard
-                // email verification instead of being locked out at the door.
-                if (phoneNumber && !String(phoneNumber).startsWith('+1')) {
-                  submitSignup(signUpValues);
-                  return;
-                }
-                dispatch(sendOTP({ email, phoneNumber }));
-                onOpenModalPhoneNumberVerification({ email, phoneNumber });
-              }}
+              submitSignup={submitSignup}
               submitSingupWithIdp={submitSingupWithIdp}
               authInProgress={authInProgress}
               loginError={loginError}
@@ -668,11 +697,6 @@ export const AuthenticationPageComponent = (props) => {
           />
         </div>
       </Modal>
-      <ModalPhoneNumberVerification
-        onManageDisableScrolling={onManageDisableScrolling}
-        ref={modalPhoneNumberVerificationRef}
-        onSubmit={() => submitSignup(keepSignUpValues.current)}
-      />
       <Modal
         id="AuthenticationPage.privacyPolicy"
         isOpen={privacyModalOpen}

@@ -1,0 +1,70 @@
+/* "Share this pool" button.
+   Mobile-first: full-width, big touch target so it's obvious and easy to tap.
+   Desktop: shrinks to an inline pill. */
+
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100%;
+  min-height: 52px;
+  margin: 18px 0 6px 0;
+  padding: 12px 20px;
+
+  border: 1.5px solid var(--marketplaceColor, #0b4a6f);
+  border-radius: 8px;
+  background-color: var(--marketplaceColor, #0b4a6f);
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out,
+    transform 0.05s ease-in-out;
+}
+
+.root:hover {
+  background-color: var(--marketplaceColorDark, #083c5a);
+  box-shadow: 0 4px 12px rgba(11, 74, 111, 0.28);
+}
+
+.root:active {
+  transform: translateY(1px);
+}
+
+.root:focus-visible {
+  outline: 3px solid var(--marketplaceColorLight, #7fc4e8);
+  outline-offset: 2px;
+}
+
+/* Brief "Link copied!" confirmation state. */
+.root[data-copied='true'] {
+  background-color: #1a7f4b;
+  border-color: #1a7f4b;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .root {
+    width: auto;
+    min-height: 44px;
+    margin: 0 0 8px 0;
+    padding: 10px 22px;
+    font-size: 15px;
+  }
+}

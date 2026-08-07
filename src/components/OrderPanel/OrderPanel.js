@@ -21,7 +21,7 @@ import {
   STOCK_INFINITE_MULTIPLE_ITEMS,
   LISTING_STATE_PUBLISHED,
 } from '../../util/types';
-import { formatMoney } from '../../util/currency';
+import { formatMoney, priceWithBookingFee } from '../../util/currency';
 import { types as sdkTypes } from '../../util/sdkLoader';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
@@ -155,19 +155,21 @@ const PriceMaybe = (props) => {
     return null;
   }
 
-  // With multiple price variants, surface the cheapest variant as a "From {price}" price
-  // instead of hiding the price until an option is picked.
+  // Display the all-in price (host price + mandatory booking fee) per CA SB 478.
+  // NOTE: must NOT be named `displayPrice` — that's an imported configHelpers fn used above.
+  // With multiple price variants, surface the cheapest variant as a "From {price}"
+  // price instead of hiding the price until an option is picked.
   const showFromPrefix = isPriceVariationsInUse && hasMultiplePriceVariants;
   const cheapestVariant = showFromPrefix ? getCheapestPriceVariant(publicData.priceVariants) : null;
-  const displayMoney =
+  const baseForDisplay =
     cheapestVariant?.priceInSubunits != null
       ? new Money(cheapestVariant.priceInSubunits, price.currency)
       : price;
-
+  const allInPrice = priceWithBookingFee(baseForDisplay);
   // Get formatted price or currency code if the currency does not match with marketplace currency
-  const { formattedPrice, priceTitle } = priceData(displayMoney, marketplaceCurrency, intl);
+  const { formattedPrice, priceTitle } = priceData(allInPrice, marketplaceCurrency, intl);
   const priceValue = (
-    <span className={css.priceValue}>{formatMoneyIfSupportedCurrency(displayMoney, intl)}</span>
+    <span className={css.priceValue}>{formatMoneyIfSupportedCurrency(allInPrice, intl)}</span>
   );
   const pricePerUnit = (
     <span className={css.perUnit}>
@@ -312,6 +314,7 @@ const OrderPanel = (props) => {
     payoutDetailsWarning,
     currentPage,
     trustRow,
+    offerAccept,
   } = props;
 
   const intl = useIntl();
@@ -320,6 +323,42 @@ const OrderPanel = (props) => {
   const mounted = useMounted();
 
   const publicData = listing?.attributes?.publicData || {};
+
+  // Hosts can require advance notice (publicData.advanceNoticeHours or
+  // availability.advanceNoticeDays). Hide time slots inside that window so
+  // guests can't pick a start time that checkout would reject anyway.
+  const advanceNoticeMs = (() => {
+    const rules = publicData.availability || {};
+    const num = v => {
+      const n = typeof v === 'string' ? parseFloat(v) : v;
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const hours = num(publicData.advanceNoticeHours) || num(rules.advanceNoticeHours);
+    const days = num(publicData.advanceNoticeDays) || num(rules.advanceNoticeDays);
+    return hours ? hours * 60 * 60 * 1000 : days ? days * 24 * 60 * 60 * 1000 : null;
+  })();
+  const dropSlotsInsideNotice = slots => {
+    if (!advanceNoticeMs || !Array.isArray(slots)) return slots;
+    const HOUR_MS = 60 * 60 * 1000;
+    const earliest = Math.ceil((Date.now() + advanceNoticeMs) / HOUR_MS) * HOUR_MS;
+    return slots
+      .filter(ts => new Date(ts.attributes.end).getTime() > earliest)
+      .map(ts =>
+        new Date(ts.attributes.start).getTime() >= earliest
+          ? ts
+          : { ...ts, attributes: { ...ts.attributes, start: new Date(earliest) } }
+      );
+  };
+  const noticeAware = collection =>
+    !advanceNoticeMs || !collection
+      ? collection
+      : Object.keys(collection).reduce((acc, k) => {
+          const v = collection[k];
+          acc[k] = v && v.timeSlots ? { ...v, timeSlots: dropSlotsInsideNotice(v.timeSlots) } : v;
+          return acc;
+        }, {});
+  const noticeAwareMonthlyTimeSlots = noticeAware(monthlyTimeSlots);
+  const noticeAwareTimeSlotsForDate = noticeAware(timeSlotsForDate);
   const { listingType, unitType, transactionProcessAlias = '', amenities, priceVariants, startTimeInterval } =
     publicData || {};
 
@@ -417,7 +456,16 @@ const OrderPanel = (props) => {
     fetchLineItemsInProgress,
     fetchLineItemsError,
     payoutDetailsWarning,
+    // When present, the guest is accepting a host package deal. The booking
+    // form shows this agreed price instead of the hourly estimate.
+    offerAccept,
   };
+
+  // Formatted agreed package price for the offer-accept header.
+  const offerPriceFormatted =
+    offerAccept?.negotiatedPriceCents != null
+      ? `$${(offerAccept.negotiatedPriceCents / 100).toFixed(2)}`
+      : null;
 
   const showClosedListingHelpText = listing.id && isClosed;
 
@@ -450,13 +498,36 @@ const OrderPanel = (props) => {
           {subTitleText ? <div className={css.orderHelp}>{subTitleText}</div> : null}
         </div>
 
-        <PriceMaybe
-          price={price}
-          publicData={publicData}
-          validListingTypes={validListingTypes}
-          intl={intl}
-          marketplaceCurrency={marketplaceCurrency}
-        />
+        {offerAccept ? (
+          <div
+            style={{
+              background: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              margin: '4px 0 12px',
+            }}
+          >
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#0369a1', margin: 0 }}>
+              Your host&apos;s package deal
+            </p>
+            <p style={{ fontSize: '22px', fontWeight: 700, color: '#0c4a6e', margin: '2px 0 0' }}>
+              {offerPriceFormatted}
+            </p>
+            <p style={{ fontSize: '12px', color: '#5c6b78', margin: '4px 0 0' }}>
+              Pick your date &amp; time below, then continue to payment. Your total is the agreed
+              package price above &mdash; not the hourly rate.
+            </p>
+          </div>
+        ) : (
+          <PriceMaybe
+            price={price}
+            publicData={publicData}
+            validListingTypes={validListingTypes}
+            intl={intl}
+            marketplaceCurrency={marketplaceCurrency}
+          />
+        )}
 
         {trustRow}
 
@@ -493,8 +564,8 @@ const OrderPanel = (props) => {
             className={css.bookingForm}
             formId="OrderPanelBookingFixedDurationForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}
-            monthlyTimeSlots={monthlyTimeSlots}
-            timeSlotsForDate={timeSlotsForDate}
+            monthlyTimeSlots={noticeAwareMonthlyTimeSlots}
+            timeSlotsForDate={noticeAwareTimeSlotsForDate}
             onFetchTimeSlots={onFetchTimeSlots}
             startDatePlaceholder={intl.formatDate(TODAY, dateFormattingOptions)}
             startTimeInterval={startTimeInterval}
@@ -505,11 +576,12 @@ const OrderPanel = (props) => {
         ) : showBookingTimeForm ? (
           <BookingTimeForm
             seatsEnabled={seatsEnabled}
+            maxGuests={publicData?.maxGuests}
             className={css.bookingForm}
             formId="OrderPanelBookingTimeForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}
-            monthlyTimeSlots={monthlyTimeSlots}
-            timeSlotsForDate={timeSlotsForDate}
+            monthlyTimeSlots={noticeAwareMonthlyTimeSlots}
+            timeSlotsForDate={noticeAwareTimeSlotsForDate}
             onFetchTimeSlots={onFetchTimeSlots}
             startDatePlaceholder={intl.formatDate(TODAY, dateFormattingOptions)}
             endDatePlaceholder={intl.formatDate(TODAY, dateFormattingOptions)}
@@ -533,7 +605,7 @@ const OrderPanel = (props) => {
             className={css.bookingForm}
             formId="OrderPanelBookingDatesForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}
-            monthlyTimeSlots={monthlyTimeSlots}
+            monthlyTimeSlots={noticeAwareMonthlyTimeSlots}
             onFetchTimeSlots={onFetchTimeSlots}
             timeZone={timeZone}
             marketplaceName={marketplaceName}
@@ -570,14 +642,25 @@ const OrderPanel = (props) => {
         ) : null}
       </ModalInMobile>
       <div className={css.openOrderForm}>
-        <PriceMaybe
-          price={price}
-          publicData={publicData}
-          validListingTypes={validListingTypes}
-          intl={intl}
-          marketplaceCurrency={marketplaceCurrency}
-          showCurrencyMismatch
-        />
+        {offerAccept ? (
+          <div style={{ padding: '0 0 8px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: '#0c4a6e' }}>
+              {offerPriceFormatted}
+            </span>
+            <span style={{ fontSize: '13px', color: '#5c6b78', marginLeft: '6px' }}>
+              package deal
+            </span>
+          </div>
+        ) : (
+          <PriceMaybe
+            price={price}
+            publicData={publicData}
+            validListingTypes={validListingTypes}
+            intl={intl}
+            marketplaceCurrency={marketplaceCurrency}
+            showCurrencyMismatch
+          />
+        )}
 
         {isClosed ? (
           <div className={css.closedListingButton}>
@@ -596,7 +679,9 @@ const OrderPanel = (props) => {
               )}
               disabled={isOutOfStock}
             >
-              {isBooking ? (
+              {offerAccept ? (
+                'Accept this deal'
+              ) : isBooking ? (
                 <FormattedMessage id="OrderPanel.ctaButtonMessageBooking" />
               ) : isOutOfStock ? (
                 <FormattedMessage id="OrderPanel.ctaButtonMessageNoStock" />

@@ -31,6 +31,15 @@ module.exports = async (req, res) => {
     const K = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!U || !K) return res.json({ ok: true });
 
+    let uid = '';
+    try {
+      // credentials:'same-origin' on the client beacon means the marketplace
+      // session cookie rides along - attribute the error to its user.
+      const { getSdk } = require('../api-util/sdk');
+      const cu = await getSdk(req, res).currentUser.show();
+      uid = (cu && cu.data && cu.data.data && cu.data.data.id && cu.data.data.id.uuid) || '';
+    } catch (e) { /* anonymous or expired session - fine */ }
+
     const { step, error } = req.body || {};
     const stepStr = String(step || 'unknown').replace(/[^\w/.:-]/g, '').slice(0, 80);
     const errStr = String(error || '').slice(0, 240);
@@ -47,6 +56,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify([
         {
           phone: 'wizard',
+          pool: uid || null,
           tx_id: 'wizard',
           kind: 'wizard_error',
           pool: null,

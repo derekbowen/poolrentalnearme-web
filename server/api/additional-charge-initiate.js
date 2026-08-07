@@ -6,7 +6,6 @@ const {
   serialize,
   fetchCommission,
 } = require('../api-util/sdk');
-const integrationSdk = require('../api-util/integration');
 
 const PROCESS_ALIAS = 'additional-charge/release-1';
 
@@ -14,13 +13,15 @@ const PROCESS_ALIAS = 'additional-charge/release-1';
  * POST /api/additional-charge/initiate
  * Body (JSON): { bookingTransactionId, isSpeculative, queryParams }
  *
- * The GUEST (customer of the booking) initiates the add-on payment the host
+ * The GUEST (customer of the booking) starts the add-on payment the host
  * requested. The amount is read SERVER-SIDE from the booking's metadata
  * (host-set) — the client never supplies it, so it cannot be tampered.
  *
- * Returns a transit-serialized transaction (with its Stripe PaymentIntent) which
- * the client confirms via Stripe.js, then finalizes with transition/confirm-payment
- * through the existing /api/transition-privileged endpoint.
+ * This only CREATES the payment (transaction in pending-payment with a Stripe
+ * PaymentIntent). The guest then confirms with their card via Stripe.js and the
+ * client calls /api/additional-charge/confirm, which runs
+ * transition/confirm-payment (capture) and only THEN marks the booking's
+ * request as paid. Nothing here may claim the money moved — it hasn't yet.
  *
  * Auth: customer session (getSdk).
  */
@@ -95,27 +96,6 @@ module.exports = async (req, res) => {
     const apiResponse = isSpeculative
       ? await trustedSdk.transactions.initiateSpeculative(body, queryParams)
       : await trustedSdk.transactions.initiate(body, queryParams);
-
-    // Mark the booking's request as paid (so the guest isn't prompted again) and
-    // link the add-on transaction. Non-fatal if it fails — the charge succeeded.
-    if (!isSpeculative && integrationSdk) {
-      const addonTxId = apiResponse?.data?.data?.id?.uuid;
-      try {
-        await integrationSdk.transactions.updateMetadata({
-          id: bookingTransactionId,
-          metadata: {
-            additionalCharge: {
-              ...request,
-              status: 'paid',
-              paidAt: new Date().toISOString(),
-              addonTransactionId: addonTxId,
-            },
-          },
-        });
-      } catch (mdErr) {
-        // ignore — the status flag is cosmetic; the payment is what matters
-      }
-    }
 
     const { status, statusText, data } = apiResponse;
     res

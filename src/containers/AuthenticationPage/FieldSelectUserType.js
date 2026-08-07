@@ -6,6 +6,17 @@ import * as validators from '../../util/validators';
 
 import { FieldSelect } from '../../components';
 
+// PRNM copy per user type, falling back to whatever Console labels the type.
+// A missing key must never blank the card, hence the intl.messages guard.
+const cardCopy = (intl, type, fallback) => {
+  const t = `FieldSelectUserType.card.${type}.title`;
+  const s = `FieldSelectUserType.card.${type}.subtitle`;
+  return {
+    title: intl.messages?.[t] ? intl.formatMessage({ id: t }) : fallback,
+    subtitle: intl.messages?.[s] ? intl.formatMessage({ id: s }) : null,
+  };
+};
+
 import css from './AuthenticationPage.module.css';
 
 // Hidden input field
@@ -37,27 +48,46 @@ const FieldSelectUserType = props => {
   const classes = classNames(rootClassName || css.userTypeSelect, className);
 
   return hasMultipleUserTypes && !hasExistingUserType ? (
-    <>
-      <FieldSelect
-        id={name}
-        name={name}
-        className={classes}
-        label={intl.formatMessage({ id: 'FieldSelectUserType.label' })}
-        validate={validators.required(intl.formatMessage({ id: 'FieldSelectUserType.required' }))}
-      >
-        <option disabled value="">
-          {intl.formatMessage({ id: 'FieldSelectUserType.placeholder' })}
-        </option>
-        {userTypes.map(config => {
-          const type = config.userType;
-          return (
-            <option key={type} value={type}>
-              {config.label}
-            </option>
-          );
-        })}
-      </FieldSelect>
-    </>
+    <Field
+      name={name}
+      validate={validators.required(
+        intl.formatMessage({ id: 'FieldSelectUserType.required' })
+      )}
+    >
+      {({ input, meta }) => (
+        <div className={classes}>
+          <p className={css.userTypeCardsLabel}>
+            {intl.formatMessage({ id: 'FieldSelectUserType.label' })}
+          </p>
+          <div className={css.userTypeCards}>
+            {userTypes.map(config => {
+              const type = config.userType;
+              const selected = input.value === type;
+              const copy = cardCopy(intl, type, config.label);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  aria-pressed={selected}
+                  className={classNames(css.userTypeCard, {
+                    [css.userTypeCardSelected]: selected,
+                  })}
+                  onClick={() => input.onChange(type)}
+                >
+                  <span className={css.userTypeCardTitle}>{copy.title}</span>
+                  {copy.subtitle ? (
+                    <span className={css.userTypeCardSubtitle}>{copy.subtitle}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {(meta.touched || meta.submitFailed) && meta.error ? (
+            <p className={css.userTypeCardsError}>{meta.error}</p>
+          ) : null}
+        </div>
+      )}
+    </Field>
   ) : (
     <>
       <FieldHidden name={name} />

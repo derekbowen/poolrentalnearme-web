@@ -41,6 +41,11 @@ app.use(cookieParser());
 app.use('/.well-known', wellKnownRouter);
 app.use('/api', apiRouter);
 
+// c153: tracked host share links — /go/<slug>-<uuid8> redirects to the listing
+// and logs the click (host-visible stats via /api/share-link-stats).
+const goRedirect = require('./api/go-redirect');
+app.get('/go/:token', goRedirect);
+
 // Generate web app manifest
 // When developing with "yarn run dev",
 // you can reach the manifest from http://localhost:3500/site.webmanifest

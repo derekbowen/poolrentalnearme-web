@@ -1,5 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
+import { useLocation } from 'react-router-dom';
 
 import { useConfiguration } from '../../context/configurationContext';
 import { useRouteConfiguration } from '../../context/routeConfigurationContext';
@@ -92,6 +93,9 @@ export const ActionBarMaybe = props => {
 
   const routeConfiguration = useRouteConfiguration();
   const config = useConfiguration();
+  // c134 (#101): set by EditListingPage's post-publish redirect - one-shot celebration.
+  const location = useLocation();
+  const justPublished = !!location.state?.justPublished;
   const approvalToPublishOptions =
     config?.accessControl?.listings?.requireApprovalToPublishOptions?.callToAction || {};
 
@@ -108,7 +112,9 @@ export const ActionBarMaybe = props => {
       </div>
     );
   } else if (isOwnListing) {
-    let ownListingTextTranslationId = 'ListingPage.ownListing';
+    let ownListingTextTranslationId = justPublished
+      ? 'ListingPage.ownListingJustPublished'
+      : 'ListingPage.ownListing';
 
     if (isPendingApproval) {
       ownListingTextTranslationId = 'ListingPage.ownListingPendingApproval';
@@ -121,7 +127,7 @@ export const ActionBarMaybe = props => {
     const message = isDraft ? 'ListingPage.finishListing' : 'ListingPage.editListing';
 
     const ownListingTextClasses = classNames(css.ownListingText, {
-      [css.ownListingTextPendingApproval]: isPendingApproval,
+      [css.ownListingTextPendingApproval]: isPendingApproval || justPublished,
     });
 
     const hasValidType = approvalToPublishOptions?.type && approvalToPublishOptions.type !== 'none';

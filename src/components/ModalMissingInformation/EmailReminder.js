@@ -2,33 +2,13 @@ import React from 'react';
 import { FormattedMessage } from '../../util/reactIntl';
 import { isTooManyEmailVerificationRequestsError } from '../../util/errors';
 import IconEmailAttention from '../IconEmailAttention/IconEmailAttention';
-import NamedLink from '../NamedLink/NamedLink';
-import { InlineTextButton } from '../Button/Button';
 
 import css from './ModalMissingInformation.module.css';
 
 const EmailReminder = props => {
-  const {
-    className,
-    user,
-    sendVerificationEmailInProgress,
-    sendVerificationEmailError,
-    onResendVerificationEmail,
-  } = props;
+  const { className, user, sendVerificationEmailError } = props;
 
   const email = user.id ? <span className={css.email}>{user.attributes.email}</span> : '';
-
-  const resendEmailLink = (
-    <InlineTextButton rootClassName={css.helperLink} onClick={onResendVerificationEmail}>
-      <FormattedMessage id="ModalMissingInformation.resendEmailLinkText" />
-    </InlineTextButton>
-  );
-
-  const fixEmailLink = (
-    <NamedLink className={css.helperLink} name="ContactDetailsPage">
-      <FormattedMessage id="ModalMissingInformation.fixEmailLinkText" />
-    </NamedLink>
-  );
 
   const resendErrorTranslationId = isTooManyEmailVerificationRequestsError(
     sendVerificationEmailError
@@ -56,18 +36,10 @@ const EmailReminder = props => {
       {resendErrorMessage}
 
       <div className={css.bottomWrapper}>
+        {/* Brandon's note: nothing clickable here. Read it, go to the inbox.
+            The spam / approved-sender advice is text, not a button. */}
         <p className={css.helperText}>
-          {sendVerificationEmailInProgress ? (
-            <FormattedMessage id="ModalMissingInformation.sendingEmail" />
-          ) : (
-            <FormattedMessage
-              id="ModalMissingInformation.resendEmail"
-              values={{ resendEmailLink }}
-            />
-          )}
-        </p>
-        <p className={css.helperText}>
-          <FormattedMessage id="ModalMissingInformation.fixEmail" values={{ fixEmailLink }} />
+          <FormattedMessage id="ModalMissingInformation.spamHelp" />
         </p>
       </div>
     </div>

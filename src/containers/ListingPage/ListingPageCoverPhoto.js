@@ -34,7 +34,6 @@ import {
   userDisplayNameAsString,
 } from '../../util/data';
 import { richText } from '../../util/richText';
-import { cityStateFromLocation } from '../../util/address';
 import {
   isBookingProcess,
   isPurchaseProcess,
@@ -69,7 +68,8 @@ import {
   handleContactUser,
   handleSubmitInquiry,
   handleSubmit,
-  priceForSchemaMaybe,
+  priceVariantsForSchemaMaybe,
+  shortLocationLabel,
 } from './ListingPage.shared';
 import SectionHero from './SectionHero';
 import SectionTextMaybe from './SectionTextMaybe';
@@ -77,9 +77,7 @@ import SectionReviews from './SectionReviews';
 import SectionAuthorMaybe from './SectionAuthorMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
 import CustomListingFields from './CustomListingFields';
-
-import { getTemplateComponent } from '../../templates';
-import { mapListingToTemplateProps } from '../../templates/dataMapper';
+import ShareButton from '../../components/ShareButton/ShareButton';
 
 import css from './ListingPage.module.css';
 
@@ -195,7 +193,14 @@ export const ListingPageComponent = (props) => {
   const isOwnListing =
     userAndListingAuthorAvailable && currentListing.author.id.uuid === currentUser.id.uuid;
 
-  const { listingType, transactionProcessAlias, unitType, advantagesSelection = [] } = publicData;
+  const {
+    listingType,
+    transactionProcessAlias,
+    unitType,
+    advantagesSelection = [],
+    priceVariants,
+    location: listingLocation,
+  } = publicData;
 
   const advantagesContent = advantages.filter((advantage) =>
     advantagesSelection.includes(advantage.id)
@@ -231,6 +236,21 @@ export const ListingPageComponent = (props) => {
   const authorDisplayName = userDisplayNameAsString(ensuredAuthor, '');
 
   const { formattedPrice } = priceData(price, config.currency, intl);
+
+  // Clean canonical listing URL for sharing — no query string, no hash, no
+  // Google SERP redirect. This is what we hand to the native share sheet or
+  // copy to the clipboard.
+  const shareUrl = `${config.marketplaceRootURL}${location.pathname}`;
+
+  // Social/meta description leads with price + location so a texted or posted
+  // link previews as "$X/… · City, ST — <description>" instead of raw copy.
+  const cleanDescription = (description || '').replace(/\s+/g, ' ').trim();
+  const socialLead = [formattedPrice, shortLocationLabel(listingLocation?.address)]
+    .filter(Boolean)
+    .join(' · ');
+  const socialDescription = socialLead
+    ? `${socialLead} — ${cleanDescription}`.slice(0, 300)
+    : cleanDescription;
 
   const commonParams = { params, navigate, routes: routeConfiguration };
   const onContactUser = handleContactUser({
@@ -272,23 +292,67 @@ export const ListingPageComponent = (props) => {
     `${config.layout.listingImage.variantPrefix}-2x`
   ).map((img) => img.url);
   const { marketplaceName } = config;
-
-  // Build geo-aware title: "Pool Name in Austin, TX | Pool Rental Near Me"
-  // publicData carries a city-level label only, so read the structured
-  // fields rather than assuming a leading street segment.
-  const { city, state } = cityStateFromLocation(publicData?.location);
-  const cityState = city && state ? `${city}, ${state}` : city;
-  const schemaTitle = cityState
-    ? `${title} in ${cityState} | ${marketplaceName}`
-    : `${title} | ${marketplaceName}`;
-
+  const schemaTitle = intl.formatMessage(
+    { id: 'ListingPage.schemaTitle' },
+    { title, price: formattedPrice, marketplaceName }
+  );
+  // You could add reviews, sku, etc. into page schema
+  // Read more about product schema
+  // https://developers.google.com/search/docs/advanced/structured-data/product
   const productURL = `${config.marketplaceRootURL}${location.pathname}${location.search}${location.hash}`;
+  const currentStock = currentListing.currentStock?.attributes?.quantity || 0;
+  const schemaAvailability = !currentListing.currentStock
+    ? null
+    : currentStock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
 
-  // Geo coordinates for local search ranking
-  const geoMaybe = geolocation
-    ? { geo: { '@type': 'GeoCoordinates', latitude: geolocation.lat, longitude: geolocation.lng } }
+  const availabilityMaybe = schemaAvailability ? { availability: schemaAvailability } : {};
+
+  const schemaGeoMaybe =
+    geolocation?.lat != null && geolocation?.lng != null
+      ? {
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: geolocation.lat,
+            longitude: geolocation.lng,
+          },
+        }
+      : {};
+
+  const schemaAddressMaybe = listingLocation?.address
+    ? {
+        address: {
+          '@type': 'PostalAddress',
+          address: listingLocation.address,
+        },
+      }
     : {};
-  const addressMaybe = locationAddress ? { address: locationAddress } : {};
+
+  const schemaPriceMaybe = priceVariantsForSchemaMaybe({
+    price,
+    priceVariants,
+    currency: config.currency,
+    intl,
+  });
+
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0 ? reviews.reduce((sum, r) => sum + r.attributes.rating, 0) / reviewCount : null;
+  const bestRating = reviews.reduce((max, r) => Math.max(max, r.attributes.rating), 0);
+  const worstRating = reviews.reduce((min, r) => Math.min(min, r.attributes.rating), 5);
+  const aggregateRatingMaybe =
+    reviewCount > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(averageRating.toFixed(2)),
+            reviewCount,
+            bestRating,
+            worstRating,
+          },
+        }
+      : {};
 
   const handleViewPhotosClick = (e) => {
     // Stop event from bubbling up to prevent image click handler
@@ -302,40 +366,100 @@ export const ListingPageComponent = (props) => {
       title={schemaTitle}
       scrollingDisabled={scrollingDisabled}
       author={authorDisplayName}
-      description={description}
+      description={socialDescription}
       facebookImages={facebookImages}
       twitterImages={twitterImages}
-      schema={[
-        {
-          '@type': 'LodgingBusiness',
-          name: title,
-          description,
-          image: schemaImages,
+      schema={{
+        '@context': 'http://schema.org',
+        '@type': 'LocalBusiness',
+        description,
+        name: schemaTitle,
+        image: schemaImages,
+        ...schemaGeoMaybe,
+        ...schemaAddressMaybe,
+        ...aggregateRatingMaybe,
+        offers: {
+          '@type': 'Offer',
           url: productURL,
-          ...geoMaybe,
-          ...addressMaybe,
-          offers: {
-            '@type': 'Offer',
-            url: productURL,
-            ...priceForSchemaMaybe(price),
-          },
+          ...schemaPriceMaybe,
+          ...availabilityMaybe,
         },
-        {
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: config.marketplaceRootURL },
-            { '@type': 'ListItem', position: 2, name: 'Search Pools', item: `${config.marketplaceRootURL}/s` },
-            { '@type': 'ListItem', position: 3, name: title, item: productURL },
-          ],
-        },
-      ]}
+      }}
     >
       <LayoutSingleColumn className={css.pageRoot} topbar={topbar} footer={<FooterContainer />}>
-        {(() => {
-          const listingStyle = publicData.listingStyle;
-          const useTemplate = listingStyle && listingStyle !== 'clean';
+        <SectionHero
+          title={title}
+          listing={currentListing}
+          isOwnListing={isOwnListing}
+          currentUser={currentUser}
+          editParams={{
+            id: listingId.uuid,
+            slug: listingSlug,
+            type: listingPathParamType,
+            tab: listingTab,
+          }}
+          imageCarouselOpen={imageCarouselOpen}
+          onImageCarouselClose={() => setImageCarouselOpen(false)}
+          handleViewPhotosClick={handleViewPhotosClick}
+          onManageDisableScrolling={onManageDisableScrolling}
+          noPayoutDetailsSetWithOwnListing={noPayoutDetailsSetWithOwnListing}
+        />
+        <div className={css.contentWrapperForHeroLayout}>
+          <div className={css.mainColumnForHeroLayout}>
+            <div className={css.mobileHeading}>
+              <H4 as="h1" className={css.orderPanelTitle}>
+                <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
+              </H4>
+            </div>
 
-          const orderPanel = (
+            {!isVariant ? <ShareButton url={shareUrl} title={title} /> : null}
+            <SectionTextMaybe text={description} showAsIngress />
+            <div className={css.sectionAdvantages}>
+              <Heading as="h2" rootClassName={css.sectionHeading}>
+                {intl.formatMessage({ id: 'CustomListingFields.advantages' })}
+              </Heading>
+              <div className={css.advantages}>
+                {advantagesContent.map((advantage) => {
+                  const { title: advantageTitle, id, url } = advantage || {};
+                  return (
+                    <div key={id} className={css.advantage}>
+                      <img src={url} alt={advantageTitle} className={css.advantageImage} />
+                      <span>{advantageTitle}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <CustomListingFields
+              publicData={publicData}
+              metadata={metadata}
+              listingFieldConfigs={listingConfig.listingFields}
+              categoryConfiguration={config.categoryConfiguration}
+              intl={intl}
+            />
+
+            <SectionMapMaybe
+              geolocation={geolocation}
+              publicData={publicData}
+              listingId={currentListing.id}
+              mapsConfig={config.maps}
+            />
+            <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
+            <SectionAuthorMaybe
+              title={title}
+              listing={currentListing}
+              authorDisplayName={authorDisplayName}
+              onContactUser={onContactUser}
+              isInquiryModalOpen={isAuthenticated && inquiryModalOpen}
+              onCloseInquiryModal={() => setInquiryModalOpen(false)}
+              sendInquiryError={sendInquiryError}
+              sendInquiryInProgress={sendInquiryInProgress}
+              onSubmitInquiry={onSubmitInquiry}
+              currentUser={currentUser}
+              onManageDisableScrolling={onManageDisableScrolling}
+            />
+          </div>
+          <div className={css.orderColumnForHeroLayout}>
             <OrderPanel
               className={css.orderPanel}
               listing={currentListing}
@@ -368,109 +492,8 @@ export const ListingPageComponent = (props) => {
               marketplaceName={config.marketplaceName}
               currentPage={LISTING_PAGE}
             />
-          );
-
-          if (useTemplate) {
-            const TemplateComponent = getTemplateComponent(listingStyle);
-            const templateProps = mapListingToTemplateProps(
-              currentListing,
-              ensuredAuthor,
-              reviews,
-              config,
-              intl
-            );
-
-            return (
-              <TemplateComponent
-                templateProps={templateProps}
-                orderPanel={orderPanel}
-                onContactUser={onContactUser}
-                isOwnListing={isOwnListing}
-              />
-            );
-          }
-
-          // Default "clean" layout — existing cover photo layout
-          return (
-            <>
-              <SectionHero
-                title={title}
-                listing={currentListing}
-                isOwnListing={isOwnListing}
-                currentUser={currentUser}
-                editParams={{
-                  id: listingId.uuid,
-                  slug: listingSlug,
-                  type: listingPathParamType,
-                  tab: listingTab,
-                }}
-                imageCarouselOpen={imageCarouselOpen}
-                onImageCarouselClose={() => setImageCarouselOpen(false)}
-                handleViewPhotosClick={handleViewPhotosClick}
-                onManageDisableScrolling={onManageDisableScrolling}
-                noPayoutDetailsSetWithOwnListing={noPayoutDetailsSetWithOwnListing}
-              />
-              <div className={css.contentWrapperForHeroLayout}>
-                <div className={css.mainColumnForHeroLayout}>
-                  <div className={css.mobileHeading}>
-                    <H4 as="h1" className={css.orderPanelTitle}>
-                      <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
-                    </H4>
-                  </div>
-
-                  <SectionTextMaybe text={description} showAsIngress />
-                  <div className={css.sectionAdvantages}>
-                    <Heading as="h2" rootClassName={css.sectionHeading}>
-                      {intl.formatMessage({ id: 'CustomListingFields.advantages' })}
-                    </Heading>
-                    <div className={css.advantages}>
-                      {advantagesContent.map((advantage) => {
-                        const { title: advantageTitle, id, url } = advantage || {};
-                        return (
-                          <div key={id} className={css.advantage}>
-                            <img src={url} alt={advantageTitle} className={css.advantageImage} />
-                            <span>{advantageTitle}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <CustomListingFields
-                    publicData={publicData}
-                    metadata={metadata}
-                    listingFieldConfigs={listingConfig.listingFields}
-                    categoryConfiguration={config.categoryConfiguration}
-                    intl={intl}
-                  />
-
-                  <SectionMapMaybe
-                    geolocation={geolocation}
-                    publicData={publicData}
-                    listingId={currentListing.id}
-                    mapsConfig={config.maps}
-                  />
-                  <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
-                  <SectionAuthorMaybe
-                    title={title}
-                    listing={currentListing}
-                    authorDisplayName={authorDisplayName}
-                    onContactUser={onContactUser}
-                    isInquiryModalOpen={isAuthenticated && inquiryModalOpen}
-                    onCloseInquiryModal={() => setInquiryModalOpen(false)}
-                    sendInquiryError={sendInquiryError}
-                    sendInquiryInProgress={sendInquiryInProgress}
-                    onSubmitInquiry={onSubmitInquiry}
-                    currentUser={currentUser}
-                    onManageDisableScrolling={onManageDisableScrolling}
-                  />
-                </div>
-                <div className={css.orderColumnForHeroLayout}>
-                  {orderPanel}
-                </div>
-              </div>
-            </>
-          );
-        })()}
+          </div>
+        </div>
       </LayoutSingleColumn>
     </Page>
   );

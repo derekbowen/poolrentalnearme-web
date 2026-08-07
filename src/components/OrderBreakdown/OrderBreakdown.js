@@ -32,6 +32,7 @@ import LineItemUnknownItemsMaybe from './LineItemUnknownItemsMaybe';
 
 import css from './OrderBreakdown.module.css';
 import LineItemAmenitiesMaybe from './LineItemAmenitiesMaybe';
+import LineItemPartySizeMaybe from './LineItemPartySizeMaybe';
 
 export const OrderBreakdownComponent = props => {
   const {
@@ -117,8 +118,21 @@ export const OrderBreakdownComponent = props => {
       <LineItemBasePriceMaybe lineItems={lineItems} code={lineItemUnitType} intl={intl} />
       <LineItemShippingFeeMaybe lineItems={lineItems} intl={intl} />
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
+      {/* c150: named row for host promo discounts (negative amount). */}
+      {lineItems
+        .filter(li => li.code === 'line-item/promo-discount' && !li.reversal)
+        .map(li => (
+          <div className={css.lineItem} key="promo-discount">
+            <span className={css.itemLabel}>
+              <FormattedMessage id="OrderBreakdown.promoDiscount" />
+            </span>
+            <span className={css.itemValue}>{formatMoney(intl, li.lineTotal)}</span>
+          </div>
+        ))}
+
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
       <LineItemAmenitiesMaybe protectedData={protectedData} isProvider={isProvider} intl={intl} />
+      <LineItemPartySizeMaybe protectedData={protectedData} isProvider={isProvider} intl={intl} />
 
       <LineItemSubTotalMaybe
         lineItems={lineItems}

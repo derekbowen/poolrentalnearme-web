@@ -671,6 +671,23 @@ class StripePaymentForm extends Component {
           {hasPaymentErrors ? (
             <span className={css.errorMessage}>{paymentErrorMessage}</span>
           ) : null}
+          <p
+            style={{
+              fontSize: '13px',
+              lineHeight: 1.5,
+              color: '#4b5563',
+              background: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              margin: '14px 0 4px',
+            }}
+          >
+            <strong>You won&apos;t be charged yet.</strong> We place a hold on your card now, and
+            the charge only goes through when the host accepts. If they decline or don&apos;t
+            respond in time, the hold releases automatically &mdash; your bank may show it as
+            &quot;pending&quot; for a few days, but no money leaves your account.
+          </p>
           <PrimaryButton
             className={css.submitButton}
             type="submit"

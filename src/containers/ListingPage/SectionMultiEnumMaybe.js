@@ -7,12 +7,33 @@ import css from './ListingPage.module.css';
 // Option labels may contain host-entered emoji (e.g. "🌞 All-day sun").
 // The brand style uses an SVG icon as the primary icon, so strip any
 // leading emoji from the label text.
-const LEADING_EMOJI_REGEX = /^(?:\p{Extended_Pictographic}|[\u2600-\u27BF]|\uFE0F|\u200D)+\s*/u;
+// (No unicode-property regex here: the legacy-browser transpile chokes on \p escapes.)
+const isEmojiCodePoint = (cp) =>
+  (cp >= 0x1f000 && cp <= 0x1ffff) ||
+  (cp >= 0x2600 && cp <= 0x27bf) ||
+  (cp >= 0x2b00 && cp <= 0x2bff) ||
+  cp === 0xfe0f ||
+  cp === 0x200d;
 const stripLeadingEmoji = (label) => {
   if (typeof label !== 'string') {
     return label;
   }
-  const stripped = label.replace(LEADING_EMOJI_REGEX, '');
+  let i = 0;
+  let strippedAny = false;
+  while (i < label.length) {
+    const cp = label.codePointAt(i);
+    if (isEmojiCodePoint(cp)) {
+      i += cp > 0xffff ? 2 : 1;
+      strippedAny = true;
+      continue;
+    }
+    if (strippedAny && (label[i] === ' ' || label[i] === '\t')) {
+      i += 1;
+      continue;
+    }
+    break;
+  }
+  const stripped = label.slice(i);
   return stripped.length > 0 ? stripped : label;
 };
 

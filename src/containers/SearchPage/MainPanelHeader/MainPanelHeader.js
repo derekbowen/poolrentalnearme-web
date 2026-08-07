@@ -33,12 +33,29 @@ const MainPanelHeader = props => {
     searchInProgress = false,
     noResultsInfo,
     currentLocation,
+    searchAddress,
   } = props;
 
   const classes = classNames(rootClassName || css.root, className);
 
+  const prettyLocation =
+    searchAddress && searchAddress !== 'Current location' ? searchAddress : 'you';
+  const showHeading = !searchInProgress && resultsCount > 0 && !!searchAddress;
+
   return (
     <div className={classes}>
+      {showHeading ? (
+        <div
+          style={{
+            fontSize: '22px',
+            fontWeight: 600,
+            margin: '0 0 6px 0',
+            color: '#0b2733',
+          }}
+        >
+          {`Pools near ${prettyLocation}`}
+        </div>
+      ) : null}
       <div className={css.searchOptions}>
         <div className={css.searchResultSummary}>
           <span className={css.resultsFound}>
@@ -67,6 +84,20 @@ const MainPanelHeader = props => {
             {sortByComponent}
           </div>
         ) : null}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '13px',
+          fontWeight: 500,
+          color: '#007eb7',
+          margin: '2px 0 10px',
+        }}
+      >
+        <span aria-hidden="true">✓</span> Prices include all fees — no surprises at checkout
       </div>
 
       {children}

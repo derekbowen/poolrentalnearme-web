@@ -117,17 +117,6 @@ export const canonicalRoutePath = (routes, location, pathOnly = false) => {
     return pathOnly ? canonicalListingPathname : `${canonicalListingPathname}${search}${hash}`;
   }
 
-  // Faceted search URLs (/s?address=...&bounds=...) must not self-canonicalize
-  // with their query string. Every distinct parameter combination otherwise
-  // declares itself canonical, which Search Console reports as duplicate-
-  // canonical + crawled-not-indexed bloat. Consolidate the whole facet space
-  // onto the parameterless /s. Paired with the noindex,follow X-Robots-Tag on
-  // /s? at the edge, so link equity still flows through these pages.
-  const isSearchRoute = matches.length === 1 && matches[0].route.name === 'SearchPage';
-  if (isSearchRoute) {
-    return pathname;
-  }
-
   return pathOnly ? pathname : `${pathname}${search}${hash}`;
 };
 

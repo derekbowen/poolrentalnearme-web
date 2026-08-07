@@ -11,7 +11,7 @@ import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import { timestampToDate } from '../../../util/dates';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
-import { Form, H6, PrimaryButton, SecondaryButton, FieldSelect } from '../..';
+import { Form, H6, PrimaryButton, SecondaryButton, FieldSelect, FieldTextInput } from '../..';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
@@ -31,7 +31,7 @@ const handleFetchLineItems = props => formValues => {
     onFetchTransactionLineItems,
     seatsEnabled,
   } = props;
-  const { bookingStartTime, bookingEndTime, seats, priceVariantName, amenities } =
+  const { bookingStartTime, bookingEndTime, seats, priceVariantName, amenities, promoCode } =
     formValues.values;
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
   const endDate = bookingEndTime ? timestampToDate(bookingEndTime) : null;
@@ -50,6 +50,9 @@ const handleFetchLineItems = props => formValues => {
       ...seatsMaybe,
       ...priceVariantMaybe,
       amenities,
+      // c150: server validates the code against the host's promoCodes and
+      // returns a discount line item; an unknown code simply changes nothing.
+      ...(promoCode ? { promoCode } : {}),
     };
     onFetchTransactionLineItems({
       orderData,
@@ -115,16 +118,25 @@ export const BookingTimeForm = props => {
     onContactUser,
     listingAuthor,
     currentPage,
+    maxGuests,
     ...rest
   } = props;
 
   const [seatsOptions, setSeatsOptions] = useState([1]);
-  const initialValuesMaybe =
+  // Party-size selector: 1..maxGuests (soft — never affects price). Default 1.
+  const maxGuestsNum = Number.parseInt(maxGuests, 10) || 0;
+  const partySizeOptions =
+    maxGuestsNum > 1 ? Array.from({ length: maxGuestsNum }, (_, i) => i + 1) : [];
+  // Always seed partySize: 1 so it's populated even if the guest never opens the select.
+  const priceVariantInitial =
     priceVariants.length > 1 && preselectedPriceVariant
-      ? { initialValues: { priceVariantName: preselectedPriceVariant?.name } }
+      ? { priceVariantName: preselectedPriceVariant?.name }
       : priceVariants.length === 1
-      ? { initialValues: { priceVariantName: priceVariants?.[0]?.name } }
+      ? { priceVariantName: priceVariants?.[0]?.name }
       : {};
+  const initialValuesMaybe = {
+    initialValues: { ...priceVariantInitial, ...(partySizeOptions.length ? { partySize: 1 } : {}) },
+  };
 
   const classes = classNames(rootClassName || css.root, className);
 
@@ -153,7 +165,13 @@ export const BookingTimeForm = props => {
           fetchLineItemsError,
           payoutDetailsWarning,
           amenities,
+          offerAccept,
         } = formRenderProps;
+
+        // Accepting a host package deal: the price is the negotiated offer, not
+        // the hourly estimate, so we hide the hourly breakdown here and show the
+        // authoritative offer breakdown on the checkout page (/api/accept-offer).
+        const isOfferAccept = !!offerAccept?.negotiatedPriceCents;
 
         const startTime = values?.bookingStartTime ? values.bookingStartTime : null;
         const endTime = values?.bookingEndTime ? values.bookingEndTime : null;
@@ -173,7 +191,11 @@ export const BookingTimeForm = props => {
             : null;
 
         const showEstimatedBreakdown =
-          breakdownData && lineItems && !fetchLineItemsInProgress && !fetchLineItemsError;
+          !isOfferAccept &&
+          breakdownData &&
+          lineItems &&
+          !fetchLineItemsInProgress &&
+          !fetchLineItemsError;
 
         const onHandleFetchLineItems = handleFetchLineItems(props);
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
@@ -248,12 +270,43 @@ export const BookingTimeForm = props => {
               </FieldSelect>
             ) : null}
 
+            {partySizeOptions.length ? (
+              <FieldSelect
+                name="partySize"
+                id="partySize"
+                className={css.fieldSeats}
+                label={`Number of guests (this pool hosts up to ${maxGuestsNum})`}
+              >
+                {partySizeOptions.map(n => (
+                  <option value={n} key={n}>
+                    {n === maxGuestsNum ? `${n} (max)` : n}
+                  </option>
+                ))}
+              </FieldSelect>
+            ) : null}
+
             {breakdownData ? (
               <AmenitySelectMaybe
                 amenities={amenities}
                 intl={intl}
                 disabled={fetchLineItemsInProgress}
               />
+            ) : null}
+
+            {/* c150: host promo codes. Typing a code re-prices instantly via the
+                same line-items endpoint; the discount is applied server-side. */}
+            {breakdownData ? (
+              <div className={css.promoCodeField} style={{ margin: '8px 0 4px' }}>
+                <FieldTextInput
+                  id="promoCode"
+                  name="promoCode"
+                  type="text"
+                  label={intl.formatMessage({ id: 'BookingTimeForm.promoCodeLabel' })}
+                  placeholder={intl.formatMessage({ id: 'BookingTimeForm.promoCodePlaceholder' })}
+                  disabled={fetchLineItemsInProgress}
+                  format={v => (v ? String(v).toUpperCase() : v)}
+                />
+              </div>
             ) : null}
 
             {showEstimatedBreakdown ? (
@@ -274,21 +327,66 @@ export const BookingTimeForm = props => {
               </div>
             ) : null}
 
-            {fetchLineItemsError ? (
+            {isOfferAccept && breakdownData ? (
+              <div
+                style={{
+                  margin: '4px 0 8px',
+                  padding: '10px 14px',
+                  background: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                  <span>Package deal</span>
+                  <span>${(offerAccept.negotiatedPriceCents / 100).toFixed(2)}</span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#5c6b78', margin: '4px 0 0' }}>
+                  Your itemized total (including the small booking fee) is shown on the next screen.
+                </p>
+              </div>
+            ) : null}
+
+            {!isOfferAccept && fetchLineItemsError ? (
               <span className={css.sideBarError}>
-                <FormattedMessage id="BookingTimeForm.fetchLineItemsError" />
+                {fetchLineItemsError.status === 400 &&
+                typeof fetchLineItemsError.statusText === 'string' &&
+                /advance notice|minimum booking|hours per booking|in advance/i.test(
+                  fetchLineItemsError.statusText
+                ) ? (
+                  fetchLineItemsError.statusText
+                ) : (
+                  <FormattedMessage id="BookingTimeForm.fetchLineItemsError" />
+                )}
               </span>
             ) : null}
 
             <div className={css.submitButton}>
               <PrimaryButton
                 type="submit"
-                inProgress={fetchLineItemsInProgress}
+                inProgress={isOfferAccept ? false : fetchLineItemsInProgress}
                 disabled={submitDisabled}
               >
-                <FormattedMessage id="BookingTimeForm.requestToBook" />
+                {isOfferAccept ? (
+                  'Accept & continue to payment'
+                ) : (
+                  <FormattedMessage id="BookingTimeForm.requestToBook" />
+                )}
               </PrimaryButton>
             </div>
+
+            {/* Phase 1 listing redesign: booking reassurance (presentation only). */}
+            <p
+              style={{
+                margin: '8px 2px 0',
+                fontSize: '12.5px',
+                lineHeight: 1.45,
+                color: '#5c6b78',
+                textAlign: 'center',
+              }}
+            >
+              🔒 Your card is only authorized now — you're not charged until the host confirms.
+            </p>
 
             {/* Reassurance line directly under the CTA */}
             <p className={css.finePrint}>

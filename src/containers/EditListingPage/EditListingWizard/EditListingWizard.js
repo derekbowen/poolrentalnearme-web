@@ -3,6 +3,7 @@ import classNames from 'classnames';
 
 // Import configs and util modules
 import Modal from 'components/Modal/Modal';
+import IdentityVerificationGate from '../../CheckoutPage/IdentityVerificationGate';
 import useMediaQuery from 'hooks/useMediaQuery';
 import { useConfiguration } from 'context/configurationContext';
 import { useRouteConfiguration } from 'context/routeConfigurationContext';
@@ -38,7 +39,6 @@ import EditListingWizardTab, {
   LOCATION,
   AVAILABILITY,
   PHOTOS,
-  REVIEW,
 } from './EditListingWizardTab';
 import {
   createReturnURL,
@@ -65,8 +65,7 @@ import css from './EditListingWizard.module.css';
 //         Details tab asks for "title" and is therefore the first tab in the wizard flow.
 const TABS_DETAILS_ONLY = [DETAILS];
 const TABS_PRODUCT = [DETAILS, PRICING_AND_STOCK, DELIVERY, PHOTOS];
-// Pool rental flow: Details → Location → Photos → AI Review (pricing + availability + style)
-const TABS_BOOKING = [DETAILS, LOCATION, PHOTOS, REVIEW];
+const TABS_BOOKING = [DETAILS, LOCATION, PRICING, AVAILABILITY, PHOTOS];
 const TABS_INQUIRY = [DETAILS, LOCATION, PRICING, PHOTOS];
 const TABS_ALL = [...TABS_PRODUCT, ...TABS_BOOKING, ...TABS_INQUIRY];
 
@@ -122,10 +121,6 @@ const tabLabelAndSubmit = (intl, tab, isNewListingFlow, isPriceDisabled, process
       labelKey = 'EditListingWizard.tabLabelPhotos';
       submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.savePhotos`;
       break;
-    case REVIEW:
-      labelKey = 'EditListingWizard.tabLabelReview';
-      submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.saveReview`;
-      break;
     default:
       console.warn(`Unknown tab: ${tab}`);
   }
@@ -176,10 +171,7 @@ const tabCompletionValidators = {
     const { images } = listing;
     return images && images.length > 0;
   },
-  [REVIEW]: (listing) => {
-    const { price, availabilityPlan } = listing.attributes;
-    return !!(price && availabilityPlan);
-  },
+  // Add more tab completion checkers here
 };
 
 /**
@@ -307,11 +299,16 @@ class EditListingWizard extends Component {
       showPayoutDetails: false,
       selectedListingType: null,
       mounted: false,
+      showIdGate: false,
+      idVerifiedLocally: false,
+      pendingPublishId: null,
     };
     this.handleCreateFlowTabScrolling = this.handleCreateFlowTabScrolling.bind(this);
     this.handlePublishListing = this.handlePublishListing.bind(this);
     this.handlePayoutModalClose = this.handlePayoutModalClose.bind(this);
     this.onListingTypeChange = this.onListingTypeChange.bind(this);
+    this.handleIdVerified = this.handleIdVerified.bind(this);
+    this.handleIdGateClose = this.handleIdGateClose.bind(this);
   }
 
   componentDidMount() {
@@ -329,10 +326,29 @@ class EditListingWizard extends Component {
     this.hasScrolledToTab = shouldScroll;
   }
 
+  handleIdVerified() {
+    const { pendingPublishId } = this.state;
+    this.setState({ showIdGate: false, idVerifiedLocally: true }, () => {
+      // Re-trigger publish now that local verification flag is set
+      this.handlePublishListing(pendingPublishId);
+    });
+  }
+
+  handleIdGateClose() {
+    this.setState({ showIdGate: false, pendingPublishId: null });
+  }
+
   handlePublishListing(id) {
     const { onPublishListingDraft, currentUser, stripeAccount, listing, config } = this.props;
-    const { selectedListingType } = this.state;
-    const processName = listing?.attributes?.publicData?.transactionProcessAlias.split('/')[0];
+    const { selectedListingType, idVerifiedLocally } = this.state;
+
+    // Require host identity verification before publishing
+    const alreadyVerified = !!currentUser?.attributes?.protectedData?.idVerifiedAt;
+    if (false) { // ID gate disabled 2026-06-28 (non-blocking; re-enable when Stripe Identity is live)
+      this.setState({ showIdGate: true, pendingPublishId: id });
+      return;
+    }
+    const processName = listing?.attributes?.publicData?.transactionProcessAlias?.split('/')?.[0];
     const isInquiryProcess = processName === INQUIRY_PROCESS_NAME;
 
     const listingTypeConfig = getListingTypeConfig(listing, selectedListingType, config);
@@ -399,7 +415,7 @@ class EditListingWizard extends Component {
       hasHorizontalTabLayout,
       ...rest
     } = this.props;
-    const { selectedListingType, showPayoutDetails } = this.state;
+    const { selectedListingType, showPayoutDetails, showIdGate } = this.state;
 
     const selectedTab = params.tab;
     const isNewListingFlow = [LISTING_PAGE_PARAM_TYPE_NEW, LISTING_PAGE_PARAM_TYPE_DRAFT].includes(
@@ -543,7 +559,31 @@ class EditListingWizard extends Component {
     }
 
     return (
-      <div className={classes}>
+      <div className={classes} data-prnm-wizard="1">
+        {isNewListingFlow && tabs.length > 1 ? (
+          (() => {
+            const stepIdx = Math.max(0, tabs.indexOf(selectedTab));
+            const stepNum = stepIdx + 1;
+            const pct = Math.round((stepNum / tabs.length) * 100);
+            const stepName = tabLabelAndSubmit(
+              intl, tabs[stepIdx], isNewListingFlow, isPriceDisabled, processName
+            ).label;
+            return (
+              <div style={{ padding: '0 24px', margin: '0 0 22px', maxWidth: '640px' }}>
+                <div style={{ height: '10px', background: '#e7e5df', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: pct + '%', background: '#009ed8',
+                                borderRadius: '99px', transition: 'width .45s ease' }} />
+                </div>
+                <div style={{ marginTop: '10px', fontSize: '17px', fontWeight: 700, color: '#4d5f6b' }}>
+                  Step {stepNum} of {tabs.length} &middot; {stepName}
+                </div>
+                <div style={{ marginTop: '6px', fontSize: '16px', lineHeight: 1.5, color: '#7b8b95' }}>
+                  Everything saves as you go &mdash; you can close this and come back anytime.
+                </div>
+              </div>
+            );
+          })()
+        ) : null}
         <Tabs
           rootClassName={css.tabsContainer}
           navRootClassName={css.nav}
@@ -583,6 +623,23 @@ class EditListingWizard extends Component {
             );
           })}
         </Tabs>
+        <Modal
+          id="EditListingWizard.idGateModal"
+          isOpen={showIdGate}
+          onClose={this.handleIdGateClose}
+          onManageDisableScrolling={onManageDisableScrolling}
+          usePortal
+        >
+          <div style={{ padding: '8px 0 16px' }}>
+            <IdentityVerificationGate
+              publishableKey={config.stripe.publishableKey}
+              purpose="host"
+              reason="To protect renters and keep Pool Rental Near Me safe, all hosts must verify their identity once before listing a pool."
+              onVerified={this.handleIdVerified}
+            />
+          </div>
+        </Modal>
+
         <Modal
           id="EditListingWizard.payoutModal"
           isOpen={showPayoutDetails}

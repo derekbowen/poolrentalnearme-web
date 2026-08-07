@@ -1,0 +1,280 @@
+.wrap {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.calendar {
+  flex: 1 1 460px;
+  min-width: 300px;
+  background: var(--colorWhite, #ffffff);
+  border: 1px solid #e3edf2;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 4px 18px rgba(11, 39, 51, 0.06);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.monthLabel {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0b2733;
+}
+.nav {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d2e3ee;
+  background: var(--colorWhite, #ffffff);
+  color: var(--marketplaceColor, #009ed8);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.nav:hover { background: #eef4f8; }
+
+.dowRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8aa2b0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.empty { aspect-ratio: 1 / 1; }
+
+.day {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-radius: 14px;
+  border: 1px solid #e3edf2;
+  background: var(--colorWhite, #ffffff);
+  padding: 8px 9px;
+  cursor: pointer;
+  transition: transform 0.08s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.day:hover { border-color: var(--marketplaceColor, #009ed8); background: #f3f9fc; }
+.day:active { transform: scale(0.97); }
+.dayNum { font-size: 16px; font-weight: 600; color: #0b2733; }
+.price { font-size: 11px; font-weight: 700; color: #b5730a; }
+.priceMuted { font-size: 11px; color: #9fb2bd; }
+.tag { font-size: 11px; font-weight: 600; color: #6b8290; }
+
+.open {}
+.custom {
+  background: #fff7e6;
+  border-color: #f3cd83;
+}
+.booked {
+  background: #eafaf0;
+  border-color: #9bdcb6;
+}
+.booked .price, .booked .tag { color: #1f9d57; }
+.closed {
+  background: #f4f7f9;
+  border-style: dashed;
+  border-color: #cdd9e0;
+}
+.closed .dayNum { color: #a9bcc7; }
+.selected { outline: 2px solid var(--marketplaceColor, #009ed8); outline-offset: 1px; }
+.past { opacity: 0.4; cursor: not-allowed; background: #f4f7f9; }
+.past:hover { border-color: #e3edf2; background: #f4f7f9; }
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #4a6573;
+  flex-wrap: wrap;
+}
+.dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+.dotOpen { background: var(--colorWhite, #fff); border: 1px solid #cdd9e0; }
+.dotCustom { background: #f6b53d; }
+.dotClosed { background: transparent; border: 1px dashed #b3c3cd; }
+.count { margin-left: auto; color: #8aa2b0; }
+
+/* ── Quick Edit panel ── */
+.panel {
+  flex: 0 0 320px;
+  min-width: 280px;
+  background: #f6fafc;
+  border: 1px solid #d2e3ee;
+  border-radius: 18px;
+  padding: 18px;
+}
+.panelHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.panelTitle { font-size: 17px; font-weight: 700; color: #0b2733; }
+.close {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid #d2e3ee;
+  background: var(--colorWhite, #fff); color: #4a6573; cursor: pointer;
+}
+.close:hover { background: #eef4f8; }
+
+.sliderLabel { display: block; font-size: 13px; color: #4a6573; margin: 10px 0 4px; }
+.sliderLabel b { color: var(--marketplaceColorDark, #007eb7); }
+.slider { width: 100%; accent-color: var(--marketplaceColor, #009ed8); }
+
+.rateRow { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 8px; }
+.rateTitle { font-size: 15px; font-weight: 600; color: #0b2733; }
+.toggleLabel { font-size: 12px; color: #4a6573; display: inline-flex; align-items: center; gap: 5px; }
+
+.rateInputRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: #0b2733; }
+.rateInput {
+  flex: 1; height: 42px; font-size: 16px; padding: 0 10px;
+  background: var(--colorWhite, #fff); color: #0b2733;
+  border: 1px solid #cdd9e0; border-radius: 10px;
+}
+.perHr { font-size: 13px; color: #6b8290; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.chip {
+  padding: 7px 11px; border-radius: 10px; cursor: pointer; font-size: 13px;
+  background: var(--colorWhite, #fff); color: #0b2733;
+  border: 1px solid #cdd9e0;
+}
+.chip:hover { border-color: var(--marketplaceColor, #009ed8); }
+.chipOn { background: #e4f4fb; border-color: var(--marketplaceColor, #009ed8); color: #075e87; }
+.chipPrice { color: #6b8290; }
+
+.toggleRow {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; margin-top: 8px;
+  border-top: 1px solid #dbe7ee;
+  font-size: 15px; color: #0b2733;
+}
+.toggleRow input { accent-color: var(--marketplaceColor, #009ed8); width: 18px; height: 18px; }
+
+.save {
+  width: 100%; margin-top: 14px; padding: 12px;
+  border: none; border-radius: 12px; cursor: pointer;
+  background: var(--marketplaceColor, #009ed8);
+  color: #ffffff; font-size: 15px; font-weight: 700;
+}
+.save:hover { background: var(--marketplaceColorDark, #007eb7); }
+
+.toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.bulkBtn {
+  padding: 9px 16px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;
+  background: var(--colorWhite, #fff); color: var(--marketplaceColor, #009ed8);
+  border: 1px solid #d2e3ee;
+}
+.bulkBtn:hover { background: #eef4f8; }
+.bulkBtnOn { background: var(--marketplaceColor, #009ed8); color: #fff; border-color: var(--marketplaceColor, #009ed8); }
+.bulkHint { font-size: 12px; color: #4a6573; }
+.picked { outline: 2px solid var(--marketplaceColor, #009ed8); outline-offset: 1px; background: #e4f4fb; }
+.bulkBar { margin-top: 16px; padding: 14px; border-radius: 12px; background: #f6fafc; border: 1px solid #d2e3ee; }
+.bulkBarTitle { font-size: 14px; font-weight: 700; color: #0b2733; margin-bottom: 10px; }
+.bulkClosed { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #0b2733; margin: 6px 0 12px; }
+.bulkClosed input { accent-color: var(--marketplaceColor, #009ed8); width: 17px; height: 17px; }
+
+@media (max-width: 560px) {
+  .wrap { gap: 12px; }
+  .calendar { flex: 1 1 100%; padding: 10px; }
+  .panel { flex: 1 1 100%; }
+  .grid, .dowRow { gap: 4px; }
+  /* Phone legibility (host feedback): the 1:1 squares squeezed price text to
+     9px. Let cells grow taller than wide and keep text readable instead. */
+  .day { padding: 6px 5px; border-radius: 10px; aspect-ratio: auto; min-height: 58px; }
+  .empty { aspect-ratio: auto; min-height: 58px; }
+  .dayNum { font-size: 15px; }
+  .price, .priceMuted, .tag { font-size: 11px; letter-spacing: -0.2px; }
+  .monthLabel { font-size: 17px; }
+  .nav { width: 40px; height: 40px; }
+  .legend { gap: 10px; font-size: 12px; }
+  .legend .count { margin-left: 0; flex-basis: 100%; }
+}
+@media (max-width: 380px) {
+  .grid, .dowRow { gap: 3px; }
+  .day { padding: 5px 4px; border-radius: 9px; min-height: 54px; }
+  .dayNum { font-size: 14px; }
+  .price, .priceMuted, .tag { font-size: 10.5px; }
+}
+
+/* ── Block specific hours (Option B: interior blocked intervals) ── */
+.blockSection {
+  margin: 14px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f6;
+}
+.blockHint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0 8px;
+}
+.blockList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.blockPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 3px 8px 3px 10px;
+}
+.blockRemove {
+  border: none;
+  background: transparent;
+  color: #9a3412;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+.blockAddRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.blockSelect {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+}
+.blockTo {
+  font-size: 13px;
+  color: #64748b;
+}
+.blockAdd {
+  padding: 6px 14px;
+  border: 1px solid #0aa3a3;
+  background: #fff;
+  color: #0aa3a3;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}

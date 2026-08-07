@@ -1,6 +1,5 @@
 @import '../assets/sanitize.css';
 @import './customMediaQueries.css';
-@import '../templates/templateThemes.css';
 
 /* ================ Custom Properties aka CSS variables ================ */
 
@@ -52,17 +51,28 @@
   * In the future, we are planning to bring more --marketplace* CSS Properties
   * from hosted assets, which means that they could be managed through Console.
   */
-  --marketplaceColor: #1d7595; /* rgb(29, 117, 149) */
-  --marketplaceColorLight: #2590b5; /* +10L from marketplaceColor */
-  --marketplaceColorDark: #155a72; /* -10L from marketplaceColor */
+  /* PRNM redesign — brand pool blue = PSEO app's oklch(0.65 0.15 230). Was #5d2bc0 violet. */
+  --marketplaceColor: #009ed8; /* oklch(0.65 0.15 230) */
+  --marketplaceColorLight: #00b4f0; /* oklch(0.72 0.15 230) */
+  --marketplaceColorDark: #007eb7; /* oklch(0.55 0.15 230) */
 
-  /** 
+  /* ================ PRNM warm surface palette (redesign) ================ */
+  /* Warm neutrals from the wireframes — page canvas, raised cards, pale-blue accent fills. */
+  --colorCanvas: #faf9f5; /* near-white warm page background */
+  --colorCanvasDeep: #e7e5df; /* deeper warm canvas for section bands */
+  --colorSurfaceWarm: #f4f1ea; /* warm card / stats strip */
+  --colorSurfaceAccent: #eef4f8; /* pale-blue accent fill (icon chips, highlights) */
+  --colorBorderWarm: #ece9e1; /* hairline borders on warm surfaces */
+  --colorBorderField: #d9d6ce; /* input / control borders */
+
+  /**
    * The fill color used by <PrimaryButton>
    * These might be overwritten by values from hosted assets
+   * PRNM redesign: primary CTAs (Book / Reserve / Publish) use pool blue, not green.
    */
-  --colorPrimaryButton: var(--colorSuccess);
-  --colorPrimaryButtonDark: var(--colorSuccessDark);
-  --colorPrimaryButtonLight: var(--colorSuccessLight);
+  --colorPrimaryButton: var(--marketplaceColor);
+  --colorPrimaryButtonDark: var(--marketplaceColorDark);
+  --colorPrimaryButtonLight: var(--marketplaceColorLight);
 
   /** 
    * The fill color used by <SecondaryButton>
@@ -72,7 +82,8 @@
   --colorSecondaryButtonLight: var(--colorWhite);
 
   /* ================ Font ================ */
-  --fontFamily:  'AirbnbCereal', Helvetica, Arial, sans-serif,
+  /* PRNM unified brand font: Manrope (self-hosted, OFL). Replaces AirbnbCereal. */
+  --fontFamily:  'Manrope', -apple-system, system-ui, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 
   --fontWeightRegular: 400;
@@ -123,9 +134,10 @@
 
   /* ================ Border radius ================ */
 
-  --borderRadius: 2px;
-  --borderRadiusMedium: 4px;
-  --borderRadiusRound: 40px;
+  /* PRNM redesign: softer, rounded corners (wireframes use 8–12px on cards/controls). */
+  --borderRadius: 8px; /* was 2px */
+  --borderRadiusMedium: 12px; /* was 4px */
+  --borderRadiusRound: 999px; /* full pill — was 40px */
 
   /* ================ Transition styles ================ */
 
@@ -210,7 +222,8 @@ body {
   text-rendering: optimizeSpeed;
   font-optical-sizing: auto;
 
-  background-color: var(--colorGrey50);
+  /* PRNM redesign: warm page canvas (was --colorGrey50). */
+  background-color: var(--colorCanvas);
 }
 
 ::selection {
@@ -1538,4 +1551,64 @@ textarea {
   @media (--viewportMedium) {
     margin-top: 32px;
   }
+}
+
+
+/* ── c140 "the granny bundle" ─────────────────────────────────────────────
+   Scoped to [data-prnm-wizard] so nothing outside the listing wizard moves.
+   Diagnosis was that the wizard isn't ugly, it's demanding: 14px type and
+   ~40px targets on a phone held by someone in reading glasses. Nothing here
+   touches save logic, Sharetribe writes, or the publish path. */
+[data-prnm-wizard] {
+  font-size: 19px;
+  line-height: 1.6;
+}
+[data-prnm-wizard] h1,
+[data-prnm-wizard] h2 {
+  font-size: 30px;
+  line-height: 1.18;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+[data-prnm-wizard] label,
+[data-prnm-wizard] p,
+[data-prnm-wizard] li {
+  font-size: 18px;
+  line-height: 1.55;
+}
+/* every tap target clears a fingertip with room to spare */
+[data-prnm-wizard] button,
+[data-prnm-wizard] a[role='button'],
+[data-prnm-wizard] input[type='submit'] {
+  min-height: 60px;
+  font-size: 19px;
+}
+[data-prnm-wizard] input[type='text'],
+[data-prnm-wizard] input[type='number'],
+[data-prnm-wizard] input[type='email'],
+[data-prnm-wizard] select,
+[data-prnm-wizard] textarea {
+  min-height: 60px;
+  font-size: 19px;
+  line-height: 1.45;
+}
+[data-prnm-wizard] textarea { min-height: 132px; }
+/* checkbox + radio rows: the whole row is the target, not the 16px box */
+[data-prnm-wizard] input[type='checkbox'] + label,
+[data-prnm-wizard] input[type='radio'] + label {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+}
+/* the primary action is unmistakable */
+[data-prnm-wizard] button[type='submit'] {
+  min-height: 68px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.012em;
+}
+@media (max-width: 767px) {
+  [data-prnm-wizard] h1,
+  [data-prnm-wizard] h2 { font-size: 27px; }
 }

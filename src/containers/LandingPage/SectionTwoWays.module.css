@@ -1,0 +1,101 @@
+.root {
+  width: 100%;
+  background: #fff;
+}
+
+.inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 8px;
+}
+
+.heading {
+  margin: 0 0 24px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #22303c;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.cardSky {
+  background: #e4f4fc;
+}
+
+.cardCoral {
+  background: #ffb8d9;
+  border: 3px dashed #ffd21f;
+}
+
+.cardEmoji {
+  font-size: 26px;
+}
+
+.cardTitle {
+  margin: 8px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #22303c;
+}
+
+.cardText {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #6b7a86;
+}
+
+.primaryBtn,
+.quietBtn {
+  display: inline-flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  margin-top: 16px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primaryBtn {
+  background: var(--marketplaceColor, #009ed8);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0, 158, 216, 0.35);
+}
+
+.primaryBtn:hover {
+  background: var(--marketplaceColorDark, #007eb7);
+  text-decoration: none;
+}
+
+.quietBtn {
+  border: 2px solid var(--marketplaceColor, #009ed8);
+  background: #fff;
+  color: var(--marketplaceColor, #009ed8);
+}
+
+.quietBtn:hover {
+  background: #e4f4fc;
+  text-decoration: none;
+}

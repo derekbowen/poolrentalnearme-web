@@ -236,6 +236,41 @@ export const convertMoneyToNumber = value => {
   return amount.dividedBy(subUnitDivisorAsDecimal).toNumber();
 };
 
+////////// Marketplace booking fee — all-in pricing (CA SB 478) //////////
+
+// Guests pay a mandatory booking fee on top of the host's price. California
+// SB 478 requires that fee to be INCLUDED in the displayed/advertised price,
+// not added only at checkout. The real fee % is configured server-side in the
+// Sharetribe Console commission asset; this constant MUST mirror it. Update it
+// if the Console customer-commission percentage changes.
+// (memory: prnm-pricing-compliance)
+export const CUSTOMER_BOOKING_FEE_PCT = 15;
+
+/**
+ * Returns the all-in price (host price + mandatory guest booking fee) for
+ * DISPLAY ONLY. Does not change the actual charge (computed server-side in line
+ * items). Math is done in major units via convertMoneyToNumber (handles Long),
+ * then back to subunits. Returns the input unchanged if it isn't valid Money.
+ *
+ * @param {Money} price
+ * @return {Money} all-in price
+ */
+export const priceWithBookingFee = price => {
+  if (!(price instanceof Money)) {
+    return price;
+  }
+  try {
+    const divisor = unitDivisor(price.currency);
+    const major = convertMoneyToNumber(price);
+    // Exact all-in price - the header must match the checkout total to the
+    // penny or guests (rightly) think the math is broken.
+    const allInSubunits = Math.round(major * (1 + CUSTOMER_BOOKING_FEE_PCT / 100) * divisor);
+    return new Money(allInSubunits, price.currency);
+  } catch (e) {
+    return price;
+  }
+};
+
 /**
  * Format the given money to a string
  *

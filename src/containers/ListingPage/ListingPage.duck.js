@@ -24,6 +24,7 @@ import {
 } from '../../util/urlHelpers';
 import { getProcess, isBookingProcessAlias } from '../../transactions/transaction';
 import { fetchCurrentUser, fetchCurrentUserHasOrdersSuccess } from '../../ducks/user.duck';
+import queryAllPages from '../../extensions/common/utils/queryAllPages';
 
 const { UUID } = sdkTypes;
 const MINUTE_IN_MS = 1000 * 60;
@@ -344,22 +345,19 @@ export const showListing = (listingId, config, isOwn = false) => (dispatch, getS
     });
 };
 
-export const fetchReviews = listingId => (dispatch, getState, sdk) => {
+export const fetchReviews = listingId => async (dispatch, getState, sdk) => {
   dispatch(fetchReviewsRequest());
-  return sdk.reviews
-    .query({
+  try {
+    const reviews = await queryAllPages(sdk, 'reviews', {
       listing_id: listingId,
       state: 'public',
       include: ['author', 'author.profileImage'],
       'fields.image': ['variants.square-small', 'variants.square-small2x'],
-    })
-    .then(response => {
-      const reviews = denormalisedResponseEntities(response);
-      dispatch(fetchReviewsSuccess(reviews));
-    })
-    .catch(e => {
-      dispatch(fetchReviewsError(storableError(e)));
     });
+    dispatch(fetchReviewsSuccess(reviews));
+  } catch (e) {
+    dispatch(fetchReviewsError(storableError(e)));
+  }
 };
 
 const timeSlotsRequest = params => (dispatch, getState, sdk) => {
@@ -443,8 +441,26 @@ export const sendInquiry = (listing, message) => (dispatch, getState, sdk) => {
     .then(response => {
       const transactionId = response.data.data.id;
 
-      // Send the message to the created transaction
-      return sdk.messages.send({ transactionId, content: message }).then(() => {
+      // Send the message to the created transaction. The transaction already
+      // exists at this point, so a message failure must NOT fail the whole
+      // flow — surfacing an error here makes the guest retry, which creates a
+      // DUPLICATE empty inquiry (observed in production). Retry the message
+      // against the SAME transaction; if it still fails, proceed — the guest
+      // lands on the thread (where they can resend) and the host is notified
+      // of the inquiry by SMS either way.
+      const sendMessageWithRetry = attempt =>
+        sdk.messages.send({ transactionId, content: message }).catch(e => {
+          if (attempt < 2) {
+            return sendMessageWithRetry(attempt + 1);
+          }
+          log.error(storableError(e), 'inquiry-message-send-failed', {
+            listingId: listingId?.uuid,
+            transactionId: transactionId?.uuid,
+          });
+          return null;
+        });
+
+      return sendMessageWithRetry(0).then(() => {
         dispatch(sendInquirySuccess());
         dispatch(fetchCurrentUserHasOrdersSuccess(true));
         return transactionId;

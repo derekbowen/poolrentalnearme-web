@@ -53,333 +53,269 @@
  *   - requiredMessage (optional):    Message for those fields, which are mandatory.
  */
 export const listingFields = [
-  // ─── Pool Characteristics (AI-populated) ───
+  // ============================================================
+  // PRNM pool listing fields (dev fallback; mirror into Console listingFields.json).
+  // All scoped to the 'hourly-pool' listing type. Amenity options map to the
+  // wireframe category chips (Heated, Hot tub, Dog-friendly, Luxury, Party…).
+  // ============================================================
   {
     key: 'poolType',
     scope: 'public',
     schemaType: 'enum',
     enumOptions: [
-      { option: 'inground', label: 'Inground' },
-      { option: 'above-ground', label: 'Above ground' },
-      { option: 'natural', label: 'Natural / pond' },
-      { option: 'infinity', label: 'Infinity edge' },
-      { option: 'rooftop', label: 'Rooftop' },
+      { option: 'in_ground', label: 'In-ground' },
+      { option: 'above_ground', label: 'Above-ground' },
       { option: 'indoor', label: 'Indoor' },
+      { option: 'infinity', label: 'Infinity' },
+      { option: 'lap', label: 'Lap pool' },
+      { option: 'natural', label: 'Natural / pond' },
     ],
+    listingTypeConfig: { limitToListingTypeIds: true, listingTypeIds: ['hourly-pool'] },
     filterConfig: {
       indexForSearch: true,
-      filterType: 'SelectMultipleFilter',
+      filterType: 'SelectSingleFilter',
       label: 'Pool type',
       group: 'primary',
     },
-    showConfig: {
-      label: 'Pool type',
-      isDetail: true,
-    },
+    showConfig: { label: 'Pool type', isDetail: true },
     saveConfig: {
       label: 'Pool type',
-      placeholderMessage: 'Select pool type…',
+      placeholderMessage: 'Choose the type of pool…',
       isRequired: true,
-      requiredMessage: 'Pool type is required.',
-    },
-  },
-  {
-    key: 'poolSize',
-    scope: 'public',
-    schemaType: 'enum',
-    enumOptions: [
-      { option: 'small', label: 'Small (up to 200 sq ft)' },
-      { option: 'medium', label: 'Medium (200–400 sq ft)' },
-      { option: 'large', label: 'Large (400–800 sq ft)' },
-      { option: 'olympic', label: 'Olympic / XL (800+ sq ft)' },
-    ],
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Pool size',
-      group: 'secondary',
-    },
-    showConfig: {
-      label: 'Pool size',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Pool size',
-      placeholderMessage: 'Select pool size…',
-      isRequired: false,
-    },
-  },
-  {
-    key: 'capacity',
-    scope: 'public',
-    schemaType: 'long',
-    numberConfig: {
-      minimum: 1,
-      maximum: 50,
-    },
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Guest capacity',
-      group: 'secondary',
-    },
-    showConfig: {
-      label: 'Max guests',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'How many guests can your pool accommodate?',
-      placeholderMessage: 'e.g. 10',
-      isRequired: true,
-      requiredMessage: 'Guest capacity is required.',
-    },
-  },
-  {
-    key: 'heated',
-    scope: 'public',
-    schemaType: 'boolean',
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Heated',
-      group: 'primary',
-    },
-    showConfig: {
-      label: 'Heated pool',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Is your pool heated?',
-    },
-  },
-  {
-    key: 'depth',
-    scope: 'public',
-    schemaType: 'text',
-    showConfig: {
-      label: 'Pool depth',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Pool depth range',
-      placeholderMessage: 'e.g. 3ft – 8ft',
-      isRequired: false,
-    },
-  },
-
-  // ─── Amenities (AI-detected from photos) ───
-  {
-    key: 'amenities',
-    scope: 'public',
-    schemaType: 'multi-enum',
-    enumOptions: [
-      { option: 'hot-tub', label: 'Hot tub / spa' },
-      { option: 'slide', label: 'Water slide' },
-      { option: 'diving-board', label: 'Diving board' },
-      { option: 'waterfall', label: 'Waterfall' },
-      { option: 'grotto', label: 'Grotto' },
-      { option: 'lounge-chairs', label: 'Lounge chairs' },
-      { option: 'umbrellas', label: 'Umbrellas / shade' },
-      { option: 'outdoor-shower', label: 'Outdoor shower' },
-      { option: 'grill', label: 'Grill / BBQ' },
-      { option: 'outdoor-kitchen', label: 'Outdoor kitchen' },
-      { option: 'fire-pit', label: 'Fire pit' },
-      { option: 'cabana', label: 'Cabana / gazebo' },
-      { option: 'changing-room', label: 'Changing room' },
-      { option: 'restroom', label: 'Restroom access' },
-      { option: 'towels', label: 'Towels provided' },
-      { option: 'wifi', label: 'WiFi' },
-      { option: 'bluetooth-speaker', label: 'Bluetooth speaker' },
-      { option: 'lighting', label: 'Pool lighting' },
-      { option: 'landscaping', label: 'Landscaped yard' },
-      { option: 'playground', label: 'Playground / kids area' },
-    ],
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Amenities',
-      searchMode: 'has_all',
-      group: 'secondary',
-    },
-    showConfig: {
-      label: 'Amenities',
-    },
-    saveConfig: {
-      label: 'What amenities does your pool area have?',
-      placeholderMessage: 'Select amenities…',
-      isRequired: false,
-    },
-  },
-
-  // ─── Safety Features (AI-detected) ───
-  {
-    key: 'safetyFeatures',
-    scope: 'public',
-    schemaType: 'multi-enum',
-    enumOptions: [
-      { option: 'fence', label: 'Pool fence' },
-      { option: 'gate-lock', label: 'Self-closing / locking gate' },
-      { option: 'pool-cover', label: 'Pool cover' },
-      { option: 'alarm', label: 'Pool alarm' },
-      { option: 'enclosure', label: 'Pool enclosure' },
-      { option: 'shallow-entry', label: 'Shallow entry / beach entry' },
-      { option: 'non-slip', label: 'Non-slip surfaces' },
-      { option: 'life-ring', label: 'Life ring / safety equipment' },
-      { option: 'first-aid', label: 'First aid kit' },
-    ],
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Safety features',
-      searchMode: 'has_any',
-      group: 'secondary',
-    },
-    showConfig: {
-      label: 'Safety features',
-    },
-    saveConfig: {
-      label: 'What safety measures are in place?',
-      placeholderMessage: 'Select safety features…',
-      isRequired: false,
-    },
-  },
-
-  // ─── Rules (AI-suggested based on pool type) ───
-  {
-    key: 'childrenAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    showConfig: {
-      label: 'Children allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Suitable for children (0–12 years)?',
-    },
-  },
-  {
-    key: 'eventsAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    filterConfig: {
-      indexForSearch: true,
-      label: 'Events allowed',
-      group: 'primary',
-    },
-    showConfig: {
-      label: 'Events allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Do you allow events and parties?',
-    },
-  },
-  {
-    key: 'alcoholAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    showConfig: {
-      label: 'Alcohol allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Is alcohol allowed?',
-    },
-  },
-  {
-    key: 'petsAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    showConfig: {
-      label: 'Pets allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Are pets allowed?',
-    },
-  },
-  {
-    key: 'musicAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    showConfig: {
-      label: 'Music allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Is music permitted?',
-    },
-  },
-  {
-    key: 'smokingAllowed',
-    scope: 'public',
-    schemaType: 'boolean',
-    showConfig: {
-      label: 'Smoking allowed',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Is smoking allowed?',
+      requiredMessage: 'Please select a pool type.',
     },
   },
   {
     key: 'maxGuests',
     scope: 'public',
     schemaType: 'long',
-    numberConfig: {
-      minimum: 1,
-      maximum: 100,
-    },
-    showConfig: {
+    numberConfig: { minimum: 1, maximum: 100 },
+    listingTypeConfig: { limitToListingTypeIds: true, listingTypeIds: ['hourly-pool'] },
+    filterConfig: { indexForSearch: true, label: 'Max guests', group: 'primary' },
+    showConfig: { label: 'Max guests', isDetail: true },
+    saveConfig: {
       label: 'Maximum guests',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Maximum number of guests per booking',
       placeholderMessage: 'e.g. 15',
-      isRequired: false,
+      isRequired: true,
+      requiredMessage: 'Please set a guest limit.',
     },
   },
+  // NOTE: publicData.amenities is RESERVED in production for the custom PRICED
+  // add-on feature — an array of { id, name, price } edited via OrderPanel's
+  // AmenitySelectMaybe and turned into line-item/amenity-* server-side. The FREE
+  // "Pool Amenities" checklist below therefore uses the `poolAmenities` key.
+  // (Real Console key for the free checklist is TBD — confirm via hosted-asset export.)
   {
-    key: 'minimumNotice',
+    key: 'poolAmenities',
     scope: 'public',
-    schemaType: 'long',
-    numberConfig: {
-      minimum: 0,
-      maximum: 72,
-    },
-    showConfig: {
-      label: 'Minimum notice (hours)',
-      isDetail: true,
-    },
-    saveConfig: {
-      label: 'Minimum notice period before booking (hours)',
-      placeholderMessage: 'e.g. 4',
-      isRequired: false,
-    },
-  },
-
-  // ─── Listing Style Template ───
-  {
-    key: 'listingStyle',
-    scope: 'public',
-    schemaType: 'enum',
+    schemaType: 'multi-enum',
     enumOptions: [
-      { option: 'clean', label: 'Clean & Modern' },
-      { option: 'resort', label: 'Tropical Resort' },
-      { option: 'luxury', label: 'Luxury Estate' },
-      { option: 'party', label: 'Party Ready' },
-      { option: 'family', label: 'Family Fun' },
-      { option: 'bold', label: 'Unique & Bold' },
+      { option: 'heated', label: 'Heated' },
+      { option: 'hot_tub', label: 'Hot tub' },
+      { option: 'bathroom', label: 'Bathroom' },
+      { option: 'outdoor_shower', label: 'Outdoor shower' },
+      { option: 'wifi', label: 'Wi-Fi' },
+      { option: 'grill', label: 'Grill / BBQ' },
+      { option: 'lounge_seating', label: 'Lounge seating' },
+      { option: 'shade', label: 'Shade / umbrellas' },
+      { option: 'sound_system', label: 'Sound system' },
+      { option: 'changing_room', label: 'Changing room' },
+      { option: 'parking', label: 'Free parking' },
+      { option: 'towels', label: 'Towels provided' },
+      { option: 'pool_toys', label: 'Pool toys / floats' },
+      { option: 'dog_friendly', label: 'Dog-friendly' },
     ],
+    listingTypeConfig: { limitToListingTypeIds: true, listingTypeIds: ['hourly-pool'] },
     filterConfig: {
-      indexForSearch: false,
+      indexForSearch: true,
+      label: 'Amenities',
+      searchMode: 'has_all',
+      group: 'secondary',
     },
-    showConfig: {
-      label: 'Listing Style',
-      isDetail: false,
-    },
-    saveConfig: {
-      label: 'Choose your listing style',
-      placeholderMessage: 'Select a style…',
-      isRequired: false,
-    },
+    showConfig: { label: 'Amenities' },
+    saveConfig: { label: 'Amenities' },
   },
+  {
+    key: 'vibe',
+    scope: 'public',
+    schemaType: 'multi-enum',
+    enumOptions: [
+      { option: 'party_ready', label: 'Party-ready' },
+      { option: 'family_friendly', label: 'Family-friendly' },
+      { option: 'luxury', label: 'Luxury' },
+      { option: 'quiet', label: 'Quiet & relaxing' },
+      { option: 'dog_day', label: 'Dog day' },
+    ],
+    listingTypeConfig: { limitToListingTypeIds: true, listingTypeIds: ['hourly-pool'] },
+    filterConfig: {
+      indexForSearch: true,
+      label: 'Good for',
+      searchMode: 'has_any',
+      group: 'primary',
+    },
+    showConfig: { label: 'Good for' },
+    saveConfig: { label: 'Good for' },
+  },
+  // {
+  //   "scope": "public",
+  //   "label": "Gears",
+  //   "key": "gears",
+  //   "schemaType": "long",
+  //   "numberConfig": {
+  //     "minimum": 1,
+  //     "maximum": 24
+  //   },
+  //   "filterConfig": {
+  //     "indexForSearch": true,
+  //     "group": "primary",
+  //     "label": "Gears"
+  //   }
+  // }
+  // {
+  //   key: 'bikeType',
+  //   scope: 'public',
+  //   schemaType: 'enum',
+  //   enumOptions: [
+  //     { option: 'city-bikes', label: 'City bikes' },
+  //     { option: 'electric-bikes', label: 'Electric bikes' },
+  //     { option: 'mountain-bikes', label: 'Mountain bikes' },
+  //     { option: 'childrens-bikes', label: "Children's bikes" },
+  //   ],
+  //   categoryConfig: {
+  //     limitToCategoryIds: true,
+  //     categoryIds: ['cats'],
+  //   },
+  //   filterConfig: {
+  //     indexForSearch: true,
+  //     filterType: 'SelectMultipleFilter', //'SelectSingleFilter',
+  //     label: 'Bike type',
+  //     group: 'primary',
+  //   },
+  //   showConfig: {
+  //     label: 'Bike type',
+  //     isDetail: true,
+  //   },
+  //   saveConfig: {
+  //     label: 'Bike type',
+  //     placeholderMessage: 'Select an option…',
+  //     isRequired: true,
+  //     requiredMessage: 'You need to select a bike type.',
+  //   },
+  // },
+  // {
+  //   key: 'tire',
+  //   scope: 'public',
+  //   schemaType: 'enum',
+  //   enumOptions: [
+  //     { option: '29', label: '29' },
+  //     { option: '28', label: '28' },
+  //     { option: '27', label: '27' },
+  //     { option: '26', label: '26' },
+  //     { option: '24', label: '24' },
+  //     { option: '20', label: '20' },
+  //     { option: '18', label: '18' },
+  //   ],
+  //   filterConfig: {
+  //     indexForSearch: true,
+  //     label: 'Tire size',
+  //     group: 'secondary',
+  //   },
+  //   showConfig: {
+  //     label: 'Tire size',
+  //     isDetail: true,
+  //   },
+  //   saveConfig: {
+  //     label: 'Tire size',
+  //     placeholderMessage: 'Select an option…',
+  //     isRequired: true,
+  //     requiredMessage: 'You need to select a tire size.',
+  //   },
+  // },
+  // {
+  //   key: 'brand',
+  //   scope: 'public',
+  //   schemaType: 'enum',
+  //   enumOptions: [
+  //     { option: 'cube', label: 'Cube' },
+  //     { option: 'diamant', label: 'Diamant' },
+  //     { option: 'ghost', label: 'GHOST' },
+  //     { option: 'giant', label: 'Giant' },
+  //     { option: 'kalkhoff', label: 'Kalkhoff' },
+  //     { option: 'kona', label: 'Kona' },
+  //     { option: 'otler', label: 'Otler' },
+  //     { option: 'vermont', label: 'Vermont' },
+  //   ],
+  //   filterConfig: {
+  //     indexForSearch: true,
+  //     label: 'Brand',
+  //     group: 'secondary',
+  //   },
+  //   showConfig: {
+  //     label: 'Brand',
+  //     isDetail: true,
+  //   },
+  //   saveConfig: {
+  //     label: 'Brand',
+  //     placeholderMessage: 'Select an option…',
+  //     isRequired: true,
+  //     requiredMessage: 'You need to select a brand.',
+  //   },
+  // },
+  // {
+  //   key: 'accessories',
+  //   scope: 'public',
+  //   schemaType: 'multi-enum',
+  //   enumOptions: [
+  //     { option: 'bell', label: 'Bell' },
+  //     { option: 'lights', label: 'Lights' },
+  //     { option: 'lock', label: 'Lock' },
+  //     { option: 'mudguard', label: 'Mudguard' },
+  //   ],
+  //   filterConfig: {
+  //     indexForSearch: true,
+  //     label: 'Accessories',
+  //     searchMode: 'has_all',
+  //     group: 'secondary',
+  //   },
+  //   showConfig: {
+  //     label: 'Accessories',
+  //   },
+  //   saveConfig: {
+  //     label: 'Accessories',
+  //     placeholderMessage: 'Select an option…',
+  //     isRequired: false,
+  //   },
+  // },
+  // // An example of how to use transaction type specific custom fields and private data.
+  // {
+  //   key: 'note',
+  //   scope: 'public',
+  //   schemaType: 'text',
+  //   listingTypeConfig: {
+  //     limitToListingTypeIds: true,
+  //     listingTypeIds: ['product-selling'],
+  //   },
+  //   showConfig: {
+  //     label: 'Extra notes',
+  //   },
+  //   saveConfig: {
+  //     label: 'Extra notes',
+  //     placeholderMessage: 'Some public extra note about this bike...',
+  //   },
+  // },
+  // {
+  //   key: 'privatenote',
+  //   scope: 'private',
+  //   schemaType: 'text',
+  //   listingTypeConfig: {
+  //     limitToListingTypeIds: true,
+  //     listingTypeIds: ['daily-booking'],
+  //   },
+  //   saveConfig: {
+  //     label: 'Private notes',
+  //     placeholderMessage: 'Some private note about this bike...',
+  //   },
+  // },
 ];
 
 ///////////////////////////////////////////////////////////////////////
@@ -438,19 +374,18 @@ export const listingFields = [
 
 export const listingTypes = [
   {
-    listingType: 'daily-booking',
-    label: 'Daily booking',
+    // PRNM: pools are booked BY THE HOUR (matches the brand + wireframe time-slot picker).
+    // Was 'daily-booking' / unitType 'day'. NOTE: production listing types are managed in the
+    // Sharetribe Console (listing-types.json asset); this local config is the dev fallback —
+    // mirror this change there for production. The default-booking process supports unitType 'hour'.
+    listingType: 'hourly-pool',
+    label: 'Pool rental',
     transactionType: {
       process: 'default-booking',
       alias: 'default-booking/release-1',
-      unitType: 'day',
+      unitType: 'hour',
     },
     availabilityType: 'oneSeat',
-    // Enable host-defined price packages (Afternoon Dip / Pool Party / Full Day etc).
-    // Backed by publicData.priceVariants — see server/api-util/lineItems.js.
-    priceVariations: {
-      enabled: true,
-    },
     defaultListingFields: {
       location: true,
       payoutDetails: true,

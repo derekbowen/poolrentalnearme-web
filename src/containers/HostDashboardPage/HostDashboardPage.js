@@ -20,6 +20,8 @@ import {
 import TopbarContainer from '../../containers/TopbarContainer/TopbarContainer';
 import FooterContainer from '../../containers/FooterContainer/FooterContainer';
 
+import PromoCodesPanel from './PromoCodesPanel';
+import ShareStatsBadge from './ShareStatsBadge';
 import css from './HostDashboardPage.module.css';
 
 // Transitions that leave the ball in the HOST's court. Kept as plain strings so
@@ -95,9 +97,6 @@ export const HostDashboardPageComponent = props => {
         setPayoutState('ready');
       })
       .catch(() => {
-        // A fetch failure is NOT "never set up" — rendering the payout-setup
-        // prompt on errors told Stripe-connected, already-paid hosts to "add
-        // where to send my money" (Shawn, 7/31).
         if (!cancelled) setPayoutState('error');
       });
     return () => {
@@ -144,7 +143,7 @@ export const HostDashboardPageComponent = props => {
 
   const shareSlug = slugify(firstPool?.attributes?.title || listingTitle(txs[0]));
   const shareUrl = firstPool?.id
-    ? `https://www.poolrentalnearme.com/l/${shareSlug}/${firstPool.id.uuid}`
+    ? `https://www.poolrentalnearme.com/go/${shareSlug}-${firstPool.id.uuid.slice(0, 8)}`
     : 'https://www.poolrentalnearme.com';
 
   const poolPhoto = listingImg(firstPool, 'landscape-crop');
@@ -182,8 +181,6 @@ export const HostDashboardPageComponent = props => {
       <span aria-hidden="true">{'🎉'}</span>
     </>
   ) : inquiries.length > 0 ? (
-    // A message-only inquiry is not a booking request; saying "wants to swim"
-    // sends hosts hunting for a request that doesn't exist (Shawn, 7/31).
     <>
       Hi {firstName} &mdash;{' '}
       <span className={css.partyHeadlineAccent}>
@@ -529,6 +526,8 @@ export const HostDashboardPageComponent = props => {
         </section>
       ) : null}
 
+      <PromoCodesPanel pools={pools} />
+
       {/* ---------- your pool's reach ---------- */}
       <section className={`${css.card} ${css.cardSky}`}>
         <h2 className={css.sectionTitle}>Your pool&rsquo;s reach {'🌴'}</h2>
@@ -583,6 +582,7 @@ export const HostDashboardPageComponent = props => {
             Share on Nextdoor
           </a>
         </div>
+        <ShareStatsBadge listingId={firstPool?.id?.uuid} />
       </section>
 
       {/* ---------- pool school ---------- */}

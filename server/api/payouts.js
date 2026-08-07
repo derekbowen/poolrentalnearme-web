@@ -64,11 +64,8 @@ const guard = (handler) => async (req, res) => {
 
 // GET /api/payouts/summary — balances, payout schedule, onboarding state.
 const summary = guard(async (req, res, acct) => {
-  // The account read requires extra key permissions (accounts_kyc_basic_read /
-  // "Basic Business Contact Information Read"). A restricted key without it
-  // gets a 403 here — that must degrade to "details unavailable", never sink
-  // the whole summary: the UI treats a failed summary as "no payout account"
-  // and tells an already-connected host to set up payouts again.
+  // The account read needs accounts_kyc_basic_read; a restricted key without
+  // it must degrade to "details unavailable", never sink the whole summary.
   const [balance, account] = await Promise.all([
     stripeGet('/balance', null, acct),
     stripeGet(`/accounts/${acct}`, null, undefined).catch(() => null),
@@ -80,7 +77,6 @@ const summary = guard(async (req, res, acct) => {
     currency,
     availableAmount: sum(balance.available),
     pendingAmount: sum(balance.pending),
-    // null = unknown (account read unavailable), not "disabled".
     payoutsEnabled: account ? !!account.payouts_enabled : null,
     requirementsCurrentlyDue: account?.requirements?.currently_due || [],
     payoutSchedule: account?.settings?.payouts?.schedule || null,

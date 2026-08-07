@@ -30,7 +30,7 @@
   position: relative;
 
   /* Font */
-  font-weight: var(--fontWeightSemiBold);
+  font-weight: var(--fontWeightBold);
   color: var(--colorGrey700);
   letter-spacing: 0.1px;
 
@@ -40,7 +40,7 @@
   border-style: solid;
   border-color: var(--colorGrey100);
   border-width: 1px;
-  border-radius: var(--borderRadiusMedium);
+  border-radius: 18px;
   box-shadow: var(--boxShadowPopupLight);
 
   /* Dimensions */

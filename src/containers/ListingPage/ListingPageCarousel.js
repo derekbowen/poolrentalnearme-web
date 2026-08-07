@@ -11,6 +11,9 @@ import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { LISTING_STATE_PENDING_APPROVAL, LISTING_STATE_CLOSED } from '../../util/types';
 import { types as sdkTypes } from '../../util/sdkLoader';
+import { createResourceLocatorString } from '../../util/routes';
+import { timestampToDate } from '../../util/dates';
+import { getDeal, acceptDeal } from '../../util/api';
 import {
   LISTING_PAGE_DRAFT_VARIANT,
   LISTING_PAGE_PENDING_APPROVAL_VARIANT,
@@ -34,7 +37,6 @@ import {
 } from '../../util/data';
 import { richText } from '../../util/richText';
 import { formatMoney } from '../../util/currency';
-import { cityStateFromLocation } from '../../util/address';
 import {
   isBookingProcess,
   isPurchaseProcess,
@@ -76,18 +78,27 @@ import {
   handleContactUser,
   handleSubmitInquiry,
   handleSubmit,
-  priceForSchemaMaybe,
+  priceVariantsForSchemaMaybe,
+  shortLocationLabel,
 } from './ListingPage.shared';
+import { priceWithBookingFee } from '../../util/currency';
 import ActionBarMaybe from './ActionBarMaybe';
 import SectionTextMaybe from './SectionTextMaybe';
 import SectionReviews from './SectionReviews';
 import SectionAuthorMaybe from './SectionAuthorMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
 import SectionGallery from './SectionGallery';
-import CustomListingFields from './CustomListingFields';
-
-import { getTemplateComponent } from '../../templates';
-import { mapListingToTemplateProps } from '../../templates/dataMapper';
+import SectionYoutubeVideoMaybe from './SectionYoutubeVideoMaybe';
+import ShareButton from '../../components/ShareButton/ShareButton';
+import {
+  SectionTopHost,
+  SectionQuickFacts,
+  SectionPoolChips,
+  SectionAmenities,
+  SectionAddOns,
+  SectionWhyLove,
+  SectionThingsToKnow,
+} from './ListingRedesign';
 
 import css from './ListingPage.module.css';
 
@@ -104,6 +115,33 @@ export const ListingPageComponent = (props) => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Host "package deal" LINK flow: a guest arrives with ?deal=<token>. We fetch
+  // the deal's agreed price/currency server-side (the token is opaque; the
+  // authoritative price is re-read again at accept time) so the order panel can
+  // show the package price and accept at that price — independent of any old
+  // message thread. See server/api/deal-get.js + accept-deal.js.
+  const [dealState, setDealState] = useState({ token: null, deal: null, loading: false });
+  const dealSearch = props.location?.search || '';
+  useEffect(() => {
+    const token = new URLSearchParams(dealSearch).get('deal');
+    if (!token) {
+      setDealState({ token: null, deal: null, loading: false });
+      return;
+    }
+    let cancelled = false;
+    setDealState({ token, deal: null, loading: true });
+    getDeal(token)
+      .then(deal => {
+        if (!cancelled) setDealState({ token, deal, loading: false });
+      })
+      .catch(() => {
+        if (!cancelled) setDealState({ token, deal: null, loading: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dealSearch]);
 
   const {
     isAuthenticated,
@@ -205,7 +243,13 @@ export const ListingPageComponent = (props) => {
   const isOwnListing =
     userAndListingAuthorAvailable && currentListing.author.id.uuid === currentUser.id.uuid;
 
-  const { listingType, transactionProcessAlias, unitType } = publicData;
+  const {
+    listingType,
+    transactionProcessAlias,
+    unitType,
+    priceVariants,
+    location: listingLocation,
+  } = publicData;
   if (!(listingType && transactionProcessAlias && unitType)) {
     // Listing should always contain listingType, transactionProcessAlias and unitType)
     return (
@@ -235,18 +279,33 @@ export const ListingPageComponent = (props) => {
   // banned or deleted display names for the function
   const authorDisplayName = userDisplayNameAsString(ensuredAuthor, '');
 
-  const { formattedPrice } = priceData(price, config.currency, intl);
+  const { formattedPrice } = priceData(priceWithBookingFee(price), config.currency, intl);
+
+  // Clean canonical listing URL for sharing — no query string, no hash, no
+  // Google SERP redirect. This is what we hand to the native share sheet or
+  // copy to the clipboard.
+  const shareUrl = `${config.marketplaceRootURL}${location.pathname}`;
+
+  // Social/meta description leads with price + location so a texted or posted
+  // link previews as "$X/… · City, ST — <description>" instead of raw copy.
+  const cleanDescription = (description || '').replace(/\s+/g, ' ').trim();
+  const socialLead = [formattedPrice, shortLocationLabel(listingLocation?.address)]
+    .filter(Boolean)
+    .join(' · ');
+  const socialDescription = socialLead
+    ? `${socialLead} — ${cleanDescription}`.slice(0, 300)
+    : cleanDescription;
 
   // Surface a price in the main column: the base price, or the cheapest bookable
   // option as a "From {price}" when multiple price variants exist. This mirrors
   // how OrderPanel resolves publicData.priceVariants.
-  const { priceVariants = [], priceVariationsEnabled } = publicData;
-  const hasMultiplePriceVariants = !!priceVariationsEnabled && priceVariants.length > 1;
+  const { priceVariants: pvList = [], priceVariationsEnabled } = publicData;
+  const hasMultiplePriceVariants = !!priceVariationsEnabled && pvList.length > 1;
   const cheapestPriceVariant = hasMultiplePriceVariants
-    ? priceVariants.reduce(
+    ? pvList.reduce(
         (cheapest, current) =>
           current.priceInSubunits < cheapest.priceInSubunits ? current : cheapest,
-        priceVariants[0]
+        pvList[0]
       )
     : null;
   let headerFormattedPrice = formattedPrice;
@@ -254,7 +313,7 @@ export const ListingPageComponent = (props) => {
     try {
       headerFormattedPrice = formatMoney(
         intl,
-        new Money(cheapestPriceVariant.priceInSubunits, price.currency)
+        priceWithBookingFee(new Money(cheapestPriceVariant.priceInSubunits, price.currency))
       );
     } catch (e) {
       // Fall back to the base price if the variant price can't be formatted
@@ -263,25 +322,25 @@ export const ListingPageComponent = (props) => {
 
   // Trust signals for the title bar and the booking card: review score when
   // reviews exist, "Hosted since {year}" otherwise — never an empty stars row.
-  const reviewCount = reviews.length;
-  const averageRating =
-    reviewCount > 0
+  const trustReviewCnt = reviews.length;
+  const trustAvgRating =
+    trustReviewCnt > 0
       ? Math.round(
-          (reviews.reduce((sum, r) => sum + (r?.attributes?.rating || 0), 0) / reviewCount) * 10
+          (reviews.reduce((sum, r) => sum + (r?.attributes?.rating || 0), 0) / trustReviewCnt) * 10
         ) / 10
       : null;
   const hostedSince = ensuredAuthor?.attributes?.createdAt
     ? intl.formatDate(ensuredAuthor.attributes.createdAt, { year: 'numeric' })
     : null;
   const trustRow =
-    averageRating || hostedSince ? (
+    trustAvgRating || hostedSince ? (
       <div className={css.trustRow}>
-        {averageRating ? (
+        {trustAvgRating ? (
           <>
             <IconReviewStar rootClassName={css.trustStar} isFilled />
-            <span className={css.trustRating}>{averageRating}</span>
+            <span className={css.trustRating}>{trustAvgRating}</span>
             <span className={css.trustReviewCount}>
-              <FormattedMessage id="ListingPage.trustReviewCount" values={{ count: reviewCount }} />
+              <FormattedMessage id="ListingPage.trustReviewCount" values={{ count: trustReviewCnt }} />
             </span>
           </>
         ) : (
@@ -325,6 +384,66 @@ export const ListingPageComponent = (props) => {
     }
   };
 
+  // Package-deal accept: only when the fetched deal is for THIS listing.
+  const deal = dealState.deal;
+  const offerAccept =
+    deal && deal.listingId === rawParams.id
+      ? {
+          negotiatedPriceCents: deal.priceCents,
+          currency: deal.currency || config.currency,
+          note: deal.note,
+          token: dealState.token,
+        }
+      : null;
+  // Token was present but the deal didn't load / isn't for this listing.
+  const dealLinkInvalid = !!dealState.token && !dealState.loading && !offerAccept;
+
+  const handleDealSubmit = (values) => {
+    if (isOwnListing) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (!currentUser) {
+      // Guest must have an account to book. Bounce to signup and return to this
+      // exact ?deal= link so they can accept after authenticating.
+      const state = { from: `${location.pathname}${location.search}${location.hash}` };
+      navigate(createResourceLocatorString('SignupPage', routeConfiguration, {}, {}), state);
+      return;
+    }
+    const { bookingStartTime, bookingEndTime } = values;
+    if (!bookingStartTime || !bookingEndTime) {
+      return;
+    }
+    acceptDeal({
+      isSpeculative: false,
+      dealToken: offerAccept.token,
+      bodyParams: {
+        params: {
+          bookingStart: timestampToDate(bookingStartTime),
+          bookingEnd: timestampToDate(bookingEndTime),
+        },
+      },
+      queryParams: { include: ['booking', 'provider'], expand: true },
+    })
+      .then((resp) => {
+        const txId = resp?.data?.data?.id?.uuid;
+        if (!txId) {
+          throw new Error('missing transaction id');
+        }
+        // The transaction is now in pending-payment with the agreed line items.
+        // OrderDetailsPage/TransactionPage detects pending-payment for the
+        // customer and redirects to CheckoutPage to complete payment at the
+        // deal price (reusing the standard resume-payment flow).
+        onInitializeCardPaymentData();
+        navigate(createResourceLocatorString('OrderDetailsPage', routeConfiguration, { id: txId }, {}));
+      })
+      .catch(() => {
+        window.alert(
+          "Sorry — we couldn't start this booking. This deal link may have expired. Please ask your host for a new link."
+        );
+      });
+  };
+
   const facebookImages = listingImages(currentListing, 'facebook');
   const twitterImages = listingImages(currentListing, 'twitter');
   const schemaImages = listingImages(
@@ -332,84 +451,214 @@ export const ListingPageComponent = (props) => {
     `${config.layout.listingImage.variantPrefix}-2x`
   ).map((img) => img.url);
   const { marketplaceName } = config;
-
-  // Build geo-aware title: "Pool Name in Austin, TX | Pool Rental Near Me"
-  // publicData carries a city-level label only, so read the structured
-  // fields rather than assuming a leading street segment.
-  const { city, state } = cityStateFromLocation(publicData?.location);
-  const cityState = city && state ? `${city}, ${state}` : city;
-  const schemaTitle = cityState
-    ? `${title} in ${cityState} | ${marketplaceName}`
-    : `${title} | ${marketplaceName}`;
-
+  const schemaTitle = intl.formatMessage(
+    { id: 'ListingPage.schemaTitle' },
+    { title, price: formattedPrice, marketplaceName }
+  );
+  // You could add reviews, sku, etc. into page schema
+  // Read more about product schema
+  // https://developers.google.com/search/docs/advanced/structured-data/product
   const productURL = `${config.marketplaceRootURL}${location.pathname}${location.search}${location.hash}`;
+  const currentStock = currentListing.currentStock?.attributes?.quantity || 0;
+  const schemaAvailability = !currentListing.currentStock
+    ? null
+    : currentStock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
 
-  // Geo coordinates for local search ranking
-  const geoMaybe = geolocation
-    ? { geo: { '@type': 'GeoCoordinates', latitude: geolocation.lat, longitude: geolocation.lng } }
+  const availabilityMaybe = schemaAvailability ? { availability: schemaAvailability } : {};
+
+  const schemaGeoMaybe =
+    geolocation?.lat != null && geolocation?.lng != null
+      ? {
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: geolocation.lat,
+            longitude: geolocation.lng,
+          },
+        }
+      : {};
+
+  const schemaAddressMaybe = listingLocation?.address
+    ? {
+        address: {
+          '@type': 'PostalAddress',
+          address: listingLocation.address,
+        },
+      }
     : {};
-  const addressMaybe = locationAddress ? { address: locationAddress } : {};
+
+  const schemaPriceMaybe = priceVariantsForSchemaMaybe({
+    price,
+    priceVariants,
+    currency: config.currency,
+    intl,
+  });
+
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0 ? reviews.reduce((sum, r) => sum + r.attributes.rating, 0) / reviewCount : null;
+  const bestRating = reviews.reduce((max, r) => Math.max(max, r.attributes.rating), 0);
+  const worstRating = reviews.reduce((min, r) => Math.min(min, r.attributes.rating), 5);
+  const aggregateRatingMaybe =
+    reviewCount > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(averageRating.toFixed(2)),
+            reviewCount,
+            bestRating,
+            worstRating,
+          },
+        }
+      : {};
 
   return (
     <Page
       title={schemaTitle}
       scrollingDisabled={scrollingDisabled}
       author={authorDisplayName}
-      description={description}
+      description={socialDescription}
       facebookImages={facebookImages}
       twitterImages={twitterImages}
-      schema={[
-        {
-          '@type': 'LodgingBusiness',
-          name: title,
-          description,
-          image: schemaImages,
+      schema={{
+        '@context': 'http://schema.org',
+        '@type': 'LocalBusiness',
+        description,
+        name: schemaTitle,
+        image: schemaImages,
+        ...schemaGeoMaybe,
+        ...schemaAddressMaybe,
+        ...aggregateRatingMaybe,
+        offers: {
+          '@type': 'Offer',
           url: productURL,
-          ...geoMaybe,
-          ...addressMaybe,
-          offers: {
-            '@type': 'Offer',
-            url: productURL,
-            ...priceForSchemaMaybe(price),
-          },
+          ...schemaPriceMaybe,
+          ...availabilityMaybe,
         },
-        {
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: config.marketplaceRootURL },
-            { '@type': 'ListItem', position: 2, name: 'Search Pools', item: `${config.marketplaceRootURL}/s` },
-            { '@type': 'ListItem', position: 3, name: title, item: productURL },
-          ],
-        },
-      ]}
+      }}
     >
       <LayoutSingleColumn className={css.pageRoot} topbar={topbar} footer={<FooterContainer />}>
-        {(() => {
-          const listingStyle = publicData.listingStyle;
-          const useTemplate = listingStyle && listingStyle !== 'clean';
-
-          const actionBar = mounted && currentListing.id ? (
-            <ActionBarMaybe
-              className={css.actionBarForProductLayout}
-              isOwnListing={isOwnListing}
+        <div className={css.contentWrapperForProductLayout}>
+          <div className={css.mainColumnForProductLayout}>
+            {mounted && currentListing.id && noPayoutDetailsSetWithOwnListing ? (
+              <ActionBarMaybe
+                className={css.actionBarForProductLayout}
+                isOwnListing={isOwnListing}
+                listing={currentListing}
+                showNoPayoutDetailsSet={noPayoutDetailsSetWithOwnListing}
+                currentUser={currentUser}
+              />
+            ) : null}
+            {mounted && currentListing.id ? (
+              <ActionBarMaybe
+                className={css.actionBarForProductLayout}
+                isOwnListing={isOwnListing}
+                listing={currentListing}
+                currentUser={currentUser}
+                editParams={{
+                  id: listingId.uuid,
+                  slug: listingSlug,
+                  type: listingPathParamType,
+                  tab: listingTab,
+                }}
+              />
+            ) : null}
+            <SectionGallery
               listing={currentListing}
-              showNoPayoutDetailsSet={noPayoutDetailsSetWithOwnListing}
-              currentUser={currentUser}
-              editParams={{
-                id: listingId.uuid,
-                slug: listingSlug,
-                type: listingPathParamType,
-                tab: listingTab,
-              }}
+              variantPrefix={config.layout.listingImage.variantPrefix}
             />
-          ) : null;
+            <div className={css.mobileHeading}>
+              <H4 as="h1" className={css.orderPanelTitle}>
+                <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
+              </H4>
+            </div>
+            <div className={css.headerMeta}>
+              {headerFormattedPrice ? (
+                <p className={css.headerPrice}>
+                  {hasMultiplePriceVariants ? (
+                    <span className={css.headerPriceFrom}>
+                      <FormattedMessage id="ListingPage.headerPriceFrom" />
+                    </span>
+                  ) : null}
+                  <span className={css.headerPriceValue}>{headerFormattedPrice}</span>
+                  <span className={css.headerPerUnit}>
+                    <FormattedMessage id="OrderPanel.perUnit" values={{ unitType }} />
+                  </span>
+                </p>
+              ) : null}
+              {trustRow}
+            </div>
+            {!isVariant ? <ShareButton url={shareUrl} title={title} /> : null}
+            {/* c96 redesign: data-driven sections, graceful on sparse listings. */}
+            <SectionPoolChips publicData={publicData} />
+            <SectionQuickFacts publicData={publicData} />
+            <SectionTextMaybe text={description} showAsIngress />
+            <div id="author" />
+            <SectionTopHost
+              author={ensuredAuthor}
+              authorDisplayName={authorDisplayName}
+              publicData={publicData}
+              reviews={reviews}
+              onContactUser={onContactUser}
+              isOwnListing={isOwnListing}
+              listingTitle={title}
+            />
+            <SectionYoutubeVideoMaybe videoUrl={publicData?.Video_of_the_pool} heading="Take the video tour" />
+            <SectionAmenities publicData={publicData} />
+            <SectionAddOns publicData={publicData} authorDisplayName={authorDisplayName} />
+            <SectionWhyLove publicData={publicData} />
 
-          const orderPanel = (
+            <SectionMapMaybe
+              geolocation={geolocation}
+              publicData={publicData}
+              listingId={currentListing.id}
+              mapsConfig={config.maps}
+            />
+            {reviews.length > 0 || fetchReviewsError ? (
+              <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
+            ) : null}
+            <SectionThingsToKnow publicData={publicData} />
+            <SectionAuthorMaybe
+              showCard={false}
+              title={title}
+              listing={currentListing}
+              authorDisplayName={authorDisplayName}
+              onContactUser={onContactUser}
+              isInquiryModalOpen={isAuthenticated && inquiryModalOpen}
+              onCloseInquiryModal={() => setInquiryModalOpen(false)}
+              sendInquiryError={sendInquiryError}
+              sendInquiryInProgress={sendInquiryInProgress}
+              onSubmitInquiry={onSubmitInquiry}
+              currentUser={currentUser}
+              onManageDisableScrolling={onManageDisableScrolling}
+            />
+          </div>
+          <div className={css.orderColumnForProductLayout}>
+            {dealLinkInvalid ? (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  margin: '0 0 12px',
+                }}
+              >
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#b91c1c', margin: 0 }}>
+                  This package deal link is no longer valid
+                </p>
+                <p style={{ fontSize: '12px', color: '#7f1d1d', margin: '4px 0 0' }}>
+                  It may have expired or already been used. You can still book at the standard rate
+                  below, or ask your host for a new link.
+                </p>
+              </div>
+            ) : null}
             <OrderPanel
               className={css.productOrderPanel}
               listing={currentListing}
               isOwnListing={isOwnListing}
-              onSubmit={handleOrderSubmit}
+              onSubmit={offerAccept ? handleDealSubmit : handleOrderSubmit}
               authorLink={
                 <NamedLink
                   className={css.authorNameLink}
@@ -432,105 +681,15 @@ export const ListingPageComponent = (props) => {
               onManageDisableScrolling={onManageDisableScrolling}
               onContactUser={onContactUser}
               {...restOfProps}
+              offerAccept={offerAccept}
               validListingTypes={config.listing.listingTypes}
               marketplaceCurrency={config.currency}
               dayCountAvailableForBooking={config.stripe.dayCountAvailableForBooking}
               marketplaceName={config.marketplaceName}
               currentPage={LISTING_PAGE}
             />
-          );
-
-          if (useTemplate) {
-            const TemplateComponent = getTemplateComponent(listingStyle);
-            const templateProps = mapListingToTemplateProps(
-              currentListing,
-              ensuredAuthor,
-              reviews,
-              config,
-              intl
-            );
-
-            return (
-              <>
-                {actionBar}
-                <TemplateComponent
-                  templateProps={templateProps}
-                  orderPanel={orderPanel}
-                  actionBar={actionBar}
-                  onContactUser={onContactUser}
-                  isOwnListing={isOwnListing}
-                />
-              </>
-            );
-          }
-
-          // Default "clean" layout — existing Sharetribe layout
-          return (
-            <div className={css.contentWrapperForProductLayout}>
-              <div className={css.mainColumnForProductLayout}>
-                {actionBar}
-                <SectionGallery
-                  listing={currentListing}
-                  variantPrefix={config.layout.listingImage.variantPrefix}
-                />
-                <div className={css.mobileHeading}>
-                  <H4 as="h1" className={css.orderPanelTitle}>
-                    <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
-                  </H4>
-                </div>
-                <div className={css.headerMeta}>
-                  {headerFormattedPrice ? (
-                    <p className={css.headerPrice}>
-                      {hasMultiplePriceVariants ? (
-                        <span className={css.headerPriceFrom}>
-                          <FormattedMessage id="ListingPage.headerPriceFrom" />
-                        </span>
-                      ) : null}
-                      <span className={css.headerPriceValue}>{headerFormattedPrice}</span>
-                      <span className={css.headerPerUnit}>
-                        <FormattedMessage id="OrderPanel.perUnit" values={{ unitType }} />
-                      </span>
-                    </p>
-                  ) : null}
-                  {trustRow}
-                </div>
-                <SectionTextMaybe text={description} showAsIngress />
-
-                <CustomListingFields
-                  publicData={publicData}
-                  metadata={metadata}
-                  listingFieldConfigs={listingConfig.listingFields}
-                  categoryConfiguration={config.categoryConfiguration}
-                  intl={intl}
-                />
-
-                <SectionMapMaybe
-                  geolocation={geolocation}
-                  publicData={publicData}
-                  listingId={currentListing.id}
-                  mapsConfig={config.maps}
-                />
-                <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
-                <SectionAuthorMaybe
-                  title={title}
-                  listing={currentListing}
-                  authorDisplayName={authorDisplayName}
-                  onContactUser={onContactUser}
-                  isInquiryModalOpen={isAuthenticated && inquiryModalOpen}
-                  onCloseInquiryModal={() => setInquiryModalOpen(false)}
-                  sendInquiryError={sendInquiryError}
-                  sendInquiryInProgress={sendInquiryInProgress}
-                  onSubmitInquiry={onSubmitInquiry}
-                  currentUser={currentUser}
-                  onManageDisableScrolling={onManageDisableScrolling}
-                />
-              </div>
-              <div className={css.orderColumnForProductLayout}>
-                {orderPanel}
-              </div>
-            </div>
-          );
-        })()}
+          </div>
+        </div>
       </LayoutSingleColumn>
     </Page>
   );

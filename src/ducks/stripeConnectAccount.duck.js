@@ -155,10 +155,58 @@ export const getAccountLinkSuccess = () => ({
 
 // ================ Thunks ================ //
 
+// Stripe.js is included via an *async* <script> in index.html, so on slow
+// (often mobile) connections window.Stripe may not exist yet when a host
+// submits payout details. Wait for it instead of throwing — a synchronous
+// throw here surfaces as a dead "Save" button or a white screen, which is
+// exactly the "Connect with Stripe won't let me go forward" report. Mirrors
+// loadStripeJs in containers/CheckoutPage/IdentityVerificationGate.js.
+const ensureStripeLoaded = () =>
+  new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('Stripe can only be loaded in the browser'));
+      return;
+    }
+    if (window.Stripe) {
+      resolve();
+      return;
+    }
+    const MAX_WAIT = 8000;
+    const STEP = 100;
+    let waited = 0;
+    let injected = false;
+    const injectFallback = () => {
+      if (injected || document.getElementById('stripe-js-fallback')) {
+        return;
+      }
+      injected = true;
+      const script = document.createElement('script');
+      script.id = 'stripe-js-fallback';
+      script.src = 'https://js.stripe.com/v3/';
+      script.async = true;
+      script.onerror = () => reject(new Error('Failed to load Stripe.js'));
+      document.head.appendChild(script);
+    };
+    const timer = setInterval(() => {
+      if (window.Stripe) {
+        clearInterval(timer);
+        resolve();
+        return;
+      }
+      waited += STEP;
+      // Halfway through, proactively inject a fallback copy in case the global
+      // async tag failed to load (blocked / network drop) vs. merely being slow.
+      if (waited >= MAX_WAIT / 2) {
+        injectFallback();
+      }
+      if (waited >= MAX_WAIT) {
+        clearInterval(timer);
+        reject(new Error('Stripe must be loaded for submitting PayoutPreferences'));
+      }
+    }, STEP);
+  });
+
 export const createStripeAccount = params => (dispatch, getState, sdk) => {
-  if (typeof window === 'undefined' || !window.Stripe) {
-    throw new Error('Stripe must be loaded for submitting PayoutPreferences');
-  }
   const {
     country,
     accountType,
@@ -166,7 +214,6 @@ export const createStripeAccount = params => (dispatch, getState, sdk) => {
     businessProfileURL,
     stripePublishableKey,
   } = params;
-  const stripe = window.Stripe(stripePublishableKey);
 
   // Capabilities are a collection of settings that can be requested for each provider.
   // What Capabilities are required determines what information Stripe requires to be
@@ -182,8 +229,11 @@ export const createStripeAccount = params => (dispatch, getState, sdk) => {
 
   dispatch(stripeAccountCreateRequest());
 
-  return stripe
-    .createToken('account', accountInfo)
+  return ensureStripeLoaded()
+    .then(() => {
+      const stripe = window.Stripe(stripePublishableKey);
+      return stripe.createToken('account', accountInfo);
+    })
     .then(response => {
       const accountToken = response.token.id;
       return sdk.stripeAccount.create(

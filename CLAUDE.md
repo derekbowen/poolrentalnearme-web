@@ -44,6 +44,14 @@ people who may be named as company voices.
 release's markers + promo math + payment endpoints, only then move nginx and
 replace MAIN. An abort leaves production untouched. Never skip the gate.
 
+`/home/ubuntu/build` is a **loose working copy, not a git checkout**, so patching
+it silently forks production from the repo. 149 files had drifted before this was
+caught — including the entire landing page and the 15% fee math — and none of it
+was recoverable if that disk died. After every flip, mirror the same edit into
+this repo and push. To re-check drift: hash the build tree, ship a repo manifest
+to the box and diff **there** (SSM truncates output past ~24KB), then pull the
+divergent files as a chunked, md5-verified tarball.
+
 ## Integrations — the exact facts that cost time to learn
 
 **Switchy** (short links, `go.poolrentalnearme.com`; AppSumo lifetime, free)

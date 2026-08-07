@@ -21,7 +21,7 @@ import TopbarContainer from '../../containers/TopbarContainer/TopbarContainer';
 import FooterContainer from '../../containers/FooterContainer/FooterContainer';
 
 import PromoCodesPanel from './PromoCodesPanel';
-import ShareStatsBadge from './ShareStatsBadge';
+import SharePoolCard from './SharePoolCard';
 import css from './HostDashboardPage.module.css';
 
 // Transitions that leave the ball in the HOST's court. Kept as plain strings so
@@ -81,7 +81,6 @@ export const HostDashboardPageComponent = props => {
 
   const [payout, setPayout] = useState(null);
   const [payoutState, setPayoutState] = useState('loading'); // loading | ready | none
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,11 +139,6 @@ export const HostDashboardPageComponent = props => {
     (n, l) => n + ((l.attributes?.metadata?.likedByUserIds || []).length || 0),
     0
   );
-
-  const shareSlug = slugify(firstPool?.attributes?.title || listingTitle(txs[0]));
-  const shareUrl = firstPool?.id
-    ? `https://www.poolrentalnearme.com/go/${shareSlug}-${firstPool.id.uuid.slice(0, 8)}`
-    : 'https://www.poolrentalnearme.com';
 
   const poolPhoto = listingImg(firstPool, 'landscape-crop');
   const happeningGuest = happeningNow?.customer;
@@ -528,62 +522,8 @@ export const HostDashboardPageComponent = props => {
 
       <PromoCodesPanel pools={pools} />
 
-      {/* ---------- your pool's reach ---------- */}
-      <section className={`${css.card} ${css.cardSky}`}>
-        <h2 className={css.sectionTitle}>Your pool&rsquo;s reach {'🌴'}</h2>
-        {totalHearts > 0 ? (
-          <div className={css.heartsRow}>
-            <span aria-hidden="true">{'❤️'.repeat(Math.min(totalHearts, 5))}</span>
-            <span>
-              {totalHearts} {totalHearts === 1 ? 'person has' : 'people have'} saved your pool
-            </span>
-          </div>
-        ) : (
-          <p className={css.cardHint} style={{ marginTop: 0 }}>
-            When swimmers save your pool to their wishlist, their hearts show up here.
-          </p>
-        )}
-        <div className={css.pillRow} style={{ marginTop: 16 }}>
-          <button
-            type="button"
-            className={css.pillSolid}
-            onClick={() => {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2500);
-              }
-            }}
-          >
-            {copied ? 'Copied! ❤️' : 'Copy your link'}
-          </button>
-          <a
-            className={css.pillQuiet}
-            href={`sms:?&body=${encodeURIComponent(`Come swim at my pool! ${shareUrl}`)}`}
-          >
-            Text it to a friend
-          </a>
-        </div>
-        <div className={css.pillRow} style={{ marginTop: 10 }}>
-          <a
-            className={css.pillQuiet}
-            target="_blank"
-            rel="noopener noreferrer"
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-          >
-            Share on Facebook
-          </a>
-          <a
-            className={css.pillQuiet}
-            target="_blank"
-            rel="noopener noreferrer"
-            href={`https://nextdoor.com/sharekit/?body=${encodeURIComponent(`Rent my pool by the hour! ${shareUrl}`)}`}
-          >
-            Share on Nextdoor
-          </a>
-        </div>
-        <ShareStatsBadge listingId={firstPool?.id?.uuid} />
-      </section>
+      {/* ---------- share your pool (c160) ---------- */}
+      <SharePoolCard pools={pools} totalHearts={totalHearts} />
 
       {/* ---------- pool school ---------- */}
       <section className={`${css.card} ${css.cardSun}`}>

@@ -2,6 +2,27 @@
 
 Apple Developer agreement is signed, so releases are unblocked.
 
+## Status: patches applied, build NOT run
+
+Both patches are on branch **`claude/yo-6bgv46`** in the app repo —
+`ce71ceb` (login persistence) and `1327c4b` (fixed unit type). No PR opened.
+
+Verified there: patches applied with no fuzz or rejects; the
+`flutter_secure_storage` 9.0.0 API was confirmed by compiling the patch's exact
+code in a throwaway package pinned to that version (`flutter analyze` clean,
+const-ness included); the enum claims were checked against the source rather
+than assumed — `BookingUnitTypesX.value` reads the `.g.dart` map with `!`, so
+that hand-written map entry is load-bearing and it is present; all 7 changed
+files parse and are `dart format`-clean.
+
+**Do not release without a real build.** A whole-project compile is impossible
+in an agent session: `melos bootstrap` needs the private
+`journeyhorizon/dart_sharetribe_sdk`, `flutter_translation` and
+`flutter_timezone`, which agent credentials cannot reach. Run it on Jenkins or
+a dev machine. Codegen is also unrun — confirm a regen of `listing_type.g.dart`
+is a no-op. The device checks (force-quit/cold-start, Android's one-time
+re-login after the storage backend change, iOS pre-first-unlock) need hardware.
+
 ## Why this can't be done from the marketplace session
 
 The app lives in **`journeyhorizon/poolrentalnearme-app`** (private, we have
@@ -65,11 +86,29 @@ The removed `main.dart` block shipped a live operator token in every binary:
 (`tiarajones27@gmail.com`), `exp` 2025-10-23 (expired, so not usable). Worth a
 look at how it got committed, and worth confirming no other build carries one.
 
+Status (verified in the app repo): removing it from the working tree does not
+remove it from **git history** — the token is still reachable in old commits.
+It is expired and therefore unusable, so this is hygiene, not an active
+exposure; purging it means a history rewrite, which is a separate decision.
+A sweep of that repo found **no other** embedded JWT, `isLoggedInAs`, or
+hardcoded `access_token`. The only other write to the token store is the
+post-login one in the socials sign-in delegate, which is correct.
+
 ## Caveat on the source these were written against
 
-The patches were derived from `poolrentalnearmeappmain.zip`. The repo's last
-push was 2026-03-29. If `main` has moved since, re-check the four files the
-patches touch before applying:
+The patches were derived from `poolrentalnearmeappmain.zip`, and applied cleanly
+to `main` — the source matched.
+
+**Correction to an earlier version of this doc:** it said "the repo's last push
+was 2026-03-29". That is the repo-level `pushed_at` from the GitHub API, which
+reflects a push to *any* branch. **`main` is at `7e29599`, dated 2025-10-27.**
+Do not use the 2026 date to judge staleness.
+
+That date matters: the hardcoded token below expired **2025-10-23**, four days
+before the last commit on `main`. So the shipped app has been destroying
+sessions on every cold start for roughly **nine months**, not four.
+
+If `main` moves, re-check the files the patches touch before applying:
 
 - `app/lib/main.dart`
 - `common/lib/infrastructure/network/sdk/sdk_token_storage.dart`

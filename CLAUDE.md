@@ -36,6 +36,7 @@ people who may be named as company voices.
 | **WEST** `13.56.113.85` | Marketplace. Docker `poolrentalnearme-production`, build tree `/home/ubuntu/build`, nginx + certbot. Run via `ssm_runx.py` / `ship_big.py` (payload >9.5KB). |
 | **EAST** `3.222.110.146` | Marketing/pSEO (`fresh-web` under pm2 as **ubuntu**, `PM2_HOME=/home/ubuntu/.pm2`), Chatwoot. Run via `east_runx.py` / `east_ship_big.py`. |
 | Pages | Supabase `content_pages`; body lives in `content` **or** `body_markdown`. |
+| Sitemaps | A page needs `in_sitemap=true` **and** a `template_type` listed in `TEMPLATE_GROUPS` (`fresh-web/src/routes/sitemap[.]xml.ts`) **and** in the matching sub-sitemap route. Miss the last two and the page is live but invisible to Google — that is how 9 `country_launch` pages (every ccTLD front door) sat uncrawled. EAST serves a built `dist/`, so a route change needs `npm run build` + `sudo -u ubuntu PM2_HOME=/home/ubuntu/.pm2 pm2 restart fresh-web` (restarting as root reassigns the process owner). |
 | Domains | `.com` + `.co.uk` / `.ca` / `.com.au` (each ccTLD root 302s to its country hub). Registrar: Hostinger. |
 
 **Deploy ritual (WEST):** patch build tree with exact-anchor edits → build image

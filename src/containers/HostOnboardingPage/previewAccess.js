@@ -12,13 +12,31 @@
  * Opt in once with ?hostpreview=1 and it sticks for the browser session, so
  * refreshes and in-flow navigation keep working without re-typing it.
  *
- * When this flow starts writing listing data (Batch 2 onward), replace this with
- * an operator allowlist keyed on marketplace user id — session opt-in is not a
- * strong enough boundary once real drafts are being created.
+ * Viewing and WRITING are deliberately separated. Session opt-in is enough to
+ * look at unfinished screens; it is NOT enough to create real listing data in a
+ * production marketplace, so persistence is gated on an operator allowlist
+ * instead (see canWritePreviewData below).
  */
 
 const KEY = 'prnm-host-preview';
 const PARAM = 'hostpreview';
+
+/**
+ * Marketplace user ids allowed to persist data from the preview flow.
+ *
+ * Build-time and comma-separated, e.g. VITE_HOST_PREVIEW_OPERATOR_IDS="uuid,uuid".
+ * These are user ids, not secrets — nothing here grants a session or stands in
+ * for authentication, and the SDK still only ever lets a user touch their own
+ * listings. The allowlist exists so an unfinished flow cannot create draft
+ * listings for a real host who wandered in.
+ *
+ * Empty by default. That is the safe state: with no allowlist configured the
+ * flow runs read-only and says so on screen, rather than failing open.
+ */
+const OPERATOR_IDS = String(import.meta.env.VITE_HOST_PREVIEW_OPERATOR_IDS || '')
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 const canUseStorage = () => {
   try {
@@ -67,5 +85,28 @@ export const hasPreviewAccess = (search) => {
     return false;
   }
 };
+
+/**
+ * True when this user may persist data from the preview flow.
+ *
+ * Viewing the screens is not sufficient — see OPERATOR_IDS above. Callers must
+ * treat a false answer as "render the flow, save nothing", never as a redirect:
+ * the screens are still worth reviewing without a write path.
+ *
+ * @param {string} [currentUserId] marketplace user id (uuid) of the signed-in user
+ * @returns {boolean}
+ */
+export const canWritePreviewData = (currentUserId) =>
+  !!currentUserId && OPERATOR_IDS.includes(String(currentUserId));
+
+/**
+ * True when any operator allowlist is configured at all.
+ *
+ * Lets the UI distinguish "you personally are not an operator" from "nobody is,
+ * because the env var was never set on this deploy" — two very different bugs.
+ *
+ * @returns {boolean}
+ */
+export const hasOperatorAllowlist = () => OPERATOR_IDS.length > 0;
 
 export const PREVIEW_PARAM = PARAM;

@@ -233,6 +233,105 @@
   outline-offset: 2px;
 }
 
+.primaryButton:disabled {
+  background-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------------- step forms ---------------- */
+
+.stepForm {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.field {
+  margin-bottom: 24px;
+}
+
+.label {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.hint {
+  margin: 4px 0 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Inputs are 16px on purpose: iOS Safari zooms the viewport on focus for
+   anything smaller, which throws the 390px layout off mid-flow. */
+.input,
+.textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 14px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  background-color: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 132px;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--tint);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #9fb3bd;
+}
+
+.counter {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+}
+
+.previewNotice {
+  margin: 0 0 20px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  background-color: var(--tint);
+}
+
+.stepActions {
+  margin-top: auto;
+  padding-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ---------------- shell body ---------------- */
 
 .stepBody {

@@ -7,8 +7,9 @@ import { NamedRedirect, Page } from '../../components';
 
 import OnboardingShell from './OnboardingShell';
 import WelcomeScreen from './screens/WelcomeScreen';
-import { hasPreviewAccess } from './previewAccess';
-import { STEPS, WELCOME } from './onboardingSteps';
+import AboutScreen from './screens/AboutScreen';
+import { canWritePreviewData, hasPreviewAccess } from './previewAccess';
+import { STEPS, WELCOME, stepIndexById } from './onboardingSteps';
 import css from './HostOnboardingPage.module.css';
 
 /**
@@ -22,11 +23,16 @@ import css from './HostOnboardingPage.module.css';
  *   - is linked from nowhere; you arrive via ?hostpreview=1
  *   - writes NOTHING — no draft is created, no listing is touched
  *
+ * Step values are collected in memory so the flow can be walked end to end, but
+ * persistence is a separate, separately-gated batch: `canWrite` below is
+ * threaded through now so the screens tell the truth about what is being saved,
+ * and so turning writes on later is a change in one place rather than eight.
+ *
  * The existing wizard at /l/new is completely untouched and remains the real
  * path for every host.
  */
 export const HostOnboardingPageComponent = (props) => {
-  const { scrollingDisabled } = props;
+  const { scrollingDisabled, currentUserId } = props;
 
   // The gate is deliberately post-mount. hasPreviewAccess() reads sessionStorage
   // and the query string, so it can only ever answer false on the server — which
@@ -49,6 +55,14 @@ export const HostOnboardingPageComponent = (props) => {
   const firstStep = STEPS[0];
   const screen =
     new URLSearchParams(location.search).get('step') === firstStep.id ? firstStep.id : WELCOME;
+
+  // Answers live here rather than in each screen so moving back and forth does
+  // not wipe what was typed. In-memory only for now, and deliberately so: a
+  // half-built flow must not leave draft listings behind on a real marketplace.
+  const [values, setValues] = useState({ title: '', description: '' });
+  const patchValues = (patch) => setValues((prev) => ({ ...prev, ...patch }));
+
+  const canWrite = canWritePreviewData(currentUserId);
 
   const goTo = (stepId) => {
     const params = new URLSearchParams(location.search);
@@ -73,14 +87,18 @@ export const HostOnboardingPageComponent = (props) => {
   } else if (allowed) {
     body = (
       <div className={css.root}>
-        <OnboardingShell step={1} heading={firstStep.heading} sub={firstStep.sub}>
-          <p className={css.placeholderNote}>
-            This is the shell only. The step itself arrives in the next batch, wired to the listing
-            panel that already saves this data — nothing is stored yet.
-          </p>
-          <button type="button" className={css.backLink} onClick={() => goTo(null)}>
-            &larr; Back to the start
-          </button>
+        <OnboardingShell
+          step={stepIndexById(firstStep.id)}
+          heading={firstStep.heading}
+          sub={firstStep.sub}
+        >
+          <AboutScreen
+            values={values}
+            onChange={patchValues}
+            onContinue={() => goTo(null)}
+            onBack={() => goTo(null)}
+            readOnly={!canWrite}
+          />
         </OnboardingShell>
       </div>
     );
@@ -101,8 +119,14 @@ export const HostOnboardingPageComponent = (props) => {
   );
 };
 
-const mapStateToProps = (state) => ({
-  scrollingDisabled: isScrollingDisabled(state),
-});
+const mapStateToProps = (state) => {
+  const { currentUser } = state.user;
+  return {
+    scrollingDisabled: isScrollingDisabled(state),
+    // Only the id is read. The write gate compares against an allowlist of
+    // operator ids, so nothing else about the user is needed here.
+    currentUserId: currentUser?.id?.uuid || null,
+  };
+};
 
 export default connect(mapStateToProps)(HostOnboardingPageComponent);

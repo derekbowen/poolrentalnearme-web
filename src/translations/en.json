@@ -17,7 +17,7 @@
   "AuthenticationPage.resendFailed": "Resending verification email failed. Please try again.",
   "AuthenticationPage.resendFailedTooManyRequests": "The maximum of 5 verification emails has been reached. Please try again tomorrow.",
   "AuthenticationPage.schemaDescriptionLogin": "Log in to {marketplaceName}",
-  "AuthenticationPage.schemaDescriptionSignup": "List your pool free and earn by the hour — 0% host fees. No listing fees, liability coverage included. Join hosts on Pool Rental Near Me.",
+  "AuthenticationPage.schemaDescriptionSignup": "List your pool free and earn by the hour — 0% host fees. No listing fees. Join hosts on Pool Rental Near Me.",
   "AuthenticationPage.schemaTitleLogin": "Log in | {marketplaceName}",
   "AuthenticationPage.schemaTitleSignup": "List Your Pool Free — 0% Host Fees | {marketplaceName}",
   "AuthenticationPage.sendingEmail": "Sending verification email…",

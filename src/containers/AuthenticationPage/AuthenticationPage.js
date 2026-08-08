@@ -548,7 +548,7 @@ export const AuthenticationPageComponent = (props) => {
     : `List Your Pool Free \u2014 0% Host Fees | ${marketplaceName}`;
   const schemaDescription = isLogin
     ? intl.formatMessage({ id: 'AuthenticationPage.schemaDescriptionLogin' }, { marketplaceName })
-    : 'List your pool free and earn by the hour \u2014 0% host fees. No listing fees, liability coverage included. Join hosts on Pool Rental Near Me.';
+    : 'List your pool free and earn by the hour \u2014 0% host fees. No listing fees. Join hosts on Pool Rental Near Me.';
   const topbarClasses = classNames({
     [css.hideOnMobile]: showEmailVerification,
   });

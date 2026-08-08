@@ -473,7 +473,7 @@ export const SectionThingsToKnow = props => {
         <div>
           <h3 style={{ fontSize: '13px', fontWeight: 800, margin: '0 0 9px' }}>Trust &amp; safety</h3>
           <p style={{ fontSize: '13px', color: '#5f7480', lineHeight: 1.55, margin: 0 }}>
-            Secure payments and Pool Rental Near Me support on every booking. Only a 5% booking fee — no hidden charges.
+            Secure payments and Pool Rental Near Me support on every booking. A 15% booking fee is added at checkout — no hidden charges.
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { types as sdkTypes } from '../../util/sdkLoader';
+import { splitAddressForPrivacy } from '../../util/address';
 
 const { UUID } = sdkTypes;
 
@@ -101,6 +102,57 @@ export const buildUpdatePayload = (draftId, values) => ({
   title: (values.title || '').trim(),
   description: (values.description || '').trim(),
 });
+
+/**
+ * Payload for Step 2 — location.
+ *
+ * Mirrors EditListingLocationPanel exactly, including the privacy split, so the
+ * new flow writes location the same way the existing wizard does:
+ *
+ *   geolocation              lat/lng, powers location search
+ *   publicData.location      CITY LEVEL ONLY - what guests browsing can see
+ *   privateData.exactAddress the street address, shared after a booking
+ *
+ * The street address must never reach publicData. 0 of 98 published listings
+ * leak one today and this flow is not going to be the first.
+ *
+ * @param {string} draftId
+ * @param {Object} selectedPlace from LocationAutocompleteInput
+ * @param {string} [building] optional unit/building
+ * @returns {Object} data for requestUpdateListing
+ */
+export const buildLocationPayload = (draftId, selectedPlace, building = '') => {
+  const { address, origin, city, state, zip } = selectedPlace || {};
+  const { publicLabel, exactAddress } = splitAddressForPrivacy(address, { city, state, zip });
+
+  return {
+    id: new UUID(draftId),
+    geolocation: origin,
+    publicData: { location: { address: publicLabel, building, city } },
+    privateData: { exactAddress },
+  };
+};
+
+/**
+ * Pull the persisted Step 2 values back off a listing entity, for resume.
+ *
+ * Reads the EXACT address out of privateData, not the public city label — on
+ * resume the host should see what they actually typed, not a truncated version
+ * of it that they would then have to re-enter.
+ *
+ * @param {Object} listing
+ * @returns {{address: string, building: string, hasLocation: boolean}}
+ */
+export const readStep2Values = (listing) => {
+  const attrs = listing?.attributes || {};
+  const pd = attrs.publicData || {};
+  const exact = (attrs.privateData || {}).exactAddress;
+  return {
+    address: exact || pd.location?.address || '',
+    building: pd.location?.building || '',
+    hasLocation: !!attrs.geolocation,
+  };
+};
 
 /**
  * Pull the persisted Step 1 values back off a listing entity, for resume.

@@ -14,15 +14,18 @@ import { NamedRedirect, Page } from '../../components';
 
 import {
   buildCreatePayload,
+  buildLocationPayload,
   buildUpdatePayload,
   findResumableDraft,
   listingIdFromResponse,
   readStep1Values,
+  readStep2Values,
 } from './listingContract';
 
 import OnboardingShell from './OnboardingShell';
 import WelcomeScreen from './screens/WelcomeScreen';
 import AboutScreen from './screens/AboutScreen';
+import LocationScreen from './screens/LocationScreen';
 import { canWritePreviewData, hasPreviewAccess } from './previewAccess';
 import { STEPS, WELCOME, stepIndexById } from './onboardingSteps';
 import css from './HostOnboardingPage.module.css';
@@ -49,6 +52,9 @@ import css from './HostOnboardingPage.module.css';
 const { UUID } = sdkTypes;
 
 const DRAFT_PARAM = 'draft';
+
+// Steps with a real screen behind them. Grows as each batch lands.
+const IMPLEMENTED_STEPS = ['about', 'location'];
 
 // Step 1 now persists. Enabled only after the write path was proven end to end
 // against the :4000 validation image — a real draft created, updated in place,
@@ -84,13 +90,21 @@ export const HostOnboardingPageComponent = (props) => {
   const location = useLocation();
   const navigate = useNavigate();
   const firstStep = STEPS[0];
-  const screen =
-    new URLSearchParams(location.search).get('step') === firstStep.id ? firstStep.id : WELCOME;
+  // Only steps that actually have a screen are routable. A ?step= for one that
+  // is still unbuilt falls back to Welcome rather than rendering an empty shell.
+  const requestedStep = new URLSearchParams(location.search).get('step');
+  const screen = IMPLEMENTED_STEPS.includes(requestedStep) ? requestedStep : WELCOME;
 
   // Answers live here rather than in each screen so moving back and forth does
   // not wipe what was typed — including after a failed save.
   const [values, setValues] = useState({ title: '', description: '' });
   const patchValues = (patch) => setValues((prev) => ({ ...prev, ...patch }));
+
+  // Step 2 keeps the raw autocomplete value: only a place PICKED from the
+  // dropdown carries coordinates, so the whole object has to survive, not just
+  // the text the host typed.
+  const [locationValue, setLocationValue] = useState(null);
+  const [building, setBuilding] = useState('');
 
   const canWrite = PERSISTENCE_ENABLED && canWritePreviewData(currentUserId);
 
@@ -151,11 +165,43 @@ export const HostOnboardingPageComponent = (props) => {
       const listing = response?.data?.data;
       if (listing) {
         setValues(readStep1Values(listing));
+        const step2 = readStep2Values(listing);
+        setBuilding(step2.building);
+        if (step2.hasLocation && step2.address) {
+          // Rebuild an autocomplete-shaped value so the field shows the saved
+          // address. selectedPlace carries the saved coordinates, so Continue is
+          // immediately valid without forcing a re-pick.
+          setLocationValue({
+            search: step2.address,
+            predictions: [],
+            selectedPlace: {
+              address: step2.address,
+              origin: listing.attributes.geolocation,
+            },
+          });
+        }
       }
     });
   }, [mounted, canWrite, draftId, resumed, onShowListing]);
 
-  const saveStep1 = async () => {
+  const goTo = (stepId) => {
+    const params = new URLSearchParams(location.search);
+    if (stepId) {
+      params.set('step', stepId);
+    } else {
+      params.delete('step');
+    }
+    const search = params.toString();
+    navigate(search ? `?${search}` : location.pathname, { replace: false });
+  };
+
+  /**
+   * One save path for every step. Each step supplies the payload it owns; the
+   * create/update decision, the double-tap guard, the error handling and the
+   * "did it actually persist" check are identical everywhere, so they live here
+   * rather than being re-implemented per screen.
+   */
+  const saveStep = async (buildPayload, nextStepId) => {
     if (!canWrite || savingRef.current) {
       return;
     }
@@ -164,7 +210,7 @@ export const HostOnboardingPageComponent = (props) => {
 
     try {
       const response = draftId
-        ? await onUpdateListing(buildUpdatePayload(draftId, values))
+        ? await onUpdateListing(buildPayload(draftId))
         : await onCreateDraft(buildCreatePayload(values));
 
       // Both ducks resolve with an error ACTION instead of rejecting, so the only
@@ -179,6 +225,9 @@ export const HostOnboardingPageComponent = (props) => {
         setDraftInUrl(id);
       }
       setSaveState('saved');
+      if (nextStepId) {
+        goTo(nextStepId);
+      }
     } catch (e) {
       setSaveState('error');
     } finally {
@@ -186,16 +235,9 @@ export const HostOnboardingPageComponent = (props) => {
     }
   };
 
-  const goTo = (stepId) => {
-    const params = new URLSearchParams(location.search);
-    if (stepId) {
-      params.set('step', stepId);
-    } else {
-      params.delete('step');
-    }
-    const search = params.toString();
-    navigate(search ? `?${search}` : location.pathname, { replace: false });
-  };
+  const saveAbout = () => saveStep((id) => buildUpdatePayload(id, values), 'location');
+  const saveLocation = () =>
+    saveStep((id) => buildLocationPayload(id, locationValue?.selectedPlace, building), null);
 
   const allowed = mounted && hasPreviewAccess();
 
@@ -207,21 +249,33 @@ export const HostOnboardingPageComponent = (props) => {
       </div>
     );
   } else if (allowed) {
+    const step = STEPS.find((st) => st.id === screen);
+    const stepScreen =
+      screen === 'location' ? (
+        <LocationScreen
+          value={locationValue}
+          onChange={setLocationValue}
+          building={building}
+          onBuildingChange={setBuilding}
+          onContinue={saveLocation}
+          onBack={() => goTo('about')}
+          saveState={saveState}
+        />
+      ) : (
+        <AboutScreen
+          values={values}
+          onChange={patchValues}
+          onContinue={saveAbout}
+          onBack={() => goTo(null)}
+          readOnly={!canWrite}
+          saveState={saveState}
+        />
+      );
+
     body = (
       <div className={css.root}>
-        <OnboardingShell
-          step={stepIndexById(firstStep.id)}
-          heading={firstStep.heading}
-          sub={firstStep.sub}
-        >
-          <AboutScreen
-            values={values}
-            onChange={patchValues}
-            onContinue={saveStep1}
-            onBack={() => goTo(null)}
-            readOnly={!canWrite}
-            saveState={saveState}
-          />
+        <OnboardingShell step={stepIndexById(step.id)} heading={step.heading} sub={step.sub}>
+          {stepScreen}
         </OnboardingShell>
       </div>
     );

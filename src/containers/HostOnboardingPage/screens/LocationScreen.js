@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+import { useConfiguration } from '../../../context/configurationContext';
 import LocationAutocompleteInput from '../../../components/LocationAutocompleteInput/LocationAutocompleteInput';
 import css from '../HostOnboardingPage.module.css';
 
@@ -36,6 +37,12 @@ const LocationScreen = (props) => {
   } = props;
   const [touched, setTouched] = useState(false);
 
+  // REQUIRED. LocationAutocompleteInputImpl reads config.maps.mapProvider to
+  // choose its geocoder (Impl:184). Without this prop the geocoder never
+  // initialises, no predictions are ever fetched, and the field silently behaves
+  // like a plain text box — which is exactly how it shipped the first time.
+  const config = useConfiguration();
+
   const saving = saveState === 'saving';
   // A typed string is not an address. Only a place PICKED from the dropdown has
   // coordinates, and without coordinates the listing never appears in location
@@ -71,6 +78,7 @@ const LocationScreen = (props) => {
           they book &mdash; your street address is shared after you accept.
         </p>
         <LocationAutocompleteInput
+          config={config}
           rootClassName={css.locationRoot}
           inputClassName={css.input}
           iconClassName={css.locationIcon}

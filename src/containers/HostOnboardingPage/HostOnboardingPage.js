@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import { isScrollingDisabled } from '../../ducks/ui.duck';
@@ -27,7 +27,6 @@ import css from './HostOnboardingPage.module.css';
  */
 export const HostOnboardingPageComponent = (props) => {
   const { scrollingDisabled } = props;
-  const [screen, setScreen] = useState(WELCOME);
 
   // The gate is deliberately post-mount. hasPreviewAccess() reads sessionStorage
   // and the query string, so it can only ever answer false on the server — which
@@ -39,21 +38,36 @@ export const HostOnboardingPageComponent = (props) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Navigating to this URL again in a tab that is already on it does not remount
-  // the component, so `screen` survived from a previous "Get started" tap and the
-  // entry URL came up on the step placeholder instead of Welcome. Re-entering the
-  // route must always land on Welcome.
+  // Which screen shows is derived from the URL, never held in state. Holding it
+  // in state meant a restored page — iOS in-app webview resume, bfcache, reopening
+  // a tab that was already here — brought back the old screen without any location
+  // change, so the entry link came up on the step placeholder instead of Welcome.
+  // A resetting effect could not fix that, because nothing re-rendered. Deriving
+  // from the query string makes the entry URL deterministic: no `step`, no step.
   const location = useLocation();
-  useEffect(() => setScreen(WELCOME), [location.key, location.pathname, location.search]);
+  const navigate = useNavigate();
+  const firstStep = STEPS[0];
+  const screen =
+    new URLSearchParams(location.search).get('step') === firstStep.id ? firstStep.id : WELCOME;
+
+  const goTo = (stepId) => {
+    const params = new URLSearchParams(location.search);
+    if (stepId) {
+      params.set('step', stepId);
+    } else {
+      params.delete('step');
+    }
+    const search = params.toString();
+    navigate(search ? `?${search}` : location.pathname, { replace: false });
+  };
 
   const allowed = mounted && hasPreviewAccess();
-  const firstStep = STEPS[0];
 
   let body = null;
   if (allowed && screen === WELCOME) {
     body = (
       <div className={css.root}>
-        <WelcomeScreen onGetStarted={() => setScreen(firstStep.id)} />
+        <WelcomeScreen onGetStarted={() => goTo(firstStep.id)} />
       </div>
     );
   } else if (allowed) {
@@ -64,7 +78,7 @@ export const HostOnboardingPageComponent = (props) => {
             This is the shell only. The step itself arrives in the next batch, wired to the listing
             panel that already saves this data — nothing is stored yet.
           </p>
-          <button type="button" className={css.backLink} onClick={() => setScreen(WELCOME)}>
+          <button type="button" className={css.backLink} onClick={() => goTo(null)}>
             &larr; Back to the start
           </button>
         </OnboardingShell>

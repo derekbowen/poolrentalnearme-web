@@ -242,6 +242,24 @@
   padding: 4px 24px 32px;
 }
 
+.backLink {
+  align-self: flex-start;
+  margin-top: 20px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--deep);
+  cursor: pointer;
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
 .placeholderNote {
   margin: 0;
   padding: 20px;

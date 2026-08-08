@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import { isScrollingDisabled } from '../../ducks/ui.duck';
@@ -38,6 +39,13 @@ export const HostOnboardingPageComponent = (props) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Navigating to this URL again in a tab that is already on it does not remount
+  // the component, so `screen` survived from a previous "Get started" tap and the
+  // entry URL came up on the step placeholder instead of Welcome. Re-entering the
+  // route must always land on Welcome.
+  const location = useLocation();
+  useEffect(() => setScreen(WELCOME), [location.key, location.pathname, location.search]);
+
   const allowed = mounted && hasPreviewAccess();
   const firstStep = STEPS[0];
 
@@ -56,6 +64,9 @@ export const HostOnboardingPageComponent = (props) => {
             This is the shell only. The step itself arrives in the next batch, wired to the listing
             panel that already saves this data — nothing is stored yet.
           </p>
+          <button type="button" className={css.backLink} onClick={() => setScreen(WELCOME)}>
+            &larr; Back to the start
+          </button>
         </OnboardingShell>
       </div>
     );

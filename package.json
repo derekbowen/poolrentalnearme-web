@@ -180,6 +180,8 @@
     "format": "prettier --write '**/*.{js,css}'",
     "format-ci": "prettier --list-different '**/*.{js,css}'",
     "format-docs": "prettier --write '**/*.md'",
+    "lint": "eslint --ext .js,.jsx src server",
+    "lint:changed": "eslint --ext .js,.jsx",
     "test-server": "jest ./server/**/*.test.js",
     "translate": "node scripts/translations.js",
     "build": "bun run build:client && bun run build:server",

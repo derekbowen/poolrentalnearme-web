@@ -308,6 +308,19 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       },
     },
     {
+      // Redesigned host onboarding, PRIVATE PREVIEW. Authenticated, noindex,
+      // Disallow-ed in robots.txt, linked from nowhere, and gated behind an
+      // explicit ?hostpreview=1 opt-in. Writes no listing data. The real host
+      // path is still /l/new — see HostOnboardingPage.js.
+      path: '/host/preview/start',
+      name: 'HostOnboardingPreviewPage',
+      auth: true,
+      authPage: 'LoginPage',
+      loaders: {
+        page: () => import('../containers/HostOnboardingPage/HostOnboardingPage'),
+      },
+    },
+    {
       path: '/account/payouts',
       name: 'PayoutDashboardPage',
       auth: true,

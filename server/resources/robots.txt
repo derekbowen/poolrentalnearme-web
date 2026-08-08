@@ -9,6 +9,7 @@ Disallow: /s
 Disallow: /l/*/p/
 Disallow: /profile-settings
 Disallow: /l/new
+Disallow: /host/preview/
 Disallow: /l/*/checkout
 Disallow: /l/*/draft
 Disallow: /l/*/pending-approval

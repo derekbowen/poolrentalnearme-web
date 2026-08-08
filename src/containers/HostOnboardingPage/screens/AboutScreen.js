@@ -17,9 +17,10 @@ import css from '../HostOnboardingPage.module.css';
  * @param {Object} props
  * @param {{title: string, description: string}} props.values current field values
  * @param {Function} props.onChange (patch) => void, merged into the flow's values
- * @param {Function} props.onContinue advance to the next step
+ * @param {Function} props.onContinue save this step
  * @param {Function} props.onBack return to the previous screen
  * @param {boolean} [props.readOnly] true when this session has no write path
+ * @param {'idle'|'saving'|'saved'|'error'} [props.saveState] outcome of the last save
  */
 
 // Sharetribe stores title as a plain string; the stock wizard caps it so the
@@ -30,13 +31,14 @@ const TITLE_MAX = 60;
 const DESCRIPTION_MIN = 40;
 
 const AboutScreen = (props) => {
-  const { values, onChange, onContinue, onBack, readOnly } = props;
+  const { values, onChange, onContinue, onBack, readOnly, saveState = 'idle' } = props;
   const title = values?.title || '';
   const description = values?.description || '';
 
+  const saving = saveState === 'saving';
   const titleOk = title.trim().length > 0 && title.length <= TITLE_MAX;
   const descriptionOk = description.trim().length >= DESCRIPTION_MIN;
-  const canContinue = titleOk && descriptionOk;
+  const canContinue = titleOk && descriptionOk && !saving;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,10 +47,24 @@ const AboutScreen = (props) => {
     }
   };
 
+  const buttonLabel = saving ? 'Saving…' : 'Continue';
+
   return (
     <form className={css.stepForm} onSubmit={handleSubmit} noValidate>
       {readOnly ? (
         <p className={css.previewNotice}>Preview only — nothing you type here is saved yet.</p>
+      ) : null}
+
+      {/* Save feedback is announced politely so it reaches a screen reader without
+          stealing focus mid-typing. The failure case deliberately keeps every value
+          the host typed — the form is never reset and the flow never advances. */}
+      <div className={css.saveStatus} role="status" aria-live="polite">
+        {saveState === 'saving' ? <span className={css.saving}>Saving…</span> : null}
+        {saveState === 'saved' ? <span className={css.saved}>Saved</span> : null}
+      </div>
+
+      {saveState === 'error' ? (
+        <p className={css.saveError}>We couldn&rsquo;t save your changes. Try again.</p>
       ) : null}
 
       <div className={css.field}>
@@ -95,7 +111,7 @@ const AboutScreen = (props) => {
 
       <div className={css.stepActions}>
         <button type="submit" className={css.primaryButton} disabled={!canContinue}>
-          Continue
+          {buttonLabel}
         </button>
         <button type="button" className={css.backLink} onClick={onBack}>
           &larr; Back

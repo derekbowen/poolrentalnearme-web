@@ -30,12 +30,12 @@ export const HostOnboardingPageComponent = (props) => {
 
   // Server-side this is always false, so the preview is never rendered into SSR
   // output or served to a crawler.
-  if (!hasPreviewAccess()) {
-    return <NamedRedirect name="LandingPage" />;
-  }
-
+  const allowed = hasPreviewAccess();
   const firstStep = STEPS[0];
 
+  // Page wraps BOTH branches on purpose. Returning the redirect early skipped it
+  // and the route emitted no robots meta at all — worse than the 404 it replaced,
+  // which at least said noindex. The gate on :4000 caught that; keep it wrapped.
   return (
     <Page
       title="List your pool"
@@ -44,18 +44,22 @@ export const HostOnboardingPageComponent = (props) => {
       shouldFollow={false}
       referrer="no-referrer"
     >
-      <div className={css.root}>
-        {screen === WELCOME ? (
-          <WelcomeScreen onGetStarted={() => setScreen(firstStep.id)} />
-        ) : (
-          <OnboardingShell step={1} heading={firstStep.heading} sub={firstStep.sub}>
-            <p className={css.placeholderNote}>
-              This is the shell only. The step itself arrives in the next batch, wired to the
-              listing panel that already saves this data — nothing is stored yet.
-            </p>
-          </OnboardingShell>
-        )}
-      </div>
+      {allowed ? (
+        <div className={css.root}>
+          {screen === WELCOME ? (
+            <WelcomeScreen onGetStarted={() => setScreen(firstStep.id)} />
+          ) : (
+            <OnboardingShell step={1} heading={firstStep.heading} sub={firstStep.sub}>
+              <p className={css.placeholderNote}>
+                This is the shell only. The step itself arrives in the next batch, wired to the
+                listing panel that already saves this data — nothing is stored yet.
+              </p>
+            </OnboardingShell>
+          )}
+        </div>
+      ) : (
+        <NamedRedirect name="LandingPage" />
+      )}
     </Page>
   );
 };

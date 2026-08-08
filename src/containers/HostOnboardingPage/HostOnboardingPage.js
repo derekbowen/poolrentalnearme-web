@@ -62,7 +62,12 @@ export const HostOnboardingPageComponent = (props) => {
   const [values, setValues] = useState({ title: '', description: '' });
   const patchValues = (patch) => setValues((prev) => ({ ...prev, ...patch }));
 
-  const canWrite = canWritePreviewData(currentUserId);
+  // No step persists anything yet — the save path lands in the next batch. Until
+  // it does, this stays false so an allowlisted operator is not shown a screen
+  // that quietly implies their answers are being kept. The allowlist is wired up
+  // and correct; it simply has nothing to authorise yet.
+  const PERSISTENCE_ENABLED = false;
+  const canWrite = PERSISTENCE_ENABLED && canWritePreviewData(currentUserId);
 
   const goTo = (stepId) => {
     const params = new URLSearchParams(location.search);

@@ -242,19 +242,6 @@
   padding: 4px 24px 32px;
 }
 
-/* TEMPORARY DIAGNOSTIC — remove with the debug panel in HostOnboardingPage.js */
-.debugPanel {
-  margin: 0;
-  padding: 12px 14px;
-  background-color: #0f181f;
-  color: #7fe0ff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre;
-  overflow-x: auto;
-}
-
 .backLink {
   align-self: flex-start;
   margin-top: 20px;

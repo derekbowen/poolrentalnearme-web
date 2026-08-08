@@ -11,10 +11,6 @@ import { hasPreviewAccess } from './previewAccess';
 import { STEPS, WELCOME } from './onboardingSteps';
 import css from './HostOnboardingPage.module.css';
 
-// TEMPORARY DIAGNOSTIC marker — bumped per instrumented build so a screenshot
-// proves which bundle is executing. Remove with the debug panel.
-const BUILD_MARKER = 'c168-debug2';
-
 /**
  * Redesigned host onboarding — PRIVATE PREVIEW.
  *
@@ -67,58 +63,6 @@ export const HostOnboardingPageComponent = (props) => {
 
   const allowed = mounted && hasPreviewAccess();
 
-  // TEMPORARY DIAGNOSTIC — instrumentation only, no logic changed. Remove once
-  // the entry-screen behaviour is explained. Covers everything an independent
-  // review asked for: which bundle is executing, how the document was navigated
-  // to, whether it came out of bfcache, and the router's own view of the URL.
-  const [persisted, setPersisted] = useState('no pageshow yet');
-  useEffect(() => {
-    const onShow = (e) => setPersisted(e.persisted ? 'TRUE (bfcache restore)' : 'false');
-    window.addEventListener('pageshow', onShow);
-    return () => window.removeEventListener('pageshow', onShow);
-  }, []);
-
-  let chunkUrl = 'n/a';
-  try {
-    chunkUrl = (import.meta && import.meta.url) || 'n/a';
-  } catch (e) {
-    chunkUrl = 'unavailable (legacy bundle)';
-  }
-
-  let navType = 'n/a';
-  try {
-    const nav = window.performance.getEntriesByType('navigation')[0];
-    navType = nav ? nav.type : 'n/a';
-  } catch (e) {
-    navType = 'unavailable';
-  }
-
-  const q = new URLSearchParams(location.search);
-  const debug = mounted ? (
-    <pre className={css.debugPanel}>
-      {[
-        `BUILD          ${BUILD_MARKER}`,
-        `chunk          ${String(chunkUrl).split('/').pop()}`,
-        `legacy bundle  ${String(chunkUrl).includes('-legacy-')}`,
-        '',
-        `pathname       ${location.pathname}`,
-        `search         ${location.search || '(empty)'}`,
-        `href           ${window.location.href}`,
-        `location.key   ${location.key}`,
-        `referrer       ${document.referrer || '(none)'}`,
-        '',
-        `step parsed    ${q.get('step') === null ? '(absent)' : q.get('step')}`,
-        `hostpreview    ${q.get('hostpreview') === null ? '(absent)' : q.get('hostpreview')}`,
-        `screen         ${screen}`,
-        `renders        ${screen === WELCOME ? 'WELCOME' : 'ABOUT'}`,
-        `allowed        ${String(allowed)}`,
-        '',
-        `nav type       ${navType}`,
-        `bfcache        ${persisted}`,
-      ].join('\n')}
-    </pre>
-  ) : null;
-
   let body = null;
   if (allowed && screen === WELCOME) {
     body = (
@@ -152,7 +96,6 @@ export const HostOnboardingPageComponent = (props) => {
       shouldFollow={false}
       referrer="no-referrer"
     >
-      {debug}
       {body}
     </Page>
   );

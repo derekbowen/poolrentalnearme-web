@@ -24,6 +24,46 @@ export const TRANSACTION_PROCESS_ALIAS = 'default-booking/release-1';
 export const UNIT_TYPE = 'hour';
 
 /**
+ * Stamp identifying a draft that THIS flow created.
+ *
+ * Resume deliberately only ever picks up drafts carrying this marker. A host may
+ * also have an unfinished draft from the existing /l/new wizard, and silently
+ * adopting that one would drop them mid-flow into a listing they started
+ * somewhere else, with different answers already saved. Better to leave other
+ * drafts strictly alone.
+ */
+export const ONBOARDING_VERSION_KEY = 'onboardingVersion';
+export const ONBOARDING_VERSION = 'v2';
+
+/**
+ * The host's most recent resumable draft from this flow, if any.
+ *
+ * Picks the newest by createdAt so that if a duplicate ever does slip through,
+ * the host continues the one they were most recently working on rather than an
+ * older abandoned shell.
+ *
+ * @param {Array} listings own-listing entities
+ * @returns {string|null} listing uuid to resume
+ */
+export const findResumableDraft = (listings) => {
+  const drafts = (listings || []).filter((l) => {
+    const attrs = l?.attributes || {};
+    const pd = attrs.publicData || {};
+    return attrs.state === 'draft' && pd[ONBOARDING_VERSION_KEY] === ONBOARDING_VERSION;
+  });
+
+  if (drafts.length === 0) {
+    return null;
+  }
+
+  const newest = drafts
+    .slice()
+    .sort((a, b) => new Date(b.attributes.createdAt) - new Date(a.attributes.createdAt))[0];
+
+  return newest?.id?.uuid || null;
+};
+
+/**
  * Payload for the FIRST save — creates the draft.
  *
  * Only Step 1's own fields are sent, plus the pinned type trio. Nothing else is
@@ -41,6 +81,7 @@ export const buildCreatePayload = (values) => ({
     listingType: LISTING_TYPE,
     transactionProcessAlias: TRANSACTION_PROCESS_ALIAS,
     unitType: UNIT_TYPE,
+    [ONBOARDING_VERSION_KEY]: ONBOARDING_VERSION,
   },
 });
 

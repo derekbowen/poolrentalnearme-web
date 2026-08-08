@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 
@@ -15,6 +15,7 @@ import { NamedRedirect, Page } from '../../components';
 import {
   buildCreatePayload,
   buildUpdatePayload,
+  findResumableDraft,
   listingIdFromResponse,
   readStep1Values,
 } from './listingContract';
@@ -35,12 +36,12 @@ import css from './HostOnboardingPage.module.css';
  *   - requires authentication (see routeConfiguration)
  *   - is noindex, and Disallow-ed in robots.txt
  *   - is linked from nowhere; you arrive via ?hostpreview=1
- *   - writes NOTHING — no draft is created, no listing is touched
+ *   - only WRITES for operators on the allowlist (see previewAccess)
  *
- * Step values are collected in memory so the flow can be walked end to end, but
- * persistence is a separate, separately-gated batch: `canWrite` below is
- * threaded through now so the screens tell the truth about what is being saved,
- * and so turning writes on later is a change in one place rather than eight.
+ * Step 1 creates and updates a real Sharetribe draft through the existing
+ * EditListingPage thunks. One host gets one draft: the id lives in the URL, and
+ * on entry without one we look up an existing draft from this flow rather than
+ * starting another.
  *
  * The existing wizard at /l/new is completely untouched and remains the real
  * path for every host.
@@ -55,7 +56,14 @@ const DRAFT_PARAM = 'draft';
 const PERSISTENCE_ENABLED = true;
 
 export const HostOnboardingPageComponent = (props) => {
-  const { scrollingDisabled, currentUserId, onCreateDraft, onUpdateListing, onShowListing } = props;
+  const {
+    scrollingDisabled,
+    currentUserId,
+    onCreateDraft,
+    onUpdateListing,
+    onShowListing,
+    onQueryOwnDrafts,
+  } = props;
 
   // The gate is deliberately post-mount. hasPreviewAccess() reads sessionStorage
   // and the query string, so it can only ever answer false on the server — which
@@ -95,11 +103,43 @@ export const HostOnboardingPageComponent = (props) => {
 
   const [saveState, setSaveState] = useState('idle');
   const [resumed, setResumed] = useState(false);
+  const [searchedForDraft, setSearchedForDraft] = useState(false);
 
   // Synchronous guard. setState is async, so a second tap can land before a
   // "saving" render ever happens; a ref flips immediately and closes that window,
   // which is what actually prevents a double-tap creating two drafts.
   const savingRef = useRef(false);
+
+  // Declared before the effects that call it. useCallback keeps its identity
+  // stable so it can sit in a dependency array without re-firing the lookup.
+  const setDraftInUrl = useCallback(
+    (id) => {
+      const params = new URLSearchParams(location.search);
+      params.set(DRAFT_PARAM, id);
+      // replace, not push: the draft id is an attribute of where the host already
+      // is, not a new place they navigated to, so Back must not step "before" it.
+      navigate(`?${params.toString()}`, { replace: true });
+    },
+    [location.search, navigate]
+  );
+
+  // Arriving with no draft in the URL does NOT mean this host has no draft. They
+  // may have closed the tab yesterday, or followed a "list your pool" link that
+  // carries no id. Without this lookup every such visit starts another draft —
+  // which is exactly how two test drafts appeared during the Batch 3 run.
+  // Sharetribe stays the source of truth; the URL is only a pointer to it.
+  useEffect(() => {
+    if (!mounted || !canWrite || draftId || searchedForDraft) {
+      return;
+    }
+    setSearchedForDraft(true);
+    onQueryOwnDrafts().then((response) => {
+      const existing = findResumableDraft(response?.data?.data);
+      if (existing) {
+        setDraftInUrl(existing);
+      }
+    });
+  }, [mounted, canWrite, draftId, searchedForDraft, onQueryOwnDrafts, setDraftInUrl]);
 
   // Resume: if the URL carries a draft, load it and prefill from Sharetribe.
   useEffect(() => {
@@ -114,14 +154,6 @@ export const HostOnboardingPageComponent = (props) => {
       }
     });
   }, [mounted, canWrite, draftId, resumed, onShowListing]);
-
-  const setDraftInUrl = (id) => {
-    const params = new URLSearchParams(location.search);
-    params.set(DRAFT_PARAM, id);
-    // replace, not push: the draft id is an attribute of where the host already
-    // is, not a new place they navigated to, so Back must not step "before" it.
-    navigate(`?${params.toString()}`, { replace: true });
-  };
 
   const saveStep1 = async () => {
     if (!canWrite || savingRef.current) {
@@ -228,10 +260,21 @@ const mapStateToProps = (state) => {
  * The `tab` argument to requestUpdateListing only marks which wizard tab to flag
  * as updated in EditListingPage's own reducer; it does not affect what is written.
  */
+/**
+ * Read-only lookup of this host's own drafts.
+ *
+ * Deliberately NOT ManageListingsPage's queryOwnListings: that thunk dispatches
+ * into the Manage Listings reducer (page result ids, pagination), so calling it
+ * from here would quietly rewrite what that page shows. This only reads.
+ */
+const queryOwnDrafts = () => (dispatch, getState, sdk) =>
+  sdk.ownListings.query({ states: ['draft'], perPage: 100 }).catch(() => null);
+
 const mapDispatchToProps = (dispatch) => ({
   onCreateDraft: (data, config) => dispatch(requestCreateListingDraft(data, config)),
   onUpdateListing: (data, config) => dispatch(requestUpdateListing('details', data, config)),
   onShowListing: (payload, config) => dispatch(requestShowListing(payload, config)),
+  onQueryOwnDrafts: () => dispatch(queryOwnDrafts()),
 });
 
 const HostOnboardingPageWithConfig = (props) => {

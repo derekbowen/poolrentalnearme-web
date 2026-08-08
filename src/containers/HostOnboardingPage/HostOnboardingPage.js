@@ -63,26 +63,6 @@ export const HostOnboardingPageComponent = (props) => {
 
   const allowed = mounted && hasPreviewAccess();
 
-  // TEMPORARY DIAGNOSTIC — remove once the entry-screen bug is understood.
-  // Prints the real runtime routing values inside the private preview only.
-  const q = new URLSearchParams(location.search);
-  const debug = mounted ? (
-    <pre className={css.debugPanel}>
-      {[
-        `pathname      ${location.pathname}`,
-        `search        ${location.search || '(empty)'}`,
-        `href          ${typeof window !== 'undefined' ? window.location.href : 'n/a'}`,
-        `hostpreview   ${q.get('hostpreview') === null ? '(absent)' : q.get('hostpreview')}`,
-        `step          ${q.get('step') === null ? '(absent)' : q.get('step')}`,
-        `firstStep.id  ${firstStep.id}`,
-        `WELCOME       ${WELCOME}`,
-        `screen        ${screen}`,
-        `screen===WEL  ${String(screen === WELCOME)}`,
-        `allowed       ${String(allowed)}`,
-      ].join('\n')}
-    </pre>
-  ) : null;
-
   let body = null;
   if (allowed && screen === WELCOME) {
     body = (
@@ -116,7 +96,6 @@ export const HostOnboardingPageComponent = (props) => {
       shouldFollow={false}
       referrer="no-referrer"
     >
-      {debug}
       {body}
     </Page>
   );

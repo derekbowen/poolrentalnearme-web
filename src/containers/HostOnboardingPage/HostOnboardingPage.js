@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 
 import { isScrollingDisabled } from '../../ducks/ui.duck';
@@ -28,14 +28,41 @@ export const HostOnboardingPageComponent = (props) => {
   const { scrollingDisabled } = props;
   const [screen, setScreen] = useState(WELCOME);
 
-  // Server-side this is always false, so the preview is never rendered into SSR
-  // output or served to a crawler.
-  const allowed = hasPreviewAccess();
+  // The gate is deliberately post-mount. hasPreviewAccess() reads sessionStorage
+  // and the query string, so it can only ever answer false on the server — which
+  // meant SSR always took the redirect branch, react-helmet never flushed, and
+  // the route shipped with NO robots meta at all. Rendering Page with an empty
+  // body during SSR emits "noindex, nofollow" on every request, and gating after
+  // mount keeps server and first client render identical, so there is no
+  // hydration mismatch either.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const allowed = mounted && hasPreviewAccess();
   const firstStep = STEPS[0];
 
-  // Page wraps BOTH branches on purpose. Returning the redirect early skipped it
-  // and the route emitted no robots meta at all — worse than the 404 it replaced,
-  // which at least said noindex. The gate on :4000 caught that; keep it wrapped.
+  let body = null;
+  if (allowed && screen === WELCOME) {
+    body = (
+      <div className={css.root}>
+        <WelcomeScreen onGetStarted={() => setScreen(firstStep.id)} />
+      </div>
+    );
+  } else if (allowed) {
+    body = (
+      <div className={css.root}>
+        <OnboardingShell step={1} heading={firstStep.heading} sub={firstStep.sub}>
+          <p className={css.placeholderNote}>
+            This is the shell only. The step itself arrives in the next batch, wired to the listing
+            panel that already saves this data — nothing is stored yet.
+          </p>
+        </OnboardingShell>
+      </div>
+    );
+  } else if (mounted) {
+    body = <NamedRedirect name="LandingPage" />;
+  }
+
   return (
     <Page
       title="List your pool"
@@ -44,22 +71,7 @@ export const HostOnboardingPageComponent = (props) => {
       shouldFollow={false}
       referrer="no-referrer"
     >
-      {allowed ? (
-        <div className={css.root}>
-          {screen === WELCOME ? (
-            <WelcomeScreen onGetStarted={() => setScreen(firstStep.id)} />
-          ) : (
-            <OnboardingShell step={1} heading={firstStep.heading} sub={firstStep.sub}>
-              <p className={css.placeholderNote}>
-                This is the shell only. The step itself arrives in the next batch, wired to the
-                listing panel that already saves this data — nothing is stored yet.
-              </p>
-            </OnboardingShell>
-          )}
-        </div>
-      ) : (
-        <NamedRedirect name="LandingPage" />
-      )}
+      {body}
     </Page>
   );
 };

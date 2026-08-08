@@ -77,12 +77,17 @@ const LocationScreen = (props) => {
           Start typing and pick your address from the list. Guests only ever see your city until
           they book &mdash; your street address is shared after you accept.
         </p>
+        {/* Only `className` and `inputClassName` are ours.
+            rootClassName and predictionsClassName REPLACE the component's own
+            classes rather than adding to them (Impl:116, 476), and its
+            prediction rows are styled white-on-dark by predictionsRoot. Passing
+            a white panel there made white text on a white background — the list
+            was rendering correctly and was simply invisible. `className` is
+            additive, so it is safe. */}
         <LocationAutocompleteInput
           config={config}
-          rootClassName={css.locationRoot}
+          className={css.locationRoot}
           inputClassName={css.input}
-          iconClassName={css.locationIcon}
-          predictionsClassName={css.locationPredictions}
           id="onboarding-location"
           name="location"
           placeholder="Start typing your address"

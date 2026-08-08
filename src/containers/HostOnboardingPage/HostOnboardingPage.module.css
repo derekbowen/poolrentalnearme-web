@@ -323,8 +323,6 @@
   background-color: var(--tint);
 }
 
-/* Reserves its own line so "Saved" appearing never reflows the form under the
-   host's finger mid-typing. */
 /* ---------------- option chips (features, rules, days) ---------------- */
 
 .optionGrid {
@@ -629,38 +627,6 @@
   position: relative;
 }
 
-.locationIcon {
-  display: none;
-}
-
-/* The prediction list has to sit above following fields, and match the input's
-   corner radius so it reads as one control rather than a floating panel. */
-.locationPredictions {
-  position: absolute;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  margin-top: 4px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background-color: #fff;
-  box-shadow: 0 8px 24px rgb(15 24 31 / 12%);
-  overflow: hidden;
-}
-
-.locationPredictions li {
-  padding: 12px 14px;
-  font-size: 15px;
-  line-height: 1.35;
-  color: var(--ink);
-  cursor: pointer;
-  list-style: none;
-}
-
-.locationPredictions li:hover {
-  background-color: var(--tint);
-}
-
 .fieldHint {
   margin: 8px 0 0;
   font-size: 13px;
@@ -673,6 +639,8 @@
   color: var(--muted);
 }
 
+/* Reserves its own line so "Saved" appearing never reflows the form under the
+   host's finger mid-typing. */
 .saveStatus {
   min-height: 20px;
   margin: 0 0 12px;

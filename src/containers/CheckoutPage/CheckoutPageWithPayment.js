@@ -117,7 +117,8 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
   // protectedData so the host sees the group size; partySizeMax carries the
   // listing's maxGuests so the host can be shown an over-capacity flag.
   const partySize = parseInt(pageData.orderData?.partySize, 10) || null;
-  const partySizeMax = parseInt(publicDataForOrder.maxGuests, 10) || null;
+  const partySizeMax =
+    parseInt(publicDataForOrder.guestallowed ?? publicDataForOrder.maxGuests, 10) || null;
   const partySizeMaybe = partySize
     ? { partySize, ...(partySizeMax ? { partySizeMax } : {}) }
     : {};

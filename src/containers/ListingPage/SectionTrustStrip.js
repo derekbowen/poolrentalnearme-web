@@ -69,7 +69,7 @@ const SectionTrustStrip = props => {
       : 0);
 
   const extRep = publicData.extRep || null;
-  const maxGuests = Number(publicData.maxGuests) || null;
+  const maxGuests = Number(publicData.guestallowed ?? publicData.maxGuests) || null;
 
   const chips = [];
 

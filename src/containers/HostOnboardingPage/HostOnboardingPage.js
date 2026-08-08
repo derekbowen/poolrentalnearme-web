@@ -7,17 +7,25 @@ import { isScrollingDisabled } from '../../ducks/ui.duck';
 import { useConfiguration } from '../../context/configurationContext';
 import {
   requestCreateListingDraft,
+  requestImageUpload,
+  requestPublishListingDraft,
   requestShowListing,
   requestUpdateListing,
 } from '../EditListingPage/EditListingPage.duck';
 import { NamedRedirect, Page } from '../../components';
 
 import {
+  buildAvailabilityPayload,
   buildCreatePayload,
   buildLocationPayload,
+  buildMultiEnumPayload,
+  buildPricingPayload,
   buildUpdatePayload,
   findResumableDraft,
   listingIdFromResponse,
+  readAvailabilityEntries,
+  readMultiEnum,
+  readPriceDollars,
   readStep1Values,
   readStep2Values,
 } from './listingContract';
@@ -26,6 +34,11 @@ import OnboardingShell from './OnboardingShell';
 import WelcomeScreen from './screens/WelcomeScreen';
 import AboutScreen from './screens/AboutScreen';
 import LocationScreen from './screens/LocationScreen';
+import MultiSelectScreen from './screens/MultiSelectScreen';
+import PhotosScreen from './screens/PhotosScreen';
+import PricingScreen from './screens/PricingScreen';
+import AvailabilityScreen from './screens/AvailabilityScreen';
+import ReviewScreen from './screens/ReviewScreen';
 import { canWritePreviewData, hasPreviewAccess } from './previewAccess';
 import { STEPS, WELCOME, stepIndexById } from './onboardingSteps';
 import css from './HostOnboardingPage.module.css';
@@ -54,7 +67,21 @@ const { UUID } = sdkTypes;
 const DRAFT_PARAM = 'draft';
 
 // Steps with a real screen behind them. Grows as each batch lands.
-const IMPLEMENTED_STEPS = ['about', 'location'];
+const IMPLEMENTED_STEPS = [
+  'about',
+  'location',
+  'features',
+  'rules',
+  'photos',
+  'pricing',
+  'availability',
+  'review',
+];
+
+// Guest fee, shown to hosts on the pricing step. Kept as a named constant so it
+// is obvious this must track the checkout line items - a stale multiplier here
+// once showed a host $77/hr on an $80.50 booking.
+const GUEST_FEE_PERCENT = 15;
 
 // Step 1 now persists. Enabled only after the write path was proven end to end
 // against the :4000 validation image — a real draft created, updated in place,
@@ -69,7 +96,21 @@ export const HostOnboardingPageComponent = (props) => {
     onUpdateListing,
     onShowListing,
     onQueryOwnDrafts,
+    onUploadImage,
+    onPublishDraft,
+    listingFields,
   } = props;
+
+  // Options come from the hosted config, never a hardcoded list, so the flow can
+  // only ever offer values the marketplace actually accepts.
+  const optionsFor = (key) => (listingFields || []).find((f) => f.key === key)?.enumOptions || [];
+
+  // The host's own zone, which is what "9am" means to them. The existing wizard
+  // does the same rather than assuming marketplace time.
+  const timezone =
+    typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : 'America/New_York';
 
   // The gate is deliberately post-mount. hasPreviewAccess() reads sessionStorage
   // and the query string, so it can only ever answer false on the server — which
@@ -105,6 +146,13 @@ export const HostOnboardingPageComponent = (props) => {
   // the text the host typed.
   const [locationValue, setLocationValue] = useState(null);
   const [building, setBuilding] = useState('');
+  const [features, setFeatures] = useState([]);
+  const [rules, setRules] = useState([]);
+  const [priceDollars, setPriceDollars] = useState('');
+  const [photos, setPhotos] = useState([]);
+  const [days, setDays] = useState([]);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('20:00');
 
   const canWrite = PERSISTENCE_ENABLED && canWritePreviewData(currentUserId);
 
@@ -165,6 +213,15 @@ export const HostOnboardingPageComponent = (props) => {
       const listing = response?.data?.data;
       if (listing) {
         setValues(readStep1Values(listing));
+        setFeatures(readMultiEnum(listing, 'poolAmenities'));
+        setRules(readMultiEnum(listing, 'houseRules'));
+        setPriceDollars(readPriceDollars(listing));
+        const entries = readAvailabilityEntries(listing);
+        if (entries.length > 0) {
+          setDays(entries.map((e) => e.dayOfWeek));
+          setStartTime(entries[0].startTime);
+          setEndTime(entries[0].endTime);
+        }
         const step2 = readStep2Values(listing);
         setBuilding(step2.building);
         if (step2.hasLocation && step2.address) {
@@ -237,7 +294,74 @@ export const HostOnboardingPageComponent = (props) => {
 
   const saveAbout = () => saveStep((id) => buildUpdatePayload(id, values), 'location');
   const saveLocation = () =>
-    saveStep((id) => buildLocationPayload(id, locationValue?.selectedPlace, building), null);
+    saveStep((id) => buildLocationPayload(id, locationValue?.selectedPlace, building), 'features');
+
+  const saveFeatures = () =>
+    saveStep((id) => buildMultiEnumPayload(id, 'poolAmenities', features), 'rules');
+
+  const saveRules = () =>
+    saveStep((id) => buildMultiEnumPayload(id, 'houseRules', rules), 'photos');
+
+  const savePhotos = () =>
+    saveStep(
+      (id) => ({
+        id: new UUID(id),
+        images: photos.filter((p) => p.status === 'done').map((p) => new UUID(p.imageId)),
+      }),
+      'pricing'
+    );
+
+  const savePricing = () => saveStep((id) => buildPricingPayload(id, priceDollars), 'availability');
+
+  const saveAvailability = () =>
+    saveStep(
+      (id) =>
+        buildAvailabilityPayload(
+          id,
+          days.map((d) => ({ dayOfWeek: d, seats: 1, startTime, endTime })),
+          timezone
+        ),
+      'review'
+    );
+
+  const toggleIn = (list, setList) => (key) =>
+    setList(list.includes(key) ? list.filter((k) => k !== key) : [...list, key]);
+
+  // Uploads run per file so one failure costs that photo, not the batch.
+  const handleFilesPicked = (fileList) => {
+    Array.from(fileList || []).forEach((file, i) => {
+      const key = `${Date.now()}-${i}-${file.name}`;
+      setPhotos((prev) => [...prev, { key, status: 'uploading', url: URL.createObjectURL(file) }]);
+      onUploadImage({ id: key, file }).then((action) => {
+        const imageId = action?.payload?.data?.imageId?.uuid;
+        setPhotos((prev) =>
+          prev.map((p) =>
+            p.key === key ? { ...p, status: imageId ? 'done' : 'error', imageId } : p
+          )
+        );
+      });
+    });
+  };
+
+  const publish = async () => {
+    if (!draftId || savingRef.current) {
+      return;
+    }
+    savingRef.current = true;
+    setSaveState('saving');
+    try {
+      const response = await onPublishDraft(new UUID(draftId));
+      if (listingIdFromResponse(response)) {
+        setSaveState('saved');
+      } else {
+        setSaveState('error');
+      }
+    } catch (e) {
+      setSaveState('error');
+    } finally {
+      savingRef.current = false;
+    }
+  };
 
   const allowed = mounted && hasPreviewAccess();
 
@@ -250,8 +374,41 @@ export const HostOnboardingPageComponent = (props) => {
     );
   } else if (allowed) {
     const step = STEPS.find((st) => st.id === screen);
-    const stepScreen =
-      screen === 'location' ? (
+    const readyPhotos = photos.filter((p) => p.status === 'done');
+
+    const summary = {
+      title: values.title,
+      location: locationValue?.selectedPlace?.address,
+      features: features.length ? `${features.length} selected` : '',
+      rules: rules.length ? `${rules.length} selected` : '',
+      photos: readyPhotos.length
+        ? `${readyPhotos.length} photo${readyPhotos.length > 1 ? 's' : ''}`
+        : '',
+      price: priceDollars ? `$${priceDollars}/hr` : '',
+      availability: days.length ? `${days.length} day${days.length > 1 ? 's' : ''} a week` : '',
+    };
+
+    // Only the things Sharetribe genuinely requires to publish. Features and
+    // rules are optional and must not block a host from going live.
+    const missing = [
+      !values.title || !values.description ? 'name and description' : null,
+      !locationValue?.selectedPlace?.origin ? 'address' : null,
+      readyPhotos.length === 0 ? 'a photo' : null,
+      !priceDollars ? 'an hourly rate' : null,
+    ].filter(Boolean);
+
+    const screens = {
+      about: (
+        <AboutScreen
+          values={values}
+          onChange={patchValues}
+          onContinue={saveAbout}
+          onBack={() => goTo(null)}
+          readOnly={!canWrite}
+          saveState={saveState}
+        />
+      ),
+      location: (
         <LocationScreen
           value={locationValue}
           onChange={setLocationValue}
@@ -261,16 +418,77 @@ export const HostOnboardingPageComponent = (props) => {
           onBack={() => goTo('about')}
           saveState={saveState}
         />
-      ) : (
-        <AboutScreen
-          values={values}
-          onChange={patchValues}
-          onContinue={saveAbout}
-          onBack={() => goTo(null)}
-          readOnly={!canWrite}
+      ),
+      features: (
+        <MultiSelectScreen
+          options={optionsFor('poolAmenities')}
+          selected={features}
+          onToggle={toggleIn(features, setFeatures)}
+          onContinue={saveFeatures}
+          onBack={() => goTo('location')}
+          emptyHint="Pick everything that applies - these are what guests filter on."
           saveState={saveState}
         />
-      );
+      ),
+      rules: (
+        <MultiSelectScreen
+          options={optionsFor('houseRules')}
+          selected={rules}
+          onToggle={toggleIn(rules, setRules)}
+          onContinue={saveRules}
+          onBack={() => goTo('features')}
+          emptyHint="Leave blank if you'd rather talk it through with guests."
+          saveState={saveState}
+        />
+      ),
+      photos: (
+        <PhotosScreen
+          photos={photos}
+          onFilesPicked={handleFilesPicked}
+          onRemove={(key) => setPhotos((prev) => prev.filter((x) => x.key !== key))}
+          onContinue={savePhotos}
+          onBack={() => goTo('rules')}
+          saveState={saveState}
+        />
+      ),
+      pricing: (
+        <PricingScreen
+          value={priceDollars}
+          onChange={setPriceDollars}
+          guestFeePercent={GUEST_FEE_PERCENT}
+          onContinue={savePricing}
+          onBack={() => goTo('photos')}
+          saveState={saveState}
+        />
+      ),
+      availability: (
+        <AvailabilityScreen
+          days={days}
+          onToggleDay={toggleIn(days, setDays)}
+          startTime={startTime}
+          endTime={endTime}
+          onStartChange={setStartTime}
+          onEndChange={setEndTime}
+          timezone={timezone}
+          onContinue={saveAvailability}
+          onBack={() => goTo('pricing')}
+          saveState={saveState}
+        />
+      ),
+      review: (
+        <ReviewScreen
+          summary={summary}
+          missing={missing}
+          stripeConnected={false}
+          onPublish={publish}
+          onEditStep={(id) => goTo(id)}
+          onBack={() => goTo('availability')}
+          saveState={saveState}
+        />
+      ),
+    };
+
+    const stepScreen = screens[screen] || screens.about;
 
     body = (
       <div className={css.root}>
@@ -329,13 +547,15 @@ const mapDispatchToProps = (dispatch) => ({
   onUpdateListing: (data, config) => dispatch(requestUpdateListing('details', data, config)),
   onShowListing: (payload, config) => dispatch(requestShowListing(payload, config)),
   onQueryOwnDrafts: () => dispatch(queryOwnDrafts()),
+  onUploadImage: (payload, config) => dispatch(requestImageUpload(payload, config)),
+  onPublishDraft: (id) => dispatch(requestPublishListingDraft(id)),
 });
 
 const HostOnboardingPageWithConfig = (props) => {
   // The thunks need the marketplace config for image variants; the container is
   // rendered inside the configuration provider, so read it here and bind it once
   // rather than making each call site remember to supply it.
-  const { onCreateDraft, onUpdateListing, onShowListing } = props;
+  const { onCreateDraft, onUpdateListing, onShowListing, onUploadImage } = props;
   const config = useConfiguration();
   return (
     <HostOnboardingPageComponent
@@ -343,6 +563,8 @@ const HostOnboardingPageWithConfig = (props) => {
       onCreateDraft={(data) => onCreateDraft(data, config)}
       onUpdateListing={(data) => onUpdateListing(data, config)}
       onShowListing={(payload) => onShowListing(payload, config)}
+      onUploadImage={(payload) => onUploadImage(payload, config.layout.listingImage)}
+      listingFields={config.listing.listingFields}
     />
   );
 };

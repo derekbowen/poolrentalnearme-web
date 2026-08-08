@@ -1,7 +1,7 @@
 import { types as sdkTypes } from '../../util/sdkLoader';
 import { splitAddressForPrivacy } from '../../util/address';
 
-const { UUID } = sdkTypes;
+const { UUID, Money } = sdkTypes;
 
 /**
  * The listing-type contract every draft created by this flow must satisfy.
@@ -153,6 +153,80 @@ export const readStep2Values = (listing) => {
     hasLocation: !!attrs.geolocation,
   };
 };
+
+/**
+ * Payload for a multi-enum step (features, rules).
+ *
+ * The chosen keys are written straight into publicData under the field's own
+ * key, which is how the existing wizard stores them — so the same filters, the
+ * same listing page sections and the same mobile app rendering pick them up
+ * with no extra mapping.
+ *
+ * @param {string} draftId
+ * @param {string} fieldKey e.g. 'poolAmenities'
+ * @param {Array<string>} selected enum option keys
+ */
+export const buildMultiEnumPayload = (draftId, fieldKey, selected) => ({
+  id: new UUID(draftId),
+  publicData: { [fieldKey]: selected || [] },
+});
+
+/**
+ * Payload for the pricing step.
+ *
+ * `price` is a Money instance in SUBUNITS — 7900 is $79.00. Passing dollars here
+ * would silently price a pool at 79 cents an hour, so the conversion happens in
+ * exactly one place.
+ *
+ * @param {string} draftId
+ * @param {number} dollars whole-dollar hourly rate as typed by the host
+ */
+export const buildPricingPayload = (draftId, dollars) => ({
+  id: new UUID(draftId),
+  price: new Money(Math.round(Number(dollars) * 100), 'USD'),
+});
+
+/**
+ * Payload for the availability step.
+ *
+ * Entries are the recurring weekly plan the existing wizard writes. An empty
+ * entry list is legal and means "not bookable yet" — which is what a listing
+ * should be until the host has actually chosen hours.
+ *
+ * @param {string} draftId
+ * @param {Array} entries availability plan entries
+ * @param {string} timezone IANA zone
+ */
+export const buildAvailabilityPayload = (draftId, entries, timezone) => ({
+  id: new UUID(draftId),
+  availabilityPlan: {
+    type: 'availability-plan/time',
+    timezone,
+    entries: entries || [],
+  },
+});
+
+/**
+ * Read a multi-enum field back off a listing, for resume.
+ */
+export const readMultiEnum = (listing, fieldKey) => {
+  const pd = listing?.attributes?.publicData || {};
+  return Array.isArray(pd[fieldKey]) ? pd[fieldKey] : [];
+};
+
+/**
+ * Read the hourly rate back as whole dollars, for resume.
+ */
+export const readPriceDollars = (listing) => {
+  const amount = listing?.attributes?.price?.amount;
+  return typeof amount === 'number' ? String(amount / 100) : '';
+};
+
+/**
+ * Read the weekly availability entries back, for resume.
+ */
+export const readAvailabilityEntries = (listing) =>
+  listing?.attributes?.availabilityPlan?.entries || [];
 
 /**
  * Pull the persisted Step 1 values back off a listing entity, for resume.

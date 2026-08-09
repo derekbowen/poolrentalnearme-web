@@ -35,10 +35,17 @@ const getTouchCoordinates = (nativeEvent) => {
 
 // Get correct geocoding variant: geocoderGoogleMaps or geocoderMapbox
 const getGeocoderVariant = (mapProvider) => {
-  // c133: Google billing is disabled (REQUEST_DENIED on every lookup) and no Mapbox
-  // token exists, so both stock geocoders are dead. Use the keyless Census-backed
-  // geocoder (US street addresses) until a paid provider is enabled; then delete
-  // this early return.
+  // The c133 note here claimed "Google billing is disabled (REQUEST_DENIED on
+  // every lookup)". That was a misdiagnosis, verified 2026-08-08 against the
+  // live key: Geocoding API returns OK and legacy Places Autocomplete returns
+  // OK with predictions. The only thing actually disabled on the project is
+  // Places API (NEW), which is a separate product and 403s — that is the error
+  // c133 saw. geocoderGoogleMaps below uses the LEGACY endpoints, which work.
+  //
+  // Switching back is therefore a real option and should be its own change with
+  // its own test, since the JS SDK's places library is a third enablement again.
+  // Until then we stay on the Census geocoder, which no longer mangles its
+  // response shape (see GeocoderCensus.getPlaceDetails).
   return geocoderCensus;
   const isGoogleMapsInUse = mapProvider === 'googleMaps';
 

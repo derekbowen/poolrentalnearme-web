@@ -58,29 +58,36 @@ class GeocoderCensus {
     return prediction.place_name;
   }
 
+  /**
+   * Resolves to the place ITSELF - { address, origin, bounds } - and not to a
+   * wrapper around it.
+   *
+   * This previously resolved to { id, predictionPlace, place: {...} }. The
+   * caller does `search: place.address` and `selectedPlace: place`
+   * (LocationAutocompleteInputImpl:325), so the wrapper made `search`
+   * undefined and left `selectedPlace` with no `origin`. The visible result was
+   * that picking an address from the dropdown BLANKED the field and left the
+   * form insisting you pick one — on every host-facing address field on the
+   * site, including the listing wizard, since c133.
+   *
+   * Both stock geocoders (GeocoderGoogleMaps:96, GeocoderMapbox:159) resolve
+   * flat. This now matches them.
+   */
   getPlaceDetails(prediction, currentLocationBoundsDistance) {
     if (this.getPredictionId(prediction) === CURRENT_LOCATION_ID) {
       return userLocation().then(latlng => {
         return {
-          id: CURRENT_LOCATION_ID,
-          predictionPlace: {},
-          place: {
-            address: '',
-            origin: latlng,
-            bounds: locationBounds(latlng, currentLocationBoundsDistance || 2000),
-          },
+          address: '',
+          origin: latlng,
+          bounds: locationBounds(latlng, currentLocationBoundsDistance || 2000),
         };
       });
     }
     const origin = placeOrigin(prediction);
     return Promise.resolve({
-      id: this.getPredictionId(prediction),
-      predictionPlace: {},
-      place: {
-        address: this.getPredictionAddress(prediction),
-        origin,
-        bounds: locationBounds(origin, GENERATED_BOUNDS_DEFAULT_DISTANCE),
-      },
+      address: this.getPredictionAddress(prediction),
+      origin,
+      bounds: locationBounds(origin, GENERATED_BOUNDS_DEFAULT_DISTANCE),
     });
   }
 }

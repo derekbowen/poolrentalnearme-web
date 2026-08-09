@@ -334,9 +334,17 @@ export const HostOnboardingPageComponent = (props) => {
       setPhotos((prev) => [...prev, { key, status: 'uploading', url: URL.createObjectURL(file) }]);
       onUploadImage({ id: key, file }).then((action) => {
         const imageId = action?.payload?.data?.imageId?.uuid;
+        // Surface WHY it failed. The duck resolves with an error action rather
+        // than rejecting, and it attaches fileInfo (type|name|size) to the error
+        // — without showing that, a failed upload is an unexplained red box and
+        // neither the host nor we can tell a 413 from an auth problem.
+        const err = action?.error ? action?.payload?.error : null;
+        const detail = err
+          ? [err.status, err.statusText, err.message, err.fileInfo].filter(Boolean).join(' · ')
+          : null;
         setPhotos((prev) =>
           prev.map((p) =>
-            p.key === key ? { ...p, status: imageId ? 'done' : 'error', imageId } : p
+            p.key === key ? { ...p, status: imageId ? 'done' : 'error', imageId, error: detail } : p
           )
         );
       });

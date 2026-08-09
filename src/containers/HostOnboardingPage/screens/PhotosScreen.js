@@ -56,7 +56,11 @@ const PhotosScreen = (props) => {
           <li key={p.key} className={css.photoCell}>
             {p.url ? <img src={p.url} alt="" className={css.photoThumb} /> : null}
             {p.status === 'uploading' ? <span className={css.photoState}>Uploading…</span> : null}
-            {p.status === 'error' ? <span className={css.photoStateBad}>Failed</span> : null}
+            {p.status === 'error' ? (
+              <span className={css.photoStateBad} title={p.error || 'Upload failed'}>
+                Failed
+              </span>
+            ) : null}
             {i === 0 && p.status === 'done' ? <span className={css.coverBadge}>Cover</span> : null}
             <button
               type="button"
@@ -92,6 +96,13 @@ const PhotosScreen = (props) => {
           e.target.value = '';
         }}
       />
+
+      {photos.some((p) => p.status === 'error') ? (
+        <p className={css.saveError}>
+          {photos.find((p) => p.status === 'error' && p.error)?.error ||
+            'Those photos didn\u2019t upload. Try again, or try one at a time.'}
+        </p>
+      ) : null}
 
       <p className={css.hint}>
         One photo is enough to publish. The first one is what guests see first &mdash; lead with the

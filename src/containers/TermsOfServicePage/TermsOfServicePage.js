@@ -18,7 +18,7 @@ const PAGE_TITLE = 'Terms of Service | Pool Rental Marketplace Agreement & Pool 
 const PAGE_DESCRIPTION =
   'Review the Terms of Service for our pool rental marketplace. This agreement covers pool rental, pool sharing, and booking procedures to ensure a safe and smooth experience for both pool hosts and customers.';
 const CANONICAL_URL = 'https://www.poolrentalnearme.com/terms-of-service';
-const VERSION_LINE = 'Version 2026.1 — Effective May 6, 2026';
+const VERSION_LINE = 'Version 2026.2 — Effective May 6, 2026 · Updated August 10, 2026';
 
 // --- Content-only component (used in signup/login modals). Behavior unchanged:
 // still renders the Console-hosted asset passed in by AuthenticationPage. ---

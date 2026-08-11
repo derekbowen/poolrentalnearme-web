@@ -58,19 +58,14 @@ const PriceMaybe = (props) => {
   const isBookable = isBookingProcessAlias(publicData?.transactionProcessAlias);
   const { formattedPrice, priceTitle } = priceData(priceWithBookingFee(price), config.currency, intl);
 
-  const shortenUnitType = (unitType) => {
-    switch (unitType) {
-      case 'hour':
-        return 'hr';
-      default:
-        return unitType;
-    }
-  };
-
   const priceValue = <span className={css.priceValue}>{formattedPrice}</span>;
+  // Pass the RAW unitType through: the perUnit message selects on the full word
+  // ("hour"), and the display short form ("/hr") lives inside the translation.
+  // (Previously we shortened to "hr" here, which fell through to the empty
+  // `other {}` branch and dropped the unit entirely — every card read bare.)
   const pricePerUnit = isBookable ? (
     <span className={css.perUnit}>
-      <FormattedMessage id="ListingCard.perUnit" values={{ unitType: shortenUnitType(publicData?.unitType) }} />
+      <FormattedMessage id="ListingCard.perUnit" values={{ unitType: publicData?.unitType }} />
     </span>
   ) : (
     ''

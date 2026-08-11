@@ -43,11 +43,13 @@
   position: absolute;
   height: max-content;
   z-index: 1;
-  /* Charcoal price pill (our current brand pill color), bottom-left on the photo */
-  background-color: #1f1f1d;
+  /* Clean white price pill, bottom-left on the photo. Soft shadow keeps it
+     legible over any image without the heavy black slab. */
+  background-color: var(--colorWhite);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   transition: all 0.2s ease-in-out;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
   bottom: 10px;
   left: 10px;
@@ -58,14 +60,15 @@
 
 .priceValue {
   font-weight: var(--fontWeightBold);
-  color: var(--colorWhite);
+  color: var(--colorGrey700);
   font-size: 18px;
 }
 
 .perUnit {
-  font-weight: var(--fontWeightBold);
-  color: var(--colorWhite);
-  font-size: 18px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey700);
+  font-size: 14px;
+  margin-left: 1px;
 }
 
 .mainInfo {

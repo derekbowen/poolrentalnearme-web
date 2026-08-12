@@ -58,8 +58,13 @@ class SearchMapPriceLabel extends Component {
         ? allInPrice.currency
         : null;
 
+    // Hourly listings label as "$52/hr" on the map pin, matching the search cards.
+    const unitSuffix = publicData?.unitType === 'hour' ? '/hr' : '';
     const priceValue = formattedPrice
-      ? intl.formatMessage({ id: 'SearchMapPriceLabel.price' }, { priceValue: formattedPrice })
+      ? intl.formatMessage(
+          { id: 'SearchMapPriceLabel.price' },
+          { priceValue: formattedPrice + unitSuffix }
+        )
       : null;
 
     const validListingTypes = config.listing.listingTypes;

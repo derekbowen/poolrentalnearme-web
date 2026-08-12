@@ -30,6 +30,7 @@ const additionalChargeInitiate = require('./api/additional-charge-initiate');
 const additionalChargeConfirm = require('./api/additional-charge-confirm');
 const payouts = require('./api/payouts');
 const notifySignup = require('./api/notify-signup');
+const wizardLog = require('./api/wizard-log');
 const listingBookedDates = require('./api/listing-booked-dates');
 const icalFeed = require('./api/ical-feed');
 const icalLink = require('./api/ical-link');
@@ -101,6 +102,9 @@ router.get('/payouts/summary', payouts.summary);
 router.get('/payouts/list', payouts.list);
 router.get('/payouts/activity', payouts.activity);
 router.post('/notify-signup', bodyParser.json({ limit: '2kb' }), notifySignup);
+// Listing-wizard client-error beacon (uploads go browser->Sharetribe, so
+// failures are invisible server-side without this). grep WIZARD_LOG.
+router.post('/wizard-log', bodyParser.json({ limit: '4kb' }), wizardLog);
 
 // Host calendar: booked-date markers + per-day closed/hours enforcement.
 router.post('/listing-booked-dates', bodyParser.json({ limit: '2kb' }), listingBookedDates);

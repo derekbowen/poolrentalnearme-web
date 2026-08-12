@@ -780,6 +780,25 @@ export function requestImageUpload(actionPayload, listingImageConfig) {
         } catch (ignored) {
           // best-effort only
         }
+        // Beacon the failure to the server so support can see WHY a host's
+        // photos "won't upload" (docker logs | grep WIZARD_LOG). Fire-and-forget.
+        try {
+          if (typeof window !== 'undefined' && window.fetch) {
+            window
+              .fetch('/api/wizard-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  evt: 'image_upload_error',
+                  message: `${(e && e.status) || ''} ${(e && e.message) || ''}`.trim(),
+                  meta: err.fileInfo || '',
+                }),
+              })
+              .catch(() => null);
+          }
+        } catch (ignored2) {
+          // logging must never break the wizard
+        }
         return dispatch(uploadImageError({ id, error: err }));
       });
   };

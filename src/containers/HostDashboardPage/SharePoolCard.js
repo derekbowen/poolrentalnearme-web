@@ -72,6 +72,7 @@ const SharePoolCard = ({ pools = [], totalHearts = 0 }) => {
   const [edited, setEdited] = useState({}); // listingId -> caption
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   const pool = published[Math.min(idx, published.length - 1)];
   const listingId = pool?.id?.uuid;
@@ -79,6 +80,17 @@ const SharePoolCard = ({ pools = [], totalHearts = 0 }) => {
   const caption = listingId && edited[listingId] != null ? edited[listingId] : defaultCaption(pool);
   const fullPost = `${caption}\n${url}`;
   const photo = poolImg(pool);
+
+  // c180: "put your pool on your website" embed. The href goes DIRECT to the
+  // listing on www (not the /go/ redirect) because the badge's second job is a
+  // real backlink to our domain; ?src=host-badge keeps clicks countable in logs
+  // without routing link equity through the shortener.
+  const listingUrl = listingId
+    ? `https://www.poolrentalnearme.com/l/${slugify(pool?.attributes?.title)}/${listingId}?src=host-badge`
+    : null;
+  const embedCode = listingUrl
+    ? `<a href="${listingUrl}" style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:#009ed8;color:#ffffff;font:600 15px/1.2 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;border-radius:999px;text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,.15)">\u{1F3CA} Book my pool \u2014 by the hour</a>`
+    : null;
 
   const flash = setter => {
     setter(true);
@@ -88,6 +100,11 @@ const SharePoolCard = ({ pools = [], totalHearts = 0 }) => {
   const copyPost = () => {
     if (!navigator.clipboard) return;
     navigator.clipboard.writeText(fullPost).then(() => flash(setCopied), () => {});
+  };
+
+  const copyEmbed = () => {
+    if (!navigator.clipboard || !embedCode) return;
+    navigator.clipboard.writeText(embedCode).then(() => flash(setEmbedCopied), () => {});
   };
 
   // Facebook strips any caption you pass it, so put the words on the clipboard
@@ -200,6 +217,66 @@ const SharePoolCard = ({ pools = [], totalHearts = 0 }) => {
         Posting to Instagram? Tap <strong>Copy post</strong>, then <strong>Open photo</strong> and
         press and hold it to save.
       </p>
+
+      {embedCode ? (
+        <div
+          style={{
+            marginTop: 18,
+            paddingTop: 16,
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>
+            Got a website? Put your pool on it {'\u{1F310}'}
+          </h3>
+          <p className={css.cardHint} style={{ marginTop: 0 }}>
+            Paste this button anywhere on your site &mdash; guests click straight through to
+            your booking page. It looks like this:
+          </p>
+          <div style={{ margin: '10px 0' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '11px 20px',
+                background: '#009ed8',
+                color: '#ffffff',
+                font: "600 15px/1.2 -apple-system,'Segoe UI',Roboto,Arial,sans-serif",
+                borderRadius: 999,
+                boxShadow: '0 1px 4px rgba(0,0,0,.15)',
+              }}
+            >
+              {'\u{1F3CA}'} Book my pool &mdash; by the hour
+            </span>
+          </div>
+          <textarea
+            readOnly
+            value={embedCode}
+            rows={3}
+            aria-label="Embed code for your website"
+            onFocus={e => e.target.select()}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              font: "12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace",
+              padding: 10,
+              borderRadius: 10,
+              border: '1px solid rgba(0,0,0,0.15)',
+              background: 'rgba(255,255,255,0.7)',
+              resize: 'none',
+            }}
+          />
+          <div className={css.pillRow} style={{ marginTop: 8 }}>
+            <button type="button" className={css.pillSolid} onClick={copyEmbed}>
+              {embedCopied ? 'Copied! \u{1F517}' : 'Copy embed code'}
+            </button>
+          </div>
+          <p className={css.cardHint} style={{ marginTop: 8 }}>
+            Works on Wix, Squarespace, WordPress, GoDaddy &mdash; anywhere you can paste HTML.
+          </p>
+        </div>
+      ) : null}
 
       {totalHearts > 0 ? (
         <div className={css.heartsRow} style={{ marginTop: 16 }}>

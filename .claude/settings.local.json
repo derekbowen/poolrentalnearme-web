@@ -30,7 +30,7 @@
       "Bash(ls .env.*)",
       "Bash(git check-ignore:*)",
       "Bash(git add:*)",
-      "Bash(python3 ssm_runx.py w_nicole_fix.py)"
+      "Bash(python3 ssm_runx.py:*)"
     ]
   }
 }

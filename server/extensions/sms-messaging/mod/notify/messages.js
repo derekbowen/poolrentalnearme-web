@@ -29,8 +29,11 @@ const clip = (s, n) => {
 
 // kind → (ctx) => string. ctx: { listing, booking, txId, guestName, hostName, snippet }
 const TEMPLATES = {
+  // The payout leads the message on purpose: hosts kept replying "I don't see
+  // the price" because the amount only ever appeared on the sale page. `payout`
+  // is absent until payment is confirmed, hence the guard.
   HOST_NEW_REQUEST: c =>
-    `🏊 New booking request for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}`,
+    `🏊 New booking${c.payout ? ` — you earn ${c.payout}` : ''} for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}`,
 
   // Fires ONLY for message-less inquiries (poller skips it when the inquiry
   // carried a message — the 💬 NEW_MESSAGE text covers that case).
@@ -38,7 +41,7 @@ const TEMPLATES = {
     `🏊 ${c.guestName || 'A guest'} is interested in ${clip(c.listing, 40)} — they sent an inquiry without a message. Say hi and win the booking: ${saleLink(c.txId)}`,
 
   HOST_EXPIRING_SOON: c =>
-    `⏰ Heads up — your booking request for ${clip(c.listing, 40)} expires in ~3 hrs. Accept or decline: ${saleLink(c.txId)}`,
+    `⏰ Heads up — your${c.payout ? ` ${c.payout}` : ''} booking request for ${clip(c.listing, 40)} expires in ~3 hrs. Accept or decline: ${saleLink(c.txId)}`,
 
   HOST_CANCELLED: c =>
     `❌ ${c.guestName || 'Your guest'} cancelled the booking for ${clip(c.listing, 40)} (${when(c.booking, c.tz)}).`,

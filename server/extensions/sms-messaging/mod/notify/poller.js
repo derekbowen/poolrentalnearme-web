@@ -106,6 +106,11 @@ const ctxFrom = r => {
     txId: r.txId,
     guestName: r.customer?.attributes?.profile?.firstName || '',
     hostName: r.provider?.attributes?.profile?.firstName || '',
+    // What the HOST actually banks (guest fee excluded). Absent before payment
+    // is confirmed, so every template that uses it must guard on it. Hosts were
+    // texted "new booking request" with no dollar figure anywhere, had to hunt
+    // for the sale page to find it, and at least one booking expired unanswered.
+    payout: fmtUsd(r.tx?.attributes?.payoutTotal?.amount),
     // Present only on offer transitions; templates guard on it.
     offerAmount: offer ? fmtUsd(offer.negotiatedPriceCents) : '',
   };

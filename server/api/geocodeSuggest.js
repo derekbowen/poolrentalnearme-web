@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({ predictions });
   } catch (e) {
     // Census upstream hiccup: still try the place fallback before giving up.
-    const placePredictions = await nominatimFallback(q).catch(() => []);
+    const placePredictions = await nominatimFallback(q, 'us,ca').catch(() => []);
     return res.status(200).json({ predictions: placePredictions });
   }
 };

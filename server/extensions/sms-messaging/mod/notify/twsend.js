@@ -7,7 +7,7 @@ const { senderPhoneNumber } = require('extensions/common/config/sms');
 
 const MSID = process.env.TWILIO_MESSAGING_SERVICE_SID;
 
-const twsend = async ({ body, phoneNumber }) => {
+const twsend = async ({ body, phoneNumber, mediaUrls }) => {
   if (!body || !phoneNumber) return null;
   // Platform SMS is US-only (US 10DLC sender). International numbers must not
   // generate doomed Twilio sends - callers already treat null as 'not sent'.
@@ -17,6 +17,10 @@ const twsend = async ({ body, phoneNumber }) => {
   const opts = MSID
     ? { body, to: phoneNumber, messagingServiceSid: MSID }
     : { body, to: phoneNumber, from: senderPhoneNumber };
+  // Twilio caps MMS at 10 media per message.
+  if (Array.isArray(mediaUrls) && mediaUrls.length) {
+    opts.mediaUrl = mediaUrls.slice(0, 10);
+  }
   return twilioClient.messages.create(opts);
 };
 

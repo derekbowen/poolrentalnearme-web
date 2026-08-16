@@ -58,9 +58,13 @@ const verifyTwilioSignature = (req, res, next) => {
 
 // Forward a genuine (non-command) reply to the host's assigned queue owner
 // (Derek or Brandon) + log it. Never throws; routing falls back to Derek.
-const forwardReply = async (from, raw) => {
+// mediaUrls: Twilio-hosted MMS media from the sender — forwarded as real MMS so
+// a photo-only message (empty Body) is never dropped again (Rosaria sent 8 pool
+// photos on 2026-07-28 and they sat unseen for 19 days).
+const forwardReply = async (from, raw, mediaUrls = []) => {
   try {
-    await store.logInboundReply({ phone: from, token: raw.slice(0, 300), status: 'campaign_reply' });
+    const note = mediaUrls.length ? `[${mediaUrls.length} photo${mediaUrls.length > 1 ? 's' : ''}] ` : '';
+    await store.logInboundReply({ phone: from, token: (note + raw).slice(0, 300), status: 'campaign_reply' });
   } catch (e) {
     /* audit best-effort */
   }
@@ -80,7 +84,12 @@ const forwardReply = async (from, raw) => {
       /* resolveTarget never throws, but if it ever did: Derek */
     }
     if (fc.count <= FLOOD_MAX) {
-      await twsend({ phoneNumber: target.to, body: `PRNM reply [${target.label}] — ${name} ${from}: ${raw.slice(0, 400)}` });
+      const note = mediaUrls.length ? ` [${mediaUrls.length} photo${mediaUrls.length > 1 ? 's' : ''} attached]` : '';
+      await twsend({
+        phoneNumber: target.to,
+        body: `PRNM reply [${target.label}] — ${name} ${from}:${note} ${raw.slice(0, 400)}`,
+        mediaUrls,
+      });
     } else if (!fc.notified) {
       fc.notified = true;
       await twsend({ phoneNumber: target.to, body: `PRNM reply [${target.label}] — …more from ${name} ${from} (further replies this window suppressed)` });
@@ -93,6 +102,14 @@ const forwardReply = async (from, raw) => {
 const handler = async (req, res) => {
   const from = (req.body?.From || '').trim();
   const raw = (req.body?.Body || '').trim();
+  // MMS: Twilio posts NumMedia + MediaUrl0..N. A photo-only message has an
+  // empty Body, so media must count as content or the message vanishes.
+  const numMedia = parseInt(req.body?.NumMedia || '0', 10) || 0;
+  const mediaUrls = [];
+  for (let i = 0; i < numMedia && i < 10; i++) {
+    const u = req.body?.[`MediaUrl${i}`];
+    if (u) mediaUrls.push(u);
+  }
   const word = raw.toUpperCase().replace(/[^A-Z]/g, ''); // STOP/START/HELP/YES
   const digit = raw.replace(/[^0-9]/g, ''); // "1" accept / "2" decline
   res.set('Content-Type', 'text/xml');
@@ -123,9 +140,10 @@ const handler = async (req, res) => {
     console.error('[sms-inbound] error', e.message);
   }
   // Non-command inbound = a genuine reply → forward to Derek + log. (STOP/START/
-  // HELP/1/2/YES already returned above and are NOT forwarded.)
-  if (from && raw) {
-    await forwardReply(from, raw);
+  // HELP/1/2/YES already returned above and are NOT forwarded.) Media counts as
+  // content: a photo-only MMS must forward, not vanish.
+  if (from && (raw || mediaUrls.length)) {
+    await forwardReply(from, raw, mediaUrls);
   }
   return res.send(twiml(''));
 };

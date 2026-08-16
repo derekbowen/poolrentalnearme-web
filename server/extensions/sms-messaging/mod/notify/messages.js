@@ -33,7 +33,7 @@ const TEMPLATES = {
   // the price" because the amount only ever appeared on the sale page. `payout`
   // is absent until payment is confirmed, hence the guard.
   HOST_NEW_REQUEST: c =>
-    `🏊 New booking${c.payout ? ` — you earn ${c.payout}` : ''} for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}`,
+    `🏊 New booking${c.payout ? ` — you earn ${c.payout}` : ''} for ${clip(c.listing, 40)} — ${when(c.booking, c.tz)}. Guest already paid. Accept before it expires: ${saleLink(c.txId)}${c.emailUnverified ? ` ⚠️ First: verify your email (we sent you a link — check spam) or the Accept button won't work.` : ''}`,
 
   // Fires ONLY for message-less inquiries (poller skips it when the inquiry
   // carried a message — the 💬 NEW_MESSAGE text covers that case).

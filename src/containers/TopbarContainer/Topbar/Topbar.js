@@ -20,6 +20,7 @@ import { getSearchPageResourceLocatorStringParams } from '../../SearchPage/Searc
 
 import MenuIcon from './MenuIcon';
 import SearchIcon from './SearchIcon';
+import VerifyEmailBanner from './VerifyEmailBanner';
 import TopbarSearchForm from './TopbarSearchForm/TopbarSearchForm';
 import TopbarMobileMenu from './TopbarMobileMenu/TopbarMobileMenu';
 import TopbarDesktop from './TopbarDesktop/TopbarDesktop';
@@ -305,6 +306,13 @@ const TopbarComponent = (props) => {
         currentUser={currentUser}
         onLogout={handleLogout}
         currentPage={resolvedCurrentPage}
+      />
+      <VerifyEmailBanner
+        isAuthenticated={isAuthenticated}
+        currentUser={currentUser}
+        currentPage={resolvedCurrentPage}
+        onResendVerificationEmail={onResendVerificationEmail}
+        sendVerificationEmailInProgress={sendVerificationEmailInProgress}
       />
       <div className={classNames(mobileRootClassName || css.container, mobileClassName)}>
         <Button

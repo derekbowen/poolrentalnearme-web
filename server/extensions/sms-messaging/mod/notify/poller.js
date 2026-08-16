@@ -111,6 +111,10 @@ const ctxFrom = r => {
     // texted "new booking request" with no dollar figure anywhere, had to hunt
     // for the sale page to find it, and at least one booking expired unanswered.
     payout: fmtUsd(r.tx?.attributes?.payoutTotal?.amount),
+    // Sharetribe refuses the accept transition while the provider's email is
+    // unverified — a host with a paid request just sees a dead Accept button.
+    // Only host-facing templates use this flag.
+    emailUnverified: r.provider?.attributes?.emailVerified === false,
     // Present only on offer transitions; templates guard on it.
     offerAmount: offer ? fmtUsd(offer.negotiatedPriceCents) : '',
   };

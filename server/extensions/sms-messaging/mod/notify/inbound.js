@@ -32,6 +32,13 @@ try {
   CONTACTS = {};
 }
 const contactName = from => CONTACTS[from] || 'unknown';
+// VIP hosts: mark them by putting "(VIP)" in their campaign-contacts.json name.
+// A VIP always reaches Derek directly and is NEVER held back by the flood cap —
+// the cap silently swallowed a host's follow-up messages mid-conversation, which
+// is exactly the wrong behaviour for the handful of hosts who matter most.
+const isVip = from => /\(vip\)/i.test(CONTACTS[from] || '');
+// The "(VIP)" marker is routing metadata, not part of the person's name.
+const plainName = from => contactName(from).replace(/\s*\(VIP\)\s*/i, ' ').trim() || 'unknown';
 // Flood cap: forward up to FLOOD_MAX msgs per number per window, then one "…more" note.
 const FLOOD_MAX = 5;
 const FLOOD_WINDOW_MS = 30 * 60 * 1000;
@@ -76,14 +83,24 @@ const forwardReply = async (from, raw, mediaUrls = []) => {
       fwd.set(from, fc);
     }
     fc.count++;
-    const name = contactName(from);
+    const vip = isVip(from);
+    const name = vip ? plainName(from) : contactName(from);
     let target = { assignee: 'derek', to: FORWARD_TO, label: 'DEREK' };
-    try {
-      target = await routing.resolveTarget(from);
-    } catch (e) {
-      /* resolveTarget never throws, but if it ever did: Derek */
+    if (!vip) {
+      try {
+        target = await routing.resolveTarget(from);
+      } catch (e) {
+        /* resolveTarget never throws, but if it ever did: Derek */
+      }
     }
-    if (fc.count <= FLOOD_MAX) {
+    if (vip) {
+      const note = mediaUrls.length ? ` [${mediaUrls.length} photo${mediaUrls.length > 1 ? 's' : ''} attached]` : '';
+      await twsend({
+        phoneNumber: target.to,
+        body: `⭐ VIP — ${name} ${from}:${note} ${raw.slice(0, 400)}`,
+        mediaUrls,
+      });
+    } else if (fc.count <= FLOOD_MAX) {
       const note = mediaUrls.length ? ` [${mediaUrls.length} photo${mediaUrls.length > 1 ? 's' : ''} attached]` : '';
       await twsend({
         phoneNumber: target.to,

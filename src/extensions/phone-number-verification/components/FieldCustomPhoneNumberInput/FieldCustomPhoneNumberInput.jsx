@@ -3,7 +3,7 @@ import { Field } from 'react-final-form';
 import PhoneInput from 'react-phone-number-input';
 import { node, object, string, func } from 'prop-types';
 import { intlShape } from 'util/reactIntl';
-import { SUPPORTED_COUNTRY } from '../../config/configPhoneNumberVerification';
+import { SUPPORTED_COUNTRIES, SUPPORTED_COUNTRY } from '../../config/configPhoneNumberVerification';
 
 import 'react-phone-number-input/style.css';
 import css from './FieldCustomPhoneNumberInput.module.css';
@@ -20,7 +20,7 @@ const FieldCustomPhoneNumberInput = (props) => {
             {...input}
             id={id}
             international
-            countries={[SUPPORTED_COUNTRY]}
+            countries={SUPPORTED_COUNTRIES}
             defaultCountry={SUPPORTED_COUNTRY}
             placeholder={placeholder}
             limitMaxLength

@@ -12,32 +12,60 @@ const CENSUS_URL = 'https://geocoding.geo.census.gov/geocoder/locations/onelinea
 // 24h in-memory cache to keep request volume within OSM usage policy.
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_UA = 'PoolRentalNearMe/1.0 (support@poolrentalnearme.com)';
-const placeCache = new Map(); // qLower -> { at, predictions }
+const placeCache = new Map(); // cacheKey -> { at, predictions }
 const PLACE_TTL_MS = 24 * 3600 * 1000;
+
+// Canada launch: Census is US-only and fuzzy-matches across the border — a host
+// typing "100 King Street West Hamilton Ontario" was offered Hamilton, OHIO and
+// would have listed their pool in the wrong country. When the query names a
+// Canadian province, postal code or the country itself, skip Census entirely and
+// search Canada only. Everything else stays US-first, exactly as before.
+const CA_PROVINCES = 'ontario|quebec|british columbia|alberta|manitoba|saskatchewan|nova scotia|new brunswick|newfoundland|labrador|prince edward island|yukon|nunavut|northwest territories';
+const CA_POSTAL = /\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b/i;
+const CA_ABBR = /(^|[\s,])(ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)([\s,]|$)/; // case-sensitive: "on" the word is not a province
+const looksCanadian = q =>
+  new RegExp(`\\b(canada|${CA_PROVINCES})\\b`, 'i').test(q) || CA_POSTAL.test(q) || CA_ABBR.test(q);
 
 const shortPlaceName = display => {
   // "Modesto, Stanislaus County, California, United States" -> "Modesto, California"
+  // "Ancaster, ..., Ontario, L9G 2B9, Canada"              -> "Ancaster, Ontario"
   const parts = String(display || '').split(',').map(p => p.trim())
-    .filter(p => p && !/county$/i.test(p) && p !== 'United States');
-  return parts.slice(0, 2).join(', ');
+    .filter(p => p && !/county$/i.test(p) && p !== 'United States' && p !== 'Canada' && !CA_POSTAL.test(p));
+  if (parts.length <= 2) return parts.join(', ');
+  return [parts[0], parts[parts.length - 1]].join(', ');
 };
 
-const nominatimFallback = async q => {
-  const key = q.toLowerCase();
+// Nominatim addressdetails give a clean street line; the flat display_name for a
+// Canadian address is a 8-part chain of neighbourhoods nobody can read.
+const addressLine = row => {
+  const a = row && row.address;
+  if (!a) return null;
+  const street = [a.house_number, a.road].filter(Boolean).join(' ');
+  const city = a.city || a.town || a.village || a.hamlet || a.suburb;
+  const region = a.state || a.province;
+  const line = [street || null, city || null, [region, a.postcode].filter(Boolean).join(' ') || null]
+    .filter(Boolean).join(', ');
+  return street && line ? line : null;
+};
+
+const nominatimFallback = async (q, countryCodes = 'us') => {
+  const key = countryCodes + '|' + q.toLowerCase();
   const hit = placeCache.get(key);
   if (hit && Date.now() - hit.at < PLACE_TTL_MS) return hit.predictions;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    const url = NOMINATIM_URL + '?format=jsonv2&limit=5&countrycodes=us&q=' + encodeURIComponent(q);
+    const url = NOMINATIM_URL + '?format=jsonv2&addressdetails=1&limit=5&countrycodes=' +
+      encodeURIComponent(countryCodes) + '&q=' + encodeURIComponent(q);
     const r = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': NOMINATIM_UA } });
     const rows = await r.json();
     const predictions = (Array.isArray(rows) ? rows : []).map(row => {
+      const street = addressLine(row);
       const p = {
         id: 'osm.' + row.place_id,
-        place_name: shortPlaceName(row.display_name),
+        place_name: street || shortPlaceName(row.display_name),
         center: [parseFloat(row.lon), parseFloat(row.lat)],
-        place_type: ['place'],
+        place_type: [street ? 'address' : 'place'],
       };
       const bb = row.boundingbox; // [south, north, west, east] as strings
       if (Array.isArray(bb) && bb.length === 4) {
@@ -72,6 +100,15 @@ module.exports = async (req, res) => {
   if (q.length < 4) {
     return res.status(200).json({ predictions: [] });
   }
+  if (looksCanadian(q)) {
+    // Census would answer with a same-named US city; never let it near this query.
+    const caPredictions = await nominatimFallback(q, 'ca').catch(() => []);
+    // Only a hint, not a guarantee (a US street can be named "Canada Rd"), so an
+    // empty Canadian result falls through to the normal US-first path below.
+    if (caPredictions.length > 0) {
+      return res.status(200).json({ predictions: caPredictions });
+    }
+  }
   try {
     const url =
       CENSUS_URL +
@@ -92,7 +129,7 @@ module.exports = async (req, res) => {
     }));
     if (predictions.length === 0) {
       // No street match: treat as a city/zip/place query.
-      const placePredictions = await nominatimFallback(q).catch(() => []);
+      const placePredictions = await nominatimFallback(q, 'us,ca').catch(() => []);
       return res.status(200).json({ predictions: placePredictions });
     }
     return res.status(200).json({ predictions });

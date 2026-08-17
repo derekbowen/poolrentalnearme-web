@@ -4,7 +4,10 @@ import css from './SectionHowItWorks.module.css';
 // PRNM redesign: clean three-step "how it works" replacing the old Console hero's steps.
 const STEPS = [
   { icon: '🔍', title: 'Search', text: 'Browse private pools near you and filter by date, size, and amenities.' },
-  { icon: '📅', title: 'Book', text: 'Reserve by the hour and pay securely — every booking is insured.' },
+  // No insurance claims anywhere in customer-facing copy: PRNM does not provide
+  // insurance and does not verify that hosts carry any. Payment protection is a
+  // real, checkable thing — coverage is not.
+  { icon: '📅', title: 'Book', text: 'Reserve by the hour and pay securely — your card is only charged once the host accepts.' },
   { icon: '🏊', title: 'Swim', text: 'Show up and enjoy your private pool. No membership, no hassle.' },
 ];
 

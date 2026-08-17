@@ -34,6 +34,17 @@
 //         commission is 0%.
 //   §11   14 days' notice -> 30 days, to match ToS §24 for material changes.
 //
+// 2026-08-17 (v2026.2): re-synced to Terms of Service v2026.3, which deleted the
+// Host Protection Program and renumbered Section 11. Three §3.1/§5/§6 passages
+// cited ToS §11.4, §11.6, and §11.7 — sections that no longer exist — and told
+// Hosts and Guests that a PRNM program covered them. It never did and PRNM does
+// not verify Host insurance, so those passages now point at the Host's own
+// policy and at the platform remedies that actually run. §10 also still
+// described the Host Service Fee as 10% waived by a promotion through
+// 2026-12-31; ToS §4.1 has said 0% since 2026-08-10, with no expiry, so the fee
+// language now matches. Header comment §7/§18/§28 above describe the original
+// 2026-07-28 corrections and are kept as the historical record.
+//
 // Do not edit the policy text here without counsel review.
 /* eslint-disable */
 const HOST_PREPAREDNESS_2026_1 = `# HOST PREPAREDNESS & ISSUE RESOLUTION POLICY
@@ -41,8 +52,9 @@ const HOST_PREPAREDNESS_2026_1 = `# HOST PREPAREDNESS & ISSUE RESOLUTION POLICY
 ## POOL RENTAL NEAR ME
 
 **Published:** July 28, 2026
+**Last Updated:** August 17, 2026
 **Effective Date:** August 27, 2026
-**Version:** 2026.1
+**Version:** 2026.2
 
 ---
 
@@ -103,7 +115,7 @@ Hosts are strongly encouraged to photograph the property immediately before each
 
 The Guest must declare an accurate party size at the time of booking. The declared count includes every person who will be present at the property during the reserved time — adults, children, and non-swimmers alike.
 
-Guest count is not a formality. It determines pricing and capacity limits, and it affects eligibility under the PRNM Host Protection Program: Section 11.6 of the Terms of Service excludes injuries arising from exceeding a Listing's stated capacity. Bringing undeclared guests can leave an incident uncovered.
+Guest count is not a formality. It determines pricing and capacity limits, and it is what the Host relied on when accepting the booking. A Host's own insurance is the only coverage that applies at a Pool Space (Terms of Service Section 11), and a policy is far more likely to contest a claim where the property was used beyond the capacity the Host stated. Bringing undeclared guests puts that risk on both parties.
 
 Exceeding the maximum guest capacity stated in a Listing is separately prohibited by Sections 7.1 and 7.3 of the Terms of Service.
 
@@ -177,7 +189,7 @@ Hosts may not request, and Guests may not offer, payment by cash, Venmo, Zelle, 
 
 Off-platform payment:
 
-- Voids PRNM Host Protection Program coverage for the booking, because Section 11.4 of the Terms of Service conditions coverage on compliance with Platform requirements
+- Puts the booking outside every platform remedy, including the Damage Resolution Policy in Section 6 of this policy — those remedies run on the platform payment record, and there is none
 - Removes both parties' dispute protection
 - Leaves no record if the transaction is later contested
 - Is grounds for removal from the platform under Section 9 of the Terms of Service
@@ -195,7 +207,7 @@ Claims are filed by email to **support@poolrentalnearme.com**. There is no separ
 Two different deadlines apply, and they are not interchangeable:
 
 - **Property damage, excessive cleaning, or house rule violations:** report within **72 hours** of the booking end time. Claims submitted after 72 hours may not be eligible for reimbursement.
-- **Bodily injury or any incident that may involve the PRNM Host Protection Program:** report within **24 hours** of the incident, as required by Section 11.7 of the Terms of Service. This deadline is shorter and it is strict.
+- **Bodily injury, or any incident involving emergency services:** report within **24 hours** of the incident, as required by Section 11.5 of the Terms of Service. This deadline is shorter and it is strict. Reporting an incident to PRNM is a notice to the platform — it is not an insurance claim, and PRNM does not insure Hosts, Guests, or Pool Spaces.
 
 If you are unsure which applies, report it within 24 hours and we will sort it out.
 
@@ -266,7 +278,7 @@ Pool Rental Near Me reserves the right to remove any listing or account at its d
 
 Hosts are the reason this marketplace exists. Our commitments:
 
-- **0% host fees through 2026.** Our standard Host Service Fee is ten percent (10%), as stated in Section 4.1 of the Terms of Service. We are waiving it in full as a promotion: through **December 31, 2026**, Hosts pay no platform service fee on bookings and keep what the listing earns. When the promotion ends the standard fee resumes, and any change to the fee schedule is prospective only and takes at least thirty (30) days' advance notice under Section 4.3 of the Terms of Service.
+- **0% host fees.** The Host Service Fee is zero percent (0%), as stated in Section 4.1 of the Terms of Service. Hosts pay no platform service fee on bookings and keep what the listing earns. This is the published fee, not a promotion with an end date. Any future change to the fee schedule is prospective only and takes at least thirty (30) days' advance notice under Section 4.3 of the Terms of Service.
 - **We handle Guests.** Escalate to us and we'll take the conversation.
 - **We defend your payout.** Follow this policy and we fight disputes on your behalf, as described in Section 7.3.
 - **We own our failures.** When our software breaks, that's on us, not on you.

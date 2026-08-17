@@ -935,8 +935,11 @@ export default function PremiumLandingPage({
 
             <div className={css.trustItems}>
               {[
-                { icon: '🛡️', title: 'Host Protection', desc: 'Every confirmed booking is backed by the PRNM Host Protection Program.', value: 'Included' },
-                { icon: '✅', title: 'Verified Hosts', desc: 'Every pool and host is manually reviewed, identity-verified, and inspected before going live on the platform.', value: '100%' },
+                // No insurance or protection-program claims: PRNM runs no coverage program and
+                // does not verify that hosts carry insurance (ToS 11). And per ToS 5.2 we do not
+                // inspect pool spaces, so "inspected before going live" was false too.
+                { icon: '🛡️', title: 'Secure Payments', desc: 'Pay through the platform and your card is only charged once the host accepts.', value: 'Every booking' },
+                { icon: '✅', title: 'Real Listings', desc: 'Every host confirms their identity with Stripe before they can be paid.', value: 'ID checked' },
                 { icon: '💬', title: '24/7 Support', desc: 'Real humans available around the clock. Before, during, or after your swim — we\'re always here.', value: '24/7' },
               ].map((item, i) => (
                 <Reveal key={item.title} delay={i + 1}>
@@ -1002,7 +1005,7 @@ export default function PremiumLandingPage({
               <p className={css.hostDesc}>
                 It's <strong>easier than you think</strong>. Snap a few photos, set your price, and
                 you could be approving your first booking this weekend. Our AI writes your listing,
-                we handle bookings and payments, and every swim is backed by the PRNM Host Protection Program —
+                we handle bookings and payments, and you keep 100% of what you charge —
                 you just collect the check.
               </p>
             </Reveal>
@@ -1054,7 +1057,7 @@ export default function PremiumLandingPage({
               <div className={css.hostReassure}>
                 <span className={css.hostReassureCheck}>✓</span> No fees to list
                 <span className={css.hostReassureCheck}>✓</span> Cancel anytime
-                <span className={css.hostReassureCheck}>✓</span> Host Protection Program included
+                <span className={css.hostReassureCheck}>✓</span> Keep 100% of your rate
               </div>
             </Reveal>
           </div>

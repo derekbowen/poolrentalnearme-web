@@ -15,6 +15,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Every listing photo comes from imgix; warming the connection here saves a
+       cold DNS+TLS handshake exactly when the search page requests its LCP image. -->
+  <link rel="preconnect" href="https://sharetribe.imgix.net" crossorigin>
+  <link rel="dns-prefetch" href="https://sharetribe.imgix.net">
+  <link rel="preconnect" href="https://sharetribe-assets.imgix.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <!--!link-->
 

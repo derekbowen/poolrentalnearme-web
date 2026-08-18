@@ -109,7 +109,17 @@ export const ListingCard = props => {
     setActiveListing,
     showAuthorInfo,
     currentLocation,
+    cardIndex,
   } = props;
+
+  // The first cards on the search page are the page's LCP candidates. The lazy
+  // loader defers their image up to 3s after render (loadAfterInitialRendering),
+  // which GSC measured as a 4.3s LCP on /s - so the top of the first page loads
+  // eagerly and the very first card asks the browser for priority.
+  const isAboveFold = typeof cardIndex === 'number' && cardIndex < 3;
+  const eagerImgProps = isAboveFold
+    ? { loading: 'eager', fetchPriority: cardIndex === 0 ? 'high' : 'auto' }
+    : null;
 
   const classes = classNames(rootClassName || css.root, className);
   const currentListing = ensureListing(listing);
@@ -241,13 +251,24 @@ export const ListingCard = props => {
           {images.map((img, i) => (
             <div className={css.carouselSlide} key={img.id?.uuid || i}>
               {i > maxReached ? null : i === 0 ? (
-                <LazyImage
-                  rootClassName={css.rootForImage}
-                  alt={`${title} — photo 1`}
-                  image={img}
-                  variants={variants}
-                  sizes={renderSizes}
-                />
+                isAboveFold ? (
+                  <ResponsiveImage
+                    rootClassName={css.rootForImage}
+                    alt={`${title} — photo 1`}
+                    image={img}
+                    variants={variants}
+                    sizes={renderSizes}
+                    {...eagerImgProps}
+                  />
+                ) : (
+                  <LazyImage
+                    rootClassName={css.rootForImage}
+                    alt={`${title} — photo 1`}
+                    image={img}
+                    variants={variants}
+                    sizes={renderSizes}
+                  />
+                )
               ) : (
                 // Slides past the first only mount once the user reaches them, so eager-
                 // load them (the lazy loader leaves a transform-revealed slide blank).
@@ -263,6 +284,15 @@ export const ListingCard = props => {
           ))}
         </div>
       </div>
+    ) : isAboveFold ? (
+      <ResponsiveImage
+        rootClassName={css.rootForImage}
+        alt={title}
+        image={firstImage}
+        variants={variants}
+        sizes={renderSizes}
+        {...eagerImgProps}
+      />
     ) : (
       <LazyImage
         rootClassName={css.rootForImage}

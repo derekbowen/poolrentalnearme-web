@@ -163,11 +163,12 @@ const SearchResultsPanel = props => {
             ))}
           </>
         ) : (
-          listings.map((l) => (
+          listings.map((l, i) => (
             <ListingCard
               className={css.listingCard}
               key={l.id.uuid}
               listing={l}
+              cardIndex={i}
               renderSizes={cardRenderSizes(isMapVariant)}
               setActiveListing={setActiveListing}
               currentLocation={currentLocation}

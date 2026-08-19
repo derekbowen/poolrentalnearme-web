@@ -11,6 +11,10 @@
 #   2. Any other insurance/coverage reference outside the approved files must
 #      already be in the baseline. New ones fail the build.
 #
+# The approved wording itself lives in APPROVED_COPY in
+# src/config/insurance.config.js, reproduced from APPROVED-LANGUAGE.md.
+# Adding an approved sentence means editing that table, not this script.
+#
 # Approved to contain insurance copy:
 #   src/config/insurance.config.js          the single source of truth
 #   src/components/InsuranceDisclosure/     the only approved copy
@@ -28,11 +32,29 @@ PATTERN='insur|(^|[^A-Za-z])liability|[^A-Za-z]coverage([^A-Za-z]|$)|is insured|
 ALLOW='^(src/config/insurance\.config\.js|src/components/InsuranceDisclosure/|src/containers/TermsOfServicePage/|src/containers/HostPreparednessPolicyPage/)'
 
 # Never acceptable anywhere, including inside the approved files.
+# Sources: the June incident (first block) and the banned-strings list in
+# APPROVED-LANGUAGE.md (the rest). Each of these is false under the policy:
+#   - hosts are not insureds, so no "covered"/"protected" framing survives
+#   - Section I Property is deleted, so nothing about a pool or home is covered
+#   - only Spinnaker (underwriter) and Coterie (administrator) are on this policy
+#   - cyber, data-privacy, and data-related liability are all excluded
 BANNED='fully insured|fully covered|all bookings are insured|every booking is (insured|covered)|your pool is protected|hosts are protected|up to \$[0-9,]+ in coverage'
+BANNED="$BANNED"'|hosts are covered|you.?re protected|you are protected|host protection|guest protection guarantee'
+BANNED="$BANNED"'|your (pool|home|property|data) (is|are) (covered|insured|protected)'
+# Carrier names only. Travelers / Nationwide / State Farm are deliberately NOT
+# here: "travelers" and "nationwide" are ordinary words in marketplace copy and
+# a guard that cries wolf gets disabled.
+BANNED="$BANNED"'|hartford|lloyd.?s of london|chubb|a-rated carrier|our a.rated'
+BANNED="$BANNED"'|\$2M host|\$2 ?million host'
 
 fail=0
 
-banned=$(grep -rInE "$BANNED" src/ server/ --include='*.js' --include='*.jsx' 2>/dev/null || true)
+# Pure comment lines are excluded from the BANNED scan. The changelog comments
+# in host-preparedness-2026-1.js name the phrases that were REMOVED, and a guard
+# that blocks the record of a fix pressures the next person to delete the record.
+# A comment cannot reach a user; a rendered string can, and those still fail.
+banned=$(grep -rInEi "$BANNED" src/ server/ --include='*.js' --include='*.jsx' 2>/dev/null \
+  | grep -vE '^[^:]+:[0-9]+: *(//|\*|/\*)' || true)
 if [ -n "$banned" ]; then
   echo "BLOCKED: prohibited insurance phrasing (never allowed, no baseline):"
   echo "$banned"

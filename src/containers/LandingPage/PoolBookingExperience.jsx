@@ -547,18 +547,27 @@ const PoolBookingExperience = ({ listing = null, marketSnapshot = null }) => {
               ✓ Free to reserve · Host confirms within {pool.host.responseTime}
             </div>
 
+            {/*
+             * These three badges previously read "Host Protection", "24/7
+             * support", and "Verified host". None of the three were true:
+             * the Host Protection Program was removed from the Terms in
+             * v2026.3, support is a phone and a text line rather than a 24/7
+             * desk, and ToS 5.2 states plainly that PRNM does not verify or
+             * inspect hosts. Every badge below is a claim the platform can
+             * actually stand behind.
+             */}
             <div className={css.bookAssurances}>
               <div className={css.bookAssurance}>
                 <span className={css.bookAssuranceIcon}>🛡️</span>
-                <span>Host Protection</span>
+                <span>Secure payments</span>
               </div>
               <div className={css.bookAssurance}>
                 <span className={css.bookAssuranceIcon}>💬</span>
-                <span>24/7 support</span>
+                <span>Human support</span>
               </div>
               <div className={css.bookAssurance}>
                 <span className={css.bookAssuranceIcon}>✓</span>
-                <span>Verified host</span>
+                <span>Host confirms every booking</span>
               </div>
             </div>
           </div>

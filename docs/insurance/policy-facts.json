@@ -1,0 +1,120 @@
+{
+  "_comment": "Source of truth for PRNM insurance trust layer. Derived verbatim from CSG-00536699-00 declarations. Config only - zero Supabase writes. Any coverage string rendered anywhere on poolrentalnearme.com must trace to a field in this file.",
+  "_source_pdf": "CSG-00536699-00__1_.pdf",
+  "_extracted": "2026-08-19",
+  "policy": {
+    "number": "CSG-00536699-00",
+    "account_id": "363497",
+    "type": "Businessowners Policy (BOP)",
+    "base_form": "BP 00 03 07 13",
+    "issued_utc": "2026-08-17T21:17:51Z",
+    "period_start": "2026-08-17",
+    "period_end": "2027-08-17",
+    "effective_time_note": "12:01 AM standard time at business address; no insurance applies prior to time of application on first day",
+    "premium_total_usd": 1124.00,
+    "premium_includes": "premium taxes, surcharges, and fees",
+    "status": "bound"
+  },
+  "carrier": {
+    "underwriter": "Spinnaker Insurance Company",
+    "underwriter_address": "701 E 5th Street, Austin, TX 78701",
+    "underwriter_phone": "1-888-221-7742",
+    "program_administrator": "Coterie Insurance Agency, LLC",
+    "program_administrator_address": "P.O. Box 42368, Blue Ash, OH 45242",
+    "producer": "Josh Dunmire, Undercard Group",
+    "producer_email": "Joshua@undercardgroup.com",
+    "claims_fnol_phone": "855-680-2440",
+    "claims_portal": "https://coterieinsurance.com/"
+  },
+  "named_insured": {
+    "name": "Pool Rental Near Me",
+    "contact": "Derek Bowen",
+    "address": "7785 Halbrook Ter, Riverside, CA 92509",
+    "email": "derek@poolrentalnearme.com",
+    "phone": "(909) 272-8096",
+    "business_description_verbatim": "Offices of Residential Property Managers (excess over any property owner or sharing platform liability insurance)"
+  },
+  "limits": {
+    "liability_and_medical_expenses_per_occurrence": 2000000,
+    "medical_expenses_per_person": 5000,
+    "damage_to_premises_rented_to_you_any_one_premises": 50000,
+    "aggregate_other_than_products_completed_ops": 4000000,
+    "aggregate_products_completed_ops": 4000000,
+    "property_damage_liability_deductible": 0,
+    "hired_and_nonowned_auto_liability": "included",
+    "limits_are_eroding": true,
+    "eroding_note": "Each paid claim reduces the amount of insurance available during the annual period."
+  },
+  "property_coverage": {
+    "applies": false,
+    "reason": "CTF CW FREE 03 23 Freelance Limited Liability Coverage Endorsement: 'The insurance provided under SECTION I - Property does not apply to this policy.'",
+    "implication": "No building, business personal property, business income, or equipment coverage exists. Never imply property protection for hosts, guests, or PRNM."
+  },
+  "position_in_tower": {
+    "primary_or_excess": "excess",
+    "basis": "Business description on the declarations states coverage sits excess over any property owner or sharing platform liability insurance.",
+    "exception": "BP 14 88 07 13 makes this insurance primary and noncontributory ONLY where (a) the party is an additional insured, (b) the party is a Named Insured under their own other insurance, and (c) PRNM has agreed in a written contract that this insurance is primary and noncontributory."
+  },
+  "additional_insured": {
+    "automatic_for_hosts": false,
+    "available_mechanisms": [
+      {
+        "form": "CTF CW AIMPB 08 23",
+        "name": "Additional Insured - Managers or Lessors of Premises (Blanket)",
+        "trigger": "Written agreement executed PRIOR TO LOSS to name them as additional insured, for premises or building leased or rented to PRNM",
+        "scope": "Liability arising out of ownership, maintenance or use of that part of the premises leased to PRNM",
+        "ends": "Any occurrence after PRNM ceases to be a tenant in the described premises",
+        "excludes": "Structural alterations, new construction, demolition by or for the additional insured",
+        "cap": "Lesser of the amount required by contract or the declared limits"
+      },
+      {
+        "form": "CTF CW AILEB 08 23",
+        "name": "Additional Insured - Lessor of Leased Equipment (Blanket)",
+        "trigger": "Written lease or rental agreement for equipment executed prior to loss",
+        "ends": "Any occurrence after the equipment lease expires"
+      },
+      {
+        "form": "CTF CW AIOL 06 22",
+        "name": "Additional Insured - Owners, Lessees or Contractors (construction contract)",
+        "trigger": "Written contract while PRNM performs ongoing operations for that party",
+        "note": "Excess over the additional insured's own insurance unless the written contract says primary and noncontributory"
+      }
+    ],
+    "waiver_of_subrogation": {
+      "form": "CTF CW WAIVB 08 23",
+      "blanket": true,
+      "trigger": "Written contract executed prior to loss agreeing to waive rights of recovery"
+    }
+  },
+  "material_exclusions": [
+    {"form": "BP 04 39 07 02", "name": "Abuse or Molestation", "prnm_risk": "critical", "note": "Excludes BI/PD/PAI arising from actual or threatened abuse or molestation of anyone in the care, custody or control of any insured, AND negligent hiring, investigation, supervision, reporting, or retention."},
+    {"form": "BP 14 86 07 13", "name": "Communicable Disease", "prnm_risk": "critical", "note": "No coverage for transmission of communicable disease, including failure to prevent spread. Relevant to pool water and shared amenities."},
+    {"form": "BP 05 77 01 06", "name": "Fungi or Bacteria (Liability)", "prnm_risk": "critical", "note": "Excludes injury from fungi or bacteria on or within a building or structure. Directly relevant to pool water quality claims."},
+    {"form": "BP 04 92 07 02", "name": "Total Pollution", "prnm_risk": "high", "note": "Any BI/PD that would not have occurred but for discharge or release of pollutants. Pool chemicals fall here."},
+    {"form": "BP 04 17 01 10", "name": "Employment-Related Practices", "prnm_risk": "medium"},
+    {"form": "BP 04 71 07 02", "name": "Volunteer Workers", "prnm_risk": "medium"},
+    {"form": "BP 14 19 01 10", "name": "Damage to Work Performed by Subcontractors", "prnm_risk": "medium"},
+    {"form": "BP 15 04 12 23", "name": "Access or Disclosure of Confidential or Personal Information / Data-Related Liability", "prnm_risk": "high", "note": "No coverage for a data breach of guest or host records."},
+    {"form": "BP 18 03 12 23", "name": "Cyber Incident Liability", "prnm_risk": "high"},
+    {"form": "BP 18 04 12 23", "name": "Violation of Law Addressing Data Privacy", "prnm_risk": "high", "note": "CCPA/CIPA-style claims are outside this policy."},
+    {"form": "BP 15 32 09 19", "name": "Cannabis Liability", "prnm_risk": "medium"},
+    {"form": "BP 15 11 12 16", "name": "Unmanned Aircraft", "prnm_risk": "medium", "note": "Drone footage of listings is not covered."},
+    {"form": "BP 15 91 12 23", "name": "PFAS", "prnm_risk": "low"},
+    {"form": "BP 05 17 01 06", "name": "Silica or Silica-Related Dust", "prnm_risk": "low"},
+    {"form": "BP 14 08 01 10", "name": "Exterior Insulation and Finish Systems", "prnm_risk": "low"},
+    {"form": "BP 05 23 01 15", "name": "Cap on Losses from Certified Acts of Terrorism", "prnm_risk": "low"},
+    {"form": "BP 14 21 01 10", "name": "Exclusion - Designated Work: New York", "prnm_risk": "low"}
+  ],
+  "fees": {
+    "policy_fee_usd": 25,
+    "policy_fee_note": "$50 standard; $25 in CA (business address is CA)",
+    "installment_fee_usd": 7,
+    "late_fee_usd": 10,
+    "nsf_fee_usd_max": 35,
+    "reinstatement_fee_usd": 25
+  },
+  "renewal": {
+    "expires": "2027-08-17",
+    "no_reminder_language": "Renewal handling is Derek's call; this field is data, not a deadline."
+  }
+}

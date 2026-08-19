@@ -29,6 +29,19 @@ people who may be named as company voices.
    token — so every cold start logged everyone out, on every install, for
    months. See `app-patches/`.
 
+8. **Insurance questions go to Derek. I do not answer them.**
+   Derek said "say these exact words" and gave one sentence. I sent that
+   sentence plus two more in his voice, telling a prospective host that PRNM's
+   policy "does NOT cover you or your pool" and that "we don't verify whether
+   hosts have it." The router had already assigned the thread to Derek 31
+   minutes earlier. Any inbound mentioning insurance, liability, coverage,
+   claims, or damage gets surfaced to Derek with the sender and the question —
+   he answers or refers to the agent. This holds even when the answer is
+   provably correct from the policy documents: being right about coverage is
+   not permission to speak for him about it.
+   When he does supply exact words, those words are the entire message. Nothing
+   is appended, softened, or "made more honest."
+
 ## Infrastructure
 
 | | |

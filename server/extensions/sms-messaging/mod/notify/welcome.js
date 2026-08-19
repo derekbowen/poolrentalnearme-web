@@ -217,9 +217,22 @@ const sendOne = async row => {
       await store.logOutcome({ ...base, phone, status: 'skipped_opted_out', error: '21610' });
       return;
     }
-    // Transient — leave for the next sweep (bounded retry via re-pending).
+    // Permanent Twilio rejections must not re-pend. This block used to defer
+    // every failure by 5 minutes with no actual bound, so three hosts whose
+    // stored numbers were missing the country code retried ~300 times each
+    // (904 failed rows) and never received a welcome. 21211 = invalid 'To',
+    // 21614 = not a mobile number, 21408 = region not enabled.
+    const permanent = e && (e.code === 21211 || e.code === 21614 || e.code === 21408);
+    const errText = String(e.message || e).slice(0, 300);
+    if (permanent) {
+      await finish(row.id, 'failed_permanent');
+      await store.logOutcome({ ...base, phone, status: 'failed_permanent', error: errText });
+      log('welcome PERMANENTLY FAILED', phone, e.code, e.message);
+      return;
+    }
+    // Transient — leave for the next sweep.
     await defer(row.id, new Date(Date.now() + 5 * 60 * 1000).toISOString());
-    await store.logOutcome({ ...base, phone, status: 'failed', error: String(e.message || e).slice(0, 300) });
+    await store.logOutcome({ ...base, phone, status: 'failed', error: errText });
     log('welcome FAILED', phone, e.message);
   }
 };

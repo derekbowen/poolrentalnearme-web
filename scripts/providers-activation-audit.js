@@ -262,6 +262,23 @@ const contentComplete = (photos, hasPrice, hasDesc, hasAvail) => photos > 0 && h
 
 const EASE_ORDER = { 'VERY EASY': 0, EASY: 1, MEDIUM: 2, HARD: 3 };
 
+/**
+ * Format a phone so it is tappable in a text message.
+ *
+ * The first version of this report deliberately left phone numbers out of the
+ * SMS - the brief listed what the message "can include" and phone was not on
+ * it, so it was read as an allowlist. That was too literal: the prohibition was
+ * about bank/Stripe/identity data, and a text telling Derek to CALL someone
+ * with no number in it is useless on the device it arrives on. Numbers are in.
+ * Anything genuinely sensitive (Stripe ids, payout detail) still never ships.
+ */
+const dialable = phone => {
+  const d = String(phone || '').replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') return `${d.slice(1, 4)}-${d.slice(4, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  return 'NO PHONE ON FILE';
+};
+
 function rank(list) {
   return [...list].sort((a, b) => {
     const e = (EASE_ORDER[a.ease] ?? 9) - (EASE_ORDER[b.ease] ?? 9);
@@ -296,6 +313,7 @@ function buildSms(recent, counts) {
     n++;
     const when = String(p.createdAt).slice(5, 10).replace('-', '/');
     block += `${n}. ${p.name} — signed up ${when}\n`;
+    block += `${dialable(p.phone)}\n`;
     block += `Listing: ${p.listingStatus === 'none' ? 'not started' : p.listingStatus}${p.photos ? ` (${p.photos} photos)` : ''}\n`;
     block += `Stripe: ${p.stripe.toUpperCase()}\n`;
     block += `Next: ${p.action}`;
@@ -304,7 +322,7 @@ function buildSms(recent, counts) {
   if (collapsed.length) {
     entries.push(
       `HARD (${collapsed.length}) — signed up, no listing started:\n` +
-        collapsed.map(p => p.name).join(', ') +
+        collapsed.map(p => `${p.name} ${dialable(p.phone)}`).join('\n') +
         `\nNext: onboarding assist`
     );
   }

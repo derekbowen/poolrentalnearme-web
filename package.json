@@ -184,6 +184,7 @@
     "format-docs": "prettier --write '**/*.md'",
     "lint": "eslint --ext .js,.jsx src server",
     "check:insurance": "bash scripts/check-insurance-language.sh && node scripts/test-insurance-gate.mjs",
+    "providers:activation-audit": "node scripts/providers-activation-audit.js",
     "lint:changed": "eslint --ext .js,.jsx",
     "test-server": "jest ./server/**/*.test.js",
     "translate": "node scripts/translations.js",

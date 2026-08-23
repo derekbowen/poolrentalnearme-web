@@ -116,6 +116,16 @@ const getInitialState = () => {
   };
 };
 
+
+// Reads the JSON-LD that Page actually rendered into the document head, so these
+// assertions run against generated HTML rather than the schema object in source.
+const readRenderedSchemaGraph = () => {
+  const el = document.getElementById('page-schema');
+  expect(el).not.toBeNull();
+  const parsed = JSON.parse(el.textContent);
+  return parsed['@graph'] || [];
+};
+
 describe('ProfilePage', () => {
   const config = getHostedConfiguration();
 
@@ -135,6 +145,52 @@ describe('ProfilePage', () => {
     });
     expect(screen.getByText('ProfilePage.desktopHeading')).toBeInTheDocument();
     expect(screen.getByText('I am a great cook!')).toBeInTheDocument();
+  });
+
+  // Regression guard for the Search Console error
+  // "Profile page structured data: Missing field mainEntity".
+  // Google requires ProfilePage.mainEntity to be a Person or Organization.
+  it('emits ProfilePage JSON-LD with a mainEntity Person built from real user data', async () => {
+    await act(async () => {
+      render(<ProfilePage {...props} />, { initialState: getInitialState(), config });
+    });
+
+    const graph = readRenderedSchemaGraph();
+    const profilePages = graph.filter(node => node['@type'] === 'ProfilePage');
+    expect(profilePages).toHaveLength(1);
+
+    const profilePage = profilePages[0];
+    expect(profilePage.mainEntity).toBeDefined();
+    expect(profilePage.mainEntity['@type']).toBe('Person');
+
+    // Every emitted value has to come from the user record, not from a placeholder.
+    const user = createEnhancedUser(createUser, userId);
+    expect(profilePage.mainEntity.name).toBe(user.attributes.profile.displayName);
+    expect(profilePage.mainEntity.identifier).toBe(userId);
+    expect(profilePage.mainEntity.description).toBe(user.attributes.profile.bio);
+    expect(profilePage.mainEntity.url.endsWith(`/u/${userId}`)).toBe(true);
+    expect(profilePage.url.endsWith(`/u/${userId}`)).toBe(true);
+  });
+
+  it('does not emit a Person for a deleted user', async () => {
+    const initialState = getInitialState();
+    const deletedUser = {
+      ...initialState.marketplaceData.entities.user[userId],
+      attributes: {
+        ...initialState.marketplaceData.entities.user[userId].attributes,
+        deleted: true,
+        profile: { displayName: null, abbreviatedName: null, bio: null, publicData: {} },
+      },
+    };
+    initialState.marketplaceData.entities.user[userId] = deletedUser;
+
+    await act(async () => {
+      render(<ProfilePage {...props} />, { initialState, config });
+    });
+
+    const graph = readRenderedSchemaGraph();
+    expect(graph.filter(node => node['@type'] === 'ProfilePage')).toHaveLength(0);
+    expect(graph.some(node => node['@type'] === 'Person')).toBe(false);
   });
 
   it('Check that custom user information is shown correctly', async () => {

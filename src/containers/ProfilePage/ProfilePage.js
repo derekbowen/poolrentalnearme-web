@@ -368,6 +368,49 @@ export const ProfilePageComponent = props => {
   const schemaTitleVars = { name: displayName, marketplaceName: config.marketplaceName };
   const schemaTitle = intl.formatMessage({ id: 'ProfilePage.schemaTitle' }, schemaTitleVars);
 
+  // Google's ProfilePage rich result requires a mainEntity (Person or Organization).
+  // Every value below is read straight off the marketplace user record - if a field is
+  // missing it is left out rather than filled in. A deleted or banned user has no real
+  // identity left to describe, so those pages fall back to a plain WebPage instead of
+  // an empty Person.
+  const { banned, deleted, createdAt } = profileUser?.attributes || {};
+  const profileUserId = profileUser?.id?.uuid;
+  const imageVariants = profileUser?.profileImage?.attributes?.variants || {};
+  const profileImageURL = imageVariants['square-small2x']?.url || imageVariants['square-small']?.url;
+  const profileURL = profileUserId ? `${config.marketplaceRootURL}/u/${profileUserId}` : null;
+  const createdAtTime = createdAt ? new Date(createdAt).getTime() : NaN;
+
+  const personEntity =
+    displayName && profileUserId && !banned && !deleted
+      ? {
+          '@type': 'Person',
+          ...(profileURL ? { '@id': `${profileURL}#person` } : {}),
+          name: displayName,
+          identifier: profileUserId,
+          ...(profileURL ? { url: profileURL } : {}),
+          ...(bio ? { description: bio } : {}),
+          ...(profileImageURL ? { image: profileImageURL } : {}),
+        }
+      : null;
+
+  const pageSchema = personEntity
+    ? {
+        '@context': 'http://schema.org',
+        '@type': 'ProfilePage',
+        name: schemaTitle,
+        ...(profileURL ? { url: profileURL } : {}),
+        ...(Number.isFinite(createdAtTime)
+          ? { dateCreated: new Date(createdAtTime).toISOString() }
+          : {}),
+        mainEntity: personEntity,
+      }
+    : {
+        '@context': 'http://schema.org',
+        '@type': 'WebPage',
+        name: schemaTitle,
+        ...(profileURL ? { url: profileURL } : {}),
+      };
+
   if (!isDataLoaded) {
     return null;
   } else if (!isPreview && isNotFoundError(userShowError)) {
@@ -414,11 +457,7 @@ export const ProfilePageComponent = props => {
     <Page
       scrollingDisabled={scrollingDisabled}
       title={schemaTitle}
-      schema={{
-        '@context': 'http://schema.org',
-        '@type': 'ProfilePage',
-        name: schemaTitle,
-      }}
+      schema={pageSchema}
     >
       <LayoutSideNavigation
         sideNavClassName={css.aside}

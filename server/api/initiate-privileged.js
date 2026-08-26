@@ -20,10 +20,32 @@ module.exports = async (req, res) => {
   const listingPromise = () => sdk.listings.show({ id: bodyParams?.params?.listingId });
 
   try {
-    const [showListingResponse, fetchAssetsResponse] = await Promise.all([
+    // c191: hosts could not tell who was booking - profile displayName is
+    // guest-chosen and is often a nickname ("Kay", "Sneakers 82", "THE").
+    // Resolve the real name SERVER-SIDE from the authenticated caller so the
+    // client can never spoof it. Fail soft: a booking must never break because
+    // this lookup failed.
+    const currentUserPromise = () => sdk.currentUser.show().catch(() => null);
+
+    const [showListingResponse, fetchAssetsResponse, currentUserResponse] = await Promise.all([
       listingPromise(),
       fetchCommission(sdk),
+      currentUserPromise(),
     ]);
+
+    const guestProfile = currentUserResponse?.data?.data?.attributes?.profile;
+    const guestFirstName = guestProfile?.firstName || null;
+    const guestLastName = guestProfile?.lastName || null;
+    // Name only. Phone and email are deliberately NOT copied here: guests and
+    // hosts communicate through the in-platform message thread.
+    const guestIdentityMaybe =
+      guestFirstName || guestLastName
+        ? {
+            guestFirstName,
+            guestLastName,
+            guestNameSource: 'account-profile',
+          }
+        : {};
 
     const listing = showListingResponse.data.data;
     const commissionAsset = fetchAssetsResponse.data.data[0];
@@ -69,6 +91,7 @@ module.exports = async (req, res) => {
         protectedData: {
           ...(params.protectedData ?? {}),
           ...promoProtectedMaybe,
+          ...guestIdentityMaybe,
           amenityLineItems,
           amenityLineItemsInUnit,
           saleInfo,

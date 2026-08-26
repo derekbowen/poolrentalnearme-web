@@ -23,6 +23,7 @@ import DetailCardImage from './DetailCardImage';
 import DeliveryInfoMaybe from './DeliveryInfoMaybe';
 import BookingLocationMaybe from './BookingLocationMaybe';
 import InquiryMessageMaybe from './InquiryMessageMaybe';
+import GuestDetailsMaybe from './GuestDetailsMaybe';
 import FeedSection from './FeedSection';
 import ActionButtonsMaybe from './ActionButtonsMaybe';
 import DiminishedActionButtonMaybe from './DiminishedActionButtonMaybe';
@@ -336,6 +337,8 @@ export class TransactionPanelComponent extends Component {
               showInquiryMessage={isInquiryProcess}
               isCustomer={isCustomer}
             />
+
+            <GuestDetailsMaybe protectedData={protectedData} isProvider={isProvider} />
 
             {!isInquiryProcess ? (
               <div className={css.orderDetails}>

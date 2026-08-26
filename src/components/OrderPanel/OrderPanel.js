@@ -416,6 +416,13 @@ const OrderPanel = (props) => {
   const preselectedPriceVariantSlug = searchParams.bookableOption;
 
   const seatsEnabled = [AVAILABILITY_MULTIPLE_SEATS].includes(listingTypeConfig?.availabilityType);
+  // c191: listings store capacity under `guestallowed` (112 of 117 published
+  // listings; ZERO use `maxGuests`). Reading only `maxGuests` left this
+  // undefined on every listing, so BookingTimeForm's partySizeOptions was always
+  // empty and the guest-count selector never rendered for anyone - which is why
+  // no transaction has ever carried a partySize. Mirrors the fallback
+  // CheckoutPageWithPayment already uses to derive partySizeMax.
+  const maxGuestsFromPublicData = publicData?.guestallowed ?? publicData?.maxGuests;
 
   // Note: publicData contains priceVariationsEnabled if listing is created with priceVariations enabled.
   const isPriceVariationsInUse = !!publicData?.priceVariationsEnabled;
@@ -576,7 +583,7 @@ const OrderPanel = (props) => {
         ) : showBookingTimeForm ? (
           <BookingTimeForm
             seatsEnabled={seatsEnabled}
-            maxGuests={publicData?.maxGuests}
+            maxGuests={maxGuestsFromPublicData}
             className={css.bookingForm}
             formId="OrderPanelBookingTimeForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}

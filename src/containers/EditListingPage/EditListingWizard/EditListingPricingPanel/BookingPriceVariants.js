@@ -24,6 +24,8 @@ import {
 } from '../../../../components';
 
 // Import modules from this directory
+import { parseGuestBand } from '../../../../util/priceVariantGuests';
+
 import css from './BookingPriceVariants.module.css';
 
 const { Money } = sdkTypes;
@@ -35,13 +37,10 @@ const getDurationInMinutes = (hours = 0, minutes = 0) => {
   if (hours === 0 && minutes === 0) {
     return 0;
   }
-  return new Decimal(hours)
-    .times(60)
-    .plus(minutes)
-    .toNumber();
+  return new Decimal(hours).times(60).plus(minutes).toNumber();
 };
 
-const getDurationFactors = durationInMinutes => {
+const getDurationFactors = (durationInMinutes) => {
   const hours = Math.floor(durationInMinutes / 60);
   const minutes = durationInMinutes % 60;
   return [hours, minutes];
@@ -66,36 +65,43 @@ export const getInitialValuesForPriceVariants = (props, isUsingBookingPriceVaria
   const isFixedUnitType = unitType === FIXED;
 
   const variants = hasPriceVariants
-    ? priceVariants.map(variant => {
+    ? priceVariants.map((variant) => {
         const nameMaybe = variant.name ? { name: variant.name } : {};
         const bookingLengthInMinutes = setDefault(variant.bookingLengthInMinutes, 60);
         const bookingLengthInMinutesMaybe = isFixedUnitType ? { bookingLengthInMinutes } : {};
         const priceInSubunits = setDefault(variant.priceInSubunits, null);
+        // c192: structured guest bounds (hosts price bigger groups higher, so
+        // the band is part of the price, not decoration on the name).
+        const guestBoundsMaybe = {
+          ...(variant.minGuests != null ? { minGuests: variant.minGuests } : {}),
+          ...(variant.maxGuests != null ? { maxGuests: variant.maxGuests } : {}),
+        };
         return {
           ...nameMaybe,
           ...bookingLengthInMinutesMaybe,
+          ...guestBoundsMaybe,
           price: priceInSubunits ? new Money(priceInSubunits, price.currency) : null,
         };
       })
     : isFixedUnitType
-    ? [{ name: null, price: null, bookingLengthInMinutes: 60 }]
-    : isUsingBookingPriceVariations && !!price
-    ? [{ name: null, price }]
-    : [{ name: null, price: null }];
+      ? [{ name: null, price: null, bookingLengthInMinutes: 60 }]
+      : isUsingBookingPriceVariations && !!price
+        ? [{ name: null, price }]
+        : [{ name: null, price: null }];
 
   return variants ? { priceVariants: variants } : {};
 };
 
-const isEmpty = value => {
+const isEmpty = (value) => {
   const isNullish = value == null;
   const isZeroLength = value?.hasOwnProperty('length') && value?.length === 0;
   return isNullish || isZeroLength;
 };
 const isPropertyMissing = (variants, property) =>
-  variants.some(variant => isEmpty(variant[property]));
+  variants.some((variant) => isEmpty(variant[property]));
 
-const slugify = value => createSlug(value || '');
-const areNamesUnique = names => {
+const slugify = (value) => createSlug(value || '');
+const areNamesUnique = (names) => {
   const slugs = names.map(slugify);
   const uniqueNames = new Set(slugs);
   return uniqueNames.size === slugs.length;
@@ -151,14 +157,21 @@ export const handleSubmitValuesForPriceVariants = (
         price,
         publicData: {
           ...publicData,
-          priceVariants: priceVariants.map(variant => {
+          priceVariants: priceVariants.map((variant) => {
             const { name, bookingLengthInMinutes, price: variantPrice } = variant;
             const nameMaybe = shouldIncludeName && name ? { name } : {};
             const bookingLengthInMinutesMaybe = isFixedUnitType ? { bookingLengthInMinutes } : {};
+            // c192: persist structured guest bounds. Store both or neither -- a
+            // half-set band cannot be validated and must not look like one.
+            const minGuests = Number.parseInt(variant.minGuests, 10);
+            const maxGuests = Number.parseInt(variant.maxGuests, 10);
+            const guestBoundsMaybe =
+              minGuests > 0 && maxGuests >= minGuests ? { minGuests, maxGuests } : {};
             return {
               ...nameMaybe,
               priceInSubunits: variantPrice.amount,
               ...bookingLengthInMinutesMaybe,
+              ...guestBoundsMaybe,
             };
           }),
         },
@@ -185,17 +198,17 @@ const getPriceValidators = (listingMinimumPriceSubUnits, marketplaceCurrency, in
     : priceRequired;
 };
 
-const FieldBookingLength = props => {
+const FieldBookingLength = (props) => {
   const { name, className, rootClassName, label, idPrefix, intl, ...rest } = props;
 
-  const getHoursOptionLabel = hours =>
+  const getHoursOptionLabel = (hours) =>
     intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.hoursOption' }, { hours });
-  const getMinutesOptionLabel = minutes =>
+  const getMinutesOptionLabel = (minutes) =>
     intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.minutesOption' }, { minutes });
 
   const toHourOption = (_, i) => ({ key: i, label: getHoursOptionLabel(i) });
   const optionsHours = Array.from({ length: MAX_HOURS_FOR_BOOKING_DURATION }, toHourOption);
-  const toMinuteOption = minutes => ({ key: minutes, label: getMinutesOptionLabel(minutes) });
+  const toMinuteOption = (minutes) => ({ key: minutes, label: getMinutesOptionLabel(minutes) });
   const optionsMinutes = MINUTES_FOR_BOOKING_DURATION.map(toMinuteOption);
 
   const classes = classNames(rootClassName || css.root, className);
@@ -206,13 +219,13 @@ const FieldBookingLength = props => {
         const [factors, setFactors] = useState(getDurationFactors(input?.value));
         const [hours, minutes] = factors;
         const { valid, invalid, touched, error } = meta;
-        const handleHoursChange = e => {
+        const handleHoursChange = (e) => {
           const newHours = e.target.value;
           const bookingLengthInMinutes = getDurationInMinutes(newHours, minutes);
           setFactors([newHours, minutes]);
           input.onChange(bookingLengthInMinutes);
         };
-        const handleMinutesChange = e => {
+        const handleMinutesChange = (e) => {
           const newMinutes = e.target.value;
           const bookingLengthInMinutes = getDurationInMinutes(hours, newMinutes);
           setFactors([hours, newMinutes]);
@@ -240,7 +253,7 @@ const FieldBookingLength = props => {
                 onBlur={input.onBlur}
                 value={hours}
               >
-                {optionsHours.map(option => (
+                {optionsHours.map((option) => (
                   <option key={option.key} value={option.key}>
                     {option.label}
                   </option>
@@ -254,7 +267,7 @@ const FieldBookingLength = props => {
                 onBlur={input.onBlur}
                 value={minutes}
               >
-                {optionsMinutes.map(option => (
+                {optionsMinutes.map((option) => (
                   <option key={option.key} value={option.key}>
                     {option.label}
                   </option>
@@ -270,7 +283,78 @@ const FieldBookingLength = props => {
   );
 };
 
-const PriceVariant = props => {
+// c192: structured guest band on a variant. Hosts price bigger groups higher,
+// so the band is part of the price. These two numbers are what checkout
+// validates against and what the guest-count picker resolves on - the free-text
+// name stays whatever the host wants to call the tier.
+// When the name already reads like a band ("6-10 guests"), offer it as a
+// one-tap suggestion rather than silently applying it: names on live listings
+// carry other axes too (weekday/weekend, promos, packages), and only the host
+// knows which number is the guest count.
+const GuestBandFields = (props) => {
+  const { name, idPrefix, formApi, intl } = props;
+  const state = formApi.getState();
+  const variantValue = name
+    .split(/[[\].]+/)
+    .filter(Boolean)
+    .reduce((acc, key) => acc?.[key], state.values);
+  const { minGuests, maxGuests } = variantValue || {};
+  const suggestion = parseGuestBand(variantValue?.name);
+  const showSuggestion = suggestion && !(minGuests || maxGuests) ? suggestion : null;
+
+  const positiveInt = validators.numberAtLeast(
+    intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.guestBandAtLeastOne' }),
+    1
+  );
+  // Both-or-neither plus min<=max, mirroring what the submit mapping persists.
+  const maxNotBelowMin = (value) => {
+    const min = Number.parseInt(minGuests, 10);
+    const max = Number.parseInt(value, 10);
+    return min > 0 && max > 0 && max < min
+      ? intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.guestBandMaxBelowMin' })
+      : undefined;
+  };
+
+  return (
+    <div className={css.guestBandFields}>
+      <FieldTextInput
+        id={`${idPrefix}_minGuests`}
+        name={`${name}.minGuests`}
+        type="number"
+        min="1"
+        label={intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.minGuestsLabel' })}
+        placeholder="1"
+        validate={maxGuests ? positiveInt : undefined}
+      />
+      <FieldTextInput
+        id={`${idPrefix}_maxGuests`}
+        name={`${name}.maxGuests`}
+        type="number"
+        min="1"
+        label={intl.formatMessage({ id: 'EditListingPricingForm.priceVariant.maxGuestsLabel' })}
+        placeholder="10"
+        validate={minGuests ? validators.composeValidators(positiveInt, maxNotBelowMin) : undefined}
+      />
+      {showSuggestion ? (
+        <button
+          type="button"
+          className={css.guestBandSuggestion}
+          onClick={() => {
+            formApi.change(`${name}.minGuests`, showSuggestion.minGuests);
+            formApi.change(`${name}.maxGuests`, showSuggestion.maxGuests);
+          }}
+        >
+          {intl.formatMessage(
+            { id: 'EditListingPricingForm.priceVariant.guestBandSuggestion' },
+            { min: showSuggestion.minGuests, max: showSuggestion.maxGuests }
+          )}
+        </button>
+      ) : null}
+    </div>
+  );
+};
+
+const PriceVariant = (props) => {
   const {
     name,
     idPrefix,
@@ -336,6 +420,10 @@ const PriceVariant = props => {
         />
       ) : null}
 
+      {isPriceVariationsInUse ? (
+        <GuestBandFields name={name} idPrefix={idPrefix} formApi={formApi} intl={intl} />
+      ) : null}
+
       <FieldCurrencyInput
         id={`${idPrefix}_price`}
         name={`${name}.price`}
@@ -381,7 +469,7 @@ const PriceVariant = props => {
 // NOTE: we'll create unique keys for each price variant
 // This is needed because React virtual DOM needs to map with real DOM elements through unique keys.
 // https://github.com/final-form/react-final-form-arrays/issues/116
-const initVariantKeys = initialLengthOfPriceVariants => {
+const initVariantKeys = (initialLengthOfPriceVariants) => {
   const counter = initialLengthOfPriceVariants || 0;
   const keys =
     counter > 0
@@ -392,7 +480,7 @@ const initVariantKeys = initialLengthOfPriceVariants => {
   return [counter, keys];
 };
 
-const addNewVariantKey = setVariantKeys => {
+const addNewVariantKey = (setVariantKeys) => {
   setVariantKeys(([counter, variantKeys]) => [
     counter + 1,
     [...variantKeys, `variantKey_${counter}`],
@@ -418,7 +506,7 @@ const removeVariantKey = (setVariantKeys, index) => {
  * @param {string} props.marketplaceCurrency - The marketplace currency
  * @returns {JSX.Element}
  */
-export const BookingPriceVariants = props => {
+export const BookingPriceVariants = (props) => {
   const intl = useIntl();
   // NOTE: we'll create unique keys for each price variant
   // This is needed because React virtual DOM needs to map with real DOM elements through unique keys.
@@ -445,7 +533,7 @@ export const BookingPriceVariants = props => {
       )}
     >
       {({ fields }) => {
-        const priceVariantNames = fields?.value?.map(field => field.name);
+        const priceVariantNames = fields?.value?.map((field) => field.name);
         return (
           <>
             {fields?.length === 0 ? (
@@ -460,8 +548,8 @@ export const BookingPriceVariants = props => {
                       unitType === FIXED && isPriceVariationsInUse
                         ? { name: null, price: null, bookingLengthInMinutes: 60 }
                         : unitType === FIXED
-                        ? { price: null, bookingLengthInMinutes: 60 }
-                        : { name: null, price: null };
+                          ? { price: null, bookingLengthInMinutes: 60 }
+                          : { name: null, price: null };
                     fields.push(initialPriceVariantValues);
                     addNewVariantKey(setVariantKeys); // Handle unique keys for each array item.
                   }}
@@ -514,8 +602,8 @@ export const BookingPriceVariants = props => {
                       unitType === FIXED && isPriceVariationsInUse
                         ? { name: null, price: null, bookingLengthInMinutes: 60 }
                         : unitType === FIXED
-                        ? { price: null, bookingLengthInMinutes: 60 }
-                        : { name: null, price: null };
+                          ? { price: null, bookingLengthInMinutes: 60 }
+                          : { name: null, price: null };
                     fields.push(initialPriceVariantValues);
                     addNewVariantKey(setVariantKeys); // Handle unique keys for each array item.
                   }}

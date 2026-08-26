@@ -10,6 +10,7 @@ const {
   serialize,
   fetchCommission,
 } = require('../api-util/sdk');
+const { partySizeTierConflict } = require('../api-util/guestBands');
 
 module.exports = async (req, res) => {
   const { isSpeculative, orderData, bodyParams, queryParams } = req.body;
@@ -50,6 +51,16 @@ module.exports = async (req, res) => {
     const listing = showListingResponse.data.data;
     const commissionAsset = fetchAssetsResponse.data.data[0];
 
+    // c192: on listings whose price tiers carry structured guest bands, a
+    // stated party size must land inside the tier being paid for. Hosts price
+    // bigger groups higher; refuse "12 guests on the 1-5 tier" instead of
+    // letting the cheaper price through.
+    const tierConflict = partySizeTierConflict(listing, bodyParams?.params);
+    if (tierConflict) {
+      res.status(400).json({ error: tierConflict });
+      return;
+    }
+
     const { saleInfo } = listing?.attributes?.metadata ?? {};
 
     const { providerCommission, customerCommission } =
@@ -68,16 +79,20 @@ module.exports = async (req, res) => {
     // c151: the promo code is an INPUT to our pricing, not a Sharetribe param.
     // Strip it from what we forward to their API (an unknown key could 400 a
     // real booking) and keep it on protectedData for host visibility/audit.
-    const promoCodeUsed = (params && params.promoCode) || (orderData && orderData.promoCode) || null;
+    const promoCodeUsed =
+      (params && params.promoCode) || (orderData && orderData.promoCode) || null;
     if (params && 'promoCode' in params) {
       delete params.promoCode;
     }
     const promoAppliedSubunits = (lineItems || [])
-      .filter(li => li.code === 'line-item/promo-discount')
+      .filter((li) => li.code === 'line-item/promo-discount')
       .reduce((t, li) => t + Math.abs(li.unitPrice.amount * (li.quantity || 1)), 0);
     const promoProtectedMaybe =
       promoCodeUsed && promoAppliedSubunits > 0
-        ? { promoCodeUsed: String(promoCodeUsed).toUpperCase(), promoDiscountSubunits: promoAppliedSubunits }
+        ? {
+            promoCodeUsed: String(promoCodeUsed).toUpperCase(),
+            promoDiscountSubunits: promoAppliedSubunits,
+          }
         : {};
 
     const amenityLineItems = getAmenityLineItemsWithName(lineItems, listing);

@@ -11,6 +11,7 @@ const {
   fetchCommission,
 } = require('../api-util/sdk');
 const { denormalisedResponseEntities } = require('../api-util/data');
+const { partySizeTierConflict } = require('../api-util/guestBands');
 
 // Offer transitions must NEVER be priced here. This endpoint builds line items
 // from the listing's hourly rate + caller-supplied dates, so allowing
@@ -55,6 +56,13 @@ module.exports = async (req, res) => {
       fetchCommission(sdk),
     ]);
     const { listing } = denormalisedResponseEntities(txResponse);
+
+    // c192: same guard as initiate-privileged - a stated party size must land
+    // inside the tier being paid for on band-complete listings.
+    const tierConflict = partySizeTierConflict(listing, bodyParams?.params);
+    if (tierConflict) {
+      return res.status(400).json({ error: tierConflict });
+    }
     const commissionAsset = fetchAssetsResponse.data.data[0];
 
     const { saleInfo } = listing?.attributes?.metadata ?? {};

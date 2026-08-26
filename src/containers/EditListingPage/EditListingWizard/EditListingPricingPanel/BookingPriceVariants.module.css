@@ -97,3 +97,31 @@
     margin: 0 0 72px 0;
   }
 }
+
+/* c192: structured guest band on a variant */
+.guestBandFields {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.guestBandFields > * {
+  flex: 1 1 120px;
+  min-width: 120px;
+}
+.guestBandSuggestion {
+  flex: 1 1 100%;
+  border: none;
+  background: none;
+  padding: 2px 0 0 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--marketplaceColor);
+  font-size: 13px;
+  line-height: 20px;
+}
+.guestBandSuggestion:hover {
+  text-decoration: underline;
+}

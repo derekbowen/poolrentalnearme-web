@@ -435,7 +435,7 @@ const OrderPanel = (props) => {
   const priceIsTieredByGroupSize = (publicData?.priceVariants?.length || 0) > 1;
   const maxGuestsFromPublicData = priceIsTieredByGroupSize
     ? null
-    : publicData?.guestallowed ?? publicData?.maxGuests;
+    : (publicData?.guestallowed ?? publicData?.maxGuests);
 
   // Note: publicData contains priceVariationsEnabled if listing is created with priceVariations enabled.
   const isPriceVariationsInUse = !!publicData?.priceVariationsEnabled;

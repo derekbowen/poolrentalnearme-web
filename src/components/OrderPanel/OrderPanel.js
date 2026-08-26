@@ -422,7 +422,20 @@ const OrderPanel = (props) => {
   // empty and the guest-count selector never rendered for anyone - which is why
   // no transaction has ever carried a partySize. Mirrors the fallback
   // CheckoutPageWithPayment already uses to derive partySizeMax.
-  const maxGuestsFromPublicData = publicData?.guestallowed ?? publicData?.maxGuests;
+  //
+  // Only ask when price does NOT already depend on group size. On 62 of 117
+  // published listings the price variants ARE the guest bands ("1-5 Guests",
+  // "16-20pp"), so a second free-choice guest question would both duplicate the
+  // tier and be able to contradict it - pick the "1-5 Guests" rate, then declare
+  // 40 guests. Worse, `guestallowed` regularly exceeds the top priced tier
+  // (Manasseh Paradise: tiers stop at 30, guestallowed 85), so the selector
+  // would offer counts that have no price. Until variants carry structured
+  // min/max guests, the tier stays the single source of truth for group size on
+  // tiered listings, and we only ask directly where nothing else does.
+  const priceIsTieredByGroupSize = (publicData?.priceVariants?.length || 0) > 1;
+  const maxGuestsFromPublicData = priceIsTieredByGroupSize
+    ? null
+    : publicData?.guestallowed ?? publicData?.maxGuests;
 
   // Note: publicData contains priceVariationsEnabled if listing is created with priceVariations enabled.
   const isPriceVariationsInUse = !!publicData?.priceVariationsEnabled;

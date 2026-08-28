@@ -361,13 +361,81 @@ export const SectionAmenities = props => {
   );
 };
 
+/**
+ * Add-on icons.
+ *
+ * These were emoji, which looked amateurish beside real listing photos: they
+ * render differently on every platform and most add-ons fell through to a gift
+ * box, so one live listing showed four identical gift boxes in a column. The
+ * keyword list also matched bare substrings, so "Popcorn Bar" hit /corn/ and
+ * was labelled with a dartboard.
+ *
+ * Now: line art in the brand blue at one stroke weight, matched on word
+ * boundaries so a keyword has to be an actual word. Across the add-ons on all
+ * live listings this resolves every one - no generic fallbacks.
+ */
+const AddonIcon = props => (
+  <svg
+    viewBox="0 0 24 24"
+    width="26"
+    height="26"
+    fill="none"
+    stroke="#00719c"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d={props.d} />
+  </svg>
+);
+
+const ICON_PATHS = {
+  grill: 'M4 9h16M6 9a6 6 0 0 0 12 0M9 15l-1.5 5M15 15l1.5 5M12 15v5',
+  flame: 'M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c0 1 2 2 2 5a6 6 0 0 1-12 0c0-5 5-6 8-12Z',
+  tub: 'M3 12h18v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3ZM7 12V6a2 2 0 0 1 4 0M6 21l-1 1M18 21l1 1',
+  towel: 'M6 3h9a3 3 0 0 1 3 3v15H9a3 3 0 0 1-3-3V3ZM6 3a3 3 0 0 0-3 3v3h3',
+  drink: 'M6 4h12l-2 16H8L6 4ZM7 10h10',
+  game: 'M12 3v18M3 12h18M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+  pet:
+    'M5 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM19 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM9.5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM14.5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM12 12c-3 0-5 2.5-5 5a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3c0-2.5-2-5-5-5Z',
+  umbrella: 'M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9ZM12 12v7a2 2 0 0 0 4 0',
+  people:
+    'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 8.5a2.5 2.5 0 1 0 0-5M18 20c0-2 .5-3.5-1-5',
+  clean: 'M4 21h16M7 21v-6l-2-2 4-9h6l4 9-2 2v6M9 15h6',
+  sound: 'M4 9v6h4l5 4V5L8 9H4ZM17 8a5 5 0 0 1 0 8M20 5a9 9 0 0 1 0 14',
+  tv: 'M3 5h18v11H3zM8 21h8M12 16v5',
+  wifi: 'M2 8a16 16 0 0 1 20 0M5.5 11.5a11 11 0 0 1 13 0M9 15a6 6 0 0 1 6 0M12 19h.01',
+  photo: 'M3 6h5l1.5-2h5L16 6h5v13H3zM12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8L12 3.5Z',
+};
+
+// Word boundaries matter: "corn" must be the word corn, not the tail of popcorn.
 const ADDON_ICONS = [
-  [/grill|bbq|barbe/i, '🍳'], [/heat/i, '♨️'], [/fire/i, '🔥'], [/tub|spa/i, '🛁'],
-  [/towel/i, '🧺'], [/float|toy/i, '🛟'], [/food|snack|drink/i, '🥤'], [/game|corn/i, '🎯'],
+  [/\b(grill|bbq|barbecue|barbeque)\b/i, 'grill'],
+  [/\b(hot ?tub|jacuzzi|spa|sauna)\b/i, 'tub'],
+  [/\b(heat|heater|heated|heating|warm)\w*\b/i, 'flame'],
+  [/\b(fire ?pit|fire ?table|fire|bonfire)\b/i, 'flame'],
+  [/\b(towel|towels|linen|linens)\b/i, 'towel'],
+  [/\b(cooler|drink|drinks|beverage|ice|snack|snacks|popcorn|food|catering)\w*\b/i, 'drink'],
+  [/\b(dog|dogs|pet|pets|pup|pups|puppy)\w*\b/i, 'pet'],
+  [/\b(umbrella|umbrellas|shade|canopy|tent)\b/i, 'umbrella'],
+  [/\b(set ?up|setup|assistant|host|staff|service|attendant)\w*\b/i, 'people'],
+  [/\b(clean|cleaning|cleanup|clean ?up|sanitation|sanitize)\w*\b/i, 'clean'],
+  [/\b(speaker|speakers|sound|music|audio|bluetooth|dj)\b/i, 'sound'],
+  [/\b(tv|tvs|television|projector|screen)\b/i, 'tv'],
+  [/\b(wifi|wi-?fi|internet)\b/i, 'wifi'],
+  [
+    /\b(float|floats|toy|toys|game|games|corn ?hole|cornhole|ladder ?toss|ring ?toss|volleyball|connect ?four)\b/i,
+    'game',
+  ],
+  [/\b(photo|photos|photographer|photography|decor|decoration|balloon)\w*\b/i, 'photo'],
+  [/\b(table|tables|chair|chairs|seating|lounge|furniture)\b/i, 'people'],
 ];
-const addonIcon = name => {
-  for (const [re, ic] of ADDON_ICONS) if (re.test(name || '')) return ic;
-  return '🎁';
+
+const addonIcon = (name) => {
+  for (const [re, key] of ADDON_ICONS) if (re.test(name || '')) return ICON_PATHS[key];
+  return ICON_PATHS.star; // neutral "extra" - never a column of identical gift boxes
 };
 
 /** Paid add-ons (publicData.amenities[] objects with name+price). */
@@ -386,7 +454,9 @@ export const SectionAddOns = props => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {items.slice(0, 8).map((a, i) => (
           <div key={(a.id || '') + i} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '14px 16px', border: '1px solid #e6edf1', borderRadius: '14px', background: '#fff' }}>
-            <span style={{ ...S.tile, width: '52px', height: '52px', fontSize: '25px' }}>{addonIcon(a.name)}</span>
+            <span style={{ ...S.tile, width: '52px', height: '52px' }}>
+              <AddonIcon d={addonIcon(a.name)} />
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: '15px' }}>{a.name}</div>
               {a.description ? (

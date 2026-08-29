@@ -161,3 +161,42 @@ describe('urlHelpers', () => {
     });
   });
 });
+
+describe('parseFloatNum trailing zeros (search-bounds regression)', () => {
+  // A trailing zero in any bounds coordinate used to return null here, which
+  // made decodeLatLngBounds return null, which dropped the `bounds` search
+  // param, which made the search return every listing on the marketplace
+  // instead of the ones near the guest. Reported by a New Hampshire host as
+  // "I search my zip and it says there are no pools here".
+  it('parses decimals with trailing zeros', () => {
+    expect(parseFloatNum('42.60')).toEqual(42.6);
+    expect(parseFloatNum('-71.90')).toEqual(-71.9);
+    expect(parseFloatNum('42.0')).toEqual(42);
+    expect(parseFloatNum('42.600000')).toEqual(42.6);
+  });
+
+  it('parses other valid spellings that do not round-trip via toString', () => {
+    expect(parseFloatNum('+42.6')).toEqual(42.6);
+    expect(parseFloatNum('.5')).toEqual(0.5);
+    expect(parseFloatNum('1e2')).toEqual(100);
+  });
+
+  it('still rejects anything that is not a well-formed number', () => {
+    expect(parseFloatNum('42abc')).toBeNull();
+    expect(parseFloatNum('abc')).toBeNull();
+    expect(parseFloatNum('4 2')).toBeNull();
+    expect(parseFloatNum('4.2.3')).toBeNull();
+    expect(parseFloatNum('--4')).toBeNull();
+    expect(parseFloatNum('Infinity')).toBeNull();
+    expect(parseFloatNum('')).toBeNull();
+    expect(parseFloatNum(null)).toBeNull();
+  });
+
+  it('keeps a bounds string with trailing zeros intact end to end', () => {
+    // The exact box that returned all 120 listings on the live site.
+    const bounds = decodeLatLngBounds('45.31,-70.61,42.70,-72.56');
+    expect(bounds).not.toBeNull();
+    expect(bounds.ne.lat).toEqual(45.31);
+    expect(bounds.sw.lat).toEqual(42.7);
+  });
+});

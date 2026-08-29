@@ -86,10 +86,29 @@ export const parseFloatNum = (str) => {
   if (!trimmed) {
     return null;
   }
+  // The point of this guard is parseFloat's leniency: it happily turns "42abc"
+  // into 42. The old check was `num.toString() === trimmed`, which rejected the
+  // garbage but also rejected perfectly valid spellings that do not survive a
+  // round-trip through Number#toString - "42.60" parses to 42.6, stringifies to
+  // "42.6", fails the comparison, and returns null.
+  //
+  // That was not cosmetic. A single null coordinate makes decodeLatLngBounds
+  // return null, the `bounds` param is dropped, and the search silently returns
+  // every listing on the marketplace instead of the ones near the guest. Any
+  // map pan or geocode landing on a coordinate like 42.60 or -71.90 triggered
+  // it - roughly a third of searches, since it only takes one of the four
+  // coordinates. A New Hampshire host reported it as "I search my zip and it
+  // says there are no pools here": her pool was there, buried in 120 results
+  // from across the country.
+  //
+  // Validate the shape with a regex instead, which accepts every valid decimal
+  // spelling and still rejects trailing garbage.
+  const isWellFormed = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(trimmed);
+  if (!isWellFormed) {
+    return null;
+  }
   const num = parseFloat(trimmed);
-  const isNumber = !isNaN(num);
-  const isFullyParsedNum = isNumber && num.toString() === trimmed;
-  return isFullyParsedNum ? num : null;
+  return isNaN(num) ? null : num;
 };
 
 /**

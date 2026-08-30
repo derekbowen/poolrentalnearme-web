@@ -5,6 +5,7 @@ import log from 'log';
 import path from 'node:path';
 import { types } from 'sharetribe-flex-sdk';
 import { createCriticalStyleStream, discoverProjectStyles } from 'used-styles';
+import ssrStatus from './api-util/ssrStatus';
 
 const STREAMING_TIMEOUT = 10000;
 const headClosingTag = '</head>';
@@ -89,9 +90,18 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
       },
       // eslint-disable-next-line consistent-return
       async onShellReady() {
+        // c194: a route miss is only known once the router has matched, which
+        // happens inside renderApp; entry-server flags it on res.locals. A 500
+        // from onShellError still wins — resolveRenderStatus never downgrades
+        // it. A 404 must render the real NotFoundPage, so only a 500 gets the
+        // error shell below.
+        status = ssrStatus.resolveRenderStatus(
+          status,
+          !!(res.locals && res.locals.ssrNotFound)
+        );
         res.set({ 'Content-Type': 'text/html' });
         res.status(status);
-        if (status !== 200) {
+        if (status === 500) {
           res.write(error500HTML);
           res.end();
         } else {

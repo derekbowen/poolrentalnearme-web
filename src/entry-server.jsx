@@ -15,6 +15,7 @@ import { authInfo } from './ducks/auth.duck';
 import appSettings from './config/settings';
 import * as apiUtils from './util/api';
 import { getSuperLoginAsUser } from './util/cookie';
+import ssrStatus from '../server/api-util/ssrStatus';
 
 const extractHostedConfig = (configAssets) => {
   const configEntries = Object.entries(configAssets);
@@ -115,6 +116,15 @@ export const renderApp = async ({ options = {}, req, res, preventDataLoadingInSs
 
     const fetchRequest = createFetchRequest(req, res);
     context = await query(fetchRequest);
+
+    // c194: routes are resolved here, server-side, so this is the only place
+    // that knows whether the URL actually matched anything. The catch-all '*'
+    // route means context.statusCode is never 404, so the miss is detected from
+    // the matched leaf route's name and handed to the renderer via res.locals.
+    // Without this every unknown URL was served as HTTP 200 (a soft 404).
+    if (res && res.locals && ssrStatus.isNotFoundContext(context)) {
+      res.locals.ssrNotFound = true;
+    }
 
     translations = translationsRaw?.data || {};
     router = createStaticRouter(dataRoutes, context);

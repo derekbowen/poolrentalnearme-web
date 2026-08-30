@@ -32,6 +32,33 @@ const placeOrigin = prediction => {
   return null;
 };
 
+/**
+ * c193: use the prediction's own extent when it has one.
+ *
+ * This previously ignored `bbox` entirely and built a 500m box around
+ * centroid for EVERY prediction — so picking a town searched a half-kilometre
+ * circle around the town centre, and picking a state searched a half-kilometre
+ * circle around the state centroid. Windham NH's centroid is 4.1km from the
+ * only pool in New Hampshire, so its host searched her own town and was told
+ * there was nothing there.
+ *
+ * Street addresses legitimately want the tight default box; places, ZIPs and
+ * states carry a bbox and should use it.
+ *
+ * bbox is [west, south, east, north], matching Mapbox.
+ */
+const placeBounds = prediction => {
+  const bbox = prediction && prediction.bbox;
+  if (!Array.isArray(bbox) || bbox.length !== 4 || !bbox.every(n => Number.isFinite(n))) {
+    return null;
+  }
+  const [west, south, east, north] = bbox;
+  if (north <= south || east <= west) {
+    return null;
+  }
+  return new SDKLatLngBounds(new SDKLatLng(north, east), new SDKLatLng(south, west));
+};
+
 export const GeocoderAttribution = () => null;
 
 class GeocoderCensus {
@@ -87,7 +114,7 @@ class GeocoderCensus {
     return Promise.resolve({
       address: this.getPredictionAddress(prediction),
       origin,
-      bounds: locationBounds(origin, GENERATED_BOUNDS_DEFAULT_DISTANCE),
+      bounds: placeBounds(prediction) || locationBounds(origin, GENERATED_BOUNDS_DEFAULT_DISTANCE),
     });
   }
 }

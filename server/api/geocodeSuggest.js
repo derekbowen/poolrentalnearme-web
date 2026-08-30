@@ -2,18 +2,29 @@
 // Added because the Google Maps key has billing disabled (REQUEST_DENIED on every
 // lookup), which hard-blocked the listing wizard's address step for all new hosts.
 // Census is keyless, free, public-domain and US-only — which matches the marketplace.
-// Swap the upstream here (single place) when a paid geocoding provider is enabled.
+//
+// c149: Census only matches STREET addresses — city/zip queries ("Modesto, CA")
+// returned zero predictions, so Nominatim (OSM) was added as a fallback for place
+// queries.
+//
+// c193: that made every city, town, ZIP and state search depend on OSM. When
+// Nominatim 429-blocked our IP, ordinary US search had nothing left, and the
+// resulting empty array was cached for 24h — one throttled minute could take
+// geographic search down for a day. A New Hampshire host reported it as "I still
+// don't see anything for myself or NH".
+//
+// Resolution order is now:
+//     query -> normalize -> LOCAL US gazetteer (ZIP / city+state / state)
+//           -> Census (street addresses)
+//           -> throttled, de-duplicated Nominatim (everything else)
+//
+// Nominatim is no longer in the critical path for ordinary US search: with the
+// local resolver, "Windham NH", "03087", "NH" and "New Hampshire" all answer
+// with zero network calls. See server/api-util/usgeo and geoUpstream.
 const CENSUS_URL = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress';
 
-// c149: Census only matches STREET addresses — city/zip queries ("Modesto, CA")
-// returned zero predictions, which silently broke the search bar marketplace-wide
-// since c133 (search fell back to an unfiltered national list). Nominatim (OSM)
-// handles place queries; used only as fallback when Census finds nothing, with a
-// 24h in-memory cache to keep request volume within OSM usage policy.
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-const NOMINATIM_UA = 'PoolRentalNearMe/1.0 (support@poolrentalnearme.com)';
-const placeCache = new Map(); // cacheKey -> { at, predictions }
-const PLACE_TTL_MS = 24 * 3600 * 1000;
+const usgeo = require('../api-util/usgeo');
+const { nominatimLookup } = require('../api-util/geoUpstream');
 
 // Canada launch: Census is US-only and fuzzy-matches across the border — a host
 // typing "100 King Street West Hamilton Ontario" was offered Hamilton, OHIO and
@@ -25,60 +36,6 @@ const CA_POSTAL = /\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRST
 const CA_ABBR = /(^|[\s,])(ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|YT|NT|NU)([\s,]|$)/; // case-sensitive: "on" the word is not a province
 const looksCanadian = q =>
   new RegExp(`\\b(canada|${CA_PROVINCES})\\b`, 'i').test(q) || CA_POSTAL.test(q) || CA_ABBR.test(q);
-
-const shortPlaceName = display => {
-  // "Modesto, Stanislaus County, California, United States" -> "Modesto, California"
-  // "Ancaster, ..., Ontario, L9G 2B9, Canada"              -> "Ancaster, Ontario"
-  const parts = String(display || '').split(',').map(p => p.trim())
-    .filter(p => p && !/county$/i.test(p) && p !== 'United States' && p !== 'Canada' && !CA_POSTAL.test(p));
-  if (parts.length <= 2) return parts.join(', ');
-  return [parts[0], parts[parts.length - 1]].join(', ');
-};
-
-// Nominatim addressdetails give a clean street line; the flat display_name for a
-// Canadian address is a 8-part chain of neighbourhoods nobody can read.
-const addressLine = row => {
-  const a = row && row.address;
-  if (!a) return null;
-  const street = [a.house_number, a.road].filter(Boolean).join(' ');
-  const city = a.city || a.town || a.village || a.hamlet || a.suburb;
-  const region = a.state || a.province;
-  const line = [street || null, city || null, [region, a.postcode].filter(Boolean).join(' ') || null]
-    .filter(Boolean).join(', ');
-  return street && line ? line : null;
-};
-
-const nominatimFallback = async (q, countryCodes = 'us') => {
-  const key = countryCodes + '|' + q.toLowerCase();
-  const hit = placeCache.get(key);
-  if (hit && Date.now() - hit.at < PLACE_TTL_MS) return hit.predictions;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 6000);
-  try {
-    const url = NOMINATIM_URL + '?format=jsonv2&addressdetails=1&limit=5&countrycodes=' +
-      encodeURIComponent(countryCodes) + '&q=' + encodeURIComponent(q);
-    const r = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': NOMINATIM_UA } });
-    const rows = await r.json();
-    const predictions = (Array.isArray(rows) ? rows : []).map(row => {
-      const street = addressLine(row);
-      const p = {
-        id: 'osm.' + row.place_id,
-        place_name: street || shortPlaceName(row.display_name),
-        center: [parseFloat(row.lon), parseFloat(row.lat)],
-        place_type: [street ? 'address' : 'place'],
-      };
-      const bb = row.boundingbox; // [south, north, west, east] as strings
-      if (Array.isArray(bb) && bb.length === 4) {
-        p.bbox = [parseFloat(bb[2]), parseFloat(bb[0]), parseFloat(bb[3]), parseFloat(bb[1])];
-      }
-      return p;
-    }).filter(p => Number.isFinite(p.center[0]) && Number.isFinite(p.center[1]));
-    placeCache.set(key, { at: Date.now(), predictions });
-    return predictions;
-  } finally {
-    clearTimeout(timer);
-  }
-};
 
 const titleCase = s =>
   String(s || '')
@@ -95,47 +52,61 @@ const formatAddress = matched => {
   return titleCase(matched);
 };
 
-module.exports = async (req, res) => {
-  const q = String(req.query.q || '').trim();
-  if (q.length < 4) {
-    return res.status(200).json({ predictions: [] });
-  }
-  if (looksCanadian(q)) {
-    // Census would answer with a same-named US city; never let it near this query.
-    const caPredictions = await nominatimFallback(q, 'ca').catch(() => []);
-    // Only a hint, not a guarantee (a US street can be named "Canada Rd"), so an
-    // empty Canadian result falls through to the normal US-first path below.
-    if (caPredictions.length > 0) {
-      return res.status(200).json({ predictions: caPredictions });
-    }
-  }
+const censusLookup = async q => {
+  const url = `${CENSUS_URL}?address=${encodeURIComponent(q)}&benchmark=Public_AR_Current&format=json`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    const url =
-      CENSUS_URL +
-      '?address=' +
-      encodeURIComponent(q) +
-      '&benchmark=Public_AR_Current&format=json';
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
     const r = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
     const data = await r.json();
     const matches = (data && data.result && data.result.addressMatches) || [];
-    const predictions = matches.slice(0, 5).map(m => ({
-      id: 'census.' + String(m.matchedAddress || '').replace(/[^A-Za-z0-9]+/g, '-'),
+    return matches.slice(0, 5).map(m => ({
+      id: `census.${String(m.matchedAddress || '').replace(/[^A-Za-z0-9]+/g, '-')}`,
       place_name: formatAddress(m.matchedAddress),
       center: [m.coordinates.x, m.coordinates.y],
       place_type: ['address'],
+      source: 'census',
     }));
-    if (predictions.length === 0) {
-      // No street match: treat as a city/zip/place query.
-      const placePredictions = await nominatimFallback(q, 'us,ca').catch(() => []);
-      return res.status(200).json({ predictions: placePredictions });
-    }
-    return res.status(200).json({ predictions });
   } catch (e) {
-    // Census upstream hiccup: still try the place fallback before giving up.
-    const placePredictions = await nominatimFallback(q, 'us,ca').catch(() => []);
-    return res.status(200).json({ predictions: placePredictions });
+    return null; // upstream problem, not "no such address"
+  } finally {
+    clearTimeout(timer);
   }
+};
+
+module.exports = async (req, res) => {
+  const q = String(req.query.q || '').trim();
+
+  // The length guard stops 1-2 character noise reaching any upstream on every
+  // keystroke. Valid two-letter state abbreviations and ZIPs are real searches
+  // and must not be swallowed by it — "NH" returned nothing before c193.
+  if (q.length < 4 && !usgeo.isShortButValid(q)) {
+    return res.status(200).json({ predictions: [] });
+  }
+
+  // 1. Local US data first: no network, cannot be rate-limited, always available.
+  const local = usgeo.resolveLocal(q);
+  if (local.length > 0) {
+    return res.status(200).json({ predictions: local });
+  }
+
+  // 2. Canada hint: never let Census answer a Canadian query with a US city.
+  if (looksCanadian(q)) {
+    const ca = await nominatimLookup(q, 'ca');
+    if (ca.predictions.length > 0) {
+      return res.status(200).json({ predictions: ca.predictions });
+    }
+    // Only a hint, not a guarantee (a US street can be named "Canada Rd"), so an
+    // empty Canadian result falls through to the normal US-first path below.
+  }
+
+  // 3. Census for street addresses.
+  const census = await censusLookup(q);
+  if (census && census.length > 0) {
+    return res.status(200).json({ predictions: census });
+  }
+
+  // 4. Anything left over: throttled, de-duplicated, correctly-cached OSM.
+  const place = await nominatimLookup(q, 'us,ca');
+  return res.status(200).json({ predictions: place.predictions });
 };

@@ -20,3 +20,7 @@ dist
 # Server-side lead capture store (JSONL append-only). Swap for a real
 # database before production — this is a file-based fallback.
 server/data/
+
+# Python bytecode from scripts/ (e.g. the availability_block tests)
+__pycache__/
+*.pyc

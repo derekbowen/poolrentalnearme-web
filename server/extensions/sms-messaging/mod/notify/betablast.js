@@ -4,12 +4,18 @@
 // number, logs every send to sms_log. Set BLAST_DRY_RUN=true to preview counts
 // without sending a single text.
 //
+// Gates, in order: opt-out (STOP) → already enrolled → marketing consent.
+// Consent defaults to fail-closed for accounts that predate the signup
+// checkbox; see consent.js and SMS_MARKETING_UNKNOWN_POLICY. Always dry-run
+// first and read skipped_marketing_unknown before deciding that policy.
+//
 // Run:  docker exec poolrentalnearme-production sh -lc 'BLAST_DRY_RUN=true bun /path/betablast.js'
 
 const sdk = require('api-util/integration');
 const twsend = require('./twsend');
 const store = require('./supastore');
 const { isTestAccount } = require('./exclude');
+const consent = require('./consent');
 
 const DRY = process.env.BLAST_DRY_RUN === 'true';
 const THROTTLE_MS = Number(process.env.BLAST_THROTTLE_MS || 400); // toll-free ~3/s
@@ -36,7 +42,17 @@ const collectHosts = async () => {
   let page = 1, pages = 1;
   do {
     const res = await sdk.listings.query(
-      { states: ['published'], perPage: 100, page, include: ['author'], 'fields.user': ['profile.displayName', 'profile.protectedData'] },
+      {
+        states: ['published'],
+        perPage: 100,
+        page,
+        include: ['author'],
+        // `email` is not optional here even though nothing prints it:
+        // isTestAccount() matches on it, and a sparse fieldset that omits it
+        // returns users with no email at all, so the test-account guard
+        // silently passed every synthetic account through.
+        'fields.user': ['email', 'profile.displayName', 'profile.protectedData'],
+      },
       { allowRawResponse: true }
     );
     const raw = res._raw.data;
@@ -45,7 +61,12 @@ const collectHosts = async () => {
       if (isTestAccount(u)) continue;
       const phone = toE164(u.attributes?.profile?.protectedData?.phoneNumber);
       if (phone && phone.length >= 12 && !hosts.has(phone)) {
-        hosts.set(phone, { phone, name: u.attributes?.profile?.displayName || '', userId: u.id.uuid });
+        hosts.set(phone, {
+          phone,
+          name: u.attributes?.profile?.displayName || '',
+          userId: u.id.uuid,
+          marketingConsent: consent.marketingConsentState(u),
+        });
       }
     }
     page++;
@@ -55,12 +76,29 @@ const collectHosts = async () => {
 
 const run = async () => {
   const hosts = await collectHosts();
-  log(`hosts with valid phone: ${hosts.length}  (DRY_RUN=${DRY})`);
-  const stats = { sent: 0, skipped_opted_out: 0, skipped_enrolled: 0, failed: 0, dry_would_send: 0 };
+  const policy = consent.unknownPolicy();
+  log(`hosts with valid phone: ${hosts.length}  (DRY_RUN=${DRY}, unknown-consent policy=${policy})`);
+  const stats = {
+    sent: 0,
+    skipped_opted_out: 0,
+    skipped_enrolled: 0,
+    // Split deliberately: 'denied' is a host who unticked the box, 'unknown'
+    // is a host who signed up before the box existed. Only the second number
+    // moves if the policy flag changes, so a dry run has to show them apart.
+    skipped_marketing_denied: 0,
+    skipped_marketing_unknown: 0,
+    failed: 0,
+    dry_would_send: 0,
+  };
   for (const host of hosts) {
     const { phone } = host;
     if (await store.isOptedOut(phone)) { stats.skipped_opted_out++; continue; }
     if (await store.isBetaEnrolled(phone)) { stats.skipped_enrolled++; continue; }
+    if (!consent.isMarketingAllowed(host.marketingConsent, policy)) {
+      if (host.marketingConsent === consent.DENIED) stats.skipped_marketing_denied++;
+      else stats.skipped_marketing_unknown++;
+      continue;
+    }
     if (DRY) { stats.dry_would_send++; continue; }
     try {
       const msg = await twsend({ body: INVITE, phoneNumber: phone });

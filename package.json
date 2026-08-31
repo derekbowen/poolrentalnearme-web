@@ -187,7 +187,7 @@
     "check:profile-schema": "node scripts/validate-profilepage-schema.mjs",
     "providers:activation-audit": "node scripts/providers-activation-audit.js",
     "lint:changed": "eslint --ext .js,.jsx",
-    "test-server": "jest ./server/**/*.test.js",
+    "test-server": "jest server",
     "translate": "node scripts/translations.js",
     "build": "bun run build:client && bun run build:server",
     "build:client": "NODE_ENV=production vite build --outDir dist/client",

@@ -58,16 +58,27 @@ const collectHosts = async () => {
     const raw = res._raw.data;
     pages = raw.meta?.totalPages || 1;
     for (const u of (raw.included || []).filter(i => i.type === 'user')) {
-      if (isTestAccount(u)) continue;
       const phone = toE164(u.attributes?.profile?.protectedData?.phoneNumber);
-      if (phone && phone.length >= 12 && !hosts.has(phone)) {
+      if (!phone || phone.length < 12) continue;
+      const state = consent.marketingConsentState(u);
+      const existing = hosts.get(phone);
+      if (!existing) {
         hosts.set(phone, {
           phone,
           name: u.attributes?.profile?.displayName || '',
           userId: u.id.uuid,
-          marketingConsent: consent.marketingConsentState(u),
+          email: u.attributes?.email || '',
+          isTest: isTestAccount(u),
+          marketingConsent: state,
         });
+        continue;
       }
+      // Two accounts sharing one phone. Dedup is per-phone but consent is
+      // per-account, so first-write-wins would let a page-order accident
+      // decide whether a recorded "no" counts. Merge to the most restrictive
+      // answer instead, and let either account mark the number synthetic.
+      existing.marketingConsent = consent.mostRestrictive(existing.marketingConsent, state);
+      existing.isTest = existing.isTest || isTestAccount(u);
     }
     page++;
   } while (page <= pages && page <= 50);
@@ -82,6 +93,9 @@ const run = async () => {
     sent: 0,
     skipped_opted_out: 0,
     skipped_enrolled: 0,
+    // Counted, not dropped silently during collection: an over-broad exclude
+    // rule has to be visible in a dry run, not invisible upstream of stats.
+    skipped_test_account: 0,
     // Split deliberately: 'denied' is a host who unticked the box, 'unknown'
     // is a host who signed up before the box existed. Only the second number
     // moves if the policy flag changes, so a dry run has to show them apart.
@@ -92,6 +106,11 @@ const run = async () => {
   };
   for (const host of hosts) {
     const { phone } = host;
+    if (host.isTest) {
+      stats.skipped_test_account++;
+      log('skipped test account', host.email || phone);
+      continue;
+    }
     if (await store.isOptedOut(phone)) { stats.skipped_opted_out++; continue; }
     if (await store.isBetaEnrolled(phone)) { stats.skipped_enrolled++; continue; }
     if (!consent.isMarketingAllowed(host.marketingConsent, policy)) {

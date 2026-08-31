@@ -67,6 +67,32 @@ describe('unknownPolicy', () => {
   });
 });
 
+describe('mostRestrictive (two accounts sharing one phone)', () => {
+  it('lets a recorded no outrank everything', () => {
+    expect(consent.mostRestrictive(consent.GRANTED, consent.DENIED)).toBe(consent.DENIED);
+    expect(consent.mostRestrictive(consent.DENIED, consent.GRANTED)).toBe(consent.DENIED);
+    expect(consent.mostRestrictive(consent.UNKNOWN, consent.DENIED)).toBe(consent.DENIED);
+  });
+
+  it('lets unknown outrank granted', () => {
+    expect(consent.mostRestrictive(consent.GRANTED, consent.UNKNOWN)).toBe(consent.UNKNOWN);
+    expect(consent.mostRestrictive(consent.UNKNOWN, consent.GRANTED)).toBe(consent.UNKNOWN);
+  });
+
+  it('only stays granted when both say yes', () => {
+    expect(consent.mostRestrictive(consent.GRANTED, consent.GRANTED)).toBe(consent.GRANTED);
+  });
+
+  it('is order-independent', () => {
+    const states = [consent.GRANTED, consent.DENIED, consent.UNKNOWN];
+    for (const a of states) {
+      for (const b of states) {
+        expect(consent.mostRestrictive(a, b)).toBe(consent.mostRestrictive(b, a));
+      }
+    }
+  });
+});
+
 describe('isMarketingAllowed', () => {
   it('sends to a host who granted consent under either policy', () => {
     expect(consent.isMarketingAllowed(consent.GRANTED, consent.POLICY_BLOCK)).toBe(true);

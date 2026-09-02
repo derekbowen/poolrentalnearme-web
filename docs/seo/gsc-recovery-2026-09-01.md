@@ -227,7 +227,11 @@ marketing site is a separate tree — proposed patches in `docs/seo/patches-2026
 ## 6. Structured data and internal linking
 
 - **JobPosting**: already removed 2026-08-20 on Derek's call; the 1,798 → 63 job-appearance
-  drop is that removal, not a defect. No action. Do not reinstate.
+  drop is that removal, not a defect. No action. Do not reinstate. **Correction
+  (2026-09-02):** this explains the job-rich-result line only — ≈589 impressions and ≈10
+  clicks a week against a weekly shortfall of 15,647 impressions and 202 clicks, i.e.
+  ≈3.4% and ≈5%. It is not the cause of the property-wide decline, which stays open
+  (see `changes-2026-09-02.md` §7).
 - **AggregateRating on 9,413 pages**: an Organization-level rating (hardcoded 5.0 / 10 from GBP,
   snapshot 2026-05-30) is attached to every page including a 404 shell. Google's review-snippet
   policy excludes self-serving reviews on `Organization`; this earns nothing and risks a
@@ -326,7 +330,18 @@ canonical + no noindex; sitemap byte-stability; exactly one H1 per indexable pag
 
 ---
 
-## 11. What was changed (this repository only; nothing deployed)
+## 10b. Indexability is conditional (owner correction, 2026-09-02)
+
+The §2 matrix says which families *may* stay indexed; it is not proof that every page
+in them should. A page stays in a sitemap only while it passes the quality gate:
+accurate approved claims · genuine user value · unique primary content · real inventory
+or verified local information · no placeholders or malformed markup · one clear intent
+· self-canonical 200 · meaningful internal links. Per-family pass/fail on the measurable
+criteria is in `changes-2026-09-02.md` §5 (9,108 pass, 1,044 fail at least one; the
+content-uniqueness, value, inventory and link criteria are not yet measured). Failing
+pages are not added to sitemaps; 205 were removed on 2026-09-02.
+
+## 11. What was changed (this repository only at the time of writing — see `changes-2026-09-02.md` for what shipped on 2026-09-02)
 
 - `f926c34` — real HTTP 404 for matched-but-missing pages (dead listing id, missing CMS asset,
   capitalised path) via a per-request SSR signal; bare `/s` gets a real, always-present `<h1>`.

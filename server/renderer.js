@@ -98,7 +98,21 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // Both channels: a router miss (set before render) and a matched
         // route that rendered NotFoundPage (set during render — which is
         // why this is read here, after the shell, and not earlier).
-        status = ssrStatus.resolveRenderStatus(status, ssrStatus.isNotFoundLocals(res.locals));
+        const notFound = ssrStatus.isNotFoundLocals(res.locals);
+        status = ssrStatus.resolveRenderStatus(status, notFound);
+        // A recognised page reached through an alternate spelling (uppercase,
+        // trailing slash, doubled slash) gets ONE 301 to its canonical path.
+        // Decided here, after the shell, so an unknown slug in an odd spelling
+        // is a plain 404 and never a redirect hop. Nothing has been written to
+        // the response yet, so the redirect is clean; the render stream is
+        // simply never piped and is aborted by the streaming timer.
+        const redirectTo =
+          status === 200 ? ssrStatus.resolveCanonicalRedirect(req, notFound) : null;
+        if (redirectTo) {
+          res.set('Cache-Control', 'public, max-age=86400');
+          res.redirect(301, redirectTo);
+          return;
+        }
         res.set({ 'Content-Type': 'text/html' });
         res.status(status);
         if (status === 500) {

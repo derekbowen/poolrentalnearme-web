@@ -87,3 +87,74 @@ describe('resolveRenderStatus()', () => {
     expect(resolveRenderStatus(500, false)).toEqual(500);
   });
 });
+
+const ssrStatusMod = require('./ssrStatus');
+
+describe('canonicalPath', () => {
+  const { canonicalPath } = ssrStatusMod;
+  it('lowercases and strips a trailing slash, keeping the root', () => {
+    expect(canonicalPath('/P/How-It-Works')).toBe('/p/how-it-works');
+    expect(canonicalPath('/p/how-it-works/')).toBe('/p/how-it-works');
+    expect(canonicalPath('/S/')).toBe('/s');
+    expect(canonicalPath('/')).toBe('/');
+    expect(canonicalPath('')).toBe('/');
+  });
+  it('collapses doubled slashes', () => {
+    expect(canonicalPath('//p//faq')).toBe('/p/faq');
+  });
+  it('leaves an already-canonical path alone', () => {
+    expect(canonicalPath('/l/backyard-oasis/6a94fb19-0000-0000-0000-000000000000')).toBe(
+      '/l/backyard-oasis/6a94fb19-0000-0000-0000-000000000000'
+    );
+  });
+});
+
+describe('resolveCanonicalRedirect — recognised alternates 301, unknown slugs 404', () => {
+  const { resolveCanonicalRedirect } = ssrStatusMod;
+  const get = (path, search = '') => ({ method: 'GET', path, search });
+
+  it('/P/FAQ that rendered a real page → one 301 to /p/faq', () => {
+    expect(resolveCanonicalRedirect(get('/P/FAQ'), false)).toBe('/p/faq');
+  });
+  it('/P/FAQ whose page does not exist → no redirect (the 404 stands)', () => {
+    expect(resolveCanonicalRedirect(get('/P/FAQ'), true)).toBeNull();
+  });
+  it('unknown CMS slug → 404, never a hop', () => {
+    expect(resolveCanonicalRedirect(get('/p/no-such-page'), true)).toBeNull();
+    expect(resolveCanonicalRedirect(get('/p/No-Such-Page/'), true)).toBeNull();
+  });
+  it('missing listing id → 404, never a hop', () => {
+    expect(
+      resolveCanonicalRedirect(get('/l/some-pool/00000000-0000-0000-0000-000000000000'), true)
+    ).toBeNull();
+  });
+  it('trailing-slash variants of real pages → 301 without the slash', () => {
+    expect(resolveCanonicalRedirect(get('/p/how-it-works/'), false)).toBe('/p/how-it-works');
+    expect(resolveCanonicalRedirect(get('/s/'), false)).toBe('/s');
+    expect(resolveCanonicalRedirect(get('/'), false)).toBeNull();
+  });
+  it('double-prefix paths are unknown routes → 404', () => {
+    expect(resolveCanonicalRedirect(get('/p/p/how-it-works'), true)).toBeNull();
+    expect(resolveCanonicalRedirect(get('/l/l/some-pool/abc'), true)).toBeNull();
+  });
+  it('keeps the query string byte-for-byte (search params are case-significant)', () => {
+    expect(resolveCanonicalRedirect(get('/S/', '?address=Lancaster%2C%20PA'), false)).toBe(
+      '/s?address=Lancaster%2C%20PA'
+    );
+  });
+  it('reads the query from an express request (originalUrl), untouched', () => {
+    expect(
+      resolveCanonicalRedirect({ method: 'GET', path: '/P/FAQ/', originalUrl: '/P/FAQ/?a=B%20c' }, false)
+    ).toBe('/p/faq?a=B%20c');
+  });
+  it('canonical path that rendered → nothing to do', () => {
+    expect(resolveCanonicalRedirect(get('/p/how-it-works'), false)).toBeNull();
+  });
+  it('never redirects a non-GET', () => {
+    expect(resolveCanonicalRedirect({ method: 'POST', path: '/P/FAQ', search: '' }, false)).toBeNull();
+  });
+  it('a router-level miss (channel 1) is a 404 even in an alternate spelling', () => {
+    const locals = { ssrNotFound: true };
+    expect(resolveCanonicalRedirect(get('/Unknown-Route/'), ssrStatusMod.isNotFoundLocals(locals))).toBeNull();
+  });
+});

@@ -91,8 +91,80 @@ const isNotFoundLocals = locals => {
   return !!(signal && typeof signal === 'object' && signal.notFound === true);
 };
 
+/**
+ * The one canonical spelling of a request path: lowercase, single slashes,
+ * no trailing slash (the root stays "/"). The query string is not part of
+ * this — search parameters such as `?address=Lancaster, PA` are case-
+ * significant and are carried over untouched by resolveCanonicalRedirect.
+ *
+ * Every public marketplace path is lowercase by construction (Sharetribe
+ * slugs, UUIDs, CMS page ids, /go/<slug>-<uuid8>), so an uppercase letter or
+ * a trailing slash is always an alternate spelling of a real URL, never a
+ * distinct page.
+ *
+ * @param {string} pathname
+ * @returns {string}
+ */
+const canonicalPath = pathname => {
+  if (typeof pathname !== 'string' || pathname === '') {
+    return '/';
+  }
+  let p = pathname.replace(/\/{2,}/g, '/').toLowerCase();
+  if (p.length > 1) {
+    p = p.replace(/\/+$/, '');
+  }
+  if (!p.startsWith('/')) {
+    p = '/' + p;
+  }
+  return p || '/';
+};
+
+/**
+ * Should this request be answered with one 301 to its canonical spelling?
+ *
+ * The rule (2026-09-02): a recognised URL in an alternate form — wrong
+ * capitalisation, trailing slash, doubled slash — gets a single 301 to the
+ * lowercase canonical. A genuinely unknown slug gets a 404 and never a hop,
+ * so this is decided AFTER the shell rendered: only a page that actually
+ * rendered (not NotFoundPage) is worth redirecting to. `/P/How-It-Works`
+ * therefore 301s to `/p/how-it-works`, while `/P/No-Such-Page` is a 404.
+ *
+ * Only GET/HEAD are redirected; a POST to an odd spelling is left alone.
+ *
+ * @param {Object} req  express request (method, path, originalUrl) or { method, path, search }
+ * @param {boolean} notFound whether the render ended on NotFoundPage
+ * @returns {string|null} redirect target (path + original query) or null
+ */
+const resolveCanonicalRedirect = (req, notFound) => {
+  if (!req || typeof req !== 'object') {
+    return null;
+  }
+  const method = typeof req.method === 'string' ? req.method.toUpperCase() : 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    return null;
+  }
+  if (notFound) {
+    return null;
+  }
+  const path = typeof req.path === 'string' ? req.path : '';
+  const canonical = canonicalPath(path);
+  if (canonical === path) {
+    return null;
+  }
+  // express has no req.search; the raw query lives on originalUrl / url.
+  let search = typeof req.search === 'string' ? req.search : '';
+  if (!search) {
+    const raw = typeof req.originalUrl === 'string' ? req.originalUrl : req.url;
+    const q = typeof raw === 'string' ? raw.indexOf('?') : -1;
+    search = q >= 0 ? raw.slice(q) : '';
+  }
+  return canonical + search;
+};
+
 module.exports = {
   NOT_FOUND_ROUTE_NAME,
+  canonicalPath,
+  resolveCanonicalRedirect,
   isNotFoundContext,
   isNotFoundLocals,
   resolveRenderStatus,

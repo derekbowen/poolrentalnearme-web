@@ -98,6 +98,11 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // Both channels: a router miss (set before render) and a matched
         // route that rendered NotFoundPage (set during render — which is
         // why this is read here, after the shell, and not earlier).
+        // An entity path whose id can never resolve (/l/x/abc, /l/l/x/y, /u/abc)
+        // renders a permanent loading shell, never NotFoundPage — decide it here.
+        if (ssrStatus.isMalformedEntityPath(req.path)) {
+          res.locals.ssrMalformed = true;
+        }
         const notFound = ssrStatus.isNotFoundLocals(res.locals);
         status = ssrStatus.resolveRenderStatus(status, notFound);
         // A recognised page reached through an alternate spelling (uppercase,
@@ -114,6 +119,9 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
           return;
         }
         res.set({ 'Content-Type': 'text/html' });
+        if (status === 404) {
+          res.set('X-Robots-Tag', 'noindex, follow');
+        }
         res.status(status);
         if (status === 500) {
           res.write(error500HTML);

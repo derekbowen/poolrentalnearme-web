@@ -158,3 +158,35 @@ describe('resolveCanonicalRedirect — recognised alternates 301, unknown slugs 
     expect(resolveCanonicalRedirect(get('/Unknown-Route/'), ssrStatusMod.isNotFoundLocals(locals))).toBeNull();
   });
 });
+
+describe('isMalformedEntityPath — ids that can never resolve are 404 before render', () => {
+  const { isMalformedEntityPath } = ssrStatusMod;
+  const UUID = '6a94fb19-fb02-4392-86fa-b32a205afdf1';
+  it('flags non-UUID listing ids, including the double-prefix form', () => {
+    expect(isMalformedEntityPath('/l/some-pool/abc')).toBe(true);
+    expect(isMalformedEntityPath('/l/l/some-pool/abc')).toBe(true);
+    expect(isMalformedEntityPath('/l/some-pool/abc/xyz')).toBe(true);
+    expect(isMalformedEntityPath('/L/Some-Pool/abc')).toBe(true);
+  });
+  it('flags non-UUID profile ids', () => {
+    expect(isMalformedEntityPath('/u/abc')).toBe(true);
+    expect(isMalformedEntityPath('/u/abc/listings')).toBe(true);
+  });
+  it('leaves real ids and id-less listing routes alone', () => {
+    expect(isMalformedEntityPath(`/l/some-pool/${UUID}`)).toBe(false);
+    expect(isMalformedEntityPath(`/l/some-pool/${UUID}/pending-approval`)).toBe(false);
+    expect(isMalformedEntityPath(`/l/draft/${UUID}/new/details`)).toBe(false);
+    expect(isMalformedEntityPath('/l/new')).toBe(false);
+    expect(isMalformedEntityPath(`/u/${UUID}`)).toBe(false);
+    expect(isMalformedEntityPath('/p/how-it-works')).toBe(false);
+    expect(isMalformedEntityPath('/')).toBe(false);
+  });
+  it('is read by isNotFoundLocals so the status and the no-redirect rule follow', () => {
+    const locals = { ssrMalformed: true };
+    expect(ssrStatusMod.isNotFoundLocals(locals)).toBe(true);
+    expect(ssrStatusMod.resolveRenderStatus(200, ssrStatusMod.isNotFoundLocals(locals))).toBe(404);
+    expect(
+      ssrStatusMod.resolveCanonicalRedirect({ method: 'GET', path: '/L/L/Some-Pool/abc', originalUrl: '/L/L/Some-Pool/abc' }, true)
+    ).toBeNull();
+  });
+});

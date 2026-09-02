@@ -84,7 +84,7 @@ const isNotFoundLocals = locals => {
   if (!locals || typeof locals !== 'object') {
     return false;
   }
-  if (locals.ssrNotFound === true) {
+  if (locals.ssrNotFound === true || locals.ssrMalformed === true) {
     return true;
   }
   const signal = locals.ssrSignal;
@@ -161,9 +161,49 @@ const resolveCanonicalRedirect = (req, notFound) => {
   return canonical + search;
 };
 
+/**
+ * Entity routes whose id segment cannot possibly resolve.
+ *
+ * `/l/:slug/:id[/…]` and `/u/:id[/…]` take a Sharetribe UUID. When the id
+ * segment is not one — `/l/some-pool/abc`, the double-prefix
+ * `/l/l/some-pool/abc` (slug "l", id "some-pool"), `/u/abc` — the page
+ * renders a permanent loading shell (the SDK call never returns a listing, so
+ * NotFoundPage is never reached) and used to answer 200. There is nothing to
+ * fetch: treat it as not found before rendering.
+ *
+ * `/l/new` and `/l/draft/<uuid>/new/details` are left alone (no id segment /
+ * a real UUID), as is everything outside these two prefixes.
+ *
+ * @param {string} pathname
+ * @returns {boolean}
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isMalformedEntityPath = pathname => {
+  if (typeof pathname !== 'string') {
+    return false;
+  }
+  const seg = pathname.split('/').filter(Boolean);
+  if (seg.length < 2) {
+    return false;
+  }
+  const [prefix] = seg;
+  if (prefix.toLowerCase() === 'l') {
+    // /l/new has no id; /l/<slug>/<id>… must carry a UUID in position 3.
+    if (seg.length === 2) {
+      return false;
+    }
+    return !UUID_RE.test(seg[2]);
+  }
+  if (prefix.toLowerCase() === 'u') {
+    return !UUID_RE.test(seg[1]);
+  }
+  return false;
+};
+
 module.exports = {
   NOT_FOUND_ROUTE_NAME,
   canonicalPath,
+  isMalformedEntityPath,
   resolveCanonicalRedirect,
   isNotFoundContext,
   isNotFoundLocals,

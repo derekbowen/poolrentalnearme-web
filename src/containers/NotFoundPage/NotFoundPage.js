@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useConfiguration } from '../../context/configurationContext';
 import { useRouteConfiguration } from '../../context/routeConfigurationContext';
+import { useSsrSignal } from '../../context/ssrSignalContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { createResourceLocatorString } from '../../util/routes';
 import { isMainSearchTypeKeywords } from '../../util/search';
@@ -97,6 +98,14 @@ const EnhancedNotFoundPage = (props) => {
   const config = useConfiguration();
   const navigate = useNavigate();
   const intl = useIntl();
+  // Server render only (null on the client). Flipping this is what turns a
+  // matched-route-but-missing-data render — a dead listing id, a CMS page
+  // with no asset, a capitalised path — into a real HTTP 404 instead of a
+  // 200 that says "Page not found". See src/context/ssrSignalContext.js.
+  const ssrSignal = useSsrSignal();
+  if (ssrSignal) {
+    ssrSignal.notFound = true;
+  }
 
   return (
     <NotFoundPageComponent

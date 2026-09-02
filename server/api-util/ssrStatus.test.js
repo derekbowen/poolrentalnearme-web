@@ -1,8 +1,39 @@
 const {
   isNotFoundContext,
+  isNotFoundLocals,
   resolveRenderStatus,
   NOT_FOUND_ROUTE_NAME,
 } = require('./ssrStatus');
+
+describe('isNotFoundLocals()', () => {
+  it('is false for a normal render', () => {
+    expect(isNotFoundLocals({})).toBe(false);
+    expect(isNotFoundLocals({ ssrSignal: { notFound: false } })).toBe(false);
+    expect(isNotFoundLocals(undefined)).toBe(false);
+    expect(isNotFoundLocals(null)).toBe(false);
+  });
+
+  it('honours the c194 router-miss flag', () => {
+    expect(isNotFoundLocals({ ssrNotFound: true })).toBe(true);
+  });
+
+  it('honours the render-time signal: a matched route that rendered NotFoundPage', () => {
+    // A dead listing id, a CMS page with no asset, or /P/How-It-Works matched
+    // case-insensitively all land here — the router is happy, the page is not.
+    expect(isNotFoundLocals({ ssrSignal: { notFound: true } })).toBe(true);
+  });
+
+  it('does not treat a truthy non-boolean as a miss', () => {
+    expect(isNotFoundLocals({ ssrNotFound: 'yes' })).toBe(false);
+    expect(isNotFoundLocals({ ssrSignal: { notFound: 'yes' } })).toBe(false);
+    expect(isNotFoundLocals({ ssrSignal: 'notFound' })).toBe(false);
+  });
+
+  it('still yields a 404 through resolveRenderStatus, and a 500 still wins', () => {
+    expect(resolveRenderStatus(200, isNotFoundLocals({ ssrSignal: { notFound: true } }))).toBe(404);
+    expect(resolveRenderStatus(500, isNotFoundLocals({ ssrSignal: { notFound: true } }))).toBe(500);
+  });
+});
 
 const ctx = (...names) => ({ matches: names.map(name => ({ route: { name } })) });
 

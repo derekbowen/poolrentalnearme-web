@@ -16,6 +16,7 @@ import appSettings from './config/settings';
 import * as apiUtils from './util/api';
 import { getSuperLoginAsUser } from './util/cookie';
 import ssrStatus from '../server/api-util/ssrStatus';
+import { createSsrSignal } from './context/ssrSignalContext';
 
 const extractHostedConfig = (configAssets) => {
   const configEntries = Object.entries(configAssets);
@@ -130,6 +131,15 @@ export const renderApp = async ({ options = {}, req, res, preventDataLoadingInSs
     router = createStaticRouter(dataRoutes, context);
   }
 
+  // Second not-found channel: a route that matched but rendered NotFoundPage
+  // anyway (missing listing, missing CMS asset, case-mismatched path). The
+  // page flips this object during render; the renderer reads it once the
+  // shell is ready. One object per request — never shared across renders.
+  const ssrSignal = createSsrSignal();
+  if (res && res.locals) {
+    res.locals.ssrSignal = ssrSignal;
+  }
+
   return {
     ...renderToPipeableStream(
       <ServerApp
@@ -141,6 +151,7 @@ export const renderApp = async ({ options = {}, req, res, preventDataLoadingInSs
         router={router}
         context={context}
         routeConfig={routeConfig}
+        ssrSignal={ssrSignal}
       />,
       options
     ),

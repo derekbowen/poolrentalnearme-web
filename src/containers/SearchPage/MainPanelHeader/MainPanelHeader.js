@@ -42,20 +42,27 @@ const MainPanelHeader = props => {
     searchAddress && searchAddress !== 'Current location' ? searchAddress : 'you';
   const showHeading = !searchInProgress && resultsCount > 0 && !!searchAddress;
 
+  // The search page is the marketplace's main discovery entry point and, until
+  // now, had no <h1> at all: the heading above was a styled <div>, and only
+  // rendered once a located search returned results. Google saw a 2,972-
+  // impression page with no primary heading. It is now a real <h1>, always
+  // present: "Pools near {place}" for a located search, and the generic
+  // "Pool rentals near you" for the bare /s hub. Same visual style.
+  const headingText = showHeading ? `Pools near ${prettyLocation}` : 'Pool rentals near you';
+
   return (
     <div className={classes}>
-      {showHeading ? (
-        <div
-          style={{
-            fontSize: '22px',
-            fontWeight: 600,
-            margin: '0 0 6px 0',
-            color: '#0b2733',
-          }}
-        >
-          {`Pools near ${prettyLocation}`}
-        </div>
-      ) : null}
+      <h1
+        style={{
+          fontSize: '22px',
+          fontWeight: 600,
+          margin: '0 0 6px 0',
+          color: '#0b2733',
+          lineHeight: 1.3,
+        }}
+      >
+        {headingText}
+      </h1>
       <div className={css.searchOptions}>
         <div className={css.searchResultSummary}>
           <span className={css.resultsFound}>

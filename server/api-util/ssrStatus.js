@@ -64,4 +64,36 @@ const resolveRenderStatus = (current, notFound) => {
   return notFound ? 404 : 200;
 };
 
-module.exports = { NOT_FOUND_ROUTE_NAME, isNotFoundContext, resolveRenderStatus };
+/**
+ * Did this request end up on a not-found page by EITHER channel?
+ *
+ * Channel 1 (c194): the router itself missed — entry-server sets
+ * `locals.ssrNotFound` after matching.
+ * Channel 2: a route matched but the page rendered <NotFoundPage> anyway
+ * (listing id that no longer resolves, CMS page id with no asset, path that
+ * React Router matched case-insensitively). NotFoundPage flips
+ * `locals.ssrSignal.notFound` during render.
+ *
+ * Read this only after the shell has rendered — channel 2 is set during
+ * render, not before it.
+ *
+ * @param {Object} locals express res.locals
+ * @returns {boolean}
+ */
+const isNotFoundLocals = locals => {
+  if (!locals || typeof locals !== 'object') {
+    return false;
+  }
+  if (locals.ssrNotFound === true) {
+    return true;
+  }
+  const signal = locals.ssrSignal;
+  return !!(signal && typeof signal === 'object' && signal.notFound === true);
+};
+
+module.exports = {
+  NOT_FOUND_ROUTE_NAME,
+  isNotFoundContext,
+  isNotFoundLocals,
+  resolveRenderStatus,
+};

@@ -13,6 +13,7 @@ import defaultConfig from './config/configDefault';
 import appSettings from './config/settings';
 import { ConfigurationProvider } from './context/configurationContext';
 import { RouteConfigurationProvider } from './context/routeConfigurationContext';
+import { SsrSignalProvider } from './context/ssrSignalContext';
 import { getAllExtensionTranslationFile } from './extension';
 import defaultMessages from './translations/en.json';
 import { mergeConfig } from './util/configHelpers';
@@ -189,6 +190,8 @@ export const ServerApp = (props) => {
     hostedConfig = {},
     router,
     routeConfig,
+    // Per-request not-found signal from entry-server (see ssrSignalContext).
+    ssrSignal = null,
   } = props;
   const appConfig = mergeConfig(hostedConfig, defaultConfig);
   HelmetProvider.canUseDOM = false;
@@ -205,20 +208,22 @@ export const ServerApp = (props) => {
   }
 
   return (
-    <Configurations appConfig={appConfig} routeConfig={routeConfig}>
-      <IntlProvider
-        locale={appConfig.localization.locale}
-        messages={{ ...localeMessages, ...hostedTranslations }}
-        textComponent="span"
-      >
-        <Provider store={store}>
-          <HelmetProvider context={helmetContext}>
-            <IncludeScripts config={appConfig} />
-            <StaticRouterProvider hydrate router={router} context={context} />
-          </HelmetProvider>
-        </Provider>
-      </IntlProvider>
-    </Configurations>
+    <SsrSignalProvider value={ssrSignal}>
+      <Configurations appConfig={appConfig} routeConfig={routeConfig}>
+        <IntlProvider
+          locale={appConfig.localization.locale}
+          messages={{ ...localeMessages, ...hostedTranslations }}
+          textComponent="span"
+        >
+          <Provider store={store}>
+            <HelmetProvider context={helmetContext}>
+              <IncludeScripts config={appConfig} />
+              <StaticRouterProvider hydrate router={router} context={context} />
+            </HelmetProvider>
+          </Provider>
+        </IntlProvider>
+      </Configurations>
+    </SsrSignalProvider>
   );
 };
 

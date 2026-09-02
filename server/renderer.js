@@ -95,10 +95,10 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // from onShellError still wins — resolveRenderStatus never downgrades
         // it. A 404 must render the real NotFoundPage, so only a 500 gets the
         // error shell below.
-        status = ssrStatus.resolveRenderStatus(
-          status,
-          !!(res.locals && res.locals.ssrNotFound)
-        );
+        // Both channels: a router miss (set before render) and a matched
+        // route that rendered NotFoundPage (set during render — which is
+        // why this is read here, after the shell, and not earlier).
+        status = ssrStatus.resolveRenderStatus(status, ssrStatus.isNotFoundLocals(res.locals));
         res.set({ 'Content-Type': 'text/html' });
         res.status(status);
         if (status === 500) {

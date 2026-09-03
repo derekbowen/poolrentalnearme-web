@@ -261,17 +261,27 @@ Things capable of breaking production, or already doing so.
 
 ### C1. The deploy pipeline has never run
 
-`.turtleci/production.yml` and `.turtleci/development.yml` are GitHub Actions workflows —
-they use `${{ secrets.* }}` syntax and call `./scripts/deploy.sh`. They live in `.turtleci/`.
-GitHub Actions only executes workflows in **`.github/workflows/`**, and this repository's
-`.github/` contains exactly one file: `ISSUE_TEMPLATE/bug_report.md`.
+> **Correction, 2026-09-03.** I first described these as "GitHub Actions workflows in the wrong
+> directory". That was wrong in a way that changes the fix. They interpolate
+> `${{ secrets.* }}` like Actions, but the job schema is **TurtleCI's**: `builder: [ubuntu,
+> docker, aws]` where Actions requires `runs-on:`, and `uses: checkout` where Actions requires
+> `actions/checkout@v4`. Moving the files to `.github/workflows/` would produce a workflow
+> GitHub cannot parse. They must be **ported**, not relocated. See
+> `FIRST_CANONICAL_RELEASE.md` §5.
+
+`.turtleci/production.yml` and `.turtleci/development.yml` call `./scripts/deploy.sh` and carry
+every AWS deployment credential the project defines. They belong to TurtleCI, a CI provider
+that is evidently no longer running, and nothing else executes them: this repository's
+`.github/` contains exactly one file, `ISSUE_TEMPLATE/bug_report.md`.
 
 So every AWS deployment credential the project defines — ECR, EC2, the SSH `ENCODED_PEM`, and
 `AWS_JH_ENV_SECRET_NAME` (the Secrets Manager entry holding the real runtime `.env`) — is
 wired to a pipeline that cannot fire. Consequences, all of them already observed:
 
 - every release is hand-built on the box, which is how `/home/ubuntu/build` forked from this
-  repo by 149 files including the fee math;
+  repo by 149 files (the "including the fee math" part of that note is now disproven — see
+  `FEE_MATH_RECONCILIATION.md`: the commission rate lives in a Sharetribe hosted asset, in
+  neither tree, and production computes 15%/0% exactly as the repo states);
 - the canonical runtime `.env` in Secrets Manager is never read by anything automated, so
   nobody can say what production actually holds;
 - deployment depends on credentials that exist only wherever a human happens to be sitting.

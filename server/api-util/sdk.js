@@ -7,10 +7,8 @@ const wrapInstanceWithResponseTransformer = require('./wrapInstanceWithResponseT
 
 const CLIENT_ID = process.env.VITE_SHARETRIBE_SDK_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHARETRIBE_SDK_CLIENT_SECRET;
-const USING_SSL =
-  process.env.VITE_SHARETRIBE_USING_SSL != null && process.env.VITE_SHARETRIBE_USING_SSL !== ''
-    ? process.env.VITE_SHARETRIBE_USING_SSL === 'true'
-    : process.env.NODE_ENV === 'production';
+const { usingSSL } = require('./secureCookies');
+const USING_SSL = usingSSL();
 const TRANSIT_VERBOSE = process.env.VITE_SHARETRIBE_SDK_TRANSIT_VERBOSE === 'true';
 const MAX_SOCKETS = process.env.MAX_SOCKETS;
 const MAX_SOCKETS_DEFAULT = 10;

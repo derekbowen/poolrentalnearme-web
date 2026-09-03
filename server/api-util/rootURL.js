@@ -1,5 +1,6 @@
 const radix = 10;
-const USING_SSL = process.env.VITE_SHARETRIBE_USING_SSL === 'true';
+const { usingSSL } = require('./secureCookies');
+const USING_SSL = usingSSL();
 const DEV_SERVER_PORT = parseInt(process.env.VITE_DEV_API_SERVER_PORT, radix);
 const useDevApiServer = process.env.VITE_ENV === 'development' && !!DEV_SERVER_PORT;
 const marketplaceRootUrlRaw = process.env.VITE_MARKETPLACE_ROOT_URL;

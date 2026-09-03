@@ -1,3 +1,33 @@
+# Build context hygiene. Anything listed here can never reach an image layer,
+# which is the backstop for the Dockerfile no longer copying .env into the
+# runtime stage.
+
 awscliv2.zip
 aws
 aws/*
+
+# Secrets: never in the build context.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+id_rsa
+id_rsa.*
+
+# ...except the two that are safe and required:
+#   .env.build   VITE_-prefixed public config, needed by the build stage because
+#                Vite reads import.meta.env only from .env files
+#   .env.example documentation, names only
+!.env.build
+!.env.example
+
+# Not needed in an image, and large.
+.git
+node_modules
+dist
+coverage
+production-reconciliation
+*.tar.gz

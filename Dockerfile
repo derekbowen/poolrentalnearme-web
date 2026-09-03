@@ -10,6 +10,21 @@ RUN bun install
 
 COPY . .
 
+# Build-time public configuration ONLY.
+#
+# Vite populates import.meta.env.VITE_* exclusively from .env FILES — see
+# vite.config.mjs, which calls loadEnv() but never define()s these values, so
+# process.env and --build-arg do NOT reach the client bundle. That is precisely
+# how release c158 lost `Secure` from every session cookie: no .env file at
+# build time meant VITE_SHARETRIBE_USING_SSL compiled to undefined.
+#
+# So the build stage still needs a .env file — but only the VITE_-prefixed
+# public half, which is compiled into the browser bundle and therefore public by
+# definition. scripts/deploy.sh writes .env.build as `grep ^VITE_ .env`.
+# Secrets never enter this stage, and this stage's layers are not part of the
+# published image regardless.
+COPY .env.build .env
+
 RUN bun run build
 
 FROM oven/bun:1.2.4-slim AS packaging
@@ -22,7 +37,14 @@ COPY patches patches
 
 RUN bun install --production
 
-COPY .env .env
+# No .env here, deliberately. Runtime secrets are injected when the container
+# starts (docker run --env-file), never baked into a layer. `bun run start`
+# auto-loads a .env from the working directory if one exists, which is exactly
+# the accident this removal ends: the image used to carry every production
+# credential to anyone with ECR pull access.
+#
+# Cookie security no longer depends on this file existing — see
+# server/api-util/secureCookies.js.
 
 COPY --from=build /home/bun/app/server server
 COPY --from=build /home/bun/app/dist dist

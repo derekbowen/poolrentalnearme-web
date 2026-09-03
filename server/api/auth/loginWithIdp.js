@@ -7,7 +7,8 @@ const sdkUtils = require('../../api-util/sdk');
 const CLIENT_ID = process.env.VITE_SHARETRIBE_SDK_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHARETRIBE_SDK_CLIENT_SECRET;
 const TRANSIT_VERBOSE = process.env.VITE_SHARETRIBE_SDK_TRANSIT_VERBOSE === 'true';
-const USING_SSL = process.env.VITE_SHARETRIBE_USING_SSL === 'true';
+const { usingSSL } = require('../../api-util/secureCookies');
+const USING_SSL = usingSSL();
 const BASE_URL = process.env.VITE_SHARETRIBE_SDK_BASE_URL;
 const rootUrl = process.env.VITE_MARKETPLACE_ROOT_URL;
 

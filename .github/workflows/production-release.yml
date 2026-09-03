@@ -149,6 +149,10 @@ jobs:
           set -a; . /tmp/preflight.env; set +a
           node scripts/preflight-production.js --expect-sha "${{ inputs.sha }}" --skip-build
 
+      # c158 guard: cookie security must not depend on a file being in the image.
+      - name: Cookie security regression test
+        run: npx jest server/api-util/secureCookies.test.js --ci
+
       - name: Deploy
         env:
           AWS_ENV_USER_ACCESS_KEY_ID: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}

@@ -2,7 +2,8 @@ const sdkUtils = require('../api-util/sdk');
 
 const CLIENT_ID = process.env.VITE_SHARETRIBE_SDK_CLIENT_ID;
 const ROOT_URL = process.env.VITE_MARKETPLACE_ROOT_URL;
-const USING_SSL = process.env.VITE_SHARETRIBE_USING_SSL === 'true';
+const { usingSSL } = require('../api-util/secureCookies');
+const USING_SSL = usingSSL();
 
 // redirect_uri param used when initiating a login as authentication flow and
 // when requesting a token using an authorization code

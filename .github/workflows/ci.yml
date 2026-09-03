@@ -1,0 +1,74 @@
+# Continuous checks. Runs on every push and pull request.
+#
+# This workflow deploys nothing and needs no secrets — it cannot reach AWS,
+# production, or any credential. It exists so the gates that already protect this
+# codebase actually run on every change instead of only when someone remembers:
+#
+#   * the business-facts copy gate (catches a non-zero host fee, "net after
+#     fee", and unapproved claim shapes reappearing in customer-facing strings)
+#   * the insurance language gate (house rule: insurance wording is founder
+#     -reviewed, never derived)
+#   * the server test suite
+#   * env-reference drift: every variable the code reads must be documented in
+#     .env.example, so the canonical reference cannot silently go stale
+
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - develop # that branch has its own deploy workflow
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Tests and gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.4'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Server tests
+        run: npx jest server --ci
+
+      - name: Insurance language gate
+        run: bash scripts/check-insurance-language.sh
+
+      - name: Workflows are valid YAML
+        run: |
+          python3 - <<'PY'
+          import glob, sys, yaml
+          bad = 0
+          for f in glob.glob('.github/workflows/*.yml'):
+              try:
+                  d = yaml.safe_load(open(f))
+              except Exception as e:
+                  print(f"::error file={f}::invalid YAML: {e}"); bad = 1; continue
+              # `on:` parses to the boolean True in YAML 1.1 — accept either.
+              if not (d.get('on') or d.get(True)):
+                  print(f"::error file={f}::no trigger block"); bad = 1
+              for name, job in (d.get('jobs') or {}).items():
+                  if 'runs-on' not in job:
+                      print(f"::error file={f}::job '{name}' has no runs-on"); bad = 1
+          sys.exit(bad)
+          PY
+
+      - name: Every env variable the code reads is documented
+        run: node scripts/check-env-documented.js

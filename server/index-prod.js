@@ -15,9 +15,16 @@ import sitemapResourceRoute from './resources/sitemap';
 import webmanifestResourceRoute from './resources/webmanifest';
 import wellKnownRouter from './wellKnownRouter';
 import apiRouter from './apiRouter';
+import checkStartupEnv from './startupEnvCheck';
 
 setupCache(Axios);
 log.setup();
+
+// Say out loud, once, on boot, if a production-critical credential is absent.
+// Subsystems here disable themselves silently when unconfigured, which is
+// indistinguishable from a quiet week. Loud by default; set PRNM_STRICT_ENV=true
+// to refuse to start instead. See server/startupEnvCheck.js.
+checkStartupEnv(log);
 
 const app = express();
 expressConfig(app);

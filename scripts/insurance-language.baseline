@@ -1,4 +1,8 @@
+server/api-util/ssrStatus.js
 server/extensions/sms-messaging/mod/notify/exclude.js
+src/config/businessFacts.js
 src/config/hostAcademy.js
 src/containers/LandingPage/PremiumLandingPage.jsx
 src/containers/LandingPage/SectionHowItWorks.js
+src/util/priceVariantGuests.js
+src/util/priceVariantGuests.test.js

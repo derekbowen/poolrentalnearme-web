@@ -1,0 +1,193 @@
+# Production release — PRNM marketplace (WEST).
+#
+# Ported from .turtleci/production.yml, which was never a GitHub Actions file:
+# it used TurtleCI's schema (`builder:`, `uses: checkout`) and would not parse
+# here. This is a real port, not a relocation.
+#
+# TRIGGER — deliberately manual.
+#
+#   The TurtleCI original fired on `push` to the `production` branch. That is a
+#   surprise-deploy shape: a merge becomes a release with nobody deciding to
+#   release. Production now requires someone to press Run workflow, name the
+#   exact commit, and type RELEASE. There is no `push:` trigger on this file, so
+#   no branch push can deploy production. That is the point.
+#
+#   `environment: production` additionally routes this through whatever required
+#   reviewers / wait timer the repository has configured for that environment.
+#
+# WHAT RUNS: preflight (fails closed) -> build+push image -> deploy -> smoke
+# tests. A failed preflight or a failed smoke test fails the release.
+
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Exact commit SHA to release (full 40 chars)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type RELEASE to confirm a production deployment'
+        required: true
+        type: string
+      skip_smoke:
+        description: 'Skip post-deploy smoke tests (emergency use only)'
+        required: false
+        default: false
+        type: boolean
+
+# One production release at a time. Never cancel one midway: a half-finished
+# deploy is worse than a queued one.
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # for AWS OIDC when AWS_ROLE_ARN is configured
+
+jobs:
+  release:
+    name: Release to production
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      ENV: production
+      AWS_ACCOUNT_ID: ${{ secrets.PRODUCTION_AWS_ACCOUNT_ID }}
+      AWS_ECR_REGION: ${{ secrets.PRODUCTION_AWS_ECR_REGION }}
+      AWS_ECR_REPO_NAME: ${{ secrets.PRODUCTION_AWS_ECR_REPO_NAME }}
+      AWS_JH_ENV_SECRET_NAME: ${{ secrets.PRODUCTION_AWS_JH_ENV_SECRET_NAME }}
+      AWS_ENV_USER_REGION: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+      AWS_INSTANCE_URL: ${{ secrets.PRODUCTION_AWS_INSTANCE_URL }}
+      AWS_INSTANCE_URLS: ${{ secrets.PRODUCTION_AWS_INSTANCE_URLS }}
+      AWS_INSTANCE_DEPLOY_SCRIPT: ${{ secrets.PRODUCTION_AWS_INSTANCE_DEPLOY_SCRIPT }}
+      USE_SSH_DEPLOYMENT: ${{ secrets.PRODUCTION_USE_SSH_DEPLOYMENT }}
+      ENCODED_PEM: ${{ secrets.PRODUCTION_ENCODED_PEM }}
+      AWS_ECR_TAG_NAME: ${{ secrets.PRODUCTION_AWS_ECR_TAG_NAME }}
+
+    steps:
+      - name: Refuse unconfirmed releases
+        if: inputs.confirm != 'RELEASE'
+        run: |
+          echo "::error::Confirmation text was not RELEASE. Nothing was deployed."
+          exit 1
+
+      - name: Check out the exact released commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - name: Verify the checkout is the requested commit
+        run: |
+          ACTUAL=$(git rev-parse HEAD)
+          if [ "$ACTUAL" != "${{ inputs.sha }}" ]; then
+            echo "::error::HEAD is $ACTUAL but the release requested ${{ inputs.sha }}"
+            exit 1
+          fi
+          echo "Releasing $ACTUAL"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.4'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Prefer short-lived OIDC credentials. Set the repository variable
+      # AWS_ROLE_ARN to a role trusting this repo and the two long-lived AWS key
+      # pairs stop being needed at all. Falls back to static keys so the first
+      # release does not depend on the IAM work landing first.
+      - name: Configure AWS credentials (OIDC)
+        if: vars.AWS_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.PRODUCTION_AWS_ECR_REGION }}
+          role-session-name: prnm-production-release
+
+      - name: Configure AWS credentials (static fallback)
+        if: vars.AWS_ROLE_ARN == ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PRODUCTION_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PRODUCTION_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.PRODUCTION_AWS_ECR_REGION }}
+
+      # deploy.sh needs jq for scripts/json2env.sh. ubuntu-latest ships it, but
+      # an explicit check beats a confusing failure three minutes in.
+      - name: Verify build tooling
+        run: |
+          command -v jq >/dev/null || { echo "::error::jq is required by scripts/json2env.sh"; exit 1; }
+          command -v docker >/dev/null || { echo "::error::docker is required"; exit 1; }
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Fetch the runtime environment the same way deploy.sh does, purely so
+      # preflight can validate it BEFORE anything is built or shipped. Values are
+      # written to a file that is never printed and never uploaded.
+      - name: Fetch runtime environment for validation
+        env:
+          AWS_ENV_USER_ACCESS_KEY_ID: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}
+          AWS_ENV_USER_SECRET_ACCESS_KEY: ${{ secrets.PRODUCTION_AWS_ENV_USER_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          AWS_ACCESS_KEY_ID="$AWS_ENV_USER_ACCESS_KEY_ID" \
+          AWS_SECRET_ACCESS_KEY="$AWS_ENV_USER_SECRET_ACCESS_KEY" \
+          aws secretsmanager get-secret-value \
+            --secret-id "$AWS_JH_ENV_SECRET_NAME" \
+            --region "${AWS_ENV_USER_REGION:-ap-southeast-1}" \
+            --query SecretString --output text > /tmp/env.json
+          ./scripts/json2env.sh /tmp/env.json /tmp/preflight.env
+          echo "retrieved $(wc -l < /tmp/preflight.env) variables (names not shown)"
+
+      - name: Preflight — fails closed
+        run: |
+          set -a; . /tmp/preflight.env; set +a
+          node scripts/preflight-production.js --expect-sha "${{ inputs.sha }}" --skip-build
+
+      - name: Deploy
+        env:
+          AWS_ENV_USER_ACCESS_KEY_ID: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}
+          AWS_ENV_USER_SECRET_ACCESS_KEY: ${{ secrets.PRODUCTION_AWS_ENV_USER_SECRET_ACCESS_KEY }}
+          AWS_PROFILE_PARAM: ${{ secrets.PRODUCTION_AWS_PROFILE_PARAM }}
+          ENV_FILE_PATH: ${{ secrets.PRODUCTION_ENV_FILE_PATH }}
+          TAG: ${{ secrets.PRODUCTION_AWS_ECR_TAG_NAME }}
+        run: ./scripts/deploy.sh
+
+      - name: Smoke test production
+        if: inputs.skip_smoke != true
+        run: node scripts/smoke-test-production.js --require-all
+
+      - name: Record the release
+        if: always()
+        run: |
+          {
+            echo "### Production release"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| commit | \`${{ inputs.sha }}\` |"
+            echo "| actor | @${{ github.actor }} |"
+            echo "| smoke tests | ${{ inputs.skip_smoke == true && 'SKIPPED' || 'run' }} |"
+            echo "| result | ${{ job.status }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Rollback hook. Opt-in: set the repository variable ROLLBACK_ON_FAILURE to
+      # 'true' to have a failed release restore the previous container
+      # automatically. Left off by default because an automatic rollback on a
+      # smoke-test flake is its own kind of outage — decide deliberately.
+      - name: Roll back the previous release
+        if: failure() && vars.ROLLBACK_ON_FAILURE == 'true' && env.USE_SSH_DEPLOYMENT == 'TRUE'
+        run: |
+          set -euo pipefail
+          KEY=$(mktemp)
+          echo "${ENCODED_PEM}" | base64 --decode > "$KEY"
+          chmod 400 "$KEY"
+          ssh -o StrictHostKeyChecking=no -i "$KEY" "${AWS_INSTANCE_URL}" \
+            'bash -lc "cd /home/ubuntu && ./scripts/flip-release.sh rollback || docker start poolrentalnearme-production-rollback"'
+          rm -f "$KEY"
+          echo "::warning::Release failed; rollback attempted on ${AWS_INSTANCE_URL}"

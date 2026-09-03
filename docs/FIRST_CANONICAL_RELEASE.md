@@ -1,210 +1,108 @@
-# First canonical release — procedure
+# First canonical release
 
-**Status: NOT READY. Two hard blockers, both listed in §0.**
-No deployment has been performed. This document is the plan, not a record.
+**Status: one human action outstanding.** Nothing is deployed. c196 is not flipped.
 
----
-
-## 0. Blockers, before anything below runs
-
-**B1 — Production drift is still unmeasured.** The reconciliation this plan depends on
-(inventory WEST, classify the 149 differences, capture production-only fixes) could not be
-performed: there is no access path from the agent environment to WEST. Verified 2026-09-03 —
-`AWS_ACCESS_KEY_ID` is the placeholder string `prox…ted`, STS returns `InvalidClientTokenId`
-in both regions, `~/.ssh` is empty, and port 22 on `13.56.113.85` is unreachable. Only port
-443 (the public site) responds.
-
-Until someone with access runs the inventory, **Git cannot become the source of truth**,
-because nobody knows what production would lose.
-
-**B2 — The CI files are not GitHub Actions workflows.** See §5. They cannot simply be moved.
-
-What *is* settled: the fee math, the highest-risk item in the drift. It matches, and it is
-structurally incapable of drifting. See `FEE_MATH_RECONCILIATION.md`.
+The whole procedure is now four commands and one button. If a step below reads like
+homework, it is a bug in the tooling — say so and it gets automated.
 
 ---
 
-## 1. Snapshot current production
-
-On WEST, before touching anything. Record to `docs/PRODUCTION_STATE_SNAPSHOT.md`:
+## The operator path
 
 ```
-hostname; date -u
-docker ps --format '{{.Names}} {{.Image}} {{.Status}} {{.Ports}}'
-docker inspect poolrentalnearme-production --format '{{.Config.Image}} {{.Created}}'
-docker inspect poolrentalnearme-production --format '{{range .Config.Env}}{{println .}}{{end}}' | cut -d= -f1 | sort   # NAMES ONLY
-ls -la /home/ubuntu/build | head -40
-cd /home/ubuntu/build && git rev-parse HEAD 2>&1 || echo 'not a git checkout'
-nginx -T 2>/dev/null | grep -E 'server_name|proxy_pass|location' | head -60
-crontab -l; sudo -u ubuntu crontab -l
-systemctl list-units --type=service --state=running | head -20
-ls -la /home/ubuntu/switchy/ /home/ubuntu/*.env 2>/dev/null   # names only, never cat
+# 1. once, on the WEST box — read-only, ~30 seconds
+bash scripts/capture-production-state.sh
+
+# 2. copy the tarball back into the repo root, extract, then:
+node scripts/reconcile-production.js ./production-reconciliation --write-report
+
+# 3. review ONLY what it flags HIGH RISK, merge those into the repo
+
+# 4. release: GitHub -> Actions -> "Production release" -> Run workflow
+#    paste the commit SHA, type RELEASE
 ```
 
-Never `cat` an env file. Names only.
+Everything else — preflight, secret retrieval, build, deploy, smoke tests, rollback — runs
+inside the workflow. There is no step where anyone types a credential into a form.
 
-## 2. Reconcile drift
+---
 
-```
-# on WEST, read-only
-cd /home/ubuntu/build
-find . -type f -not -path './node_modules/*' -not -path './dist/*' -not -path './.git/*' \
-  -exec md5sum {} + | sort -k2 > /tmp/prod-manifest.txt
-```
+## What each piece does
 
-Ship the same manifest from a clean checkout of this repo, diff **on the box** (SSM truncates
-past ~24KB), then pull only the divergent files back as a chunked, md5-verified tarball.
-Classify every one into `docs/PRODUCTION_DRIFT_AUDIT.md`:
-
-| Class | Meaning | Action |
+| Command | What it does | Fails how |
 |---|---|---|
-| A | legitimate production fix | reproduce in source on the reconciliation branch |
-| B | generated/build output (`dist/`, assets) | ignore, must not be in git |
-| C | configuration | move to the secret store or `.env.example` |
-| D | stale/abandoned | delete from production |
-| E | unknown | manual review — **blocks the release** |
+| `scripts/capture-production-state.sh` | snapshots WEST into `production-reconciliation/`: state, file manifest, source, services, nginx, cron, env + AWS secret **names only** | never writes to production |
+| `scripts/reconcile-production.js` | classifies every difference into SOURCE / CONFIG / GENERATED / STALE / UNKNOWN and flags money, booking, auth, notification and SEO files as HIGH RISK | never overwrites anything, never assumes production is right |
+| `npm run check-env` | required vs optional, grouped by service, accepts EAST's alias names | exit 1 on any production-critical gap |
+| `npm run preflight` | env, AWS secret metadata, git SHA pin, credential shape and live/test coherence, migrations, build | exit 1, before anything ships |
+| `npm run smoke-test` | public routes, sitemap, true 404s, listing retrieval, canonical, **fee invariant**, and with credentials: Sharetribe, Supabase, Stripe, Twilio, notification path | exit 1 |
+| `scripts/flip-release.sh` | gated container flip on the box, with automatic rollback | leaves production untouched on abort |
 
-Read the actual diff for every code file. A filename count is not a classification.
+The fee invariant is the one worth knowing: it calls the live line-item calculator, asserts
+15% customer commission, asserts **no** provider-commission line item, and checks the arithmetic
+to the cent. It creates no booking and charges no card. Verified today on two separate
+listings: `$45.00 × 2h + 15% = $103.50` and `$30.00 × 2h + 15% = $69.00`.
 
-## 3. Merge production fixes
+---
 
-Branch `production-reconciliation-2026-09` off this branch. One logical commit per fix, each
-explaining why it existed only on production. Add a test where the fix is behavioural.
-**Never copy the production tree over the repo** — that destroys history and silently adopts
-class B and D files.
+## The workflows
 
-Prioritise anything touching: pricing, fees, Stripe, Stripe Connect, Sharetribe transitions,
-booking acceptance/expiry, payouts, refunds, Twilio, host notifications, concierge, auth,
-Supabase writes, listing publication, SEO routes, cron/poller behaviour. For each, state
-PRODUCTION DOES / REPOSITORY DOES / USER IMPACT / WHICH WINS / WHY before writing code.
+`.github/workflows/production-release.yml` — **`workflow_dispatch` only.** There is no `push:`
+trigger, so no branch push can deploy production. It requires the exact SHA and the literal
+word `RELEASE`, and runs under `environment: production` so GitHub applies any required
+reviewer. Steps: verify the checkout matches the requested SHA → AWS auth → fetch the runtime
+env from Secrets Manager → **preflight (fails closed)** → build and push to ECR → deploy →
+smoke tests. Rollback is opt-in via the repository variable `ROLLBACK_ON_FAILURE`.
 
-## 4. Verify secrets
+`.github/workflows/development-deploy.yml` — manual dispatch, plus automatic on pushes to a
+`develop` branch that does not exist yet. **Deliberately not push-to-main**: TurtleCI's
+original fired on every push to `main`, which would turn a docs commit into a deploy. Nothing
+depends on that behaviour today, so it was not inherited.
 
-```
-aws secretsmanager describe-secret --secret-id "$AWS_JH_ENV_SECRET_NAME" --region "$AWS_ENV_USER_REGION"
-aws secretsmanager get-secret-value --secret-id "$AWS_JH_ENV_SECRET_NAME" --query SecretString \
-  | python3 -c 'import json,sys; print("\n".join(sorted(json.loads(json.load(sys.stdin)).keys())))'
-```
+`.github/workflows/ci.yml` — runs on every push and PR, needs no secrets, cannot deploy. Server
+tests, the insurance-language gate, workflow validity, and the check that every variable the
+code reads is documented in `.env.example`.
 
-The second command prints **key names only** — never pipe it anywhere that logs. Compare the
-names against `.env.example` and `scripts/check-env.js`. Report: secret name, region, exists,
-last modified, variable names contained, expected-but-missing names.
+---
 
-This is the step that finally distinguishes *production is missing credentials* from *the
-agent environment merely lacks them*. Right now nobody knows which is true.
+## Secrets: what GitHub gets
 
-## 5. Configure GitHub Actions — with a correction
+GitHub gets **only enough to authenticate to AWS and fetch the runtime secret**. It never holds
+the ~113 application variables — those stay in AWS Secrets Manager and are pulled at deploy
+time by `scripts/deploy.sh`, exactly as before.
 
-`.turtleci/production.yml` and `development.yml` **are not GitHub Actions workflows.** They
-interpolate `${{ secrets.* }}` like Actions, but the job schema is TurtleCI's:
+Set the repository variable **`AWS_ROLE_ARN`** to an IAM role trusting this repository and the
+workflow authenticates by OIDC, short-lived, with no stored AWS keys at all. Both workflows
+already branch on it; until it is set they fall back to the existing static key secrets, so the
+first release does not depend on the IAM work landing first.
 
-| Their key | GitHub Actions requires |
+| Category | Home |
 |---|---|
-| `builder: [ubuntu, docker, aws]` | `runs-on: ubuntu-latest` |
-| `uses: checkout` | `uses: actions/checkout@v4` |
-| *(absent)* | `permissions:` |
+| Production runtime secrets (~113) | AWS Secrets Manager, fetched at deploy |
+| AWS authentication | GitHub OIDC role, or `*_AWS_*` secrets as fallback |
+| Local development | `.env`, git-ignored |
+| Documentation | `.env.example`, names and comments only |
 
-Moving the files would produce a workflow GitHub cannot parse. They must be **ported**, not
-relocated.
+---
 
-**Their triggers, which must change:**
+## Known issue this plan does not fix
 
-| File | Trigger today | Deploys to |
-|---|---|---|
-| `production.yml` | `push` to branch `production` | production |
-| `development.yml` | `push` to branch `main` | development |
+`Dockerfile` line 24 is `COPY .env .env` — the runtime secrets are baked into the image layer,
+so anyone with ECR pull access has every production credential. That contradicts the canonical
+architecture ("no secret is read from a file inside a container image") and it is worth fixing.
 
-Ported as-is, **every push to `main` would auto-deploy**. That is exactly the surprise deploy
-to avoid. Production must instead require an intentional release path:
+It is **not** fixed here on purpose: `VITE_*` variables must be present at build time, so
+removing the copy without restructuring the build would silently strip `Secure` from session
+cookies — the exact failure that aborted release c158. It needs a production test, which needs
+WEST access. Flagged, not guessed at.
 
-```yaml
-on:
-  workflow_dispatch:          # a human starts it
-    inputs:
-      sha: { description: 'Commit SHA to release', required: true }
-  push:
-    tags: ['v*']              # or a signed release tag
-```
+---
 
-with `environment: production` so GitHub enforces a required reviewer.
-
-**Required GitHub secrets, by name only** (16 per environment, `PRODUCTION_*` and
-`DEVELOPMENT_*` prefixes):
-
-```
-AWS_ACCESS_KEY_ID              AWS_ENV_USER_ACCESS_KEY_ID     AWS_INSTANCE_DEPLOY_SCRIPT
-AWS_SECRET_ACCESS_KEY          AWS_ENV_USER_SECRET_ACCESS_KEY AWS_INSTANCE_URL
-AWS_ACCOUNT_ID                 AWS_ENV_USER_REGION            USE_SSH_DEPLOYMENT
-AWS_ECR_REGION                 AWS_ECR_TAG_NAME               ENCODED_PEM
-AWS_ECR_REPO_NAME              AWS_PROFILE_PARAM              ENV_FILE_PATH
-AWS_JH_ENV_SECRET_NAME
-```
-
-Prefer OIDC (`permissions: id-token: write` + `aws-actions/configure-aws-credentials`) over
-the two long-lived AWS key pairs. That removes eight stored secrets and the rotation burden.
-
-## 6. Preflight
-
-```
-node scripts/preflight-production.js --expect-sha <release-sha>
-```
-
-Exits non-zero on any production-critical gap: missing env, unreadable AWS secret, dirty tree,
-wrong SHA, malformed or mode-mismatched Stripe keys, missing build-time `VITE_SHARETRIBE_USING_SSL`,
-failed build. Never prints a value.
-
-## 7. Build the artifact
-
-Tag it `cNNN-<name>` to match the existing convention. `VITE_*` variables must be present
-**at build time** — they are compiled into the client bundle. Setting one only in the running
-container does nothing; that is what aborted c158.
-
-## 8. Deploy
-
-Use the gated flip, never a direct replacement:
-
-```
-scripts/flip-release.sh gate cNNN-name    # candidate on :4000, production untouched
-# review route parity and the payment endpoints
-scripts/flip-release.sh flip cNNN-name    # promote, auto-rollback if unhealthy
-```
-
-## 9. Health check
-
-`/`, `/s`, a real `/l/<slug>/<uuid>`, `/signup`, `/sitemap.xml` all 200; `/api/transaction-line-items`
-and `/api/initiate-privileged` answer (400 on an empty body is correct, 5xx is not).
-
-## 10. Transaction smoke test
-
-Against the **live** release, read-only — the same method used for the fee audit:
-
-```
-POST /api/transaction-line-items  {isOwnListing:false, listingId:<published>, orderData:{bookingStart, bookingEnd}}
-```
-
-Assert: `line-item/hour` present; `customer-commission` percentage is **15**; **no**
-`provider-commission`; payin = base + 15%; the listing page's displayed all-in equals that
-total to the penny. This creates no transaction and touches no Stripe state.
-
-## 11. Notification smoke test
-
-Confirm the poller actually started — the failure mode is silence, not an error:
-
-```
-docker logs poolrentalnearme-production --since 10m | grep -iE 'poller|DISABLED|SUPABASE'
-```
-
-`DISABLED — SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set` means every host notification is
-off while the site looks healthy. Then send one SMS to a staff number only. Anything to a real
-host or guest needs Derek's fresh explicit GO — approval for one send never carries to the next.
-
-## 12. Rollback
+## Rollback
 
 ```
 scripts/flip-release.sh rollback
 ```
 
-Restores the previous container, which `flip` retained as `poolrentalnearme-production-rollback`.
-`flip` also rolls back automatically if the new container fails its health check. Confirm with
-the §9 checks. If a release reached production and was rolled back, record what drifted, so
-this document does not have to be rewritten from memory next time.
+The previous container is retained as `poolrentalnearme-production-rollback`. `flip` also rolls
+back automatically if the new container fails its health check.

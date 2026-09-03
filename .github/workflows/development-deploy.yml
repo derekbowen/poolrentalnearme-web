@@ -1,0 +1,101 @@
+# Development deploy — PRNM marketplace.
+#
+# Ported from .turtleci/development.yml (TurtleCI schema, never executable here).
+#
+# TRIGGER — deliberately NOT push-to-main.
+#
+#   The TurtleCI original fired on every `push` to `main`. Reinstating that
+#   verbatim would mean every merge — including documentation commits — ships a
+#   container. Two reasons not to:
+#
+#     1. `main` is this repository's working branch, not a release train.
+#     2. Nothing has deployed through CI in a long time, so no process depends on
+#        push-to-main today. There is no behaviour to preserve, only a hazard to
+#        avoid inheriting.
+#
+#   So: manual dispatch, plus an opt-in automatic path on a dedicated `develop`
+#   branch. That branch does not exist yet, so nothing fires by accident; create
+#   it when continuous dev deploys are actually wanted.
+#
+#   To go back to push-to-main later, add `- main` under `branches:` — but do it
+#   as a decision, not as an inheritance.
+
+name: Development deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA to deploy (defaults to the branch tip)'
+        required: false
+        type: string
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: development-deploy
+  cancel-in-progress: true # a superseded dev build is fine to drop
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to development
+    runs-on: ubuntu-latest
+    environment: development
+    env:
+      ENV: development
+      AWS_ACCOUNT_ID: ${{ secrets.DEVELOPMENT_AWS_ACCOUNT_ID }}
+      AWS_ECR_REGION: ${{ secrets.DEVELOPMENT_AWS_ECR_REGION }}
+      AWS_ECR_REPO_NAME: ${{ secrets.DEVELOPMENT_AWS_ECR_REPO_NAME }}
+      AWS_JH_ENV_SECRET_NAME: ${{ secrets.DEVELOPMENT_AWS_JH_ENV_SECRET_NAME }}
+      AWS_ENV_USER_REGION: ${{ secrets.DEVELOPMENT_AWS_ENV_USER_REGION }}
+      AWS_INSTANCE_URL: ${{ secrets.DEVELOPMENT_AWS_INSTANCE_URL }}
+      AWS_INSTANCE_DEPLOY_SCRIPT: ${{ secrets.DEVELOPMENT_AWS_INSTANCE_DEPLOY_SCRIPT }}
+      USE_SSH_DEPLOYMENT: ${{ secrets.DEVELOPMENT_USE_SSH_DEPLOYMENT }}
+      ENCODED_PEM: ${{ secrets.DEVELOPMENT_ENCODED_PEM }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.4'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials (OIDC)
+        if: vars.AWS_ROLE_ARN_DEVELOPMENT != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN_DEVELOPMENT }}
+          aws-region: ${{ secrets.DEVELOPMENT_AWS_ECR_REGION }}
+          role-session-name: prnm-development-deploy
+
+      - name: Configure AWS credentials (static fallback)
+        if: vars.AWS_ROLE_ARN_DEVELOPMENT == ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DEVELOPMENT_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEVELOPMENT_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.DEVELOPMENT_AWS_ECR_REGION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Deploy
+        env:
+          AWS_ENV_USER_ACCESS_KEY_ID: ${{ secrets.DEVELOPMENT_AWS_ENV_USER_ACCESS_KEY_ID }}
+          AWS_ENV_USER_SECRET_ACCESS_KEY: ${{ secrets.DEVELOPMENT_AWS_ENV_USER_SECRET_ACCESS_KEY }}
+          AWS_PROFILE_PARAM: ${{ secrets.DEVELOPMENT_AWS_PROFILE_PARAM }}
+          ENV_FILE_PATH: ${{ secrets.DEVELOPMENT_ENV_FILE_PATH }}
+          TAG: ${{ secrets.DEVELOPMENT_AWS_ECR_TAG_NAME }}
+        run: ./scripts/deploy.sh

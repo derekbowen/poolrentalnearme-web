@@ -372,6 +372,13 @@ falls through. Same story with `REACT_APP_ENV` vs `VITE_ENV`, and `BRANDON_PHONE
 
 Dead or stale configuration. None of it is dangerous; all of it is misleading.
 
+> **Correction, 2026-09-03.** `scripts/check-env-documented.js`, written after this section,
+> immediately found four variables this audit got wrong: `MARKETPLACE_ID`, `MAX_SOCKETS` and
+> `KEY_ID` were classified as false positives but are genuine `process.env` reads (`KEY_ID` via
+> a destructuring rename in `server/wellKnownRouter.js`), and `TOMORROW_IO_API_KEY` was called
+> stale but is read by `server/services/weather.js`. All four are now in `.env.example`, and
+> the checker runs in CI so this class of mistake cannot recur — including mine.
+
 - **19 variables are declared but never read.** `.env-template` documents `META_ACCESS_TOKEN`,
   `META_AD_ACCOUNT_ID`, `META_APP_SECRET`, `BING_ACCOUNT_ID`, `BING_CUSTOMER_ID`,
   `BING_DEVELOPER_TOKEN`, `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_MCC_ID`,

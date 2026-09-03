@@ -193,6 +193,7 @@
     "preflight": "node scripts/preflight-production.js",
     "smoke-test": "node scripts/smoke-test-production.js",
     "reconcile": "node scripts/reconcile-production.js",
+    "verify-west": "node scripts/verify-west-runtime-injection.js ./production-reconciliation",
     "translate": "node scripts/translations.js",
     "build": "bun run build:client && bun run build:server",
     "build:client": "NODE_ENV=production vite build --outDir dist/client",

@@ -97,6 +97,28 @@ flip)
 
   if wait_healthy "http://127.0.0.1:3000/"; then
     echo "  ${IMAGE} is live and healthy"
+
+    # Health is not proof of configuration: the app serves 200s perfectly well
+    # with every integration silently disabled. Ask the container itself, using
+    # the module the server runs at boot. Names only, no values.
+    missing=$(docker exec "$CONTAINER" bun -e '
+      import("./server/startupEnvCheck.js")
+        .then(m => { console.log(m.missingRequired().map(x => x.name).join(",")); process.exit(0); })
+        .catch(e => { console.log("CHECK_FAILED:" + e.message); process.exit(0); })
+    ' 2>/dev/null | tr -d '\r')
+    case "$missing" in
+      CHECK_FAILED:*) echo "  WARNING: in-container config check did not run (${missing#CHECK_FAILED:})" ;;
+      "")             echo "  runtime configuration verified inside the container" ;;
+      *)
+        echo "  ROLLING BACK: container started without production-critical config: $missing"
+        docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+        docker rename "${CONTAINER}-rollback" "$CONTAINER"
+        docker start "$CONTAINER" >/dev/null
+        wait_healthy "http://127.0.0.1:3000/" && echo "  rolled back, production healthy"
+        exit 1
+        ;;
+    esac
+
     docker rm -f "$GATE" >/dev/null 2>&1 || true
   else
     echo "  NOT HEALTHY — rolling back automatically"

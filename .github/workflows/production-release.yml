@@ -153,6 +153,14 @@ jobs:
       - name: Cookie security regression test
         run: npx jest server/api-util/secureCookies.test.js --ci
 
+      # Hard gate. The on-box script is what actually runs `docker run`; if it does
+      # not pass --env-file, the secret-free image starts with no configuration.
+      # This fails closed: no committed evidence means no deploy. It unblocks
+      # automatically once a WEST capture lands in the repo (commit the small
+      # deploy-script-analysis.json and the redacted west-deploy-script.sh).
+      - name: Verify WEST runtime env injection
+        run: node scripts/verify-west-runtime-injection.js ./production-reconciliation
+
       - name: Deploy
         env:
           AWS_ENV_USER_ACCESS_KEY_ID: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}

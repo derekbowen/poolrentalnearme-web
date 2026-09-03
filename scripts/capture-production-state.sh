@@ -142,6 +142,94 @@ else
   say "WARNING: $BUILD_DIR does not exist"
 fi
 
+# ------------------------------------------- the on-box deploy script
+#
+# THE question this capture exists to answer: does the script that actually runs
+# `docker run` pass --env-file? scripts/deploy.sh now delivers the runtime env to
+# this host and exports ENV_FILE, but the on-box script lives outside the
+# repository and has never been read. If it ignores ENV_FILE, a secret-free image
+# starts with no configuration at all.
+DEPLOY_CANDIDATES=(
+  "${AWS_INSTANCE_DEPLOY_SCRIPT:-}"
+  "/home/ubuntu/deploy.sh"
+  "/home/ubuntu/scripts/deploy.sh"
+  "/home/ubuntu/build/deploy.sh"
+  "/opt/prnm/deploy.sh"
+  "/usr/local/bin/prnm-deploy.sh"
+)
+DEPLOY_PATH=""
+for c in "${DEPLOY_CANDIDATES[@]}"; do
+  [ -z "$c" ] && continue
+  # AWS_INSTANCE_DEPLOY_SCRIPT is often relative, e.g. ./deploy.sh
+  case "$c" in
+    ./*) cand="/home/ubuntu/${c#./}" ;;
+    *)   cand="$c" ;;
+  esac
+  if [ -f "$cand" ]; then DEPLOY_PATH="$cand"; break; fi
+done
+
+# Redact anything credential-shaped before the content is written anywhere.
+redact() {
+  sed -E 's/(sk|rk|pk)_(live|test)_[A-Za-z0-9]+/\1_\2_REDACTED/g;
+          s/AC[0-9a-f]{32}/AC_REDACTED/g;
+          s/SK[0-9a-f]{32}/SK_REDACTED/g;
+          s/eyJ[A-Za-z0-9_-]{20,}/JWT_REDACTED/g;
+          s/AKIA[0-9A-Z]{16}/AKIA_REDACTED/g;
+          s/(PASSWORD|SECRET|TOKEN|KEY)=[^ ]+/\1=REDACTED/g'
+}
+
+jbool() { [ "$1" = "1" ] && echo true || echo false; }
+
+if [ -n "$DEPLOY_PATH" ]; then
+  cp "$DEPLOY_PATH" "$OUT/west-deploy-script.raw" 2>/dev/null
+  redact < "$DEPLOY_PATH" > "$OUT/west-deploy-script.sh" 2>/dev/null
+  rm -f "$OUT/west-deploy-script.raw"
+  D_EXISTS=1
+  D_SHA=$( (sha256sum "$DEPLOY_PATH" 2>/dev/null || shasum -a 256 "$DEPLOY_PATH" 2>/dev/null) | awk '{print $1}' )
+  D_PERMS=$(stat -c '%a %U:%G' "$DEPLOY_PATH" 2>/dev/null || stat -f '%Lp %Su:%Sg' "$DEPLOY_PATH" 2>/dev/null)
+  C=$(cat "$OUT/west-deploy-script.sh")
+  echo "$C" | grep -qE 'docker[[:space:]]+run'                 && D_RUN=1     || D_RUN=0
+  echo "$C" | grep -qE 'docker[- ]compose'                     && D_COMPOSE=1 || D_COMPOSE=0
+  echo "$C" | grep -qE '\-\-env-file'                          && D_ENVFLAG=1 || D_ENVFLAG=0
+  echo "$C" | grep -qE 'ENV_FILE'                              && D_ENVVAR=1  || D_ENVVAR=0
+  echo "$C" | grep -qE '(^|[^A-Za-z])(source|\.)[[:space:]]+[^ ]*\.env|--mount|-v[[:space:]]+[^ ]*\.env' && D_MOUNT=1 || D_MOUNT=0
+  echo "$C" | grep -qE 'docker[[:space:]]+(start|restart)|systemctl[[:space:]]+(start|restart)' && D_RESTART=1 || D_RESTART=0
+  # Injection is only proven when a docker invocation carries --env-file.
+  if [ "$D_RUN" = "1" ] && [ "$D_ENVFLAG" = "1" ]; then D_VERIFIED=1; else D_VERIFIED=0; fi
+  {
+    echo "=== resolved deploy script: $DEPLOY_PATH ==="
+    echo "--- docker invocations ---"
+    echo "$C" | grep -nE 'docker[[:space:]]+(run|start|restart|compose)|docker[- ]compose' || echo "(none)"
+    echo "--- env-file / ENV_FILE references ---"
+    echo "$C" | grep -nE '\-\-env-file|ENV_FILE|\.env' || echo "(none)"
+  } > "$OUT/deploy-script-findings.txt"
+else
+  D_EXISTS=0; D_SHA=""; D_PERMS=""; D_RUN=0; D_COMPOSE=0; D_ENVFLAG=0; D_ENVVAR=0
+  D_MOUNT=0; D_RESTART=0; D_VERIFIED=0
+  echo "(no on-box deploy script found in any known location)" > "$OUT/deploy-script-findings.txt"
+fi
+
+cat > "$OUT/deploy-script-analysis.json" <<JSON
+{
+  "deploy_script_path": "${DEPLOY_PATH}",
+  "searched": "$(printf '%s ' "${DEPLOY_CANDIDATES[@]}" | sed 's/ $//')",
+  "exists": $(jbool "$D_EXISTS"),
+  "permissions": "${D_PERMS}",
+  "sha256": "${D_SHA}",
+  "docker_run_detected": $(jbool "$D_RUN"),
+  "docker_compose_detected": $(jbool "$D_COMPOSE"),
+  "env_file_flag_detected": $(jbool "$D_ENVFLAG"),
+  "env_file_variable": "ENV_FILE",
+  "env_file_variable_referenced": $(jbool "$D_ENVVAR"),
+  "dotenv_mounted_or_sourced": $(jbool "$D_MOUNT"),
+  "restart_mechanism_detected": $(jbool "$D_RESTART"),
+  "runtime_env_injection_verified": $(jbool "$D_VERIFIED"),
+  "content_file": "west-deploy-script.sh",
+  "content_redacted": true
+}
+JSON
+say "deploy-script-analysis.json (injection verified: $( [ "$D_VERIFIED" = "1" ] && echo YES || echo NO ))"
+
 # ---------------------------------------------------------------- state.json
 GIT_SHA=$( (cd "$BUILD_DIR" 2>/dev/null && git rev-parse HEAD 2>/dev/null) || echo "" )
 GIT_BRANCH=$( (cd "$BUILD_DIR" 2>/dev/null && git rev-parse --abbrev-ref HEAD 2>/dev/null) || echo "" )

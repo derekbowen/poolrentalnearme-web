@@ -16,9 +16,13 @@ bash scripts/capture-production-state.sh
 # 2. copy the tarball back into the repo root, extract, then:
 node scripts/reconcile-production.js ./production-reconciliation --write-report
 
-# 3. review ONLY what it flags HIGH RISK, merge those into the repo
+# 3. prove the on-box script actually injects runtime config (auto-writes a
+#    corrected script + patch if it does not)
+node scripts/verify-west-runtime-injection.js ./production-reconciliation
 
-# 4. release: GitHub -> Actions -> "Production release" -> Run workflow
+# 4. review ONLY what reconcile flags HIGH RISK, merge those into the repo
+
+# 5. release: GitHub -> Actions -> "Production release" -> Run workflow
 #    paste the commit SHA, type RELEASE
 ```
 
@@ -42,6 +46,49 @@ The fee invariant is the one worth knowing: it calls the live line-item calculat
 15% customer commission, asserts **no** provider-commission line item, and checks the arithmetic
 to the cent. It creates no booking and charges no card. Verified today on two separate
 listings: `$45.00 × 2h + 15% = $103.50` and `$30.00 × 2h + 15% = $69.00`.
+
+---
+
+## Deployment gate — all seven must pass
+
+Production deploys only when every one of these is green. Each is enforced by a
+workflow step that exits non-zero, not by anyone remembering.
+
+| # | Gate | Enforced by | Status today |
+|---|---|---|---|
+| 1 | Production drift reconciled | `scripts/reconcile-production.js` — zero unreviewed HIGH RISK | **blocked**: needs the WEST capture |
+| 2 | Secret names verified | `scripts/preflight-production.js` (Secrets Manager metadata) | blocked: needs AWS auth |
+| 3 | Image secret audit PASS | `scripts/audit-image-secrets.sh`, inside `deploy.sh` between build and push | ready |
+| 4 | Cookie regression PASS | `server/api-util/secureCookies.test.js`, workflow step | **passing**, 12 tests |
+| 5 | Runtime injection verified PASS | `scripts/verify-west-runtime-injection.js`, workflow step | **blocked**: needs the WEST capture |
+| 6 | Startup env check PASS | `server/startupEnvCheck.js`, asserted in-container after start by `west-instance-deploy.sh` and `flip-release.sh`; rolls back if config is missing | ready |
+| 7 | Preflight PASS | `scripts/preflight-production.js`, workflow step | blocked: needs AWS auth |
+
+Gate 5 fails closed by design: no committed evidence means no deploy. It unblocks
+the moment a capture lands — commit `production-reconciliation/deploy-script-analysis.json`
+and the redacted `west-deploy-script.sh` (both small and reviewable; the source tree
+does not need committing).
+
+The canonical smoke-test check for `?ref=` in the canonical tag is **expected red**
+until c196 ships. That is correct and must not be weakened.
+
+### The on-box deploy script
+
+`scripts/west-instance-deploy.sh` is the canonical version of the script that
+actually runs `docker run` on WEST. Until now that script existed only on the box:
+unversioned, mutable, and never read by anyone auditing the system — which is why
+nobody could say whether the secret-free image would start configured.
+
+The repo copy passes its own verifier: it requires `ENV_FILE`, refuses to start an
+unconfigured container, injects secrets with `--env-file`, health-checks, then asks
+the container to prove it received its production-critical configuration and rolls
+back if it did not.
+
+It has **not** been installed on WEST and does not claim to match what is there.
+Capture first, compare `sha256`, install deliberately.
+
+Canonical repo sha256: `0743cfff0d3f8bbc42e246507b3c8356109f547667a69dcdb54dacf5ecd9544b`
+On-box sha256: unknown until capture. Difference: unknown until capture.
 
 ---
 
@@ -85,16 +132,27 @@ first release does not depend on the IAM work landing first.
 
 ---
 
-## Known issue this plan does not fix
+## Secrets are no longer in the image
 
-`Dockerfile` line 24 is `COPY .env .env` — the runtime secrets are baked into the image layer,
-so anyone with ECR pull access has every production credential. That contradicts the canonical
-architecture ("no secret is read from a file inside a container image") and it is worth fixing.
+`Dockerfile` used to carry `COPY .env .env`, so every production credential was an
+image layer and ECR pull access was equivalent to the whole secret store. Fixed:
 
-It is **not** fixed here on purpose: `VITE_*` variables must be present at build time, so
-removing the copy without restructuring the build would silently strip `Secure` from session
-cookies — the exact failure that aborted release c158. It needs a production test, which needs
-WEST access. Flagged, not guessed at.
+- the runtime stage copies no `.env` at all;
+- the build stage receives `.env.build` — the `VITE_`-prefixed half, which Vite
+  compiles into the browser bundle and is therefore public by construction. It
+  still needs a *file* because `vite.config.mjs` populates `import.meta.env` only
+  from `.env` files, never from `process.env` or `--build-arg`. That detail is
+  exactly what broke c158;
+- `scripts/deploy.sh` splits the two, scp's the full `.env` to the instance at
+  mode 600, and passes the path as `ENV_FILE`;
+- `.dockerignore` blocks `.env`, `.env.*`, `*.pem`, `*.key`, `credentials.json`
+  and `id_rsa` from the build context entirely;
+- `scripts/audit-image-secrets.sh` runs inside `deploy.sh` between build and push,
+  so a secret-carrying image cannot leave the machine even if someone bypasses CI.
+
+Cookie security no longer depends on any of this: `server/api-util/secureCookies.js`
+is the single decision, and in production `Secure` is on unless explicitly disabled.
+See `COOKIE_SECURE_ROOT_CAUSE.md`.
 
 ---
 

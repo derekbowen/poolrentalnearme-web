@@ -1,0 +1,190 @@
+# WEST verification — one click, read-only.
+#
+# Press "Run workflow". That is the entire operator action. This workflow
+# connects to WEST, captures its state, brings the artifact back, verifies
+# runtime env injection, compares the on-box deploy script against the canonical
+# one, generates a corrective patch if needed, and prints a plain-English
+# verdict in the run summary.
+#
+# READ-ONLY, by construction:
+#   * it copies ONE script to /tmp on the box and runs it; that script starts,
+#     stops and restarts nothing
+#   * it never builds, pushes, pulls or deploys an image
+#   * it never writes to the build tree, nginx, cron or any container
+#   * it removes what it copied when it is done
+#
+# There is no path from this workflow to a deployment. It shares no step with
+# production-release.yml.
+
+name: Verify WEST
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_evidence:
+        description: 'Commit the small verification evidence back to this branch (unblocks the release gate)'
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: verify-west
+  cancel-in-progress: false
+
+permissions:
+  contents: write # only to commit the two small evidence files
+  id-token: write # AWS OIDC when AWS_ROLE_ARN is set
+
+jobs:
+  verify:
+    name: Capture and verify
+    runs-on: ubuntu-latest
+    environment: production # reuses the existing production secrets; deploys nothing
+    env:
+      AWS_INSTANCE_URL: ${{ secrets.PRODUCTION_AWS_INSTANCE_URL }}
+      ENCODED_PEM: ${{ secrets.PRODUCTION_ENCODED_PEM }}
+      AWS_JH_ENV_SECRET_NAME: ${{ secrets.PRODUCTION_AWS_JH_ENV_SECRET_NAME }}
+      AWS_ENV_USER_REGION: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+      AWS_INSTANCE_DEPLOY_SCRIPT: ${{ secrets.PRODUCTION_AWS_INSTANCE_DEPLOY_SCRIPT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials (OIDC)
+        if: vars.AWS_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+          role-session-name: prnm-verify-west
+
+      - name: Configure AWS credentials (static fallback)
+        if: vars.AWS_ROLE_ARN == ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PRODUCTION_AWS_ENV_USER_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+
+      - name: Check required access is configured
+        run: |
+          missing=""
+          [ -n "${AWS_INSTANCE_URL:-}" ] || missing="$missing PRODUCTION_AWS_INSTANCE_URL"
+          [ -n "${ENCODED_PEM:-}" ]      || missing="$missing PRODUCTION_ENCODED_PEM"
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot reach WEST — these repository secrets are not set:$missing"
+            {
+              echo "## WEST verification"
+              echo ""
+              echo '```'
+              echo "WEST ACCESS: FAIL"
+              echo "DEPLOY SCRIPT FOUND: NO"
+              echo "RUNTIME ENV INJECTION: FAIL"
+              echo "PRODUCTION DRIFT CAPTURED: NO"
+              echo "CANONICAL SCRIPT MATCH: NO"
+              echo "PATCH REQUIRED: YES"
+              echo ""
+              echo "SAFE TO DEPLOY: NO"
+              echo '```'
+              echo ""
+              echo "**Remaining blocker.** WEST access is not configured for this repository:"
+              echo "\`$missing\` must be set in the repository's production environment secrets."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # Capture. One script, copied to /tmp, run, removed.
+      - name: Capture WEST state (read-only)
+        run: |
+          set -uo pipefail
+          KEY=$(mktemp); echo "$ENCODED_PEM" | base64 --decode > "$KEY"; chmod 400 "$KEY"
+          SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i $KEY"
+
+          if ! $SSH "$AWS_INSTANCE_URL" 'echo reachable' >/dev/null 2>&1; then
+            echo "::error::Could not SSH to WEST"
+            rm -f "$KEY"
+            exit 1
+          fi
+          echo "WEST is reachable"
+
+          scp -o StrictHostKeyChecking=no -i "$KEY" \
+            scripts/capture-production-state.sh "$AWS_INSTANCE_URL:/tmp/prnm-capture.sh"
+
+          # AWS_INSTANCE_DEPLOY_SCRIPT tells the capture where to look first.
+          $SSH "$AWS_INSTANCE_URL" \
+            "cd /tmp && AWS_INSTANCE_DEPLOY_SCRIPT='${AWS_INSTANCE_DEPLOY_SCRIPT:-}' AWS_JH_ENV_SECRET_NAME='${AWS_JH_ENV_SECRET_NAME:-}' AWS_ENV_USER_REGION='${AWS_ENV_USER_REGION:-}' OUT=/tmp/production-reconciliation bash /tmp/prnm-capture.sh" \
+            || echo "::warning::capture reported a non-zero exit; collecting whatever it produced"
+
+          TARBALL=$($SSH "$AWS_INSTANCE_URL" 'ls -t /tmp/production-reconciliation-*.tar.gz 2>/dev/null | head -1')
+          if [ -n "$TARBALL" ]; then
+            scp -o StrictHostKeyChecking=no -i "$KEY" "$AWS_INSTANCE_URL:$TARBALL" ./capture.tar.gz
+          else
+            $SSH "$AWS_INSTANCE_URL" 'tar czf /tmp/capture.tar.gz -C /tmp production-reconciliation'
+            scp -o StrictHostKeyChecking=no -i "$KEY" "$AWS_INSTANCE_URL:/tmp/capture.tar.gz" ./capture.tar.gz
+          fi
+
+          # Leave the box as we found it.
+          $SSH "$AWS_INSTANCE_URL" 'rm -rf /tmp/prnm-capture.sh /tmp/production-reconciliation /tmp/production-reconciliation-*.tar.gz /tmp/capture.tar.gz' || true
+          rm -f "$KEY"
+
+          tar xzf capture.tar.gz
+          # The tarball may contain ./production-reconciliation or tmp/production-reconciliation
+          [ -d production-reconciliation ] || mv tmp/production-reconciliation . 2>/dev/null || true
+          echo "artifact contains: $(find production-reconciliation -type f | wc -l) files"
+
+      - name: Verify runtime env injection (generates a patch if needed)
+        continue-on-error: true
+        run: node scripts/verify-west-runtime-injection.js ./production-reconciliation
+
+      - name: Classify production drift
+        continue-on-error: true
+        run: node scripts/reconcile-production.js ./production-reconciliation --write-report
+
+      - name: Verdict
+        id: verdict
+        continue-on-error: true
+        run: |
+          node scripts/west-verdict.js ./production-reconciliation --markdown >> "$GITHUB_STEP_SUMMARY"
+          node scripts/west-verdict.js ./production-reconciliation
+          echo "safe=$?" >> "$GITHUB_OUTPUT"
+
+      # The full capture, including the production source tree, stays an artifact
+      # rather than entering git.
+      - name: Upload the full capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: west-capture
+          path: production-reconciliation/
+          retention-days: 14
+
+      # Only the two small, reviewable evidence files are committed. That is what
+      # unblocks the release gate, which fails closed without them.
+      - name: Commit verification evidence
+        if: inputs.commit_evidence
+        run: |
+          set -e
+          mkdir -p production-reconciliation-evidence
+          cp production-reconciliation/deploy-script-analysis.json production-reconciliation-evidence/ 2>/dev/null || true
+          cp production-reconciliation/west-deploy-script.sh production-reconciliation-evidence/ 2>/dev/null || true
+          cp production-reconciliation/west-deploy-script.patch production-reconciliation-evidence/ 2>/dev/null || true
+          cp production-reconciliation/proposed-west-deploy-script.sh production-reconciliation-evidence/ 2>/dev/null || true
+          cp docs/PRODUCTION_DRIFT_AUDIT.md production-reconciliation-evidence/ 2>/dev/null || true
+          if [ -z "$(git status --porcelain production-reconciliation-evidence docs)" ]; then
+            echo "no evidence changes to commit"; exit 0
+          fi
+          git config user.name "prnm-verify-west"
+          git config user.email "noreply@poolrentalnearme.com"
+          git add production-reconciliation-evidence docs/PRODUCTION_DRIFT_AUDIT.md 2>/dev/null || true
+          git commit -m "WEST verification evidence (automated, read-only capture)
+
+          Captured by .github/workflows/verify-west.yml. Contains the redacted
+          on-box deploy script, its analysis, and any generated correction.
+          No secret values."
+          git push
+
+      - name: Fail the run when it is not safe to deploy
+        run: node scripts/west-verdict.js ./production-reconciliation

@@ -2,32 +2,43 @@
 
 **Status: one human action outstanding.** Nothing is deployed. c196 is not flipped.
 
-The whole procedure is now four commands and one button. If a step below reads like
-homework, it is a bug in the tooling — say so and it gets automated.
+One button verifies, one button releases. If a step below reads like homework, it is
+a bug in the tooling — say so and it gets automated.
 
 ---
 
 ## The operator path
 
+**One action.** GitHub → Actions → **Verify WEST** → Run workflow.
+
+It connects to WEST, captures state read-only, brings the artifact back, verifies
+runtime env injection, compares the on-box deploy script against the canonical one,
+generates a corrective patch if needed, and prints this in the run summary:
+
 ```
-# 1. once, on the WEST box — read-only, ~30 seconds
-bash scripts/capture-production-state.sh
+WEST ACCESS: PASS/FAIL
+DEPLOY SCRIPT FOUND: YES/NO
+RUNTIME ENV INJECTION: PASS/FAIL
+PRODUCTION DRIFT CAPTURED: YES/NO
+CANONICAL SCRIPT MATCH: YES/NO
+PATCH REQUIRED: YES/NO
 
-# 2. copy the tarball back into the repo root, extract, then:
-node scripts/reconcile-production.js ./production-reconciliation --write-report
-
-# 3. prove the on-box script actually injects runtime config (auto-writes a
-#    corrected script + patch if it does not)
-node scripts/verify-west-runtime-injection.js ./production-reconciliation
-
-# 4. review ONLY what reconcile flags HIGH RISK, merge those into the repo
-
-# 5. release: GitHub -> Actions -> "Production release" -> Run workflow
-#    paste the commit SHA, type RELEASE
+SAFE TO DEPLOY: YES/NO
 ```
 
-Everything else — preflight, secret retrieval, build, deploy, smoke tests, rollback — runs
-inside the workflow. There is no step where anyone types a credential into a form.
+with the single remaining blocker in plain English when the answer is NO. Nothing to
+copy, download, paste or interpret. It also commits the small evidence files back to
+the branch, which is what unblocks release gate 5.
+
+Terminal equivalent, if you would rather: `bash scripts/verify-west.sh`. Same verdict —
+both call `scripts/west-verdict.js`, so they cannot disagree.
+
+Then, when it says SAFE TO DEPLOY: YES —
+GitHub → Actions → **Production release** → Run workflow, paste the SHA, type RELEASE.
+
+**Verify WEST deploys nothing.** It copies one script to `/tmp`, runs it, retrieves the
+result and deletes what it copied. It never builds, pushes, pulls or starts an image,
+and shares no step with the release workflow.
 
 ---
 
@@ -35,6 +46,8 @@ inside the workflow. There is no step where anyone types a credential into a for
 
 | Command | What it does | Fails how |
 |---|---|---|
+| **Verify WEST** workflow | one click: SSH to WEST, capture, retrieve, verify, patch, verdict | read-only; deploys nothing |
+| `scripts/verify-west.sh` | terminal equivalent of the above | same verdict engine |
 | `scripts/capture-production-state.sh` | snapshots WEST into `production-reconciliation/`: state, file manifest, source, services, nginx, cron, env + AWS secret **names only** | never writes to production |
 | `scripts/reconcile-production.js` | classifies every difference into SOURCE / CONFIG / GENERATED / STALE / UNKNOWN and flags money, booking, auth, notification and SEO files as HIGH RISK | never overwrites anything, never assumes production is right |
 | `npm run check-env` | required vs optional, grouped by service, accepts EAST's alias names | exit 1 on any production-critical gap |

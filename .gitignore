@@ -13,6 +13,9 @@ build
 .DS_Store
 .env
 .env.*
+# ...but the canonical, value-free reference IS tracked. Without this negation the
+# .env.* wildcard above swallows it and the documentation silently disappears.
+!.env.example
 npm-debug.log
 yarn-error.log
 dist
@@ -24,3 +27,14 @@ server/data/
 # Python bytecode from scripts/ (e.g. the availability_block tests)
 __pycache__/
 *.pyc
+
+# Credentials and keys. Nothing matching these is tracked or on disk today (verified
+# 2026-09-03); they are here so a .pem, a service-account file or a stray key can never
+# be committed by accident. .turtleci expects an ENCODED_PEM, so .pem files do circulate.
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+id_rsa
+id_rsa.*

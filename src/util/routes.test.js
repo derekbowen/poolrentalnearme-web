@@ -100,6 +100,36 @@ describe('util/routes.js', () => {
         '/l/00000000-0000-0000-0000-000000000000?book=true'
       );
     });
+    it('drops tracking params from a listing canonical (the /go/ share link)', () => {
+      // /go/<slug>-<uuid8> 302s here with ?ref=host-share on every share click.
+      // The canonical must stay the one clean listing URL, not a per-click copy.
+      const location = {
+        pathname: '/l/the-backyard-oasis/6a713580-85d9-43eb-8f84-35a431128c2f',
+        search: '?ref=host-share',
+        hash: '',
+      };
+      expect(canonicalRoutePath(routes, location)).toEqual(
+        '/l/6a713580-85d9-43eb-8f84-35a431128c2f'
+      );
+    });
+    it('drops any query from a listing canonical, not just tracking', () => {
+      const location = {
+        pathname: '/l/some-slug-here/00000000-0000-0000-0000-000000000000',
+        search: '?orderOpen=true&utm_source=facebook',
+        hash: '#reviews',
+      };
+      expect(canonicalRoutePath(routes, location)).toEqual(
+        '/l/00000000-0000-0000-0000-000000000000'
+      );
+    });
+    it('strips tracking params from a non-listing canonical', () => {
+      const location = { pathname: '/', search: '?utm_source=fb&fbclid=abc123', hash: '' };
+      expect(canonicalRoutePath(routes, location)).toEqual('/');
+    });
+    it('keeps meaningful params on a non-listing canonical', () => {
+      const location = { pathname: '/s', search: '?address=Lancaster%2C+PA&ref=host-share', hash: '' };
+      expect(canonicalRoutePath(routes, location)).toEqual('/s?address=Lancaster%2C+PA');
+    });
     it('handles ListingBasePage', () => {
       const location = {
         pathname: '/l',

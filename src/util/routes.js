@@ -97,6 +97,29 @@ export const findRouteByRouteName = (nameToFind, routes) => {
  * @return {String} Canonical URL of the given location
  *
  */
+/**
+ * Query parameters that never change what a page shows: click attribution and
+ * campaign tags.
+ *
+ * Left in the canonical they mint a duplicate URL for every click. Every host
+ * share link goes through /go/<slug>-<uuid8>, which 302s to the listing with
+ * ?ref=host-share appended (server/api/go-redirect.js), so each shared listing
+ * was advertising a second, self-canonicalising copy of itself to Google.
+ */
+const TRACKING_PARAM = /^(ref|gclid|fbclid|msclkid|mc_cid|mc_eid|igshid|utm_[a-z_]+)$/i;
+
+const withoutTrackingParams = search => {
+  if (!search || search === '?') {
+    return '';
+  }
+  const params = new URLSearchParams(search.charAt(0) === '?' ? search.slice(1) : search);
+  Array.from(params.keys())
+    .filter(key => TRACKING_PARAM.test(key))
+    .forEach(key => params.delete(key));
+  const rest = params.toString();
+  return rest ? `?${rest}` : '';
+};
+
 export const canonicalRoutePath = (routes, location, pathOnly = false) => {
   const { pathname, search, hash } = location;
 
@@ -113,11 +136,12 @@ export const canonicalRoutePath = (routes, location, pathOnly = false) => {
     if (parts.length !== 4) {
       throw new Error('Expected ListingPage route to have 4 parts');
     }
-    const canonicalListingPathname = `/${parts[1]}/${parts[3]}`;
-    return pathOnly ? canonicalListingPathname : `${canonicalListingPathname}${search}${hash}`;
+    // A listing page renders the same listing whatever the query says — ?ref,
+    // ?orderOpen, prefilled dates — so its canonical carries no query at all.
+    return canonicalListingPathname;
   }
 
-  return pathOnly ? pathname : `${pathname}${search}${hash}`;
+  return pathOnly ? pathname : `${pathname}${withoutTrackingParams(search)}${hash}`;
 };
 
 // Regex that replaces {userId}, {listingId} or {userEmail} in the href string

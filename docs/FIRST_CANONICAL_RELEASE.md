@@ -30,6 +30,14 @@ with the single remaining blocker in plain English when the answer is NO. Nothin
 copy, download, paste or interpret. It also commits the small evidence files back to
 the branch, which is what unblocks release gate 5.
 
+It is self-diagnosing about access. It works out for itself whether to use **SSM**
+(preferred — uses the workflow's own AWS credentials, needs no stored private key, and
+is the channel WEST has actually been administered through for months) or **SSH** (the
+PEM path inherited from TurtleCI). If neither is available it stops before attempting
+any connection and names the exact secret that is missing. Setting the repository
+variable `AWS_ROLE_ARN` removes the need for `PRODUCTION_ENCODED_PEM` entirely — see
+`docs/WEST_ACCESS.md`.
+
 Terminal equivalent, if you would rather: `bash scripts/verify-west.sh`. Same verdict —
 both call `scripts/west-verdict.js`, so they cannot disagree.
 

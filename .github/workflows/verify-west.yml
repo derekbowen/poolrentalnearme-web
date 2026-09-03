@@ -1,20 +1,25 @@
-# WEST verification — one click, read-only.
+# WEST verification — one click, self-diagnosing, read-only.
 #
-# Press "Run workflow". That is the entire operator action. This workflow
-# connects to WEST, captures its state, brings the artifact back, verifies
-# runtime env injection, compares the on-box deploy script against the canonical
-# one, generates a corrective patch if needed, and prints a plain-English
-# verdict in the run summary.
+# Press "Run workflow". That is the entire operator action.
+#
+# The workflow works out for itself how to reach WEST:
+#
+#   SSM   preferred. Uses whatever AWS credentials this workflow already has —
+#         a short-lived OIDC role when AWS_ROLE_ARN is set. No private key is
+#         stored anywhere. WEST has been administered over AWS-RunShellScript
+#         for months, so this is the path already in use, not a new capability.
+#   SSH   fallback. The path inherited from TurtleCI: PRODUCTION_AWS_INSTANCE_URL
+#         plus a long-lived EC2 private key in PRODUCTION_ENCODED_PEM.
+#
+# If neither is available it stops before attempting any connection and names
+# the exact secret that is missing. It never guesses, never half-runs.
 #
 # READ-ONLY, by construction:
-#   * it copies ONE script to /tmp on the box and runs it; that script starts,
-#     stops and restarts nothing
-#   * it never builds, pushes, pulls or deploys an image
-#   * it never writes to the build tree, nginx, cron or any container
-#   * it removes what it copied when it is done
-#
-# There is no path from this workflow to a deployment. It shares no step with
-# production-release.yml.
+#   * sends one script to /tmp on the box, runs it, retrieves the result,
+#     removes what it left
+#   * never builds, pushes, pulls, starts or stops an image
+#   * never writes to the build tree, nginx, cron or any container
+#   * shares no step with production-release.yml
 
 name: Verify WEST
 
@@ -22,7 +27,7 @@ on:
   workflow_dispatch:
     inputs:
       commit_evidence:
-        description: 'Commit the small verification evidence back to this branch (unblocks the release gate)'
+        description: 'Commit the verification evidence back to this branch (unblocks the release gate)'
         required: false
         default: true
         type: boolean
@@ -32,20 +37,23 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write # only to commit the two small evidence files
+  contents: write # only to commit the small evidence files
   id-token: write # AWS OIDC when AWS_ROLE_ARN is set
 
 jobs:
   verify:
     name: Capture and verify
     runs-on: ubuntu-latest
-    environment: production # reuses the existing production secrets; deploys nothing
+    environment: production # reuses existing secrets; deploys nothing
     env:
       AWS_INSTANCE_URL: ${{ secrets.PRODUCTION_AWS_INSTANCE_URL }}
       ENCODED_PEM: ${{ secrets.PRODUCTION_ENCODED_PEM }}
       AWS_JH_ENV_SECRET_NAME: ${{ secrets.PRODUCTION_AWS_JH_ENV_SECRET_NAME }}
       AWS_ENV_USER_REGION: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
       AWS_INSTANCE_DEPLOY_SCRIPT: ${{ secrets.PRODUCTION_AWS_INSTANCE_DEPLOY_SCRIPT }}
+      WEST_AWS_REGION: ${{ vars.WEST_AWS_REGION || 'us-west-1' }}
+      WEST_INSTANCE_ID: ${{ vars.WEST_INSTANCE_ID }}
+      WEST_PUBLIC_IP: ${{ vars.WEST_PUBLIC_IP || '13.56.113.85' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -54,88 +62,95 @@ jobs:
         with:
           node-version: '20'
 
+      # Preferred: short-lived OIDC. This is also what makes the SSM path work
+      # without any stored key. Neither step fails the run if unconfigured —
+      # the probe decides what is actually usable.
       - name: Configure AWS credentials (OIDC)
         if: vars.AWS_ROLE_ARN != ''
+        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+          aws-region: ${{ vars.WEST_AWS_REGION || 'us-west-1' }}
           role-session-name: prnm-verify-west
 
       - name: Configure AWS credentials (static fallback)
         if: vars.AWS_ROLE_ARN == ''
+        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PRODUCTION_AWS_ENV_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.PRODUCTION_AWS_ENV_USER_REGION }}
+          aws-region: ${{ vars.WEST_AWS_REGION || 'us-west-1' }}
 
-      - name: Check required access is configured
+      - name: Decide how to reach WEST
+        id: probe
+        continue-on-error: true
+        run: bash scripts/west-access-probe.sh
+
+      # ---------------------------------------------------------- no access
+      - name: Report exactly what is missing
+        if: steps.probe.outputs.method == 'none' || steps.probe.outputs.method == ''
         run: |
-          missing=""
-          [ -n "${AWS_INSTANCE_URL:-}" ] || missing="$missing PRODUCTION_AWS_INSTANCE_URL"
-          [ -n "${ENCODED_PEM:-}" ]      || missing="$missing PRODUCTION_ENCODED_PEM"
-          if [ -n "$missing" ]; then
-            echo "::error::Cannot reach WEST — these repository secrets are not set:$missing"
-            {
-              echo "## WEST verification"
+          MISSING="${{ steps.probe.outputs.missing }}"
+          {
+            echo "## WEST verification"
+            echo ""
+            echo '```'
+            echo "WEST ACCESS: FAIL"
+            echo "DEPLOY SCRIPT FOUND: NO"
+            echo "RUNTIME ENV INJECTION: FAIL"
+            echo "PRODUCTION DRIFT CAPTURED: NO"
+            echo "CANONICAL SCRIPT MATCH: NO"
+            echo "PATCH REQUIRED: YES"
+            echo ""
+            echo "SAFE TO DEPLOY: NO"
+            echo '```'
+            echo ""
+            echo "**Remaining blocker.** Neither access path is available."
+            echo ""
+            echo "**SSM** (preferred, needs no private key) could not be used: AWS credentials"
+            echo "were not usable, or the instance/agent could not be reached. Setting the"
+            echo "repository variable \`AWS_ROLE_ARN\` to a role that permits \`ssm:SendCommand\`"
+            echo "on the WEST instance removes the need for a stored key entirely."
+            echo ""
+            if [ -n "$MISSING" ]; then
+              echo "**SSH** (the inherited fallback) is missing these repository secrets:"
+              for m in $MISSING; do echo "- \`$m\`"; done
               echo ""
-              echo '```'
-              echo "WEST ACCESS: FAIL"
-              echo "DEPLOY SCRIPT FOUND: NO"
-              echo "RUNTIME ENV INJECTION: FAIL"
-              echo "PRODUCTION DRIFT CAPTURED: NO"
-              echo "CANONICAL SCRIPT MATCH: NO"
-              echo "PATCH REQUIRED: YES"
-              echo ""
-              echo "SAFE TO DEPLOY: NO"
-              echo '```'
-              echo ""
-              echo "**Remaining blocker.** WEST access is not configured for this repository:"
-              echo "\`$missing\` must be set in the repository's production environment secrets."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+              echo "See \`docs/WEST_ACCESS.md\` for where each historically came from."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::No usable path to WEST. Missing: ${MISSING:-AWS access for SSM}"
+          exit 1
 
-      # Capture. One script, copied to /tmp, run, removed.
-      - name: Capture WEST state (read-only)
+      # ------------------------------------------------------- capture: SSM
+      - name: Capture WEST over SSM (no private key)
+        if: steps.probe.outputs.method == 'ssm'
+        run: bash scripts/ssm-capture-west.sh ./production-reconciliation
+
+      # ------------------------------------------------------- capture: SSH
+      - name: Capture WEST over SSH (legacy PEM path)
+        if: steps.probe.outputs.method == 'ssh'
         run: |
           set -uo pipefail
           KEY=$(mktemp); echo "$ENCODED_PEM" | base64 --decode > "$KEY"; chmod 400 "$KEY"
           SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i $KEY"
-
-          if ! $SSH "$AWS_INSTANCE_URL" 'echo reachable' >/dev/null 2>&1; then
-            echo "::error::Could not SSH to WEST"
-            rm -f "$KEY"
-            exit 1
-          fi
-          echo "WEST is reachable"
-
+          $SSH "$AWS_INSTANCE_URL" 'echo reachable' >/dev/null 2>&1 || {
+            echo "::error::Could not SSH to WEST"; rm -f "$KEY"; exit 1; }
           scp -o StrictHostKeyChecking=no -i "$KEY" \
             scripts/capture-production-state.sh "$AWS_INSTANCE_URL:/tmp/prnm-capture.sh"
-
-          # AWS_INSTANCE_DEPLOY_SCRIPT tells the capture where to look first.
           $SSH "$AWS_INSTANCE_URL" \
             "cd /tmp && AWS_INSTANCE_DEPLOY_SCRIPT='${AWS_INSTANCE_DEPLOY_SCRIPT:-}' AWS_JH_ENV_SECRET_NAME='${AWS_JH_ENV_SECRET_NAME:-}' AWS_ENV_USER_REGION='${AWS_ENV_USER_REGION:-}' OUT=/tmp/production-reconciliation bash /tmp/prnm-capture.sh" \
-            || echo "::warning::capture reported a non-zero exit; collecting whatever it produced"
-
-          TARBALL=$($SSH "$AWS_INSTANCE_URL" 'ls -t /tmp/production-reconciliation-*.tar.gz 2>/dev/null | head -1')
-          if [ -n "$TARBALL" ]; then
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$AWS_INSTANCE_URL:$TARBALL" ./capture.tar.gz
-          else
-            $SSH "$AWS_INSTANCE_URL" 'tar czf /tmp/capture.tar.gz -C /tmp production-reconciliation'
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$AWS_INSTANCE_URL:/tmp/capture.tar.gz" ./capture.tar.gz
-          fi
-
-          # Leave the box as we found it.
-          $SSH "$AWS_INSTANCE_URL" 'rm -rf /tmp/prnm-capture.sh /tmp/production-reconciliation /tmp/production-reconciliation-*.tar.gz /tmp/capture.tar.gz' || true
+            || echo "::warning::capture returned non-zero; collecting what it produced"
+          $SSH "$AWS_INSTANCE_URL" 'tar czf /tmp/prnm-capture.tar.gz -C /tmp production-reconciliation'
+          scp -o StrictHostKeyChecking=no -i "$KEY" "$AWS_INSTANCE_URL:/tmp/prnm-capture.tar.gz" ./capture.tar.gz
+          $SSH "$AWS_INSTANCE_URL" 'rm -rf /tmp/prnm-capture.sh /tmp/production-reconciliation /tmp/prnm-capture.tar.gz' || true
           rm -f "$KEY"
-
           tar xzf capture.tar.gz
-          # The tarball may contain ./production-reconciliation or tmp/production-reconciliation
           [ -d production-reconciliation ] || mv tmp/production-reconciliation . 2>/dev/null || true
-          echo "artifact contains: $(find production-reconciliation -type f | wc -l) files"
 
+      # ------------------------------------------------------------ verify
       - name: Verify runtime env injection (generates a patch if needed)
         continue-on-error: true
         run: node scripts/verify-west-runtime-injection.js ./production-reconciliation
@@ -145,45 +160,47 @@ jobs:
         run: node scripts/reconcile-production.js ./production-reconciliation --write-report
 
       - name: Verdict
-        id: verdict
         continue-on-error: true
         run: |
           node scripts/west-verdict.js ./production-reconciliation --markdown >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo ""
+            echo "_Access method: **${{ steps.probe.outputs.method }}**"
+            if [ "${{ steps.probe.outputs.method }}" = "ssm" ]; then
+              echo "— no private key was used or required._"
+            else
+              echo "— used the legacy stored PEM. See docs/WEST_ACCESS.md to move to SSM._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
           node scripts/west-verdict.js ./production-reconciliation
-          echo "safe=$?" >> "$GITHUB_OUTPUT"
 
-      # The full capture, including the production source tree, stays an artifact
-      # rather than entering git.
       - name: Upload the full capture
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: west-capture
           path: production-reconciliation/
           retention-days: 14
+          if-no-files-found: ignore
 
-      # Only the two small, reviewable evidence files are committed. That is what
-      # unblocks the release gate, which fails closed without them.
+      # Only the small, reviewable evidence enters git. That is what unblocks
+      # release gate 5, which fails closed without it.
       - name: Commit verification evidence
-        if: inputs.commit_evidence
+        if: inputs.commit_evidence && steps.probe.outputs.method != 'none'
+        continue-on-error: true
         run: |
           set -e
           mkdir -p production-reconciliation-evidence
-          cp production-reconciliation/deploy-script-analysis.json production-reconciliation-evidence/ 2>/dev/null || true
-          cp production-reconciliation/west-deploy-script.sh production-reconciliation-evidence/ 2>/dev/null || true
-          cp production-reconciliation/west-deploy-script.patch production-reconciliation-evidence/ 2>/dev/null || true
-          cp production-reconciliation/proposed-west-deploy-script.sh production-reconciliation-evidence/ 2>/dev/null || true
-          cp docs/PRODUCTION_DRIFT_AUDIT.md production-reconciliation-evidence/ 2>/dev/null || true
-          if [ -z "$(git status --porcelain production-reconciliation-evidence docs)" ]; then
-            echo "no evidence changes to commit"; exit 0
-          fi
+          for f in deploy-script-analysis.json west-deploy-script.sh \
+                   west-deploy-script.patch proposed-west-deploy-script.sh \
+                   deploy-script-findings.txt state.json; do
+            cp "production-reconciliation/$f" production-reconciliation-evidence/ 2>/dev/null || true
+          done
+          git add production-reconciliation-evidence docs/PRODUCTION_DRIFT_AUDIT.md 2>/dev/null || true
+          if git diff --cached --quiet; then echo "no evidence changes"; exit 0; fi
           git config user.name "prnm-verify-west"
           git config user.email "noreply@poolrentalnearme.com"
-          git add production-reconciliation-evidence docs/PRODUCTION_DRIFT_AUDIT.md 2>/dev/null || true
-          git commit -m "WEST verification evidence (automated, read-only capture)
-
-          Captured by .github/workflows/verify-west.yml. Contains the redacted
-          on-box deploy script, its analysis, and any generated correction.
-          No secret values."
+          git commit -m "WEST verification evidence (automated read-only capture via ${{ steps.probe.outputs.method }})"
           git push
 
       - name: Fail the run when it is not safe to deploy

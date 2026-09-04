@@ -89,6 +89,11 @@ jobs:
       - name: Search param validation
         run: bun test src/containers/SearchPage/searchParamValidation.test.js
 
+      # One place owns the Sharetribe credential aliasing (WEST vs EAST spellings).
+      # Includes assertions that the diagnostic log line never contains a value.
+      - name: Sharetribe credential resolution
+        run: npx jest server/api-util/sharetribeCredentials.test.js --ci
+
       # Proof that the production image builds with FROZEN resolution. This is
       # the step that would have caught the old binary lockfile: bun 1.2.4 could
       # not parse it, so every production build silently re-resolved. Build only

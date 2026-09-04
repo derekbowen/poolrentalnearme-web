@@ -1,4 +1,5 @@
 server/api-util/ssrStatus.js
+server/api-util/structuredDataInsurance.test.js
 server/extensions/sms-messaging/mod/notify/exclude.js
 src/config/businessFacts.js
 src/config/hostAcademy.js

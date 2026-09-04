@@ -4,10 +4,11 @@ const wrapInstanceWithResponseTransformer = require('./wrapInstanceWithResponseT
 
 const env = process.env.VITE_ENV || 'development';
 
-const {
-  SHARETRIBE_INTEGRATION_SDK_CLIENT_ID: clientId,
-  SHARETRIBE_INTEGRATION_SDK_CLIENT_SECRET: clientSecret,
-} = process.env;
+// Resolved through the canonical alias map: EAST injects this same credential
+// as SHARETRIBE_INTEG_CLIENT_ID/_SECRET, and reading only the WEST spelling
+// here made `instance` silently null on that host. See sharetribeCredentials.js.
+const { integrationCredentials } = require('./sharetribeCredentials');
+const { clientId, clientSecret } = integrationCredentials();
 
 const queryLimiter =
   env !== 'production'

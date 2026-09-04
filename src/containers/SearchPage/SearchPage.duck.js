@@ -16,6 +16,10 @@ import { hasPermissionToViewData, isUserAuthorized } from '../../util/userHelper
 import { parse } from '../../util/urlHelpers';
 
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
+import {
+  indexedExtendedDataParamNames,
+  partitionExtendedDataParams,
+} from './searchParamValidation';
 
 // Pagination page size might need to be dynamic on responsive page layouts
 // Current design has max 3 columns 12 is divisible by 2 and 3
@@ -357,9 +361,43 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
   } = config.layout.listingImage;
   const aspectRatio = aspectHeight / aspectWidth;
 
+  // Refuse extended-data filters the marketplace cannot actually apply.
+  //
+  // `rest` used to be spread into the query as-is. The API ignores a `pub_*` key
+  // that is not indexed for search, so a URL asking for a filter that does not
+  // exist came back as the FULL catalogue dressed up as a filtered result —
+  // /s?pub_category=heated, =indoor and even =banana all returned all 124
+  // published listings, and the homepage links pointed at the first two.
+  //
+  // Returning nothing is the honest answer, and it matches what the API already
+  // does for an unknown VALUE on a known field (pub_poolAmenities=banana ->
+  // "No results."). See searchParamValidation.js.
+  const listingFieldsConfig = config.listing?.listingFields || [];
+  const builtInExtendedDataParams = (config.search?.defaultFilters || [])
+    .filter(f => ['category', 'listingType'].includes(f.schemaType))
+    .map(f => `pub_${f.key}`);
+  const { valid: validRest, unknown: unknownParams } = partitionExtendedDataParams(
+    rest,
+    indexedExtendedDataParamNames(listingFieldsConfig),
+    builtInExtendedDataParams
+  );
+
+  if (unknownParams.length > 0) {
+    console.warn(
+      `[search] refusing unsupported extended-data filter(s): ${unknownParams.join(', ')}`
+    );
+    dispatch(searchListingsRequest({ ...validRest, page, perPage: RESULT_PAGE_SIZE }));
+    dispatch(
+      searchListingsSuccess({
+        data: { data: [], meta: { totalItems: 0, totalPages: 0, page, perPage: RESULT_PAGE_SIZE } },
+      })
+    );
+    return Promise.resolve();
+  }
+
   const searchListingsCall = searchListings(
     {
-      ...rest,
+      ...validRest,
       ...originMaybe,
       ...listingTypeVariantMaybe,
       page,

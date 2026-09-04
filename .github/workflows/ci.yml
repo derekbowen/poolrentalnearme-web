@@ -82,6 +82,13 @@ jobs:
       - name: Server tests requiring bun's ESM interop
         run: bun test server/api-util/currency.test.js server/api-util/lineItemHelpers.test.js
 
+      # src/ is ESM with no babel config, so jest cannot load it; bun runs it
+      # natively. This guards the search-integrity fix: an extended-data filter
+      # the marketplace cannot apply must return nothing, never the full
+      # catalogue (/s?pub_category=banana used to return all 124 listings).
+      - name: Search param validation
+        run: bun test src/containers/SearchPage/searchParamValidation.test.js
+
       # Proof that the production image builds with FROZEN resolution. This is
       # the step that would have caught the old binary lockfile: bun 1.2.4 could
       # not parse it, so every production build silently re-resolved. Build only

@@ -34,11 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # NOT 1.2.4 (the version the Dockerfile pins). The committed bun.lockb is
-      # binary format v0 written by a newer bun, and 1.2.4 cannot parse it —
-      # `bun install --frozen-lockfile` fails with "outdated lockfile version".
-      # See the version-drift warning step below: this is a real reproducibility
-      # problem in the production build, not just a CI annoyance.
+      # Canonical Bun version: 1.3.11. Must match the Dockerfile and the other
+      # workflows — docs/BUN_AND_LOCKFILE.md is the single source of truth.
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.3.11'
@@ -47,22 +44,30 @@ jobs:
         with:
           node-version: '20'
 
-      # Deliberately NOT --frozen-lockfile. It fails on the committed lockfile,
-      # and the Dockerfile's plain `bun install` does not use the lockfile either
-      # (1.2.4 cannot read it, so it silently re-resolves). Matching that
-      # behaviour keeps CI honest about what production actually builds.
-      - name: Install dependencies
-        run: bun install
+      # Deterministic. If the lockfile cannot be consumed exactly as committed,
+      # this fails hard rather than silently re-resolving — which is what the
+      # old binary lockfile did on every production build.
+      - name: Install dependencies (frozen)
+        run: bun install --frozen-lockfile
 
-      - name: Warn about bun/lockfile version drift
+      - name: Bun version is the canonical one everywhere
         run: |
-          DOCKER_BUN=$(grep -oE 'oven/bun:[0-9.]+' Dockerfile | head -1 | cut -d: -f2)
-          CI_BUN=$(bun --version)
-          echo "Dockerfile bun: $DOCKER_BUN"
-          echo "CI bun:         $CI_BUN"
-          if [ "$DOCKER_BUN" != "$CI_BUN" ]; then
-            echo "::warning::Dockerfile pins bun $DOCKER_BUN but bun.lockb requires $CI_BUN to parse. Production builds re-resolve dependencies instead of using the lockfile, so they are not reproducible. Fix by aligning the Dockerfile's bun version with the lockfile, or regenerating the lockfile with $DOCKER_BUN — a deliberate decision, since it can change resolved versions."
-          fi
+          CANON=1.3.11
+          fail=0
+          RUNNER=$(bun --version)
+          [ "$RUNNER" = "$CANON" ] || { echo "::error::CI bun is $RUNNER, expected $CANON"; fail=1; }
+          for f in Dockerfile .github/workflows/*.yml; do
+            grep -oE 'oven/bun:[0-9]+\.[0-9]+\.[0-9]+|bun-version: *.[0-9]+\.[0-9]+\.[0-9]+.' "$f" 2>/dev/null \
+              | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | while read -r v; do
+                  [ "$v" = "$CANON" ] || echo "::error file=$f::pins bun $v, expected $CANON"
+                done
+          done
+          grep -qE 'oven/bun:[0-9.]+' Dockerfile && \
+            [ "$(grep -oE 'oven/bun:[0-9.]+' Dockerfile | head -1 | cut -d: -f2)" = "$CANON" ] \
+            || { echo "::error::Dockerfile does not pin bun $CANON"; fail=1; }
+          [ -f bun.lock ] || { echo "::error::bun.lock (text lockfile) is missing"; fail=1; }
+          [ -f bun.lockb ] && { echo "::error::bun.lockb still present — the binary lockfile was replaced by bun.lock"; fail=1; }
+          exit $fail
 
       # Two runners, split by capability, together covering all 12 suites:
       #   jest    — everything except the two suites that transitively require
@@ -76,6 +81,30 @@ jobs:
 
       - name: Server tests requiring bun's ESM interop
         run: bun test server/api-util/currency.test.js server/api-util/lineItemHelpers.test.js
+
+      # Proof that the production image builds with FROZEN resolution. This is
+      # the step that would have caught the old binary lockfile: bun 1.2.4 could
+      # not parse it, so every production build silently re-resolved. Build only
+      # — nothing is tagged, pushed or deployed.
+      - name: Production image builds with a frozen lockfile
+        run: |
+          # The build stage needs .env.build (VITE_ public config). In CI there
+          # are no secrets, so synthesise a minimal one: this proves the build
+          # and the frozen install, not the values.
+          cat > .env.build <<'ENVEOF'
+          VITE_ENV=production
+          VITE_MARKETPLACE_ROOT_URL=https://www.poolrentalnearme.com
+          VITE_MARKETPLACE_NAME=Pool Rental Near Me
+          VITE_SHARETRIBE_SDK_CLIENT_ID=00000000-0000-0000-0000-000000000000
+          VITE_SHARETRIBE_USING_SSL=true
+          VITE_STRIPE_PUBLISHABLE_KEY=pk_test_ci_build_only
+          ENVEOF
+          docker build --progress=plain -t prnm-ci-build-check . 2>&1 | tail -40
+          echo "image built with --frozen-lockfile"
+          rm -f .env.build
+
+      - name: Image carries no secrets
+        run: bash scripts/audit-image-secrets.sh prnm-ci-build-check
 
       - name: Insurance language gate
         run: bash scripts/check-insurance-language.sh

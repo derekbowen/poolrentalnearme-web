@@ -1,12 +1,18 @@
-FROM oven/bun:1.2.4-slim AS build
+# Canonical Bun version for this repository: 1.3.11.
+# It is pinned identically here, in .github/workflows/*, and by the lockfile
+# format. See docs/BUN_AND_LOCKFILE.md — there is one source of truth.
+FROM oven/bun:1.3.11-slim AS build
 
 WORKDIR /home/bun/app
 
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 
 COPY patches patches
 
-RUN bun install
+# --frozen-lockfile: the build fails if the lockfile does not exactly satisfy
+# package.json. Resolution happens when a human changes dependencies, never
+# during a deployment.
+RUN bun install --frozen-lockfile
 
 COPY . .
 
@@ -27,15 +33,15 @@ COPY .env.build .env
 
 RUN bun run build
 
-FROM oven/bun:1.2.4-slim AS packaging
+FROM oven/bun:1.3.11-slim AS packaging
 
 WORKDIR /home/bun/app
 
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 
 COPY patches patches
 
-RUN bun install --production
+RUN bun install --production --frozen-lockfile
 
 # No .env here, deliberately. Runtime secrets are injected when the container
 # starts (docker run --env-file), never baked into a layer. `bun run start`

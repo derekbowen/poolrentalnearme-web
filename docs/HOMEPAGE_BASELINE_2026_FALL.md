@@ -188,3 +188,83 @@ diff it. The specific numbers that must not regress:
 - `<img>` without dimensions: must go **down** from 33
 - canonical, single `h1`, `FAQPage` + `Organization` + `WebSite` schema all still present
 - `/` still has no robots `noindex`
+
+---
+
+## 5. Two live-only scripts that are not in any repo
+
+The homepage loads `/tools/home.js` (1.1 KB) and `/tools/cta.js` (14.8 KB). Neither
+exists in either GitHub repository, and both mutate the page after hydration.
+
+### `/tools/home.js` — a post-hydration DOM patch
+
+It walks the text nodes of the rendered page and rewrites content the deployed
+build got wrong:
+
+```js
+var COURSES = "193";
+... n.nodeValue.replace(/135 free classes/g, COURSES + " free classes")
+... if (/Rent a private pool by the hour/i.test(h1s[j].textContent))
+      h1s[j].textContent = "Support what you love, 0% Host fees";
+... links[i].setAttribute("href", "/p/pool-host-tools")
+```
+
+So the course count, an `h1`, and at least one internal link are being corrected
+in the browser because the deployed bundle is stale. This is the "193 courses"
+hardcode the brief warns about, and it is a *third* place the number lives —
+after the bundle's own "135" and whatever the authoritative source says. It also
+means the H1 Google sees on first paint can differ from the H1 a user sees.
+
+Anything the redesign does to the hero must account for this patch, or the patch
+will rewrite the new H1 too.
+
+### `/tools/cta.js` — injected schema, a floating CTA, and the analytics we already have
+
+Four modules: `prnm-org` (Organization JSON-LD on every page), `prnm-edu`
+(Course JSON-LD), `prnm-a` (**first-party funnel beacons — pageviews and SPA
+navigation**), a floating host CTA, and `prnm-quotes` (a homepage host-quotes
+ticker).
+
+**This answers the "use the existing analytics architecture" requirement.** There
+is no Plausible, GA, PostHog or Segment anywhere in fresh-web. The only analytics
+on the homepage is this first-party beacon:
+
+```
+navigator.sendBeacon("/tools/cta-beacon?e=" + ev + "&f=" + fam)
+fetch('/tools/cta-beacon?e=q-' + st, { method: 'POST', keepalive: true })
+```
+
+The Phase 1 events (`homepage_search_started`, `homepage_search_submitted`,
+`homepage_search_to_pseo`, …) should ride `/tools/cta-beacon`, not a new stack.
+Where that endpoint writes to is on EAST and could not be inspected from here.
+
+---
+
+## 6. FOR DEREK — an insurance contradiction that is live right now
+
+I am not making a judgement about the coverage itself and I have not touched it.
+Reporting it because the two statements are on the same page and disagree.
+
+`/tools/cta.js` line 16 injects `Organization` JSON-LD, **on every page**, whose
+`description` reads:
+
+> "U.S. marketplace for renting private swimming pools by the hour. 0% host fees
+> through 2026; **every booking includes $2M liability protection via The
+> Hartford**."
+
+The visible `FAQPage` schema and on-page copy on that same homepage read:
+
+> "Pool Rental Near Me **does not provide or arrange insurance**. Every booking
+> requires a signed guest waiver, and we do not verify whether hosts…"
+
+So the machine-readable claim and the human-readable claim contradict each other
+on the strongest URL on the property. Both are live today.
+
+Per the house rule, insurance wording is yours. I have not edited either one, and
+I am not proposing wording. You decide which is correct and tell me the exact
+words; those words will be the entire change.
+
+Related: the stale `$2M`/Hartford claims in both GitHub repos (§0) are the same
+family of copy, which suggests the schema line is a survivor from that era rather
+than a deliberate current statement — but that is a guess, and it is your call,
+not mine.

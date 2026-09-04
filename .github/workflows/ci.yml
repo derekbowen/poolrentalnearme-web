@@ -94,6 +94,14 @@ jobs:
       - name: Sharetribe credential resolution
         run: npx jest server/api-util/sharetribeCredentials.test.js --ci
 
+      # Proves an EAST-style env injection reaches a real (mocked) Integration
+      # SDK call instead of exporting null and silently no-oping.
+      - name: Integration SDK builds under EAST env names
+        run: npx jest server/api-util/integrationEastEnv.test.js --ci
+
+      - name: API error surfacing
+        run: bun test src/util/apiErrorDetails.test.js
+
       # Proof that the production image builds with FROZEN resolution. This is
       # the step that would have caught the old binary lockfile: bun 1.2.4 could
       # not parse it, so every production build silently re-resolved. Build only

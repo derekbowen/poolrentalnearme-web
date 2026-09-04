@@ -44,7 +44,10 @@ jobs:
   verify:
     name: Capture and verify
     runs-on: ubuntu-latest
-    environment: production # reuses existing secrets; deploys nothing
+    # No `environment:` on purpose. This repository has no environments defined,
+    # and this job has nothing to gate — it deploys nothing. Repository-level
+    # secrets resolve without one. production-release.yml keeps its environment,
+    # because that is where a required reviewer belongs.
     env:
       AWS_INSTANCE_URL: ${{ secrets.PRODUCTION_AWS_INSTANCE_URL }}
       ENCODED_PEM: ${{ secrets.PRODUCTION_ENCODED_PEM }}

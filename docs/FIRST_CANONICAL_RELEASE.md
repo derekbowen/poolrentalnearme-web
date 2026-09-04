@@ -1,9 +1,14 @@
 # First canonical release
 
-**Status: one human action outstanding.** Nothing is deployed. c196 is not flipped.
+**Status: one AWS-side setup step outstanding, then one button.** Nothing is deployed.
+c196 is not flipped.
 
-One button verifies, one button releases. If a step below reads like homework, it is
-a bug in the tooling — say so and it gets automated.
+**Checked 2026-09-04: this repository has no secrets, no variables and no environments.**
+So `Verify WEST` currently probes, finds no path to WEST, prints its FAIL report and
+captures nothing — correct and safe, but it captures nothing. An earlier version of this
+document claimed no human action was required. That was wrong: GitHub needs an AWS
+identity before any of this runs. `docs/WEST_ACCESS.md` has the exact IAM trust and
+permissions policy.
 
 ---
 
@@ -44,9 +49,12 @@ both call `scripts/west-verdict.js`, so they cannot disagree.
 Then, when it says SAFE TO DEPLOY: YES —
 GitHub → Actions → **Production release** → Run workflow, paste the SHA, type RELEASE.
 
-**Verify WEST deploys nothing.** It copies one script to `/tmp`, runs it, retrieves the
-result and deletes what it copied. It never builds, pushes, pulls or starts an image,
-and shares no step with the release workflow.
+**Verify WEST deploys nothing** and is read-only *on WEST*: it copies one script to
+`/tmp`, runs it, retrieves the result and deletes what it copied, never building,
+pushing, pulling or starting an image, and sharing no step with the release workflow.
+It is **not** read-only on the repository — it holds `contents: write` and commits the
+small evidence files back to the branch. Set `commit_evidence: false` when running it
+if you would rather it did not.
 
 ---
 

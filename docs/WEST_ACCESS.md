@@ -2,9 +2,11 @@
 
 Traced from the deployment scripts, not assumed.
 
-**Summary: the stored private key is avoidable.** WEST already runs the SSM agent and has
-been administered through `AWS-RunShellScript` for months. `Verify WEST` prefers that path and
-falls back to SSH only if AWS access is unavailable.
+**Summary: the stored private key is avoidable, but not yet avoided.** WEST runs the SSM
+agent and has been administered through `AWS-RunShellScript` for months — by an operator's own
+AWS credentials. GitHub Actions has no AWS identity in this repository at all, so today neither
+access path works. One AWS-side setup step is unavoidable; §"What it needs" gives the exact
+policy JSON.
 
 ---
 
@@ -84,26 +86,113 @@ channel that is already the primary one.
 | Audit trail | sshd logs on the box | CloudTrail, per command, per caller |
 | Port 22 | must be reachable | can be closed entirely |
 
+### Current reality, checked 2026-09-04
+
+This repository has **no secrets, no variables and no environments**. So:
+
+- the OIDC step is skipped (`AWS_ROLE_ARN` is unset);
+- the static fallback reads secrets that do not exist;
+- the SSH fallback's two secrets do not exist either.
+
+`Verify WEST` therefore probes, finds neither path, prints the FAIL report and
+captures nothing. That is the designed behaviour, and it is safe — but it means
+**one AWS-side setup step is genuinely unavoidable.** Earlier text in this repository
+claimed otherwise; it was wrong.
+
+A related correction: "SSM is proven on WEST" is true about the *agent*, and the
+proof came from an operator's own AWS credentials — not from GitHub's. The agent
+being Online says nothing about whether GitHub Actions can call `SendCommand`.
+Those are separate facts and the earlier write-up slid between them.
+
 ### What it needs
 
-One repository variable — **`AWS_ROLE_ARN`** — naming an IAM role that trusts this repository
-through GitHub's OIDC provider, with permission to:
+**Exactly one thing: an IAM role GitHub can assume.** Then set `AWS_ROLE_ARN` as a
+repository variable and nothing else is required — no PEM, no static keys.
 
+The account must already have the GitHub OIDC provider registered
+(`token.actions.githubusercontent.com`). If it does not, add it once; AWS documents
+it as a single IAM console action.
+
+**Trust policy** — replace `<ACCOUNT_ID>`, and narrow the `sub` further if you want
+to restrict which branches may assume it:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:derekbowen/poolrentalnearme-web:*"
+        }
+      }
+    }
+  ]
+}
 ```
-ssm:SendCommand                on the WEST instance and the AWS-RunShellScript document
-ssm:GetCommandInvocation       (resource *)
-ssm:DescribeInstanceInformation
-ec2:DescribeInstances          only to resolve the instance from its public IP
+
+**Permissions policy** — the least privilege `Verify WEST` needs. `SendCommand` is
+scoped to the one instance and the one document; the three read-only calls do not
+support resource-level scoping, so they take `*`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RunCommandOnWestOnly",
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ec2:us-west-1:<ACCOUNT_ID>:instance/i-0a711c88043788b2b",
+        "arn:aws:ssm:us-west-1::document/AWS-RunShellScript"
+      ]
+    },
+    {
+      "Sid": "ReadCommandResults",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations",
+        "ssm:DescribeInstanceInformation"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ResolveInstanceFromPublicIp",
+      "Effect": "Allow",
+      "Action": "ec2:DescribeInstances",
+      "Resource": "*"
+    }
+  ]
+}
 ```
 
-That is strictly less privilege than the PEM grants today: command execution that is logged
-per-invocation, rather than an interactive root-equivalent shell.
+That grants logged, per-invocation command execution on one instance. The PEM it
+replaces grants an interactive root-equivalent shell with no per-action audit trail.
 
-Optional variables, both with working defaults: `WEST_INSTANCE_ID` (otherwise resolved from
-the public IP), `WEST_PUBLIC_IP` (default `13.56.113.85`), `WEST_AWS_REGION` (default
-`us-west-1`).
+### The shorter path, if the old IAM user still exists
 
-With `AWS_ROLE_ARN` set, **`PRODUCTION_ENCODED_PEM` is no longer required for verification.**
+`PRODUCTION_AWS_ENV_USER_ACCESS_KEY_ID` / `_SECRET` named an IAM user that TurtleCI
+used to read Secrets Manager. If that user still exists **and** has `ssm:SendCommand`
+on the WEST instance, adding those two as repository secrets lights up the SSM path
+with no PEM and no new IAM work. Whether it has that permission is unknown from here —
+the probe will say on the first run. This is the faster option, not the better one:
+it is a long-lived static key, which is what the OIDC role exists to retire.
+
+### Other details
+
+Optional repository variables, all with working defaults: `WEST_INSTANCE_ID` (otherwise
+resolved from the public IP), `WEST_PUBLIC_IP` (default `13.56.113.85`), `WEST_AWS_REGION`
+(default `us-west-1`).
 
 ### What SSM does not replace yet
 

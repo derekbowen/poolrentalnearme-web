@@ -170,7 +170,12 @@
   "jest": {
     "moduleNameMapper": {
       "axios": "axios/dist/node/axios.cjs"
-    }
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "server/api-util/currency.test.js",
+      "server/api-util/lineItemHelpers.test.js"
+    ]
   },
   "scripts": {
     "audit": "yarn audit --json | node scripts/audit.js",
@@ -187,7 +192,7 @@
     "check:profile-schema": "node scripts/validate-profilepage-schema.mjs",
     "providers:activation-audit": "node scripts/providers-activation-audit.js",
     "lint:changed": "eslint --ext .js,.jsx",
-    "test-server": "jest server",
+    "test-server": "jest server && bun test server/api-util/currency.test.js server/api-util/lineItemHelpers.test.js",
     "check-env": "node scripts/check-env.js",
     "check-env-documented": "node scripts/check-env-documented.js",
     "preflight": "node scripts/preflight-production.js",

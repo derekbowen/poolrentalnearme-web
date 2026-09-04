@@ -157,6 +157,17 @@ export const updateProfile = actionPayload => {
         // Update current user in state.user.currentUser through user.duck.js
         dispatch(currentUserShowSuccess(currentUser));
       })
-      .catch(e => dispatch(updateProfileError(storableError(e))));
+      .catch(e => {
+        // Keep the full field-level payload for diagnostics. storableError
+        // already carries it into Redux; this makes it visible in the console
+        // too, because the UI deliberately shows the customer only a
+        // classified, allowlisted subset (see util/apiErrorDetails.js).
+        const apiErrors = e?.data?.errors;
+        if (apiErrors) {
+          // eslint-disable-next-line no-console
+          console.error('[updateProfile] rejected:', JSON.stringify(apiErrors));
+        }
+        return dispatch(updateProfileError(storableError(e)));
+      });
   };
 };

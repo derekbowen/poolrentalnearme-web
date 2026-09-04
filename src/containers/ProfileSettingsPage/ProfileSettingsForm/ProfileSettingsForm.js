@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { apiErrorDetails, likelyCause } from '../../../util/apiErrorDetails';
+import { classifyApiError } from '../../../util/apiErrorDetails';
 import { compose } from 'redux';
 import { Field, Form as FinalForm } from 'react-final-form';
 import isEqual from 'lodash/isEqual';
@@ -251,21 +251,32 @@ class ProfileSettingsFormComponent extends Component {
               </div>
             );
 
-          // Surface what the API actually said. storableError already carries
-          // `apiErrors`; rendering only the generic string threw away the one
-          // copy of the answer and left hosts, support and the founder guessing.
-          const errorDetails = updateProfileError ? apiErrorDetails(updateProfileError) : null;
-          const cause = updateProfileError ? likelyCause(updateProfileError) : null;
+          // Surface WHICH field the API rejected, using our own localised
+          // strings. classifyApiError never returns backend text: it matches
+          // patterns and hands back translation keys plus an allowlisted field
+          // label, so a message about privateData can never echo a value back
+          // to the customer. Raw apiErrors stay in Redux for diagnostics.
+          const classified = updateProfileError ? classifyApiError(updateProfileError) : null;
           const submitError = updateProfileError ? (
             <div className={css.error}>
               <FormattedMessage id="ProfileSettingsForm.updateProfileFailed" />
-              {cause ? <div style={{ marginTop: '6px', fontWeight: 600 }}>{cause}</div> : null}
-              {errorDetails && errorDetails.items.length > 0 ? (
-                <ul style={{ margin: '6px 0 0', paddingLeft: '18px', fontSize: '13px' }}>
-                  {errorDetails.items.map((item, i) => (
-                    <li key={i}>
-                      {item.field ? <strong>{item.field}: </strong> : null}
-                      {item.detail}
+              {classified && classified.statusKey ? (
+                <div className={css.errorDetail}>
+                  <FormattedMessage id={classified.statusKey} />
+                </div>
+              ) : null}
+              {classified && classified.items.length > 0 ? (
+                <ul className={css.errorList}>
+                  {classified.items.map((item, i) => (
+                    <li key={`${item.labelKey || 'none'}-${item.messageKey}-${i}`}>
+                      <FormattedMessage
+                        id={item.messageKey}
+                        values={{
+                          field: item.labelKey
+                            ? intl.formatMessage({ id: item.labelKey })
+                            : 'none',
+                        }}
+                      />
                     </li>
                   ))}
                 </ul>

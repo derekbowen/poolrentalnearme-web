@@ -281,3 +281,30 @@
   margin-top: 24px;
   margin-bottom: 56px;
 }
+
+/* Field-level detail under the generic save error.
+   Sharetribe messages can be long and unbroken; on a 320px screen an
+   unbreakable token would push the form sideways, so wrapping is forced
+   rather than left to the default. */
+.errorDetail {
+  margin-top: 6px;
+  font-weight: var(--fontWeightSemiBold);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.errorList {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 20px;
+  list-style: disc;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.errorList li {
+  margin-top: 2px;
+  max-width: 100%;
+}

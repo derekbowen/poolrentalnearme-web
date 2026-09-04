@@ -99,8 +99,11 @@ jobs:
       - name: Integration SDK builds under EAST env names
         run: npx jest server/api-util/integrationEastEnv.test.js --ci
 
+      # Classified, allowlisted, localised profile-save errors. Includes the
+      # assertions that no backend payload substring can reach the DOM and that
+      # every emitted translation key exists and formats.
       - name: API error surfacing
-        run: bun test src/util/apiErrorDetails.test.js
+        run: bun test src/util/apiErrorDetails.test.js src/util/apiErrorTranslations.test.js
 
       # Proof that the production image builds with FROZEN resolution. This is
       # the step that would have caught the old binary lockfile: bun 1.2.4 could

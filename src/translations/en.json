@@ -1275,5 +1275,18 @@
   "UserDisplayName.deleted": "Deleted user",
   "UserNav.accountSettings": "Account settings",
   "UserNav.profileSettings": "Profile settings",
-  "UserNav.yourListings": "Your listings"
+  "UserNav.yourListings": "Your listings",
+  "ApiError.field.bio": "Bio",
+  "ApiError.field.firstName": "First name",
+  "ApiError.field.lastName": "Last name",
+  "ApiError.field.displayName": "Display name",
+  "ApiError.field.profileImage": "Profile photo",
+  "ApiError.tooLong": "{field, select, none {One of your entries is too long.} other {{field} is too long — please shorten it.}}",
+  "ApiError.required": "{field, select, none {A required field is empty.} other {{field} can’t be empty.}}",
+  "ApiError.alreadyInUse": "{field, select, none {That value is already in use.} other {{field} is already in use.}}",
+  "ApiError.invalidFormat": "{field, select, none {One of your entries isn’t in a format we can accept.} other {{field} isn’t in a format we can accept.}}",
+  "ApiError.sessionExpired": "Your session expired. Sign in again and try once more.",
+  "ApiError.forbidden": "This account doesn’t have permission to make that change.",
+  "ApiError.conflict": "Someone else changed this at the same time. Reload and try again.",
+  "ApiError.rateLimited": "Too many attempts. Wait a moment, then try again."
 }

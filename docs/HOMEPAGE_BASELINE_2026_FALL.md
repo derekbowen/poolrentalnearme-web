@@ -17,13 +17,29 @@ are stale, and both would cause damage if built and shipped.
 | | `derekbowen/fresh-web` | `derekbowen/fresh-web-702e04c3` | **LIVE** |
 |---|---|---|---|
 | last push | 2026-05-06 | 2026-07-16 | — |
-| homepage `noindex` | **`noindex: true`** (`src/routes/index.tsx:29`) | no (comment warns against it) | indexable |
+| homepage `noindex` | **`noindex: true`** (`src/routes/index.tsx:29`) | no — see correction below | indexable |
 | host fee copy | — | **"10% flat host fee"** (`home-page.tsx:199`) | 0% host fees |
 | insurance copy | **"$2M liability insurance for the host"** (`home-page.tsx:27`) | **"$2M Hartford-backed insurance"** (`home-page.tsx:199,245`) | *"does not provide or arrange insurance"* |
 | vanity stats | **"★ 4.8 average rating · 50,000+ guests booked"** (`home-page.tsx:195`) | same shape | none |
 | H1 | older | older | "Rent a pool you'll fall in love with." |
 
-Live is **correct** on all four counts. The repos are wrong on all four.
+Live is **correct** on all four counts. The May repo is wrong on all four; the July
+repo is wrong on three.
+
+> **Correction, 2026-09-04 (later the same day).** An earlier version of this
+> section said *both* repos would ship a `noindex` on `/`. That was wrong, and it
+> was reported to Derek in that form. Only the **May** copy carries
+> `noindex: true`. The **July** copy removed it deliberately: indexability there
+> is set by an `X-Robots-Tag` header in `src/start.ts`, applied to an
+> **allowlist of preview hosts only** (`*.lovable.app`, `*.lovable.dev`,
+> `*.lovableproject.com`, `*.gptengineer.app`), and `index.tsx` carries the
+> comment *"Do NOT add a noindex meta tag here — it would deindex the production
+> homepage."* That file also documents why it is an allowlist rather than a
+> denylist: nginx in front of production has historically not set
+> `X-Forwarded-Host` reliably, and the previous denylist logic sent a `noindex`
+> to production. The July base is safe on indexability. The `$2M` insurance
+> claim, the 10% host fee and the fabricated rating in that copy still stand as
+> described.
 
 Proof the live page descends from fresh-web and not the marketplace app:
 production serves `/fw-assets/*.js`, matching `fresh-web/vite.config.ts:30`
@@ -268,3 +284,47 @@ Related: the stale `$2M`/Hartford claims in both GitHub repos (§0) are the same
 family of copy, which suggests the schema line is a survivor from that era rather
 than a deliberate current statement — but that is a guess, and it is your call,
 not mine.
+
+---
+
+## 7. `pub_category` does not filter anything
+
+Checked live, 2026-09-04. The homepage's "Browse by pool type" section links to
+`/s?pub_category=heated` and `/s?pub_category=indoor`. Neither filters:
+
+| Request | Results reported |
+|---|---|
+| `/s?pub_category=heated` | **124 results** |
+| `/s?pub_category=indoor` | **124 results** |
+| `/s?pub_category=banana` | **124 results** |
+| `/s` (no parameter) | **124 results** |
+
+124 is the entire published catalogue. A nonsense category returns it too, so the
+parameter is being ignored outright rather than matching zero listings. The count
+is server-rendered (`_searchResultSummary_… <span>124 results</span>`), so this is
+the marketplace's own answer, not a client-side artefact.
+
+**What this means for the winter homepage.** A "Heated pools" card pointing at
+`/s?pub_category=heated` promises a filtered set and delivers all 124 pools, most
+of which are not heated. That is fabricated inventory in the sense that matters —
+the guest is told these are heated pools and they are not. It cannot be used to
+merchandise heated or indoor inventory, and the existing links are already making
+that promise today.
+
+Nothing was changed. Two things would make the winter block honest, and both are
+decisions rather than code:
+
+1. Make `pub_category` actually filter in the marketplace search, or
+2. Merchandise on a signal that does work.
+
+The signal that does work today is **geography**. `SearchOptions` supports
+`stateCode`, `citySlug` and `city` against the synced Supabase mirror
+(`searchListings` → `searchSyncedListings`), and the homepage loader already
+resolves visitor geography from Cloudflare headers (`cf.city`, `cf.region`,
+`cf.latitude`, `cf.longitude`) into `nearby.count` and `nearby.nearestMiles`.
+Warm-market merchandising — "pool season is still on in Arizona" — is buildable on
+what exists. Heated/indoor merchandising is not, until (1) is done.
+
+`ListingSummary` also carries no amenity, heated or indoor field
+(`sharetribe.server.ts:253`), so there is no way to label a card "Heated" from the
+current data either.

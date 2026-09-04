@@ -1,0 +1,9 @@
+/* PRNM homepage palette — Phase 1. Add to the Tailwind theme; do not replace
+   the existing shadcn token block, extend alongside it. */
+:root {
+  --water-950: #062A2C;  --water-900: #0B3B3E;  --water-800: #0E4B4E;
+  --water-700: #146063;  --water-600: #1B787C;  --water-200: #BFDCDA;
+  --sand-50:  #FCFAF6;   --sand-100: #F7F2EA;   --sand-200: #EFE7DA;  --sand-300: #E3D8C7;
+  --coral-500:#E0603C;   --coral-600:#C94F2E;   /* CTA only — never decorative */
+  --ink-900:  #15211F;   --ink-700:  #33433F;   --ink-500:  #6C7C77;
+}

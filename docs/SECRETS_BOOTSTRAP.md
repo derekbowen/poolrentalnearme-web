@@ -171,3 +171,40 @@ reads only; it creates nothing and messages nobody.
 
 Not changed, deliberately: no credential was rotated, recreated, replaced or
 printed. Nothing here suggests any existing credential is invalid.
+
+---
+
+## 7. Credential discovery — every location searched (2026-09-05)
+
+Do this search before asking a human for anything. The credentials have been
+"found missing" and then recovered before; the default assumption is that they
+exist and the runtime simply cannot see them.
+
+**Working credential, by name:** `AWS_ENV_USER_ACCESS_KEY_ID` /
+`AWS_ENV_USER_SECRET_ACCESS_KEY` — a dedicated IAM user whose only job is
+reading the env secret (`scripts/deploy.sh:10`). Region `AWS_ENV_USER_REGION`,
+secret name `AWS_JH_ENV_SECRET_NAME`. Supplied to `deploy.sh` by the CI
+platform from secrets named `PRODUCTION_AWS_ENV_USER_*`.
+
+| # | Location | Result |
+|---|---|---|
+| 1 | Cloud-session env vars | `AWS_ACCESS_KEY_ID`/`SECRET` present but are the proxy's `proxy-injected` placeholders; no `AWS_ENV_USER_*`, no session token, no profile, no container/web-identity vars |
+| 2 | Cloud-environment secret storage | An env manager runs (`ENV_MANAGER_*`, `ENVRUNNER_*` vars prove it) but **no PRNM keys are configured in it** |
+| 3 | CI/CD secrets | GitHub secrets/variables/environments API is **blocked by proxy policy** — unverifiable from this runtime. TurtleCI (the agency's CI) consumed 32 named secrets (`.turtleci/*.yml`); that store is where the deploy path historically got them |
+| 4 | `.env`, `.env.production`, related | marketplace: `.env.example` and `.env-template` only. fresh-web repos: a committed `.env` holding Supabase **publishable** keys — no AWS |
+| 5 | Runtime credential files | `~/.aws/credentials` absent; `~/.aws/config` holds one S3 flag; no SSO/CLI cache; `~/.boto` is a CA path. IMDS/ECS endpoints (169.254.x) blocked by the proxy — no instance role reachable |
+| 6 | Previous working deployment config | `.turtleci/production.yml` + `scripts/deploy.sh` — names above |
+| 7 | Repo docs, scripts, other repos | `CLAUDE.md` names the operator path (`ssm_runx.py`, `east_runx.py`); `docs/WEST_ACCESS.md` records SSM proven with operator creds; `pool-memory-vault` is a Lovable app (no AWS); `prnm-seo-engine` is empty |
+| 8 | Exact var names expected | `AWS_ENV_USER_ACCESS_KEY_ID`, `AWS_ENV_USER_SECRET_ACCESS_KEY`, `AWS_ENV_USER_REGION`, `AWS_JH_ENV_SECRET_NAME` |
+| 9 | Present-but-invalid test | `aws sts get-caller-identity` → `InvalidClientTokenId`: the placeholder is sent to AWS as-is and rejected |
+| — | Git history (142 commits) | no key-shaped string has ever been committed |
+
+**Where the working credentials actually are:** the operator machine
+(`/root/.claude/prnm-creds.env`, used by `ssm_runx.py` — this is how WEST has
+been administered for months), the WEST and EAST container environments, and
+the CI platform's secret store. None of those is this cloud container.
+
+**The persistent fix is reuse, not creation:** place the *existing*
+`AWS_ENV_USER_*` pair and `AWS_JH_ENV_SECRET_NAME` into the cloud environment's
+env keys once. Every session then inherits them and `scripts/prnm-secrets.sh`
+resolves the rest from Secrets Manager. No new key, no rotation.

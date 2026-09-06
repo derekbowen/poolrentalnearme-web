@@ -208,3 +208,41 @@ the CI platform's secret store. None of those is this cloud container.
 `AWS_ENV_USER_*` pair and `AWS_JH_ENV_SECRET_NAME` into the cloud environment's
 env keys once. Every session then inherits them and `scripts/prnm-secrets.sh`
 resolves the rest from Secrets Manager. No new key, no rotation.
+
+## 8. Cross-session and shared-state search (2026-09-06) — the definitive answer
+
+Checked, per the standing rule, before concluding anything:
+
+| Where | Result |
+|---|---|
+| All Claude Code cloud sessions (17 listed) | every one runs in the single environment `env_01UnYWub6PkTsZE23HtEXDom`; none has an AWS bootstrap |
+| Two PRNM sessions ("PRNM APP ACCESS BOX", "Access verification") | same environment, no AWS use recorded |
+| Bridge (operator-machine) session | `computer_unreachable` since 2026-09-05 08:47Z |
+| Fresh probe session, same environment | `AWS_ENV_USER_*` all unset; identical to this one |
+| Routines | `email-queue-pump-hourly` (bound to this session) **ran `east_runx.py` against EAST on 2026-08-06** — proof this session once authenticated |
+| Platform state (`session-env/`, `environment-manager/`, `backups/`, `uploads/`) | mechanism exists, holds no PRNM variables |
+| This session's transcript (12 MB) | last real SSM success **2026-09-02 04:19Z**; first failure **2026-09-03 13:47Z** |
+
+**The credential:** the existing SSM-only burner IAM user, keys named
+`PRNM_AWS_ACCESS_KEY_ID` / `PRNM_AWS_SECRET_ACCESS_KEY` — a *different*
+identity from the `AWS_ENV_USER_*` deploy credential. It lived at
+`/root/.claude/prnm-creds.env`.
+
+**Why it stopped working:** the platform recycles the container on inactivity
+and cleans `/root/.claude` (`.last-cleanup` is stamped at each boot). The file
+was wiped on 2026-09-03 and again before 2026-09-04 01:40Z. Nobody deleted it.
+The runner's fallback to plain `AWS_ACCESS_KEY_ID` then silently picked up the
+agent proxy's `proxy-injected` placeholder, so every call from 09-03 onward
+failed with `UnrecognizedClientException` — which looked like a broken key and
+was actually a missing file. That fallback is now removed; the vendored runner
+in `ops/runners/` refuses the sentinel and names what is absent.
+
+**Where the value exists today:** the operator machine (bridge session, offline)
+and AWS IAM itself. Nowhere reachable from any cloud session, backup, upload,
+transcript or repository — searched.
+
+**The persistent fix, and the only manual step:** set the *existing*
+`PRNM_AWS_ACCESS_KEY_ID` / `PRNM_AWS_SECRET_ACCESS_KEY` once in the cloud
+environment's env keys (Default environment). That is the one location the
+recycle does not wipe. It is reuse of a key that already exists — not creation,
+not rotation.

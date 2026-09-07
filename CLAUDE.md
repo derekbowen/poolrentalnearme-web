@@ -56,6 +56,16 @@ people who may be named as company voices.
 `cNNN-name` → **gated flip**: run the new image on `:4000`, re-verify every prior
 release's markers + promo math + payment endpoints, only then move nginx and
 replace MAIN. An abort leaves production untouched. Never skip the gate.
+**"Move nginx" is a file swap, not a container restart:** every marketplace
+`proxy_pass` in `sites-enabled/default` points at `upstream web`, defined in
+`/etc/nginx/conf.d/main-web.conf` (`/home/ubuntu/main-web.conf` = :3000,
+`/home/ubuntu/fallback-web.conf` = :4000). `cp` + `nginx -t` + `reload` switches
+traffic with no 502 window; rollback is the same swap back. The public `/` is
+proxied to EAST, so prove which container serves by the `assets/index-<hash>.js`
+marker on `/s` or `/login`, never on `/`. Ubuntu-crontab jobs `docker exec` into
+the container **named** `poolrentalnearme-production`, so a retired MAIN must be
+renamed away and the new one renamed in, or those jobs keep running old code.
+`/tools/*` (cta.js, home.js, kit) is served by WEST from `/var/www/prnm-tools/`.
 
 `/home/ubuntu/build` is a **loose working copy, not a git checkout**, so patching
 it silently forks production from the repo. 149 files had drifted before this was
@@ -110,6 +120,13 @@ divergent files as a chunked, md5-verified tarball.
 
 **Twilio / SMS** — US 10DLC sender: `twsend` skips non-US numbers by design.
 International hosts are email-only until that changes.
+
+**EAST runtime env** — `fresh-web` reads `--env-file=.env` but pm2 keeps the
+process environment it was first started with, and Node lets that environment win
+over the file. On 2026-09-07 the file pointed at a dead Supabase project while the
+process ran on the right one from memory. `.env` and `dump.pm2` now match the live
+process (proven by hash) and are mode 600; keep it that way: after any env change,
+`pm2 restart fresh-web --update-env && pm2 save`, then re-check `pm2 env 0` names.
 
 **Session cookies** — `VITE_SHARETRIBE_USING_SSL` is a **build-time** var baked
 into the client bundle; setting it only in the container does nothing (this is

@@ -1,0 +1,62 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  white-space: nowrap;
+  @media (--viewportLarge) {
+    overflow: visible;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    white-space: normal;
+  }
+}
+
+.chip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 6px;
+  font-weight: 700;
+  font-size: 15px;
+  scroll-snap-align: start;
+  @media (--viewportLarge) {
+    gap: 12px;
+    padding: 8px 22px 8px 8px;
+    font-size: 18px;
+  }
+}
+
+.img,
+.slot {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  @media (--viewportLarge) {
+    width: 44px;
+    height: 44px;
+  }
+}
+.slot {
+  background: radial-gradient(circle at 30% 30%, #bfe7fb, #6ac6ef 70%);
+}
+
+/* Sticky-search variant */
+.compact {
+  gap: 8px;
+}
+.compact .chip {
+  gap: 8px;
+  padding: 5px 14px 5px 5px;
+  font-size: 14px;
+}
+.compact .img,
+.compact .slot {
+  width: 30px;
+  height: 30px;
+}

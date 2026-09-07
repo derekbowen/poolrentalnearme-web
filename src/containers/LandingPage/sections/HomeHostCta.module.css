@@ -1,0 +1,245 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  padding: 44px 12px 0;
+  @media (--viewportLarge) {
+    padding: 104px 48px 0;
+  }
+}
+
+.block {
+  position: relative;
+  height: 640px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #6b7280;
+  color: #fff;
+  @media (--viewportLarge) {
+    height: 680px;
+    border-radius: 32px;
+  }
+}
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(31, 41, 55, 0.15) 0%,
+    rgba(31, 41, 55, 0.5) 40%,
+    rgba(31, 41, 55, 0.92) 100%
+  );
+  @media (--viewportLarge) {
+    background: linear-gradient(
+      90deg,
+      rgba(31, 41, 55, 0.88) 0%,
+      rgba(31, 41, 55, 0.55) 45%,
+      rgba(31, 41, 55, 0.05) 75%
+    );
+  }
+}
+
+.copy {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 24px;
+  @media (--viewportLarge) {
+    left: 64px;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 600px;
+  }
+}
+.title {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+  margin-top: 10px;
+  color: #fff;
+  @media (--viewportLarge) {
+    font-size: 66px;
+    margin-top: 14px;
+  }
+}
+.sub {
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 12px;
+  @media (--viewportLarge) {
+    font-size: 22px;
+    margin-top: 20px;
+  }
+}
+
+/* Mobile host card (inside the copy) */
+.hostCardMobile {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+  background: #fff;
+  color: #374151;
+  border-radius: 16px;
+  padding: 12px 14px;
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+.hostCardMobile:hover {
+  color: #374151;
+}
+.avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0369a1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+}
+.hostCardMobileText {
+  min-width: 0;
+}
+.hostCardMobileTitle {
+  display: block;
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hostCardMobileMeta {
+  display: block;
+  font-size: 13px;
+  color: #5b6472;
+  margin-top: 1px;
+}
+
+.actions {
+  margin-top: 14px;
+  @media (--viewportLarge) {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 34px;
+  }
+}
+.list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 56px;
+  font-weight: 800;
+  font-size: 17px;
+  @media (--viewportLarge) {
+    display: inline-flex;
+    height: auto;
+    padding: 18px 30px;
+    font-size: 18px;
+  }
+}
+/* Text link on mobile; smoked-glass pill on desktop (same recipe as HomeShared .glassSmoke) */
+.how {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  transition: background 0.2s ease;
+  @media (--viewportLarge) {
+    display: inline-block;
+    margin-top: 0;
+    padding: 16px 24px;
+    font-size: 17px;
+    border-radius: 999px;
+    background: rgba(120, 120, 128, 0.3);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    box-shadow:
+      inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.18),
+      inset -1px -1px 1px rgba(255, 255, 255, 0.08),
+      0 2px 6px rgba(0, 0, 0, 0.3),
+      0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+}
+.how:hover {
+  color: #fff;
+  @media (--viewportLarge) {
+    background: rgba(120, 120, 128, 0.5);
+  }
+}
+.howArrow {
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+
+/* Desktop host card (bottom right) */
+.hostCard {
+  display: none;
+  @media (--viewportLarge) {
+    position: absolute;
+    right: 32px;
+    bottom: 32px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: #fff;
+    color: #374151;
+    border-radius: 20px;
+    padding: 18px 22px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
+}
+.hostCard:hover {
+  color: #374151;
+}
+.avatarLarge {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #0369a1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 20px;
+}
+.hostCardLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5b6472;
+}
+.hostCardTitle {
+  display: block;
+  font-weight: 800;
+  font-size: 18px;
+  margin-top: 3px;
+}
+.hostCardMeta {
+  display: block;
+  font-size: 16px;
+  color: #5b6472;
+  margin-top: 3px;
+}

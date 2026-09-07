@@ -1,0 +1,179 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  padding: 16px 12px 0;
+  @media (--viewportLarge) {
+    padding: 40px 48px 0;
+  }
+}
+
+.block {
+  background: #f7f8fa;
+  border-radius: 26px;
+  padding: 24px 20px;
+  @media (--viewportLarge) {
+    border-radius: 32px;
+    padding: 48px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 48px;
+    align-items: center;
+  }
+}
+
+.intro {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  @media (--viewportLarge) {
+    gap: 26px;
+    align-items: flex-start;
+  }
+}
+.fred {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  @media (--viewportLarge) {
+    width: 124px;
+    height: 124px;
+  }
+}
+.introText {
+  min-width: 0;
+}
+.eyebrow {
+  color: #b45309;
+}
+.eyebrowLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+.title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-top: 6px;
+  @media (--viewportLarge) {
+    font-size: 44px;
+    margin-top: 12px;
+  }
+}
+.sub {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #5b6472;
+  margin-top: 12px;
+  @media (--viewportLarge) {
+    font-size: 18px;
+    margin-top: 14px;
+  }
+}
+.subLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+
+/* Mobile: the sub sits under the intro row, not beside Fred */
+.intro .sub {
+  display: none;
+  @media (--viewportLarge) {
+    display: block;
+  }
+}
+
+.ctaDesktop {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline-flex;
+    height: 48px;
+    margin-top: 24px;
+    padding: 0 22px;
+    font-weight: 700;
+    font-size: 17px;
+    white-space: nowrap;
+  }
+}
+
+.topics {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  @media (--viewportLarge) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 0;
+  }
+}
+.topic {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  @media (--viewportLarge) {
+    border-radius: 22px;
+    padding: 24px 22px;
+    gap: 10px;
+  }
+}
+.topicLabel {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #b45309;
+  @media (--viewportLarge) {
+    font-size: 13px;
+  }
+}
+.topicText {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #374151;
+  @media (--viewportLarge) {
+    font-size: 18px;
+  }
+}
+.topicLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+.topicShort {
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+.topicFoot {
+  display: none;
+  @media (--viewportLarge) {
+    display: block;
+    font-size: 14px;
+    color: #5b6472;
+    margin-top: auto;
+  }
+}
+
+.ctaMobile {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  margin-top: 16px;
+  padding: 0 18px;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  @media (--viewportLarge) {
+    display: none;
+  }
+}

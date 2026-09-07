@@ -92,7 +92,7 @@ const ResponsiveImage = props => {
   const imageVariants = image.attributes.variants;
   const isLandingPage = image.attributes.assetPath?.includes('landing-page');
   const isSectionBackground = image.attributes.assetPath?.includes('section-background');
-  // PRNM redesign: hero background video removed (the blue SectionPrnmHero is the hero now).
+  // PRNM redesign: hero background video removed (LandingPage renders its own photo hero now).
   // Force off regardless of the hosted/Console translation flag.
   const enableVideoBackground = false;
   const srcSet = variants

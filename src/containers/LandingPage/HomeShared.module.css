@@ -1,0 +1,183 @@
+@import '../../styles/customMediaQueries.css';
+
+/*
+ * Homepage design tokens (PRNM Homepage v3): charcoal text on white, PRNM blue as the brand
+ * colour, sun-orange reserved for primary conversion actions, iOS-style glass for secondary
+ * controls. Sections compose these classes instead of repeating the recipes.
+ */
+
+/* Reset for <button> used as a control. Declared first so the glass/sun recipes below win. */
+.buttonReset {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+  text-align: inherit;
+  line-height: inherit;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+}
+.buttonReset:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+/* Light liquid glass — secondary controls on white / light surfaces */
+.glassLight {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.75),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.07),
+    0 4px 12px rgba(0, 0, 0, 0.07);
+  border-radius: 999px;
+  color: #374151;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.glassLight:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  text-decoration: none;
+}
+
+/* Smoked glass — controls sitting on photography */
+.glassSmoke {
+  background: rgba(120, 120, 128, 0.3);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.18),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.glassSmoke:hover {
+  background: rgba(120, 120, 128, 0.5);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* PRNM-blue glass — Tour, Text Derek */
+.glassBlue {
+  background: rgba(14, 165, 233, 0.16);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(3, 105, 161, 0.28);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.7),
+    0 4px 14px rgba(3, 105, 161, 0.12);
+  border-radius: 999px;
+  color: #0369a1;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.glassBlue:hover {
+  background: rgba(14, 165, 233, 0.28);
+  color: #0369a1;
+  text-decoration: none;
+}
+
+/* Sun gradient — primary conversion only (Search, List your pool, "See every pool" tile) */
+.sun {
+  background: linear-gradient(180deg, #ffd76a 0%, #ffb324 50%, #ff9a12 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.1),
+    0 12px 32px rgba(255, 146, 18, 0.42);
+  color: #374151;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease;
+}
+.sun:hover {
+  background: linear-gradient(180deg, #ffe38a 0%, #ffbe3a 50%, #ffa41e 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.08),
+    0 16px 40px rgba(255, 146, 18, 0.5);
+  color: #374151;
+  text-decoration: none;
+}
+
+/*
+ * iOS 26 glass pill (ios-frame.jsx IOSGlassPill) — Pool Host Academy buttons.
+ * No `display` here on purpose: composing classes own display/visibility per breakpoint.
+ */
+.iosPill {
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.7),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.07),
+    0 3px 10px rgba(0, 0, 0, 0.06);
+  color: #374151;
+  text-decoration: none;
+  padding: 0 4px;
+}
+.iosPill:hover {
+  color: #374151;
+  text-decoration: none;
+}
+
+/* Section eyebrow */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0369a1;
+  @media (--viewportLarge) {
+    font-size: 14px;
+  }
+}
+
+/* Section H2 (34 → 60) */
+.h2 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #374151;
+  @media (--viewportLarge) {
+    font-size: 60px;
+  }
+}
+
+/*
+ * Horizontal rail on mobile: touch scrolling, no scrollbar. Composing classes set
+ * display/overflow themselves so their breakpoint rules never race this file's order.
+ */
+.rail {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}

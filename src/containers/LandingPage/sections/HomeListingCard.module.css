@@ -1,0 +1,148 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  display: block;
+  color: #374151;
+  transition: transform 0.25s ease;
+}
+.root:hover {
+  color: #374151;
+  @media (--viewportLarge) {
+    transform: translateY(-6px);
+  }
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #e9eef2;
+}
+
+.img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heart {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.8),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.4),
+    0 4px 14px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  cursor: pointer;
+  @media (--viewportLarge) {
+    top: 14px;
+    right: 14px;
+  }
+}
+.heartIcon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: transparent;
+  transition: fill 0.2s ease;
+}
+.heartIcon path {
+  stroke: #374151;
+}
+
+.tag {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  background: rgba(31, 41, 55, 0.86);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 999px;
+  pointer-events: none;
+  @media (--viewportLarge) {
+    left: 14px;
+    bottom: 14px;
+    font-size: 14px;
+    padding: 8px 13px;
+  }
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  @media (--viewportLarge) {
+    gap: 16px;
+    margin-top: 16px;
+  }
+}
+.metaMain {
+  min-width: 0;
+}
+.name {
+  font-weight: 800;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @media (--viewportLarge) {
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+}
+.city {
+  font-size: 15px;
+  color: #5b6472;
+  margin-top: 2px;
+  @media (--viewportLarge) {
+    font-size: 17px;
+    margin-top: 4px;
+  }
+}
+.price {
+  white-space: nowrap;
+}
+.priceValue {
+  font-weight: 800;
+  font-size: 18px;
+  @media (--viewportLarge) {
+    font-size: 22px;
+  }
+}
+.priceUnit {
+  font-size: 13px;
+  color: #5b6472;
+  font-weight: 600;
+  @media (--viewportLarge) {
+    font-size: 16px;
+  }
+}
+.unitLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+.unitShort {
+  @media (--viewportLarge) {
+    display: none;
+  }
+}

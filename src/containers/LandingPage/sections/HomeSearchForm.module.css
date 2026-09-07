@@ -1,0 +1,219 @@
+@import '../../../styles/customMediaQueries.css';
+
+/* Mobile: stacked white card. Desktop: one pill bar with three fields + the sun button. */
+.root {
+  background: #fff;
+  color: #374151;
+  border-radius: 24px;
+  box-shadow: 0 30px 70px rgba(31, 41, 55, 0.3);
+  padding: 8px;
+  text-align: left;
+  @media (--viewportLarge) {
+    display: flex;
+    align-items: stretch;
+    border-radius: 999px;
+    box-shadow: 0 30px 80px rgba(31, 41, 55, 0.35);
+    padding: 10px 10px 10px 16px;
+  }
+}
+
+.field {
+  position: relative;
+  display: block;
+  padding: 14px 16px;
+  cursor: text;
+  @media (--viewportLarge) {
+    padding: 14px 26px;
+  }
+}
+.where {
+  border-bottom: 1px solid #e5e7eb;
+  @media (--viewportLarge) {
+    flex: 1.4;
+    border-bottom: 0;
+    border-right: 1px solid #e5e7eb;
+  }
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  @media (--viewportLarge) {
+    display: contents;
+  }
+}
+.when {
+  border-right: 1px solid #e5e7eb;
+  @media (--viewportLarge) {
+    flex: 1;
+  }
+}
+.guests {
+  @media (--viewportLarge) {
+    flex: 1;
+  }
+}
+
+.label {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #374151;
+  margin: 0;
+  padding: 0;
+  @media (--viewportLarge) {
+    font-size: 17px;
+  }
+}
+
+/* ---- inputs: strip the template's bordered field look ---- */
+.whereInputRoot {
+  position: static;
+  display: block;
+}
+.hiddenIcon {
+  display: none;
+}
+.whereInput,
+.guestsInput,
+.dateField input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #374151;
+  @media (--viewportLarge) {
+    margin-top: 3px;
+    font-size: 16px;
+  }
+}
+.whereInput:hover,
+.whereInput:focus,
+.guestsInput:hover,
+.guestsInput:focus,
+.dateField input:hover,
+.dateField input:focus {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  background-image: none;
+}
+.whereInput::placeholder,
+.guestsInput::placeholder,
+.dateField input::placeholder {
+  color: #8a94a3;
+  opacity: 1;
+}
+.whereInput::-webkit-search-cancel-button,
+.whereInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+.guestsInput::-webkit-outer-spin-button,
+.guestsInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.guestsInput {
+  -moz-appearance: textfield;
+}
+
+.dateField {
+  display: block;
+}
+.dateInputWrap {
+  border: 0;
+}
+
+/* Dropdowns */
+.predictions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  background: #fff;
+  color: #374151;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(31, 41, 55, 0.18);
+  padding: 8px 0;
+  @media (--viewportLarge) {
+    left: 8px;
+    right: -8px;
+  }
+}
+.datePopup {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  width: max-content;
+  min-width: 300px;
+  max-width: calc(100vw - 28px);
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(31, 41, 55, 0.18);
+  overflow: hidden;
+  @media (--viewportLarge) {
+    left: 8px;
+  }
+}
+
+/* ---- Search pools: the primary conversion control ---- */
+.submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 58px;
+  margin-top: 6px;
+  font-weight: 800;
+  font-size: 18px;
+  @media (--viewportLarge) {
+    width: auto;
+    height: auto;
+    margin-top: 0;
+    padding: 0 38px;
+    font-size: 20px;
+  }
+}
+.submitGlyph {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline-block;
+  }
+}
+
+.glyph {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  flex: none;
+}
+.glyphHandle {
+  position: absolute;
+  right: -5px;
+  bottom: -7px;
+  width: 3px;
+  height: 9px;
+  background: currentColor;
+  border-radius: 2px;
+  transform: rotate(-45deg);
+}

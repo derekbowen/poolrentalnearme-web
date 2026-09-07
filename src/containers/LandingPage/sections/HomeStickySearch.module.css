@@ -1,0 +1,79 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 8px 14px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid #eef0f3;
+  transform: translateY(-110%);
+  opacity: 0;
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+  pointer-events: none;
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 6px 6px 6px 18px;
+  box-shadow: 0 10px 30px rgba(31, 41, 55, 0.12);
+  text-align: left;
+}
+.text {
+  flex: 1;
+  min-width: 0;
+}
+.primary {
+  display: block;
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.secondary {
+  display: block;
+  font-size: 13px;
+  color: #5b6472;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.go {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.glyph {
+  width: 16px;
+  height: 16px;
+}
+
+.shortcuts {
+  margin-top: 10px;
+}

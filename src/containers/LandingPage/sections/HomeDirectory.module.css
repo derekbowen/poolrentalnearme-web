@@ -1,0 +1,253 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  padding: 48px 18px 0;
+  @media (--viewportLarge) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 72px;
+    padding: 104px 48px 88px;
+  }
+}
+
+.h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  @media (--viewportLarge) {
+    font-size: 40px;
+  }
+}
+
+/* Pool types */
+.typeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+  margin-top: 8px;
+  @media (--viewportLarge) {
+    gap: 0 28px;
+    margin-top: 20px;
+  }
+}
+.typeLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+  font-weight: 700;
+  font-size: 15px;
+  @media (--viewportLarge) {
+    padding: 15px 2px;
+    font-size: 18px;
+  }
+}
+.typeLink:hover {
+  color: #0369a1;
+}
+.typeArrow {
+  color: #8a94a3;
+}
+
+/* Cities */
+.cities {
+  margin-top: 40px;
+  @media (--viewportLarge) {
+    margin-top: 0;
+  }
+}
+.citiesHead {
+  @media (--viewportLarge) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+.publicPoolsDesktop {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+    font-weight: 700;
+    font-size: 15px;
+    color: #0369a1;
+    white-space: nowrap;
+  }
+}
+.publicPoolsDesktop:hover {
+  color: #075985;
+}
+.citiesSubMobile {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #5b6472;
+  margin-top: 6px;
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+.publicPoolsMobile {
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  @media (--viewportLarge) {
+    gap: 10px;
+    margin-top: 20px;
+  }
+}
+.chip {
+  color: #374151;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #fff;
+  transition: border-color 0.2s ease;
+  @media (--viewportLarge) {
+    font-size: 16px;
+    padding: 11px 18px;
+  }
+}
+.chip:hover {
+  border-color: #374151;
+  color: #374151;
+}
+.chipDesktopOnly {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline-block;
+  }
+}
+
+/* Expandable state / city directory */
+.accordion {
+  margin-top: 18px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  overflow: hidden;
+  @media (--viewportLarge) {
+    margin-top: 28px;
+    border-radius: 22px;
+  }
+}
+.accordionHead {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  @media (--viewportLarge) {
+    padding: 18px 24px;
+  }
+}
+.accordionTitle {
+  font-weight: 800;
+  font-size: 15px;
+  @media (--viewportLarge) {
+    font-size: 17px;
+  }
+}
+.accordionTitleLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+.accordionToggle {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  @media (--viewportLarge) {
+    font-size: 15px;
+    padding: 9px 16px;
+  }
+}
+.accordionBody {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.accordionOpen {
+  max-height: 4000px;
+}
+.accordionInner {
+  padding: 0 18px 18px;
+  border-top: 1px solid #e5e7eb;
+  @media (--viewportLarge) {
+    padding: 0 24px 24px;
+  }
+}
+.states {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 14px;
+  @media (--viewportLarge) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px 16px;
+    margin-top: 18px;
+  }
+}
+.directoryLink {
+  font-size: 13.5px;
+  color: #5b6472;
+  @media (--viewportLarge) {
+    font-size: 15px;
+  }
+}
+.directoryLink:hover {
+  color: #0369a1;
+}
+.directoryLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0369a1;
+  margin: 18px 0 8px;
+  @media (--viewportLarge) {
+    font-size: 12px;
+    margin: 24px 0 10px;
+  }
+}
+.directoryLabelLong {
+  display: none;
+  @media (--viewportLarge) {
+    display: inline;
+  }
+}
+.cityList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  @media (--viewportLarge) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px 16px;
+  }
+}
+.allLocations {
+  display: inline-block;
+  margin-top: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #374151;
+  border-bottom: 2px solid #ff8a1f;
+  @media (--viewportLarge) {
+    margin-top: 18px;
+  }
+}
+.allLocations:hover {
+  color: #0369a1;
+}

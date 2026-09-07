@@ -30,7 +30,10 @@ const IconSearch = () => (
 );
 const IconHeart = () => (
   <svg viewBox="0 0 24 24" className={css.icon} aria-hidden="true">
-    <path {...stroke} d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 7a3.9 3.9 0 0 1 7 3.6C19 15.4 12 20 12 20Z" />
+    <path
+      {...stroke}
+      d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 7a3.9 3.9 0 0 1 7 3.6C19 15.4 12 20 12 20Z"
+    />
   </svg>
 );
 const IconCalendar = () => (
@@ -47,7 +50,16 @@ const IconUser = () => (
 );
 const IconChat = () => (
   <svg viewBox="0 0 24 24" className={css.icon} aria-hidden="true">
-    <path {...stroke} d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v8A1.5 1.5 0 0 1 19 15.5H10l-4.5 4v-4H5A1.5 1.5 0 0 1 3.5 14V6A1.5 1.5 0 0 1 5 4.5Z" />
+    <path
+      {...stroke}
+      d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v8A1.5 1.5 0 0 1 19 15.5H10l-4.5 4v-4H5A1.5 1.5 0 0 1 3.5 14V6A1.5 1.5 0 0 1 5 4.5Z"
+    />
+  </svg>
+);
+const IconPlusCircle = () => (
+  <svg viewBox="0 0 24 24" className={css.icon} aria-hidden="true">
+    <circle {...stroke} cx="12" cy="12" r="8.5" />
+    <path {...stroke} d="M12 8v8M8 12h8" />
   </svg>
 );
 
@@ -66,36 +78,84 @@ const BottomNav = ({ currentPage, isAuthenticated, inboxTab }) => {
   if (currentPage && HIDE_ON_PAGES.includes(currentPage)) return null;
 
   const authed = !!isAuthenticated;
-  const tabs = [
-    { key: 'home', label: 'Home', Icon: IconHome, name: 'LandingPage', pages: ['LandingPage'] },
-    { key: 'explore', label: 'Explore', Icon: IconSearch, name: 'SearchPage', pages: ['SearchPage'] },
-    {
-      key: 'wishlist',
-      label: 'Wishlist',
-      Icon: IconHeart,
-      name: authed ? 'WishlistPage' : 'LoginPage',
-      pages: ['WishlistPage'],
-    },
-    {
-      key: 'inbox',
-      label: 'Bookings',
-      Icon: IconChat,
-      name: authed ? 'InboxPage' : 'LoginPage',
-      params: authed ? { tab: inboxTab || 'orders' } : {},
-      pages: ['InboxPage'],
-    },
-    {
-      key: 'account',
-      label: 'Settings',
-      Icon: IconUser,
-      name: authed ? 'ProfileSettingsPage' : 'LoginPage',
-      pages: ['ProfileSettingsPage', 'AccountSettingsPage', 'ContactDetailsPage', 'ManageListingsPage'],
-    },
-  ];
+  const homeTab = {
+    key: 'home',
+    label: 'Home',
+    Icon: IconHome,
+    name: 'LandingPage',
+    pages: ['LandingPage'],
+  };
+  const exploreTab = {
+    key: 'explore',
+    label: 'Explore',
+    Icon: IconSearch,
+    name: 'SearchPage',
+    pages: ['SearchPage'],
+  };
+  // Logged-in users get the marketplace tabs (Wishlist · Bookings · Settings). Anonymous
+  // visitors are here to discover, so their bar is Favorites · Host · Account instead — same
+  // component, one nav, one auth check.
+  const tabs = authed
+    ? [
+        homeTab,
+        exploreTab,
+        {
+          key: 'wishlist',
+          label: 'Wishlist',
+          Icon: IconHeart,
+          name: 'WishlistPage',
+          pages: ['WishlistPage'],
+        },
+        {
+          key: 'inbox',
+          label: 'Bookings',
+          Icon: IconChat,
+          name: 'InboxPage',
+          params: { tab: inboxTab || 'orders' },
+          pages: ['InboxPage'],
+        },
+        {
+          key: 'account',
+          label: 'Settings',
+          Icon: IconUser,
+          name: 'ProfileSettingsPage',
+          pages: [
+            'ProfileSettingsPage',
+            'AccountSettingsPage',
+            'ContactDetailsPage',
+            'ManageListingsPage',
+          ],
+        },
+      ]
+    : [
+        homeTab,
+        exploreTab,
+        {
+          key: 'favorites',
+          label: 'Favorites',
+          Icon: IconHeart,
+          name: 'LoginPage',
+          pages: ['WishlistPage'],
+        },
+        {
+          key: 'host',
+          label: 'Host',
+          Icon: IconPlusCircle,
+          name: 'NewListingPage',
+          pages: ['EditListingPage'],
+        },
+        {
+          key: 'account',
+          label: 'Account',
+          Icon: IconUser,
+          name: 'LoginPage',
+          pages: ['LoginPage', 'SignupPage'],
+        },
+      ];
 
   return (
     <nav className={css.bottomNav} aria-label="Primary">
-      {tabs.map(t => {
+      {tabs.map((t) => {
         const isActive = !!currentPage && t.pages.includes(currentPage);
         const { Icon } = t;
         return (

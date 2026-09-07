@@ -1,0 +1,72 @@
+@import '../../styles/customMediaQueries.css';
+
+/* Homepage root: Plus Jakarta Sans, charcoal on white, no template element margins. */
+.page {
+  font-family:
+    'Plus Jakarta Sans',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: #374151;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/*
+ * Element resets scoped with :where() so they carry element specificity only (0,0,1): they
+ * beat the template's global h1/p/a rules by source order, but every section class still wins.
+ */
+:where(.page) h1,
+:where(.page) h2,
+:where(.page) h3,
+:where(.page) h4,
+:where(.page) p {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  text-wrap: pretty;
+}
+
+:where(.page) a {
+  color: inherit;
+  text-decoration: none;
+}
+:where(.page) a:hover {
+  text-decoration: none;
+}
+
+:where(.page) img {
+  display: block;
+}
+
+.layout {
+  background: #fff;
+}
+
+/*
+ * The main area is a grid item of LayoutComposer; min-width: 0 stops the horizontal rails'
+ * min-content width from stretching the whole page (grid items default to min-width: auto).
+ */
+.main {
+  display: block;
+  min-width: 0;
+  padding-bottom: 0;
+}
+
+/* Shortcut rail: clears the search card that overlaps the hero on mobile */
+.shortcuts {
+  padding: 92px 18px 0;
+  @media (--viewportLarge) {
+    padding: 44px 48px 0;
+  }
+}
+
+/*
+ * The template Topbar stays mounted for its plumbing (BottomNav, the mobile menu modal,
+ * LimitedAccessBanner, missing-info reminders) but the homepage renders its own header, so
+ * both bars are hidden. !important: TopbarDesktop applies its own root class after ours.
+ */
+.hiddenTopbar {
+  display: none !important;
+}

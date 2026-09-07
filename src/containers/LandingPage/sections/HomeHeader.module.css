@@ -1,0 +1,175 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  position: relative;
+  z-index: 5;
+  background: #fff;
+}
+
+/* ---------- Desktop (≥1024) ---------- */
+.desktop {
+  display: none;
+  @media (--viewportLarge) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 88px;
+    padding: 0 48px;
+  }
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+}
+.logo {
+  height: 42px;
+  width: auto;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  font-weight: 700;
+  font-size: 18px;
+}
+.navLink {
+  color: #374151;
+}
+.navLink:hover {
+  color: #0369a1;
+}
+
+.academyPill {
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 14px 0 6px;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+}
+.fredAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.listPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+}
+.feeBadge {
+  background: #fff1e3;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.textLink {
+  position: relative;
+  color: #374151;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 12px 10px;
+}
+.textLink:hover {
+  color: #0369a1;
+}
+.notificationDot {
+  position: absolute;
+  top: 8px;
+  right: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff8a1f;
+  border: 2px solid #fff;
+}
+
+.signup {
+  background: #0369a1;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+.signup:hover {
+  background: #075985;
+  color: #fff;
+}
+
+.avatarLink {
+  display: flex;
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+}
+
+/* ---------- Mobile (<1024) ---------- */
+.mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 18px 12px;
+  @media (--viewportLarge) {
+    display: none;
+  }
+}
+.logoMobile {
+  height: 32px;
+  width: auto;
+}
+.mobileActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.listChip {
+  font-size: 13px;
+  font-weight: 800;
+  color: #b45309;
+  background: rgba(255, 138, 31, 0.2);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(255, 138, 31, 0.35);
+  box-shadow: inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.7);
+  padding: 10px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.listChip:hover {
+  color: #b45309;
+}
+.menuButton {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+.menuBar {
+  width: 18px;
+  height: 2px;
+  background: #374151;
+  border-radius: 2px;
+}

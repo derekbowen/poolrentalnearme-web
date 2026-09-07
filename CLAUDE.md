@@ -62,9 +62,10 @@ replace MAIN. An abort leaves production untouched. Never skip the gate.
 `/home/ubuntu/fallback-web.conf` = :4000). `cp` + `nginx -t` + `reload` switches
 traffic with no 502 window; rollback is the same swap back. The public `/` is
 proxied to EAST, so prove which container serves by the `assets/index-<hash>.js`
-marker on `/s` or `/login`, never on `/`. Ubuntu-crontab jobs `docker exec` into
-the container **named** `poolrentalnearme-production`, so a retired MAIN must be
-renamed away and the new one renamed in, or those jobs keep running old code.
+marker on `/s` or `/login`, never on `/`. About fifteen scheduled jobs `docker exec` into the container **named**
+`poolrentalnearme-production` (see `docs/OPS_RECORD_2026-09-07.md` for the list and
+classes), so a retired MAIN must be `docker rename`d away and the new one renamed
+in — no restart needed — or those jobs keep running old code.
 `/tools/*` (cta.js, home.js, kit) is served by WEST from `/var/www/prnm-tools/`.
 
 `/home/ubuntu/build` is a **loose working copy, not a git checkout**, so patching

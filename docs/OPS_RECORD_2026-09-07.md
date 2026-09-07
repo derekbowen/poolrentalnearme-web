@@ -85,11 +85,56 @@ probes passed; c194 still running on :3000. Soak checks showed zero 5xx from c19
 Backups: `/root/nginx-bak/default.bak-20260907T070132Z` (pre-wiring),
 `main-web.conf.bak-20260907T070132Z` (the :3000 upstream = rollback file).
 
-**Retirement checklist (not yet done):** the ubuntu crontab has 4 live jobs (plus the root payout watchdog) that
-`docker exec poolrentalnearme-production …`. They run
-inside **c194** during the soak. Before stopping c194: stop c194, rename `c196-gate` to
-`poolrentalnearme-production`, and only then does `main-web.conf` go back to :3000 with a
-c196 container bound there — or keep :4000 and update the crons. Do not simply remove c194.
+**Container rename (07:16:20Z, no restarts):** after verifying every caller against
+c196 (see "Callers" below), `docker rename` moved c194 to
+`poolrentalnearme-production-rollback` and c196 (`c196-gate`) to
+`poolrentalnearme-production`. Container IDs (`4202c5030d36` = c194, `6b4c959d2193` =
+c196) and `StartedAt` timestamps are unchanged; both keep `--restart unless-stopped`.
+nginx still points `upstream web` at :4000, which is c196. `docker exec
+poolrentalnearme-production hostname` now returns c196's ID. c194 stays up on :3000 as
+the rollback until at least one normal automation cycle has completed against c196.
+Name rollback: `docker rename poolrentalnearme-production c196-gate-tmp && docker rename
+poolrentalnearme-production-rollback poolrentalnearme-production && docker rename
+c196-gate-tmp c196-gate`; traffic rollback is the `main-web.conf` swap above.
+
+**Callers of the container name (scheduled), classified.** Every one copies a script
+into the container and runs it with bun; none transitions a Sharetribe transaction or
+edits a listing.
+
+| Caller | Schedule | Class | Notes |
+|---|---|---|---|
+| warm-digest | 16:00Z daily | notifications (founders) + DB mutation | auto-resolves `sms_reply_ctx` rows, logs to `sms_log`, texts Derek/Brandon |
+| stuck-detector | */15 | notifications (founders, daytime) + DB mutation | writes air-file rows; `STUCK_DRY=1` supported |
+| cart-recovery | */15 | notifications (guests) + DB (`sms_log`) | one founder-voice text per expired checkout, 14:00–02:00Z window |
+| lead-nudge | :15 hourly | notifications (hosts) + DB (`sms_log`) | 9am–7pm PT window |
+| review-nudge (cron.d) | */30 | notifications (guests) + DB (`supastore`, heartbeat) | queries completed transactions only; quiet hours 03:00–16:00Z |
+| restricted-sweep (cron.d) | 15:35Z | payout/financial monitoring + notification (Derek) + DB (`email_send_log`) | Sharetribe `users.show` + Stripe account GET; POSTs only to Supabase and Twilio |
+| payout watchdog (root) | 15:00Z | payout/financial monitoring + notification (Derek) | read-only against Sharetribe |
+| allie-pitch watch (root) | :40 hourly | notification (Derek) | writes a DONE marker in `/tmp/host` inside the container |
+| switchy jobs / stats | */30, */5 | notifications (hosts) | host link sends, stats replies, outreach queue; quiet-hour and dedupe guards in-script |
+| switchy click snapshot | */6h | read-only | Switchy GraphQL → `click_history.jsonl` on the host |
+| switchy weekly | Thu 20:00Z | notifications (all hosts) | held by `WEEKLY_STOP` since Aug 7 |
+| sms-extras | */5 | notifications (guests) | booking confirm/decline texts, state file round-trips through the container |
+| photo-concierge | 16:05Z | notifications (hosts) | copies `tzfence.js` into `/home/bun/app` |
+| future-season | Mon in March | notification (Derek) | dormant until March |
+| db-watchdog | */5 | notification (Derek), conditional | only execs into the container to send when the content DB is down |
+
+Everything else that names the container (deploy-cNN/flip-cNNN/gate-cNNN/stage scripts,
+Dockerfiles `FROM poolrentalnearme-production:currentNN-*`, campaign and one-off runners,
+`route-swap.sh`, `smsctl`, `/root/restart-container.sh`) is maintenance or historical
+and runs only by hand.
+
+**Verified in c196 before the rename:** the modules the callers require
+(`api-util/integration.js`, `api-util/sdk.js`, `notify/twsend.js`, `poller.js`,
+`messages.js`, `inbound.js`, `routectl.js`, `welcome.js`, `.env`) are byte-identical in
+both containers; `sharetribe-flex-integration-sdk` resolves; all ten payload scripts
+pass `node --check`; cart-recovery, lead-nudge and review-nudge exit on their window
+guards exactly as in c194; stuck-detector `STUCK_DRY=1` computes the same result; the
+payout watchdog with its sender stubbed reports the same "1 stuck". The only
+caller-relevant module that differs is `notify/exclude.js`: c196 anchors the
+test-account probe tokens to a delimited segment of the local part, so ordinary hosts
+like `mdupree@` are no longer misclassified as test accounts by review-nudge. That is a
+deliberate fix c196 ships, not drift. `node` inside both containers is bun's wrapper.
 
 ## Batch E — EAST :3001
 

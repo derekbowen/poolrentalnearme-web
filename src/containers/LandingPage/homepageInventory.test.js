@@ -134,6 +134,8 @@ describe('pricing', () => {
     expect(l.price.amount).toBe(14375);
     expect(l.priceLabel).toBe('$143.75');
     expect(formatAllInPrice(intl, new Money(11500, 'USD'))).toBe('$115');
+    expect(formatAllInPrice(intl, new Money(8050, 'USD'))).toBe('$80.50');
+    expect(formatAllInPrice(intl, new Money(3450, 'USD'))).toBe('$34.50');
   });
 });
 

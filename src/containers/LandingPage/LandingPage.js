@@ -31,20 +31,15 @@ import {
   resolveHomepageCategoryIds,
   toHomepageListing,
 } from './homepageInventory';
-import { FALLBACK_LISTINGS, FAQS, MOSAIC, POOL_TYPES, SHORTCUTS } from './homeContent';
+import { FALLBACK_LISTINGS, FAQS, NOTES, SHORTCUTS } from './homeContent';
 // Shared recipes first so every section's own rules cascade after them.
 import './HomeShared.module.css';
 import HomeHeader from './sections/HomeHeader';
 import HomeHero from './sections/HomeHero';
 import HomeStickySearch from './sections/HomeStickySearch';
-import HomeShortcuts from './sections/HomeShortcuts';
 import HomeInventory from './sections/HomeInventory';
-import HomeMosaic from './sections/HomeMosaic';
-import HomeHowItWorks from './sections/HomeHowItWorks';
-import HomeFeaturedPool from './sections/HomeFeaturedPool';
 import HomeHostCta from './sections/HomeHostCta';
-import HomeAcademy from './sections/HomeAcademy';
-import HomeDirectory from './sections/HomeDirectory';
+import HomeNotes from './sections/HomeNotes';
 import HomeFaq from './sections/HomeFaq';
 import HomeFooter from './sections/HomeFooter';
 
@@ -52,7 +47,10 @@ import css from './LandingPage.module.css';
 
 const PAGE_TITLE = 'Rent a Private Pool by the Hour — Pool Rental Near Me';
 const PAGE_DESCRIPTION =
-  'Rent a pool you’ll fall in love with. Private backyard pools by the hour — indoor and heated pools open all winter, real hosts, prices that include all fees. Search by city or ZIP.';
+  'Rent a pool you’ll fall in love with. Private backyard pools by the hour — heated and indoor pools open all winter, real hosts, prices that include all fees. Search by city or ZIP.';
+
+// Homepage keeps the four questions a first-time renter actually asks; the full list lives on /p/faq.
+const HOME_FAQS = FAQS.slice(0, 4);
 
 const GREEN = '#16a34a';
 const AMBER = '#ff8a1f';
@@ -68,9 +66,11 @@ const searchLinkFor = (categoryIds, { category, keywords }) =>
 const DATE_FORMAT = { weekday: 'short', month: 'short', day: 'numeric' };
 
 /**
- * PoolRentalNearMe.com homepage (PRNM Homepage v3): marketplace hero + booking search,
- * seasonal shortcuts, live ranked inventory, occasion mosaic, how it works, Katy feature, host
- * acquisition, Pool Host Academy, SEO directory, FAQ + Text Derek, footer.
+ * PoolRentalNearMe.com homepage (v4, winter edition): marketplace hero + booking search, live
+ * ranked inventory with pool-type tabs, three real love notes, host acquisition, a four-question
+ * FAQ + Text Derek, footer. Five screens on a phone; the v3 mosaic, how-it-works walkthrough,
+ * featured-pool video, academy band and city directory were cut for length (2026-09-08) —
+ * academy and city browsing live in the footer.
  *
  * Inventory comes from LandingPage.duck (Marketplace API) and is filtered + ranked by
  * homepageInventory.js; the design's real listings are the fallback when the feed is empty.
@@ -174,14 +174,6 @@ export const LandingPageComponent = (props) => {
       to: searchLinkFor(categoryIds, s),
     };
   });
-  const mosaic = MOSAIC.map((t) => ({ ...t, to: searchLinkFor(categoryIds, t) }));
-  const poolTypes = POOL_TYPES.map((p) => ({
-    label: p.label,
-    to: searchLinkFor(categoryIds, {
-      category: categoryIds[p.keywords] ? p.keywords : null,
-      keywords: p.keywords,
-    }),
-  }));
 
   // ---- search ----
   const onSearchSubmit = (values) => {
@@ -253,7 +245,7 @@ export const LandingPageComponent = (props) => {
     {
       '@context': 'http://schema.org',
       '@type': 'FAQPage',
-      mainEntity: FAQS.map((f) => ({
+      mainEntity: HOME_FAQS.map((f) => ({
         '@type': 'Question',
         name: f.q,
         acceptedAnswer: { '@type': 'Answer', text: f.a },
@@ -305,22 +297,19 @@ export const LandingPageComponent = (props) => {
             inputRef: whereInputRef,
           }}
         />
-        <HomeShortcuts items={shortcuts} className={css.shortcuts} />
-        <HomeInventory
-          heading={heading}
-          status={status}
-          tabs={tabs}
-          listings={picked}
-          more={more}
-          isAuthenticated={isAuthenticated}
-        />
-        <HomeMosaic tiles={mosaic} />
-        <HomeHowItWorks />
-        <HomeFeaturedPool />
+        <div className={css.afterHero}>
+          <HomeInventory
+            heading={heading}
+            status={status}
+            tabs={tabs}
+            listings={picked}
+            more={more}
+            isAuthenticated={isAuthenticated}
+          />
+        </div>
+        <HomeNotes notes={NOTES} />
         <HomeHostCta />
-        <HomeAcademy />
-        <HomeDirectory poolTypes={poolTypes} />
-        <HomeFaq />
+        <HomeFaq items={HOME_FAQS} />
       </LayoutSingleColumn>
     </Page>
   );

@@ -27,7 +27,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 12px;
   min-width: 0;
   @media (--viewportLarge) {
@@ -71,7 +71,7 @@
   padding: 10px 18px;
 }
 .pillActive {
-  background: #0369a1;
+  background: #176b6b;
   color: #fff;
   border-color: transparent;
   box-shadow: none;
@@ -79,7 +79,7 @@
   -webkit-backdrop-filter: none;
 }
 .pillActive:hover {
-  background: #0369a1;
+  background: #176b6b;
   color: #fff;
 }
 
@@ -120,7 +120,7 @@
 .segment {
   flex: 1;
   text-align: center;
-  color: #5b6472;
+  color: #6a7877;
   font-weight: 600;
   font-size: 14px;
   padding: 9px 4px;
@@ -134,7 +134,7 @@
 }
 .segmentActive {
   background: #fff;
-  color: #374151;
+  color: #101a1b;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
@@ -173,7 +173,7 @@
   justify-content: space-between;
   aspect-ratio: 5 / 4;
   border-radius: 22px;
-  color: #2d3542;
+  color: #101a1b;
   padding: 22px;
   align-self: flex-start;
   flex-basis: 300px !important;
@@ -186,7 +186,7 @@
   }
 }
 .moreTile:hover {
-  color: #2d3542;
+  color: #101a1b;
 }
 .moreEyebrow {
   font-size: 12px;
@@ -211,7 +211,7 @@
 .note {
   margin: 16px 18px 0;
   font-size: 14px;
-  color: #5b6472;
+  color: #6a7877;
   @media (--viewportLarge) {
     margin: 22px 0 0;
     font-size: 16px;

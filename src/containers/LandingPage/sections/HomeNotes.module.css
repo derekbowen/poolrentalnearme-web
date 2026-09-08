@@ -1,0 +1,103 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  padding: 28px 18px 8px;
+  @media (--viewportLarge) {
+    padding: 40px 48px 8px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sub {
+  font-size: 14px;
+  color: #6a7877;
+}
+
+.notes {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  margin: 14px -18px 0;
+  padding: 0 18px 6px;
+  @media (--viewportLarge) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+    margin: 16px 0 0;
+    padding: 0;
+    gap: 16px;
+  }
+}
+
+.note {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e9dcc6;
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  @media (--viewportLarge) {
+    flex: 1 1 auto;
+  }
+}
+
+.hearts {
+  color: #e0603c;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+.quote {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #101a1b;
+  flex: 1;
+  @media (--viewportLarge) {
+    font-size: 17px;
+  }
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #f5ebda;
+  color: #0f4547;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.authorName {
+  display: block;
+  font-weight: 700;
+  color: #101a1b;
+}
+
+.authorWhere {
+  display: block;
+  color: #6a7877;
+}

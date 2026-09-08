@@ -35,10 +35,10 @@
   font-size: 18px;
 }
 .navLink {
-  color: #374151;
+  color: #101a1b;
 }
 .navLink:hover {
-  color: #0369a1;
+  color: #176b6b;
 }
 
 .academyPill {
@@ -73,7 +73,7 @@
 }
 .feeBadge {
   background: #fff1e3;
-  color: #b45309;
+  color: #c94f2e;
   font-size: 12px;
   font-weight: 800;
   padding: 3px 8px;
@@ -82,13 +82,13 @@
 
 .textLink {
   position: relative;
-  color: #374151;
+  color: #101a1b;
   font-weight: 700;
   font-size: 16px;
   padding: 12px 10px;
 }
 .textLink:hover {
-  color: #0369a1;
+  color: #176b6b;
 }
 .notificationDot {
   position: absolute;
@@ -102,7 +102,7 @@
 }
 
 .signup {
-  background: #0369a1;
+  background: #176b6b;
   color: #fff;
   font-weight: 700;
   font-size: 16px;
@@ -145,7 +145,7 @@
 .listChip {
   font-size: 13px;
   font-weight: 800;
-  color: #b45309;
+  color: #c94f2e;
   background: rgba(255, 138, 31, 0.2);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -156,7 +156,7 @@
   white-space: nowrap;
 }
 .listChip:hover {
-  color: #b45309;
+  color: #c94f2e;
 }
 .menuButton {
   width: 44px;
@@ -170,6 +170,6 @@
 .menuBar {
   width: 18px;
   height: 2px;
-  background: #374151;
+  background: #101a1b;
   border-radius: 2px;
 }

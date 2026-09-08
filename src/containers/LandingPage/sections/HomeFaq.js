@@ -10,7 +10,8 @@ import css from './HomeFaq.module.css';
  * "Questions? Ask." — compact expandable FAQ (answers stay in the DOM for crawlers) plus the
  * founder-led support card: "Stuck on anything? Text Derek."
  */
-const HomeFaq = () => {
+const HomeFaq = (props) => {
+  const { items = FAQS } = props;
   const [openIndex, setOpenIndex] = useState(0);
 
   const derekCard = (
@@ -49,7 +50,7 @@ const HomeFaq = () => {
         <div className={css.derekDesktop}>{derekCard}</div>
       </div>
       <div className={css.list}>
-        {FAQS.map((f, i) => {
+        {items.map((f, i) => {
           const open = i === openIndex;
           return (
             <div key={f.q} className={css.item}>

@@ -23,8 +23,10 @@ const HomeHostCta = () => (
       <div className={css.scrim} />
       <div className={css.copy}>
         <div className={shared.eyebrow}>For pool owners</div>
-        <h2 className={css.title}>Your pool could pay for itself.</h2>
-        <p className={css.sub}>0% host fees. You keep 100% of your listed rate.</p>
+        <h2 className={css.title}>Have a heated pool? It could pay for itself.</h2>
+        <p className={css.sub}>
+          0% host fees. You keep 100% of your listed rate. Winter is when most pools sit unused.
+        </p>
 
         <NamedLink
           name="ListingPage"

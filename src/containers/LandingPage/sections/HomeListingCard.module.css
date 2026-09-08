@@ -2,11 +2,11 @@
 
 .root {
   display: block;
-  color: #374151;
+  color: #101a1b;
   transition: transform 0.25s ease;
 }
 .root:hover {
-  color: #374151;
+  color: #101a1b;
   @media (--viewportLarge) {
     transform: translateY(-6px);
   }
@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #374151;
+  color: #101a1b;
   cursor: pointer;
   @media (--viewportLarge) {
     top: 14px;
@@ -62,7 +62,7 @@
   transition: fill 0.2s ease;
 }
 .heartIcon path {
-  stroke: #374151;
+  stroke: #101a1b;
 }
 
 .tag {
@@ -110,7 +110,7 @@
 }
 .city {
   font-size: 15px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 2px;
   @media (--viewportLarge) {
     font-size: 17px;
@@ -129,7 +129,7 @@
 }
 .priceUnit {
   font-size: 13px;
-  color: #5b6472;
+  color: #6a7877;
   font-weight: 600;
   @media (--viewportLarge) {
     font-size: 16px;

@@ -2,8 +2,8 @@
 
 .root {
   background: #f4f6f8;
-  color: #374151;
-  border-top: 1px solid #e5e7eb;
+  color: #101a1b;
+  border-top: 1px solid #e9dcc6;
   padding: 24px 18px 28px;
   @media (--viewportLarge) {
     padding: 80px 48px 44px;
@@ -11,7 +11,7 @@
 }
 
 .groups {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e9dcc6;
   @media (--viewportLarge) {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -20,7 +20,7 @@
   }
 }
 .group {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e9dcc6;
   @media (--viewportLarge) {
     border-bottom: 0;
   }
@@ -35,7 +35,7 @@
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #0369a1;
+    color: #176b6b;
     margin-bottom: 16px;
   }
 }
@@ -49,7 +49,7 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #0369a1;
+  color: #176b6b;
   @media (--viewportLarge) {
     display: none;
   }
@@ -65,7 +65,7 @@
   font-size: 18px;
   font-weight: 400;
   letter-spacing: 0;
-  color: #374151;
+  color: #101a1b;
 }
 
 .links {
@@ -93,20 +93,20 @@
   display: block;
   font-size: 16px;
   line-height: 1.35;
-  color: #374151;
+  color: #101a1b;
   overflow-wrap: anywhere;
 }
 .link:hover {
-  color: #0369a1;
+  color: #176b6b;
 }
 
 .bottom {
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e9dcc6;
   font-size: 12.5px;
   line-height: 1.5;
-  color: #5b6472;
+  color: #6a7877;
   @media (--viewportLarge) {
     display: flex;
     justify-content: space-between;
@@ -121,7 +121,7 @@
 .logoBox {
   display: inline-flex;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e9dcc6;
   border-radius: 10px;
   padding: 6px 10px;
   @media (--viewportLarge) {

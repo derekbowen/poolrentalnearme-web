@@ -88,7 +88,7 @@
   align-items: center;
   margin-top: 18px;
   background: #fff;
-  color: #374151;
+  color: #101a1b;
   border-radius: 16px;
   padding: 12px 14px;
   @media (--viewportLarge) {
@@ -96,14 +96,14 @@
   }
 }
 .hostCardMobile:hover {
-  color: #374151;
+  color: #101a1b;
 }
 .avatar {
   flex: none;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #0369a1;
+  background: #176b6b;
   color: #fff;
   display: flex;
   align-items: center;
@@ -125,7 +125,7 @@
 .hostCardMobileMeta {
   display: block;
   font-size: 13px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 1px;
 }
 
@@ -201,21 +201,21 @@
     gap: 16px;
     align-items: center;
     background: #fff;
-    color: #374151;
+    color: #101a1b;
     border-radius: 20px;
     padding: 18px 22px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   }
 }
 .hostCard:hover {
-  color: #374151;
+  color: #101a1b;
 }
 .avatarLarge {
   flex: none;
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #0369a1;
+  background: #176b6b;
   color: #fff;
   display: flex;
   align-items: center;
@@ -229,7 +229,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #5b6472;
+  color: #6a7877;
 }
 .hostCardTitle {
   display: block;
@@ -240,6 +240,6 @@
 .hostCardMeta {
   display: block;
   font-size: 16px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 3px;
 }

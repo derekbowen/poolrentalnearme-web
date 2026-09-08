@@ -11,7 +11,7 @@
  * Pricing: every card price is priceWithBookingFee() from util/currency — the exact rule
  * ListingCard uses on /s (host rate + guest booking fee, CA SB 478 all-in display). No second formula.
  */
-import { formatMoney, priceWithBookingFee } from '../../util/currency';
+import { convertMoneyToNumber, priceWithBookingFee } from '../../util/currency';
 import { createSlug } from '../../util/urlHelpers';
 
 export const SEASON_WINTER = 'winter';
@@ -126,9 +126,21 @@ export const tagFor = ({ cat, categoryName, heated, guests }) => {
     .join(' · ');
 };
 
-// formatMoney renders "$115.00"; the homepage shows "$115" / "$143.75" like the design.
-export const formatAllInPrice = (intl, money) =>
-  money ? formatMoney(intl, money).replace(/\.00$/, '') : '';
+// All-in price label: whole dollars drop the cents ("$115"), anything else always shows two
+// decimals ("$80.50", "$143.75"). The marketplace-wide currency format allows 0–2 fraction
+// digits, which renders "$80.5" — never on the homepage.
+export const formatAllInPrice = (intl, money) => {
+  if (!money) return '';
+  const label = intl.formatNumber(convertMoneyToNumber(money), {
+    style: 'currency',
+    currency: money.currency,
+    currencyDisplay: 'symbol',
+    useGrouping: true,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return label.replace(/\.00$/, '');
+};
 
 /**
  * Normalizes a Sharetribe listing entity (with images/author denormalized) into the flat shape
@@ -201,7 +213,7 @@ export const rank = (l, ctx = {}) => {
 export const rankListings = (listings, ctx) =>
   listings.slice().sort((a, b) => rank(b, ctx) - rank(a, ctx));
 
-export const pickForTab = (ranked, tabKey, limit = 8) =>
+export const pickForTab = (ranked, tabKey, limit = 5) =>
   tabKey === TAB_FOR_YOU
     ? ranked.slice(0, limit)
     : ranked.filter((l) => l.cat === tabKey || (tabKey === 'heated' && l.heated)).slice(0, limit);

@@ -2,12 +2,12 @@
 
 .root {
   margin-top: 48px;
-  background: #e6f4fc;
+  background: #f5ebda;
   padding: 48px 18px;
   @media (--viewportLarge) {
     margin-top: 0;
     background: radial-gradient(800px 400px at 90% 0%, rgba(255, 255, 255, 0.95), transparent 60%),
-      #e6f4fc;
+      #f5ebda;
     padding: 104px 48px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
@@ -80,7 +80,7 @@
 }
 .derekSub {
   font-size: 15px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 3px;
   @media (--viewportLarge) {
     font-size: 16px;
@@ -114,7 +114,7 @@
   display: block;
   text-align: center;
   font-size: 14px;
-  color: #5b6472;
+  color: #6a7877;
   margin-top: 10px;
   @media (--viewportLarge) {
     display: inline;
@@ -124,11 +124,11 @@
   }
 }
 .phone {
-  color: #374151;
+  color: #101a1b;
   font-weight: 700;
 }
 .phone:hover {
-  color: #0369a1;
+  color: #176b6b;
 }
 
 .list {
@@ -184,7 +184,7 @@
 .answerText {
   font-size: 16px;
   line-height: 1.55;
-  color: #5b6472;
+  color: #6a7877;
   padding: 0 24px 18px 0;
   @media (--viewportLarge) {
     font-size: 18px;

@@ -7,8 +7,8 @@
     system-ui,
     -apple-system,
     sans-serif;
-  color: #374151;
-  background: #fff;
+  color: #101a1b;
+  background: #fbf6ec;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
@@ -41,7 +41,7 @@
 }
 
 .layout {
-  background: #fff;
+  background: #fbf6ec;
 }
 
 /*
@@ -54,11 +54,11 @@
   padding-bottom: 0;
 }
 
-/* Shortcut rail: clears the search card that overlaps the hero on mobile */
-.shortcuts {
-  padding: 92px 18px 0;
+/* First block after the hero: clears the search card that overlaps the photo on mobile */
+.afterHero {
+  padding-top: 84px;
   @media (--viewportLarge) {
-    padding: 44px 48px 0;
+    padding-top: 24px;
   }
 }
 

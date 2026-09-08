@@ -1,9 +1,9 @@
 @import '../../styles/customMediaQueries.css';
 
 /*
- * Homepage design tokens (PRNM Homepage v3): charcoal text on white, PRNM blue as the brand
- * colour, sun-orange reserved for primary conversion actions, iOS-style glass for secondary
- * controls. Sections compose these classes instead of repeating the recipes.
+ * Homepage design tokens (v4, winter edition): ink text on warm sand, deep water teal as the
+ * accent, one coral reserved for primary conversion actions. Phones keep the iOS liquid-glass
+ * controls; desktop uses solid warm panels. Sections compose these classes instead of repeating them.
  */
 
 /* Reset for <button> used as a control. Declared first so the glass/sun recipes below win. */
@@ -26,11 +26,15 @@
   outline: none;
 }
 .buttonReset:focus-visible {
-  outline: 2px solid #0ea5e9;
+  outline: 2px solid #176b6b;
   outline-offset: 2px;
 }
 
-/* Light liquid glass — secondary controls on white / light surfaces */
+/*
+ * Secondary controls. On phones this is the iOS liquid-glass pill the app is known for
+ * (translucent, blurred, hairline border); on desktop it becomes a solid warm panel so the
+ * winter photography is not diluted by blur.
+ */
 .glassLight {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(16px) saturate(180%);
@@ -42,14 +46,25 @@
     0 1px 3px rgba(0, 0, 0, 0.07),
     0 4px 12px rgba(0, 0, 0, 0.07);
   border-radius: 999px;
-  color: #374151;
+  color: #101a1b;
   text-decoration: none;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  @media (--viewportLarge) {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid #e9dcc6;
+    box-shadow: 0 1px 2px rgba(16, 26, 27, 0.05);
+  }
 }
 .glassLight:hover {
   background: rgba(255, 255, 255, 0.9);
-  color: #374151;
+  color: #101a1b;
   text-decoration: none;
+  @media (--viewportLarge) {
+    background: #f5ebda;
+    border-color: #d9c7a9;
+  }
 }
 
 /* Smoked glass — controls sitting on photography */
@@ -76,43 +91,37 @@
 
 /* PRNM-blue glass — Tour, Text Derek */
 .glassBlue {
-  background: rgba(14, 165, 233, 0.16);
+  background: rgba(23, 107, 107, 0.12);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 0.5px solid rgba(3, 105, 161, 0.28);
+  border: 0.5px solid rgba(15, 69, 71, 0.28);
   box-shadow:
     inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.7),
-    0 4px 14px rgba(3, 105, 161, 0.12);
+    0 4px 14px rgba(15, 69, 71, 0.12);
   border-radius: 999px;
-  color: #0369a1;
+  color: #176b6b;
   text-decoration: none;
   transition: background 0.2s ease;
 }
 .glassBlue:hover {
-  background: rgba(14, 165, 233, 0.28);
-  color: #0369a1;
+  background: rgba(23, 107, 107, 0.22);
+  color: #176b6b;
   text-decoration: none;
 }
 
-/* Sun gradient — primary conversion only (Search, List your pool, "See every pool" tile) */
+/* Coral — the single primary-conversion colour (Search, List your pool, "See every pool" tile) */
 .sun {
-  background: linear-gradient(180deg, #ffd76a 0%, #ffb324 50%, #ff9a12 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.65),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.1),
-    0 12px 32px rgba(255, 146, 18, 0.42);
-  color: #374151;
+  background: #e0603c;
+  box-shadow: 0 10px 28px rgba(224, 96, 60, 0.35);
+  color: #fff;
   border-radius: 999px;
   text-decoration: none;
-  transition: box-shadow 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 .sun:hover {
-  background: linear-gradient(180deg, #ffe38a 0%, #ffbe3a 50%, #ffa41e 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.08),
-    0 16px 40px rgba(255, 146, 18, 0.5);
-  color: #374151;
+  background: #c94f2e;
+  box-shadow: 0 14px 34px rgba(224, 96, 60, 0.42);
+  color: #fff;
   text-decoration: none;
 }
 
@@ -135,12 +144,19 @@
     inset -1px -1px 1px rgba(255, 255, 255, 0.4),
     0 1px 3px rgba(0, 0, 0, 0.07),
     0 3px 10px rgba(0, 0, 0, 0.06);
-  color: #374151;
+  @media (--viewportLarge) {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid #e9dcc6;
+    box-shadow: 0 1px 2px rgba(16, 26, 27, 0.05);
+  }
+  color: #101a1b;
   text-decoration: none;
   padding: 0 4px;
 }
 .iosPill:hover {
-  color: #374151;
+  color: #101a1b;
   text-decoration: none;
 }
 
@@ -150,7 +166,7 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #0369a1;
+  color: #176b6b;
   @media (--viewportLarge) {
     font-size: 14px;
   }
@@ -162,7 +178,7 @@
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
-  color: #374151;
+  color: #101a1b;
   @media (--viewportLarge) {
     font-size: 60px;
   }

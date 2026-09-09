@@ -18,7 +18,7 @@ restart. Second attempt passed. A second pass added a city/state fallback for ca
 | Files | `src/components/home-page.tsx`, `src/server/home-data.functions.ts`, `src/server/sharetribe.server.ts`, `src/components/site-layout.tsx`, `src/lib/site-footer-defaults.ts`; assets `fred-avatar.png`, `fred.png`, `love-hero.jpg`, `love-friends.jpg` |
 | Backups (root, EAST) | `/root/east-backups/homepage-20260909T214223Z/` (5 sources + `assets/` originals + full served `dist/`), `/root/east-backups/homepage-pass2-20260909T215115Z/` (sharetribe.server.ts + dist) |
 | Diff | `docs/ops/east-homepage-2026-09-09.diff` (683 lines, the five sources) |
-| EAST git | committed locally as `ca5f47e6` (only these 9 paths; the other 227 pre-existing uncommitted files untouched). Not pushed — no push credential on the box was used. |
+| EAST git | committed locally as `ca5f47e6` and `8e17cf9a` (only the touched paths; the other pre-existing uncommitted files untouched). Not pushed — no push credential on the box was used. |
 | Rollback | copy the five sources and `assets/*` back from the backup dir, `rm -rf dist && cp -a <backup>/dist dist`, `sudo -u ubuntu PM2_HOME=/home/ubuntu/.pm2 pm2 restart fresh-web` |
 
 ### What changed
@@ -79,6 +79,17 @@ restart. Second attempt passed. A second pass added a city/state fallback for ca
   `/var/www/prnm-tools/cta.js.bak-20260909T214930Z`; repo copy `ops/east/tools/cta.js`
   matches (sha256 34605dcd…). The Clint quote and the Salty em dash line are unchanged.
 
+## 22:18Z — "My Backyard Oasis" removed (Derek: "dump this pool its fake")
+
+- Listing `6a4221ff-511f-43b9-9cd4-cb624aef210b` (Riverside, CA; author display name
+  "CEO", gmail, Stripe not connected, 0 transactions, a second closed copy of the same
+  listing under the same account) was **closed** via Integration API `listings/close`
+  at 22:20Z. Marketplace count 124 → 123. Reversible with `listings/open`. The author
+  account was not touched.
+- Dropped from `CURATED_LISTING_IDS` (pass 3; backup
+  `/root/east-backups/homepage-pass3-20260909T221800Z`, live 22:20Z, 8 curated cards
+  remain). EAST local commit `8e17cf9a` covers pass 2 (city/state fallback) and pass 3.
+
 ## Not done / Derek's call
 
 - Salty line 210 in `cta.js` still has the em dash (pending his word).
@@ -87,6 +98,4 @@ restart. Second attempt passed. A second pass added a city/state fallback for ca
 - Insurance FAQ and the Clint insurance quote in the ticker: untouched by rule 8.
 - "Video Chat Support" → meetn.com in the footer defaults (WEST strips it on `/` via
   `kill-meetn.conf`; other pages still show it).
-- "My Backyard Oasis" (Riverside, CA) has an app screenshot as its first listing photo, so
-  its card shows that instead of the pool. Host-side fix.
 - EAST commit `ca5f47e6` is local only.

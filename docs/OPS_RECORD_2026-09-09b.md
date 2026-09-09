@@ -99,3 +99,28 @@ restart. Second attempt passed. A second pass added a city/state fallback for ca
 - "Video Chat Support" → meetn.com in the footer defaults (WEST strips it on `/` via
   `kill-meetn.conf`; other pages still show it).
 - EAST commit `ca5f47e6` is local only.
+
+## 23:16Z — Winter homepage Phase 1 (branch `winter-home` on EAST, behind `/?preview=winter`)
+
+Derek's rebuild brief, Phase 0 audit approved, Phase 1 built. Production `/` is
+unchanged (verified: same h1, no robots meta, FAQ + insurance text, 7 FAQ schema
+questions). The preview render is `noindex` (meta + `X-Robots-Tag`), canonical `/`,
+`Cache-Control: no-store`; WEST does not cache `/`. Nothing links to the preview.
+
+| | |
+|---|---|
+| Branch / commit | `winter-home` @ `ab6b0dd1` (from main `8e17cf9a`), EAST local only |
+| New files | `src/config/winter-home.ts`, `src/components/home-page-winter.tsx`, `src/assets/paradise-hero-mobile.webp` (768w) |
+| Edited | `src/routes/index.tsx` (validateSearch/loaderDeps preview switch), `src/server/home-data.functions.ts` (+`getWinterHomeData`, 60 s cache, preview headers), `src/server/sharetribe.server.ts` (+rating/reviewCount), `src/components/home-page.tsx` (fallback fields) |
+| Copies | `docs/ops/winter-home/` in this repo |
+| Backup | `/root/east-backups/winter-p1-20260909T231540Z` (4 sources + served `dist/`) |
+| Gates | tsc 5 = baseline; build; smoke on :3005 for both renders before restart |
+
+Facts behind decisions: `/s` honours `pub_poolAmenities=heated|hot_tub`,
+`pub_categoryLevel1=pool&pub_categoryLevel2=indoorpools`, `bounds`, `pub_guestallowed=N,`;
+it ignores `address` without `bounds`, `seats`, and returns "No results" for any
+`dates=` (date field dropped). Hero search uses the marketplace's own
+`/api/geocode-suggest` (US gazetteer, no third party). Hero price is a config constant
+($40, review 2026-10-09). Charge timing: request flow pre-authorizes then captures on
+accept; instant-book listings (68/124) capture at checkout via operator-accept, so the
+third trust line stays a placeholder. Phone: 17.9 → 9.3 screens; CLS 0.054.

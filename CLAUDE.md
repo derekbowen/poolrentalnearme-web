@@ -129,6 +129,12 @@ process ran on the right one from memory. `.env` and `dump.pm2` now match the li
 process (proven by hash) and are mode 600; keep it that way: after any env change,
 `pm2 restart fresh-web --update-env && pm2 save`, then re-check `pm2 env 0` names.
 
+**EAST compression** — WEST proxies `/` and `/fw-assets` to EAST over HTTP/1.0, so EAST's
+nginx gzip (which needs HTTP/1.1) never applies to browser traffic; the 925 KB bundle
+shipped uncompressed for months. Compression lives in WEST's `nginx.conf` (`gzip_types`
++ `gzip_proxied any`), not on EAST. Homepage host CTAs go straight to `/wizard/`; the
+`/l/draft/0000…/new/details` URL is a 302 to it.
+
 **Session cookies** — `VITE_SHARETRIBE_USING_SSL` is a **build-time** var baked
 into the client bundle; setting it only in the container does nothing (this is
 why the first c158 flip aborted). Both `src/config/settings.js` and

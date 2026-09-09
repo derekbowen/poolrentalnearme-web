@@ -19,7 +19,7 @@
       // figure while src/config/insurance.config.js has verified:false; and it named
       // a carrier the policy record does not. Deliberately NOT replaced with another
       // carrier, amount or protection claim. See docs/INSURANCE_CLAIM_INVENTORY.md.
-      "description": "U.S. marketplace for renting private swimming pools by the hour. 0% host fees through 2026.",
+      "description": "U.S. marketplace for renting private swimming pools by the hour. 0% host fees, permanently.",
       "sameAs": ["https://apps.apple.com/us/app/id6737762373"]
     };
     var s = document.createElement("script");
@@ -143,15 +143,15 @@
   } else if (fam === "publicpools") {
     line1 = "Own a pool nearby? Rent it by the hour →";
     line2 = "Talk to the founder: Call or text " + PHONE_DISPLAY;
-    badge = "0% fees through 2026";
+    badge = "0% host fees";
   } else if (fam === "city") {
     line1 = "Own a pool in " + city + "? Start earning →";
     line2 = "Talk to the founder: Call or text " + PHONE_DISPLAY;
-    badge = "0% fees through 2026";
+    badge = "0% host fees";
   } else {
     line1 = "Own a pool? Earn money hosting →";
     line2 = "Talk to the founder: Call or text " + PHONE_DISPLAY;
-    badge = "0% fees through 2026";
+    badge = "0% host fees";
   }
   var hostUrl = "/p/hosting?utm_source=floating_cta&utm_medium=site&utm_campaign=host_recruit&utm_content=" + fam + (city ? "_" + encodeURIComponent(city) : "");
 

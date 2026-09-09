@@ -1,0 +1,683 @@
+--- /root/east-backups/homepage-20260909T214223Z/home-page.tsx	2026-09-09 02:04:25.062991325 +0000
++++ /home/ubuntu/fresh-web/src/components/home-page.tsx	2026-09-09 21:42:23.657196691 +0000
+@@ -1,7 +1,6 @@
+ import { lazy, Suspense, useEffect, useState } from "react";
+ import { SiteHeader, SiteFooter } from "@/components/site-layout";
+ 
+-import { ListingCard } from "@/components/listing-card";
+ import { ErrorBoundary } from "@/components/error-boundary";
+ import type { ListingSummary } from "@/server/sharetribe.functions";
+ import type { HomeCity, HomeData } from "@/server/home-data.functions";
+@@ -25,7 +24,9 @@
+ 
+ const NEARBY_RADIUS_MILES = 500;
+ 
+-// Real courses from the `courses` table — link straight to /p/course/{slug}.
++type CuratedListing = NonNullable<HomeData["curated"]>[number];
++
++// Real courses from the `courses` table — link straight to /p/elearning-academy-{slug}.
+ // Hand-picked to only include "rich" courses (cover image + video + long-form content)
+ // so every tile leads to a fully-populated lesson page, not a stub.
+ const FEATURED_OCCASIONS = [
+@@ -133,6 +134,7 @@
+   const cities = Array.isArray(safe.cities) ? safe.cities : [];
+   const cityCount = typeof safe.cityCount === "number" ? safe.cityCount : cities.length;
+   void safe.categories; // categories now rendered by static PoolTypeGrid below
++  void cityCount; // heading is count-free; the directory link carries the full list
+   const rawListings = Array.isArray(safe.listings) ? safe.listings : [];
+   // distanceMiles is computed server-side from Cloudflare geo headers, which
+   // may differ between the upstream SSR request (proxied via /landing-page)
+@@ -142,6 +144,23 @@
+   const listings = hydrated
+     ? rawListings
+     : rawListings.map((l) => ({ ...l, distanceMiles: null }));
++  const curated: CuratedListing[] = Array.isArray(safe.curated) ? safe.curated : [];
++  // Curated spa / heated / indoor picks lead the inventory row. If that fetch
++  // failed, fall back to the newest generic listings (same all-in price math).
++  const inventory: CuratedListing[] =
++    curated.length > 0
++      ? curated
++      : listings
++          .filter((l: ListingSummary) => !HIDE_LISTING_RE.test(l.title || ""))
++          .slice(0, 9)
++          .map((l: ListingSummary) => ({
++            ...l,
++            allInCents: l.price ? Math.round((l.price.amount / 100) * 1.15 * 100) : null,
++            hasPriceVariants: false,
++            guests: null,
++            spa: null,
++            category: null,
++          }));
+   const rawNearby = (safe.nearby && typeof safe.nearby === "object" ? safe.nearby : null) ?? {
+     city: null,
+     region: null,
+@@ -208,7 +227,7 @@
+                 Find a pool near me&nbsp;&nbsp;&rarr;
+               </a>
+               <a
+-                href="/l/draft/00000000-0000-0000-0000-000000000000/new/details"
++                href="/wizard/"
+                 aria-label="List your pool — keep 100%, zero host fees"
+                 className="inline-flex min-h-12 items-center justify-center rounded-full border-2 border-white/90 px-8 py-3 text-base font-semibold text-white transition-transform hover:scale-[1.02] sm:text-lg"
+               >
+@@ -244,7 +263,7 @@
+             <div className="mt-3.5 flex flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-5">
+               <a href="/p/elearning-academy-migrating-from-swimply-to-prnm-complete-switch-guide" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline">Switching from Swimply &rarr;</a>
+               <a href="/p/elearning-academy-multi-platform-hosting-cross-listing-prnm-swimply-peerspace" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline">Cross-listing guide &rarr;</a>
+-              <a href="/l/draft/00000000-0000-0000-0000-000000000000/new/details" className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-glow">List your pool &rarr;</a>
++              <a href="/wizard/" className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-glow">List your pool &rarr;</a>
+             </div>
+           </div>
+         </section>
+@@ -278,7 +297,7 @@
+             </p>
+             <div className="mt-7">
+               <a
+-                href="/l/draft/00000000-0000-0000-0000-000000000000/new/details"
++                href="/wizard/"
+                 aria-label="List your pool for free"
+                 className="inline-flex items-center justify-center rounded-full bg-white px-9 py-4 text-base font-bold text-[#0B4A6F] shadow-xl transition-transform hover:scale-[1.03] sm:text-lg"
+               >
+@@ -286,8 +305,8 @@
+               </a>
+             </div>
+             <p className="mx-auto mt-6 max-w-2xl text-[11px] leading-relaxed text-white/70 sm:text-xs">
+-              Hosts never pay a fee. We make money from one clear service fee guests
+-              booking, and 24/7 support. Hosts are the business&nbsp;&mdash; we don&rsquo;t tax the business.{" "}
++              Hosts never pay a fee. We make money from one clear service fee guests pay at
++              checkout, which covers payment processing and 24/7 support. Hosts are the business&nbsp;&mdash; we don&rsquo;t tax the business.{" "}
+               <a
+                 href="/legal-and-compliance/terms-of-service-pool-rental-near-me"
+                 className="underline underline-offset-2 hover:text-white"
+@@ -309,7 +328,7 @@
+         <section aria-label="Two ways to use Pool Rental Near Me" className="bg-background">
+           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+             <h2 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+-              Two ways to fall for summer.
++              Two ways to fall for a pool.
+             </h2>
+             <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">
+               Book a swimming pool rental as a guest, or list your private pool — hosts like Katy charge $100/hour, and you keep all of it.
+@@ -324,7 +343,7 @@
+                 <span className="text-4xl" aria-hidden>🏖</span>
+                 <h3 className="mt-3 text-xl font-semibold text-foreground">I'm going swimming</h3>
+                 <p className="mt-2 text-sm text-muted-foreground">
+-                  Rent a private swimming pool by the hour and find private pools near you — simple, affordable, and the best Saturday your kids will remember this summer.
++                  Rent a private swimming pool by the hour and find private pools near you — simple, affordable, and the best Saturday your kids will remember.
+                 </p>
+                 <span
+                   className="mt-auto inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white"
+@@ -369,11 +388,11 @@
+             </h2>
+             <div className="mx-auto mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:gap-4 md:max-w-4xl md:grid-cols-3">
+               {[
+-                { emoji: "👰", label: "Bachelorette", href: "/s?event=bachelorette", aria: "bachelorette parties" },
+-                { emoji: "🎂", label: "Birthday", href: "/s?event=birthday", aria: "birthday parties" },
+-                { emoji: "👨‍👩‍👧", label: "Family Day", href: "/s?event=family-day", aria: "family days" },
+-                { emoji: "🏊", label: "Swim Lesson", href: "/s?event=swim-lesson", aria: "swim lessons" },
+-                { emoji: "🎉", label: "Pool Party", href: "/s?event=pool-party", aria: "pool parties" },
++                { emoji: "👰", label: "Bachelorette", href: "/s?keywords=bachelorette", aria: "bachelorette parties" },
++                { emoji: "🎂", label: "Birthday", href: "/s?keywords=birthday", aria: "birthday parties" },
++                { emoji: "👨‍👩‍👧", label: "Family Day", href: "/s?keywords=family", aria: "family days" },
++                { emoji: "🏊", label: "Swim Lesson", href: "/s?keywords=lesson", aria: "swim lessons" },
++                { emoji: "🎉", label: "Pool Party", href: "/s?keywords=party", aria: "pool parties" },
+                 { emoji: "🌤", label: "Just Tuesday", href: "/s", aria: "any day of the week" },
+               ].map((t) => (
+                 <a
+@@ -397,12 +416,12 @@
+           <div className="relative mx-auto h-[300px] w-full max-w-3xl px-4 py-2">
+             <div className="absolute left-4 top-8 w-[52%] -rotate-3">
+               <div className="overflow-hidden rounded-[22px] bg-white p-1.5" style={{ boxShadow: "0 6px 18px rgba(34,48,60,0.14)" }}>
+-                <img src={loveHero} alt="Sunlit backyard pool" loading="lazy" className="h-[190px] w-full rounded-[18px] object-cover" />
++                <img src={loveHero} alt="Sunlit backyard pool" width={800} height={800} loading="lazy" decoding="async" className="h-[190px] w-full rounded-[18px] object-cover" />
+               </div>
+             </div>
+             <div className="absolute right-4 top-0 w-[44%] rotate-2">
+               <div className="relative overflow-hidden rounded-[22px] bg-white p-1.5" style={{ boxShadow: "0 6px 18px rgba(34,48,60,0.14)" }}>
+-                <img src={loveFriends} alt="Friends laughing poolside" loading="lazy" className="h-[230px] w-full rounded-[18px] object-cover" />
++                <img src={loveFriends} alt="Friends laughing poolside" width={800} height={447} loading="lazy" decoding="async" className="h-[230px] w-full rounded-[18px] object-cover" />
+                 <span className="absolute left-3 top-3 rounded-full px-3 py-1.5 text-[12px] font-extrabold text-white" style={{ backgroundColor: "#0EA5E9" }}>
+                   Booked in 2 taps
+                 </span>
+@@ -449,22 +468,6 @@
+               >
+                 National Law Review
+               </a>
+-              <a
+-                href="https://lifestyle.myeaglecountry.com/story/194280/two-truck-drivers-built-a-national-pool-rental-marketplace-on-their-off-hours/"
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                className="font-serif text-base font-semibold text-foreground/80 transition-colors hover:text-foreground"
+-              >
+-                Eagle Country
+-              </a>
+-              <a
+-                href="https://lifestyle.kbew98country.com/story/194285/two-truck-drivers-built-a-national-pool-rental-marketplace-on-their-off-hours/"
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                className="font-serif text-base font-semibold text-foreground/80 transition-colors hover:text-foreground"
+-              >
+-                KBEW
+-              </a>
+             </div>
+           </div>
+         </section>
+@@ -596,13 +599,15 @@
+                   {visibleOccasions.slice(0, 4).map((o, idx) => (
+                     <a
+                       key={o.slug}
+-                      href={`/p/course/${o.slug}`}
++                      href={`/p/elearning-academy-${o.slug}`}
+                       className={`group relative overflow-hidden rounded-2xl shadow-md transition-all hover:-translate-y-1 hover:shadow-xl ${idx % 2 === 0 ? "translate-y-4" : ""}`}
+                     >
+                       <div className="aspect-square overflow-hidden">
+                         <img
+                           src={ACADEMY_HERO_MAP[o.img]}
+                           alt={`${o.title} hosting course`}
++                          width={800}
++                          height={440}
+                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                           loading="lazy"
+                         />
+@@ -632,7 +637,7 @@
+             </Suspense>
+           </ErrorBoundary>
+         ) : (
+-          listings.length > 0 && (
++          inventory.length > 0 && (
+             <ErrorBoundary name="NearbyListingsSection" silent>
+               <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                 <div className="flex flex-col items-center text-center">
+@@ -642,18 +647,20 @@
+                       : "Rent a pool near you"}
+                   </h2>
+                   <p className="mt-3 max-w-xl text-muted-foreground">
+-                    Real backyards from real hosts. Pick one and you could be poolside this weekend.
++                    Real backyards from real hosts — heated pools, spas and indoor swims included. Prices are per hour, all fees in.
+                   </p>
+                 </div>
+-                <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
++                <div className="-mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+                   <a
+                     href="/p/la-saltwater-featured"
+-                    className="group relative block overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg"
++                    className="group relative block w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg sm:w-auto sm:max-w-none"
+                   >
+                     <div className="aspect-[4/3] overflow-hidden bg-muted">
+                       <img
+                         src={laSaltwaterFeatured}
+                         alt="La Saltwater Pool & Spa, Sherman Oaks"
++                        width={400}
++                        height={300}
+                         loading="lazy"
+                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                       />
+@@ -680,7 +687,7 @@
+                   </a>
+                   <a
+                     href="/p/jan"
+-                    className="group relative block overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg"
++                    className="group relative block w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg sm:w-auto sm:max-w-none"
+                   >
+                     <div className="aspect-[4/3] overflow-hidden bg-muted">
+                       {data?.janFeatured?.heroImage ? (
+@@ -716,18 +723,11 @@
+                       </div>
+                     </div>
+                   </a>
+-                  {listings
+-                    .filter((l: ListingSummary) => !HIDE_LISTING_RE.test(l.title || ""))
+-                    .slice(0, 11)
+-                    .map((l: ListingSummary) => (
+-                      <ErrorBoundary
+-                        key={l.id}
+-                        name={`ListingCard:${l.id}`}
+-                        fallback={null}
+-                      >
+-                        <ListingCard listing={l} />
+-                      </ErrorBoundary>
+-                    ))}
++                  {inventory.map((l) => (
++                    <ErrorBoundary key={l.id} name={`FeaturedPoolCard:${l.id}`} fallback={null}>
++                      <FeaturedPoolCard listing={l} />
++                    </ErrorBoundary>
++                  ))}
+                 </div>
+                 <div className="mt-10 text-center">
+                   <a
+@@ -750,7 +750,7 @@
+                 Questions? <span className="text-primary">We've thought of everything.</span>
+               </h2>
+               <p className="mt-3 text-muted-foreground">
+-                The five things first-time renters and hosts ask us most.
++                The questions first-time renters and hosts ask us most.
+               </p>
+               <div className="mt-8 space-y-3">
+                 {HOMEPAGE_FAQS.map((f, i) => (
+@@ -842,7 +842,7 @@
+         {cities.length > 0 && (
+           <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+-              Pool rentals in {cityCount.toLocaleString("en-US")}+ U.S. cities
++              Pool rentals by city
+             </h2>
+             <p className="mt-2 text-muted-foreground">
+               Find a private pool in your zip code, or browse the full{" "}
+@@ -855,11 +855,11 @@
+               directory.
+             </p>
+             <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+-              {cities.map((c: HomeCity) => (
++              {cities.map((c: HomeCity, i: number) => (
+                 <a
+                   key={c.slug}
+                   href={`/p/${c.slug}`}
+-                  className="text-sm text-muted-foreground transition-colors hover:text-primary hover:underline"
++                  className={`text-sm text-muted-foreground transition-colors hover:text-primary hover:underline${i >= 24 ? " hidden sm:block" : ""}`}
+                 >
+                   {c.name}, {c.state_code}
+                 </a>
+@@ -873,7 +873,7 @@
+                 Find a pool near you
+               </a>
+               <a
+-                href="/l/draft/00000000-0000-0000-0000-000000000000/new/details"
++                href="/wizard/"
+                 className="inline-flex items-center justify-center rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"
+               >
+                 List your pool
+@@ -905,7 +905,7 @@
+               </p>
+             </div>
+             <a
+-              href="/l/draft/00000000-0000-0000-0000-000000000000/new/details"
++              href="/wizard/"
+               className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-7 py-3 text-base font-semibold text-primary shadow-lg transition-transform hover:scale-105"
+             >
+               List your pool →
+@@ -972,24 +972,22 @@
+ import poolTypeKitchen from "@/assets/pool-types/outdoor-kitchen.jpg";
+ import poolTypeFire from "@/assets/pool-types/fire-pit.jpg";
+ import poolTypePet from "@/assets/pool-types/pet-friendly.jpg";
+-import poolTypeAccessible from "@/assets/pool-types/accessible.jpg";
+ import poolTypeTheater from "@/assets/pool-types/outdoor-theater.jpg";
+ import poolTypeIndoor from "@/assets/pool-types/indoor.jpg";
+-import poolTypeInfinity from "@/assets/pool-types/infinity.jpg";
+ 
+-const POOL_TYPES: { name: string; slug: string; img: string }[] = [
+-  { name: "Saltwater Pools", slug: "saltwater", img: poolTypeSalt },
+-  { name: "Heated Pools", slug: "heated", img: poolTypeHeated },
+-  { name: "Resort-Style Pools", slug: "resort-style", img: poolTypeResort },
+-  { name: "Lap Pools", slug: "lap", img: poolTypeLap },
+-  { name: "Pools with Hot Tubs", slug: "hot-tub", img: poolTypeHotTub },
+-  { name: "Pools with Outdoor Kitchens", slug: "outdoor-kitchen", img: poolTypeKitchen },
+-  { name: "Pools with Fire Pits", slug: "fire-pit", img: poolTypeFire },
+-  { name: "Pet-Friendly Pools", slug: "pet-friendly", img: poolTypePet },
+-  { name: "Wheelchair-Accessible Pools", slug: "accessible", img: poolTypeAccessible },
+-  { name: "Pools with Outdoor Theaters", slug: "outdoor-theater", img: poolTypeTheater },
+-  { name: "Indoor Pools", slug: "indoor", img: poolTypeIndoor },
+-  { name: "Infinity Pools", slug: "infinity", img: poolTypeInfinity },
++// Each tile links to a marketplace search that actually narrows results
++// (keyword search, or the indoor category). Result counts verified 2026-09-09.
++const POOL_TYPES: { name: string; href: string; img: string }[] = [
++  { name: "Saltwater Pools", href: "/s?keywords=saltwater", img: poolTypeSalt },
++  { name: "Heated Pools", href: "/s?keywords=heated", img: poolTypeHeated },
++  { name: "Resort-Style Pools", href: "/s?keywords=resort", img: poolTypeResort },
++  { name: "Lap Pools", href: "/s?keywords=lap", img: poolTypeLap },
++  { name: "Pools with Hot Tubs", href: "/s?keywords=hot%20tub", img: poolTypeHotTub },
++  { name: "Pools with Outdoor Kitchens", href: "/s?keywords=kitchen", img: poolTypeKitchen },
++  { name: "Pools with Fire Pits", href: "/s?keywords=fire%20pit", img: poolTypeFire },
++  { name: "Pet-Friendly Pools", href: "/s?keywords=pet", img: poolTypePet },
++  { name: "Pools with Outdoor Theaters", href: "/s?keywords=theater", img: poolTypeTheater },
++  { name: "Indoor Pools", href: "/s?pub_categoryLevel1=pool&pub_categoryLevel2=indoorpools", img: poolTypeIndoor },
+ ];
+ 
+ function HowToRentSection() {
+@@ -1057,18 +1055,20 @@
+           Browse by pool type
+         </h2>
+         <p className="mt-2 text-muted-foreground">
+-          Heated pools, hot tubs, infinity edges, fire pits, outdoor theaters — find your vibe.
++          Heated pools, hot tubs, saltwater, fire pits, outdoor theaters — find your vibe.
+         </p>
+-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
++        <div className="-mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-4 lg:grid-cols-5">
+           {POOL_TYPES.map((t) => (
+             <a
+-              key={t.slug}
+-              href={`/s?pub_category=${encodeURIComponent(t.slug)}`}
+-              className="group relative aspect-[4/5] overflow-hidden rounded-2xl shadow-sm ring-1 ring-border transition-transform duration-200 hover:scale-[1.03] hover:shadow-lg"
++              key={t.name}
++              href={t.href}
++              className="group relative aspect-[4/5] w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl shadow-sm ring-1 ring-border transition-transform duration-200 hover:scale-[1.03] hover:shadow-lg sm:w-auto"
+             >
+               <img
+                 src={t.img}
+                 alt={t.name}
++                width={640}
++                height={800}
+                 loading="lazy"
+                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+               />
+@@ -1086,3 +1086,69 @@
+   );
+ }
+ 
++// --- Homepage inventory card: marketplace display price (all-in, cents kept) ---
++function formatAllIn(cents: number): string {
++  const dollars = cents / 100;
++  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
++}
++
++function spaLabel(spa: { name: string; priceCents: number }): string {
++  // Host-listed add-on amount, quoted as listed (not part of the hourly price).
++  return spa.priceCents > 0 ? `Spa add-on +${formatAllIn(spa.priceCents)}` : "Spa included";
++}
++
++function FeaturedPoolCard({ listing }: { listing: CuratedListing }) {
++  const place = [listing.city, listing.state].filter(Boolean).join(", ");
++  const feature = listing.spa
++    ? spaLabel(listing.spa)
++    : listing.category === "indoorpools"
++      ? "Indoor pool"
++      : listing.category === "heatedpools"
++        ? "Heated pool"
++        : null;
++  const meta = [place || null, listing.guests ? `Fits ${listing.guests}` : null, feature].filter(Boolean);
++  return (
++    <a
++      href={`/l/${listing.slug}/${listing.id}`}
++      className="group relative block w-[78vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg sm:w-auto sm:max-w-none"
++    >
++      <div className="aspect-[4/3] overflow-hidden bg-muted">
++        {listing.imageUrl ? (
++          <img
++            src={listing.imageUrl}
++            alt={listing.title}
++            width={800}
++            height={533}
++            loading="lazy"
++            decoding="async"
++            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
++          />
++        ) : (
++          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
++            No image
++          </div>
++        )}
++      </div>
++      <div className="p-4">
++        <h3 className="line-clamp-1 text-base font-semibold text-foreground">{listing.title}</h3>
++        {meta.length > 0 && (
++          <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{meta.join(" · ")}</p>
++        )}
++        <div className="mt-3 flex items-center justify-between gap-3">
++          {listing.allInCents != null ? (
++            <p className="text-sm font-semibold text-foreground">
++              {listing.hasPriceVariants ? "from " : ""}
++              {formatAllIn(listing.allInCents)}{" "}
++              <span className="font-normal text-muted-foreground">/ hour, all-in</span>
++            </p>
++          ) : (
++            <span />
++          )}
++          <span className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
++            Book now →
++          </span>
++        </div>
++      </div>
++    </a>
++  );
++}
+--- /root/east-backups/homepage-20260909T214223Z/home-data.functions.ts	2026-06-20 07:44:59.661120272 +0000
++++ /home/ubuntu/fresh-web/src/server/home-data.functions.ts	2026-09-09 21:42:23.656944584 +0000
+@@ -1,10 +1,31 @@
+ import { createServerFn } from "@tanstack/react-start";
+ import { getRequest } from "@tanstack/react-start/server";
+ import { supabaseAdmin } from "@/integrations/supabase/client.server";
+-import { searchListings, fetchShareListing } from "@/server/sharetribe.server";
++import {
++  searchListings,
++  fetchShareListing,
++  fetchListingsByIds,
++  type CuratedListing,
++} from "@/server/sharetribe.server";
+ import type { ListingSummary } from "@/server/sharetribe.functions";
+ 
+ const JAN_LISTING_ID = "6a1a4c13-02fe-458e-89ba-e33b5fc7612b";
++
++// Homepage inventory row: hand-picked spa-first and indoor listings (verified
++// 2026-09-09). Order here is display order. Only published listings render, and
++// every field on the card (title, photo, city/state, guest limit, price, first
++// amenity) is read from the live marketplace record at request time.
++const CURATED_LISTING_IDS = [
++  "69da42df-c2c8-4d20-ac98-889e5e0af82c", // Luxury Indoor Pool (indoor, hot tub add-on)
++  "69fb6104-fdb3-44a3-97b5-026928bb6d90", // Tropical Oasis — Patio, Pool & Spa
++  "6a4221ff-511f-43b9-9cd4-cb624aef210b", // My Backyard Oasis
++  "6a90f031-5164-4945-af2e-f79cb199e3f9", // Fillmore's Exclusive Tropical Resort Living
++  "685ed1bc-d63b-4004-9123-aa3e41dc8fd7", // Private Heated Saltwater Oasis w/ hot tub
++  "687891ff-95ed-432b-8e91-125fd5095786", // Tropical Paradise Heated Pool and Spa
++  "6a713580-85d9-43eb-8f84-35a431128c2f", // The Backyard Oasis (indoor)
++  "68816fa0-2ddf-40c7-9cc9-fe673a156a9a", // Indoor NYC Pool (indoor)
++  "68bbb61e-990d-4147-8244-c61db6ad9a30", // Tiki Oasis (spa add-on)
++];
+ import {
+   ACADEMY_SLUGS,
+   ACADEMY_OCCASION_SLUGS,
+@@ -49,6 +70,8 @@
+   /** Jan's TheSwimpark featured-pool card data (hero image only). */
+   /** Jan's TheSwimpark featured-pool card data (hero image only). */
+   janFeatured?: { heroImage: string | null } | null;
++  /** Hand-picked spa / heated / indoor listings for the homepage inventory row, in display order. */
++  curated?: CuratedListing[];
+ };
+ 
+ const emptyListingResult = { total: 0, listings: [], page: 1, totalPages: 0 };
+@@ -109,7 +132,7 @@
+       }
+     };
+ 
+-    const [cities, cityCountRes, categories, featuredResult, nearbyResult, academyRes, janListing] = await Promise.all([
++    const [cities, cityCountRes, categories, featuredResult, nearbyResult, academyRes, janListing, curated] = await Promise.all([
+       safe(
+         Promise.resolve(
+           supabaseAdmin
+@@ -117,7 +140,7 @@
+             .select("slug, name, state_code")
+             .eq("is_published", true)
+             .order("name")
+-            .limit(60),
++            .limit(72),
+         ),
+         "cities query",
+         { data: [] as HomeCity[] } as { data: HomeCity[] | null },
+@@ -160,6 +183,7 @@
+         [] as { slug: string | null; body_markdown: string | null }[],
+       ),
+       safe(fetchShareListing(JAN_LISTING_ID), "Jan featured listing", null),
++      safe(fetchListingsByIds(CURATED_LISTING_IDS), "curated listings", [] as CuratedListing[]),
+     ]);
+ 
+     // Strip listings missing a real image — they render as a blank "no image"
+@@ -247,7 +271,27 @@
+       );
+     }
+ 
+-    const cityList = (cities.data ?? []) as HomeCity[];
++    // Drop city links whose page now redirects (content_pages.redirect_to) and
++    // duplicate labels (e.g. "Boston, MA" listed twice), then cap the grid at 60.
++    let cityList = (cities.data ?? []) as HomeCity[];
++    try {
++      const { data: redirected } = await supabaseAdmin
++        .from("content_pages")
++        .select("slug")
++        .in("slug", cityList.map((c) => c.slug))
++        .not("redirect_to", "is", null);
++      const dead = new Set((redirected ?? []).map((r: { slug: string | null }) => r.slug));
++      const seen = new Set<string>();
++      cityList = cityList.filter((c) => {
++        const label = `${c.name}, ${c.state_code}`;
++        if (dead.has(c.slug) || seen.has(label)) return false;
++        seen.add(label);
++        return true;
++      });
++    } catch (err) {
++      console.error("homepage city redirect filter failed:", err);
++    }
++    cityList = cityList.slice(0, 60);
+     return {
+       cities: cityList,
+       cityCount: cityCountRes.count ?? cityList.length,
+@@ -262,6 +306,7 @@
+       academyAvailable,
+       academyHealth,
+       janFeatured: janListing ? { heroImage: janListing.heroImage } : null,
++      curated,
+     };
+   } catch (err) {
+     console.error("homepage getHomeData fatal failure, returning empty data:", err);
+--- /root/east-backups/homepage-20260909T214223Z/sharetribe.server.ts	2026-06-20 07:44:59.663120273 +0000
++++ /home/ubuntu/fresh-web/src/server/sharetribe.server.ts	2026-09-09 21:51:15.845859783 +0000
+@@ -673,3 +673,97 @@
+   }
+ }
+ 
++// ---------- Curated homepage listings (fetched by id, marketplace display price) ----------
++
++/**
++ * Guest-facing display price = host price + the mandatory 15% guest booking fee,
++ * rounded to the cent. Same math as the marketplace's ListingCard
++ * (poolrentalnearme-web src/util/currency.js priceWithBookingFee). Keep in sync
++ * with the Console customer-commission percentage.
++ */
++export const CUSTOMER_BOOKING_FEE_PCT = 15;
++
++export interface CuratedListing extends ListingSummary {
++  /** All-in hourly price in cents (host price + guest booking fee), or null. */
++  allInCents: number | null;
++  /** True when the listing has more than one price variant ("from" pricing). */
++  hasPriceVariants: boolean;
++  /** Property guest limit from publicData.guestallowed, if the host set one. */
++  guests: number | null;
++  /** The listing's first amenity when it is a spa / hot tub (name + host add-on price). */
++  spa: { name: string; priceCents: number } | null;
++  /** Sharetribe categoryLevel2 (e.g. "indoorpools", "heatedpools"), if set. */
++  category: string | null;
++}
++
++const SPA_AMENITY_RE = /hot\s*tub|\bspa\b|jacuzzi/i;
++
++/**
++ * Fetch specific published listings by id (Marketplace API `ids` filter) and
++ * return them in the order requested. Missing / unpublished ids are dropped.
++ * Everything on the card comes from the live record — nothing is hardcoded.
++ */
++export async function fetchListingsByIds(ids: string[]): Promise<CuratedListing[]> {
++  if (ids.length === 0) return [];
++  try {
++    const res = await integGet<STResponse<STListing[]>>(`/listings/query`, {
++      ids: ids.join(","),
++      perPage: ids.length,
++      ...IMAGE_VARIANT_PARAMS,
++    });
++    const byId = new Map<string, CuratedListing>();
++    for (const l of res.data ?? []) {
++      if (l.attributes.state !== "published") continue;
++      const base = summarize(l, res.included);
++      const pd = (l.attributes.publicData ?? {}) as Record<string, unknown>;
++      const loc = (pd.location as Record<string, unknown> | undefined) ?? {};
++      // City / state fallback from the address string. Hosts often enter just
++      // "Pflugerville, TX 78660" or "Fillmore, CA" — a two-part address whose
++      // second part is a state code is city + state, never a street, so it is
++      // safe to show. Anything longer keeps the structured fields only.
++      let city = base.city;
++      let state = base.state;
++      if (typeof loc.address === "string") {
++        const addr = loc.address as string;
++        const parts = addr.split(",").map((p) => p.trim()).filter(Boolean);
++        const stateZip = /^([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?$/;
++        if (!city && parts.length === 2 && stateZip.test(parts[1])) city = parts[0];
++        if (!state) {
++          const m = addr.match(/,\s*([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?\s*(?:,|$)/);
++          if (m) state = m[1];
++        }
++      }
++      if (state && state.length > 2) state = STATE_ABBR[state.toLowerCase()] ?? state;
++      const amenities = Array.isArray(pd.amenities)
++        ? (pd.amenities as Array<Record<string, unknown>>)
++        : [];
++      const first = amenities[0];
++      const firstName = first ? String(first.name ?? "").trim() : "";
++      const spa =
++        first && SPA_AMENITY_RE.test(firstName)
++          ? {
++              name: firstName,
++              priceCents: Number((first.price as { amount?: number } | undefined)?.amount ?? 0),
++            }
++          : null;
++      const variants = Array.isArray(pd.priceVariants) ? (pd.priceVariants as unknown[]) : [];
++      const price = l.attributes.price ?? null;
++      byId.set(l.id, {
++        ...base,
++        city,
++        state,
++        allInCents: price
++          ? Math.round((price.amount / 100) * (1 + CUSTOMER_BOOKING_FEE_PCT / 100) * 100)
++          : null,
++        hasPriceVariants: pd.priceVariationsEnabled === true && variants.length > 1,
++        guests: typeof pd.guestallowed === "number" ? (pd.guestallowed as number) : null,
++        spa,
++        category: typeof pd.categoryLevel2 === "string" ? (pd.categoryLevel2 as string) : null,
++      });
++    }
++    return ids.map((id) => byId.get(id)).filter((x): x is CuratedListing => Boolean(x));
++  } catch (err) {
++    console.error("fetchListingsByIds error:", err);
++    return [];
++  }
++}
+--- /root/east-backups/homepage-20260909T214223Z/site-layout.tsx	2026-08-12 22:03:57.201629418 +0000
++++ /home/ubuntu/fresh-web/src/components/site-layout.tsx	2026-09-09 21:42:23.657440501 +0000
+@@ -73,7 +73,7 @@
+ const APP_NAV: NavLink[] = [
+ ];
+ 
+-const LIST_SPACE_HREF = "/l/draft/00000000-0000-0000-0000-000000000000/new/details";
++const LIST_SPACE_HREF = "/wizard/";
+ 
+ const ACCOUNT_LINKS: NavLink[] = [
+   { label: "Inbox", href: "/inbox/sales" },
+@@ -560,7 +560,7 @@
+           <div className="mt-4 flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+             <span>{data.bottom_text || `© ${FOOTER_YEAR} PRNM CORP`}</span>
+             <div className="flex items-center gap-4">
+-              <a href="/public-pools" className="hover:text-primary">Public Pools</a>
++              <a href="/public-pools/" className="hover:text-primary">Public Pools</a>
+               <a href="/p/blog" className="hover:text-primary">Blog</a>
+               <a href="/sitemap.xml" className="hover:text-primary">Sitemap</a>
+             </div>
+--- /root/east-backups/homepage-20260909T214223Z/site-footer-defaults.ts	2026-07-31 18:49:50.632119764 +0000
++++ /home/ubuntu/fresh-web/src/lib/site-footer-defaults.ts	2026-09-09 21:42:23.656817465 +0000
+@@ -42,11 +42,11 @@
+     { label: "Pool Rental Near Me vs Vrbo", href: "/p/vrbo-vs-pool-rental-near-me" },
+   ],
+   host_links: [
+-    { label: "List Your Pool for Free", href: "/l/draft/00000000-0000-0000-0000-000000000000/new/details" },
++    { label: "List Your Pool for Free", href: "/wizard/" },
+     { label: "How Hosting Works", href: "/p/hosting" },
+     { label: "Find Locations Near You", href: "/p/all-locations" },
+     { label: "Earnings Calculator", href: "/p/earnings-calculator" },
+-    { label: "Host Pro Tools", href: "/p/free-host-tools" },
++    { label: "Host Pro Tools", href: "/p/pool-host-tools" },
+     { label: "Host Connect", href: "https://connect.poolrentalnearme.com" },
+     { label: "HOA Navigation Guide", href: "/p/elearning-academy-hoa-navigation-guide-pool-hosts" },
+     { label: "Host Make More $$$", href: "/p/hosting" },
+@@ -55,7 +55,7 @@
+   company_links: [
+     { label: "About", href: "/p/how-it-works" },
+     { label: "Careers", href: "/p/careers" },
+-    { label: "Terms", href: "/p/terms-of-service" },
++    { label: "Terms", href: "/terms-of-service" },
+     { label: "Privacy", href: "/p/privacy-policy" },
+     { label: "Video Chat Support", href: "https://meetn.com/poolrentalnearme" },
+     { label: "Refer Pool Owners", href: "/p/affiliate" },

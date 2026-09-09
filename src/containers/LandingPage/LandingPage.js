@@ -59,6 +59,10 @@ const RED = '#dc2626';
 // /s links always use keyword search. The Console category ids are real (the duck queries them
 // for ranking) but /s ignores pub_categoryLevel1 while the category filter is disabled in
 // configSearch.js — a chip that promises "Heated" and returns all 124 pools is worse than no chip.
+// FOLLOW-UP (2026-09-09): keyword matching is a temporary functional fix. A title or description
+// containing "heated" does not guarantee the amenity, and /s?keywords= pages are noindex. The
+// long-term fix is structured filters (enable the category filter and set pub_categoryLevel1 on
+// listings) or dedicated indexable landing pages per pool type. See docs/HOMEPAGE_V4_FOLLOWUPS.md.
 const searchTo = (params) => ({ search: `?${stringify(params)}` });
 const searchLinkFor = (_categoryIds, { keywords }) => searchTo({ keywords });
 
@@ -126,10 +130,12 @@ export const LandingPageComponent = (props) => {
     : !usingFallback
       ? {
           color: GREEN,
-          text: `Live from the marketplace${
+          // totalItems counts published listings that match the query, not pools that are
+          // "online" or available right now, so the copy says exactly that.
+          text: `${
             Number.isInteger(totalListings) && totalListings > 0
-              ? ` · ${totalListings} pools online now`
-              : ''
+              ? `Explore ${totalListings} pools on the marketplace`
+              : 'Live from the marketplace'
           } · ranked for ${season.key}: ${order} · prices include all fees`,
         }
       : {

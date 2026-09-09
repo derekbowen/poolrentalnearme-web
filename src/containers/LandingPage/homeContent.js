@@ -128,9 +128,11 @@ export const KATY = {
   poster: IMG.katyVideoPoster,
 };
 
-// Verbatim from the on-record quote list served site-wide (ops/east/tools/cta.js, QUOTES).
-// Never paraphrase, extend or re-attribute one of these; if a better quote exists it has to be
-// added to that list first.
+// Testimonials: exact recorded wording only, character for character. Demarco and Katherine are
+// the strings in the on-record quote list (ops/east/tools/cta.js, QUOTES). Salty's wording and
+// punctuation were confirmed by Derek on 2026-09-09 (the cta.js copy carries an em dash where the
+// original message has a period). Names and locations appear only as the source records them.
+// Never paraphrase, extend or re-attribute one of these.
 export const NOTES = [
   {
     quote:
@@ -139,9 +141,9 @@ export const NOTES = [
     where: 'Queens, NY',
   },
   {
-    quote: 'Rock on, Derek — I see your hustle this year and it’s legit.',
+    quote: 'Rock on, Derek. I see your hustle this year and it’s legit.',
     name: 'Salty Without The Sharks',
-    where: 'Host · CA',
+    where: 'CA',
   },
   {
     quote: 'That is amazing that there are zero host fees!!',

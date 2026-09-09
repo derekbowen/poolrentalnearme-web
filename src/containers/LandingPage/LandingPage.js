@@ -56,12 +56,11 @@ const GREEN = '#16a34a';
 const AMBER = '#ff8a1f';
 const RED = '#dc2626';
 
-// /s links: real Console category ids when configured, keyword search as the crawlable fallback.
+// /s links always use keyword search. The Console category ids are real (the duck queries them
+// for ranking) but /s ignores pub_categoryLevel1 while the category filter is disabled in
+// configSearch.js — a chip that promises "Heated" and returns all 124 pools is worse than no chip.
 const searchTo = (params) => ({ search: `?${stringify(params)}` });
-const searchLinkFor = (categoryIds, { category, keywords }) =>
-  category && categoryIds[category]
-    ? searchTo({ pub_categoryLevel1: categoryIds[category] })
-    : searchTo({ keywords });
+const searchLinkFor = (_categoryIds, { keywords }) => searchTo({ keywords });
 
 const DATE_FORMAT = { weekday: 'short', month: 'short', day: 'numeric' };
 
@@ -78,6 +77,7 @@ const DATE_FORMAT = { weekday: 'short', month: 'short', day: 'numeric' };
 export const LandingPageComponent = (props) => {
   const {
     listings = [],
+    totalListings = null,
     fetchInProgress,
     fetchError,
     scrollingDisabled,
@@ -126,7 +126,11 @@ export const LandingPageComponent = (props) => {
     : !usingFallback
       ? {
           color: GREEN,
-          text: `Live from the marketplace · ${liveListings.length} pools online now · ranked for ${season.key}: ${order} · prices include all fees`,
+          text: `Live from the marketplace${
+            Number.isInteger(totalListings) && totalListings > 0
+              ? ` · ${totalListings} pools online now`
+              : ''
+          } · ranked for ${season.key}: ${order} · prices include all fees`,
         }
       : {
           color: fetchError ? RED : AMBER,
@@ -317,6 +321,7 @@ export const LandingPageComponent = (props) => {
 
 LandingPageComponent.propTypes = {
   listings: arrayOf(propTypes.listing),
+  totalListings: number,
   fetchInProgress: bool,
   fetchError: propTypes.error,
   scrollingDisabled: bool,
@@ -330,11 +335,18 @@ LandingPageComponent.propTypes = {
 };
 
 const mapStateToProps = (state) => {
-  const { listingIds = [], fetchInProgress, fetchError, categoryIds } = state.LandingPage || {};
+  const {
+    listingIds = [],
+    totalListings = null,
+    fetchInProgress,
+    fetchError,
+    categoryIds,
+  } = state.LandingPage || {};
   const { isAuthenticated } = state.auth;
   const { currentUser, currentUserHasListings, currentUserNotificationCount } = state.user;
   return {
     listings: getListingsById(state, listingIds),
+    totalListings,
     fetchInProgress,
     fetchError,
     categoryIds,

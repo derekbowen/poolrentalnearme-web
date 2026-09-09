@@ -128,24 +128,25 @@ export const KATY = {
   poster: IMG.katyVideoPoster,
 };
 
+// Verbatim from the on-record quote list served site-wide (ops/east/tools/cta.js, QUOTES).
+// Never paraphrase, extend or re-attribute one of these; if a better quote exists it has to be
+// added to that list first.
 export const NOTES = [
   {
     quote:
-      'I love you guys over at Pool Rental Near Me — the founder personally called me to make sure I was all right.',
+      'I love you guys over at Pool Rental Near Me — the founder and co-founder personally called me to make sure I’m all right.',
     name: 'Demarco',
     where: 'Queens, NY',
   },
   {
-    quote:
-      'Rock on, Derek — I see your hustle this year and it’s legit. My pool paid for our summer.',
+    quote: 'Rock on, Derek — I see your hustle this year and it’s legit.',
     name: 'Salty Without The Sharks',
     where: 'Host · CA',
   },
   {
-    quote:
-      'Eight kids, one cannonball contest, and a card that just worked. I did not touch a thing.',
-    name: 'Trish',
-    where: 'Riverside, CA',
+    quote: 'That is amazing that there are zero host fees!!',
+    name: 'Katherine',
+    where: 'Pool host',
   },
 ];
 

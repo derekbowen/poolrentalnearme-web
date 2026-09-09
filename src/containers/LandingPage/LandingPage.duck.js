@@ -24,6 +24,9 @@ export const HOMEPAGE_LISTINGS_ERROR = 'app/LandingPage/HOMEPAGE_LISTINGS_ERROR'
 
 const initialState = {
   listingIds: [],
+  // Marketplace-wide count of bookable published listings (meta.totalItems of the general
+  // query), not the page size — the homepage must never print the API page size as a count.
+  totalListings: null,
   categoryIds: { indoor: null, heated: null, night: null },
   fetchInProgress: false,
   fetchError: null,
@@ -40,7 +43,12 @@ export default function landingPageReducer(state = initialState, action = {}) {
         fetchError: null,
       };
     case HOMEPAGE_LISTINGS_SUCCESS:
-      return { ...state, listingIds: payload.listingIds, fetchInProgress: false };
+      return {
+        ...state,
+        listingIds: payload.listingIds,
+        totalListings: payload.totalListings,
+        fetchInProgress: false,
+      };
     case HOMEPAGE_LISTINGS_ERROR:
       return { ...state, fetchInProgress: false, fetchError: payload };
     default:
@@ -54,9 +62,9 @@ export const homepageListingsRequest = (categoryIds) => ({
   type: HOMEPAGE_LISTINGS_REQUEST,
   payload: { categoryIds },
 });
-export const homepageListingsSuccess = (listingIds) => ({
+export const homepageListingsSuccess = (listingIds, totalListings = null) => ({
   type: HOMEPAGE_LISTINGS_SUCCESS,
-  payload: { listingIds },
+  payload: { listingIds, totalListings },
 });
 export const homepageListingsError = (e) => ({
   type: HOMEPAGE_LISTINGS_ERROR,
@@ -153,6 +161,7 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
         }
       });
     });
-    dispatch(homepageListingsSuccess(listingIds));
+    const general = results[0]?.response?.data?.meta?.totalItems;
+    dispatch(homepageListingsSuccess(listingIds, Number.isInteger(general) ? general : null));
   });
 };

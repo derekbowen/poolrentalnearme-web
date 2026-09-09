@@ -28,14 +28,22 @@ rebuilt bundles no longer contain the dead Supabase URL that the Sep 2 build had
 `cannonball` 0, `paid for our summer` 0, `Trish` 0, Demarco 1, Salty 1; `/p/hosting` and
 `/p/all-locations` 200; zero matches for either string in `dist/`.
 
-**Deliberately left as-is on EAST, pending Derek's word** (the order was "do not change anything
-else"):
+**Second patch, 02:04 UTC, on Derek's order.** Same file, same method, backup
+`home-page.tsx.bak-quotes2-20260909T020425Z`, 4 diff lines:
 
-- Demarco's live line reads "the founder personally called me to make sure I was all right";
-  the recorded message is "the founder and co-founder personally called me to make sure I'm
-  all right".
-- Salty's live line keeps an em dash after "Derek"; Derek confirmed the original has a period.
-  `ops/east/tools/cta.js` line 210 carries the same em dash.
+- line 479: Demarco now reads exactly as recorded, "I love you guys over at Pool Rental Near Me —
+  the founder and co-founder personally called me to make sure I'm all right."
+- line 480: Salty now reads "Rock on, Derek. I see your hustle this year and it's legit." (period,
+  as Derek confirmed; the em dash is gone).
+
+Rebuilt (41 s), pm2 restarted as ubuntu (pid 976207), four runtime-only credential names still
+present. Verified on local `:3000` and on the public URL after HTML-entity decoding: both quotes
+match character for character; "was all right", "Rock on, Derek —", "cannonball", "paid for our
+summer" and "Trish" all 0; one H1; `/p/hosting` and `/p/all-locations` 200.
+
+**Still differing from Derek's confirmed wording, not on EAST:** `ops/east/tools/cta.js` line 210
+(served by WEST as the site-wide ticker) carries Salty with an em dash. One-line change plus the
+WEST file install when Derek says so.
 
 **Rollback.** `cp` the backup over the file, rebuild, restart (exact command printed in the
 session).

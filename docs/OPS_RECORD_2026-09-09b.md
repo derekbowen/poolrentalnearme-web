@@ -124,3 +124,19 @@ it ignores `address` without `bounds`, `seats`, and returns "No results" for any
 ($40, review 2026-10-09). Charge timing: request flow pre-authorizes then captures on
 accept; instant-book listings (68/124) capture at checkout via operator-accept, so the
 third trust line stays a placeholder. Phone: 17.9 → 9.3 screens; CLS 0.054.
+
+## 2026-09-10 00:40Z–00:48Z — Winter homepage Phase 2 (branch `winter-home`, preview only)
+
+Commits on EAST: `5fce372c` (trust line, guest stepper, 44 px tap targets, dismissable
+bottom bar, width/height on Fred + video poster) and `a607629d` (root layout owns the
+header, so the site-wide bottom bar is hidden on `/?preview=winter` via
+`useRouterState` on the search params — server and client agree, no hydration risk).
+Backups `/root/east-backups/winter-p2-20260910T004005Z` and `winter-p2b-20260910T004625Z`.
+Production `/` and `/p/hosting` still render the global bar; the preview renders none in
+SSR and its own bar client-side after the hero scrolls out.
+
+Trust line verified against `default-booking/process.edn`: request-to-book captures on
+`transition/accept`; instant-book captures on `transition/operator-accept` triggered at
+checkout; decline/expire run `stripe-refund-payment`. Derek's wording shipped: "You're only
+charged when your booking is confirmed." Ticket logged for the search page's date filter
+(`docs/tickets/2026-09-10-search-dates-no-results.md`).

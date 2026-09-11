@@ -470,6 +470,14 @@ function HomePageInner({ data }: { data: HomeData | undefined | null }) {
               >
                 National Law Review
               </a>
+              <a
+                href="https://esimoney.com/side-hustle-interview-12/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-serif text-base font-semibold text-foreground/80 transition-colors hover:text-foreground"
+              >
+                ESI Money
+              </a>
             </div>
           </div>
         </section>

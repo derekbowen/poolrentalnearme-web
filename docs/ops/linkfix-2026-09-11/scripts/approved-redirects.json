@@ -1,0 +1,35 @@
+{
+  "_doc": "Explicitly approved redirects. A URL emitted by the homepage, a sitemap, the nav registry or the city selector may resolve to a redirect ONLY if it matches one of these patterns. Anything else must be a canonical 200. Patterns are JS regexes matched against the emitted path.",
+  "approved": [
+    {
+      "pattern": "^/p/course/[a-z0-9-]+$",
+      "destination": "^/p/(elearning-academy-|pool-)",
+      "reason": "Course URLs are a documented permanent nginx redirect to their academy page (see src/routes/sitemap-pages-courses[.]xml.ts). Destinations are NOT derivable from the slug, so internal links are left pointing at the redirect rather than guessed."
+    },
+    {
+      "pattern": "^/l/draft/[0-9a-f-]+/new/details$",
+      "destination": "^/wizard/",
+      "reason": "Marketplace listing-creation entry point (WEST). The draft URL is the published CTA target and 302s to the wizard."
+    },
+    {
+      "pattern": "^/public-pools$",
+      "destination": "^/public-pools/$",
+      "reason": "Marketplace directory, trailing-slash canonicalisation."
+    },
+    {
+      "pattern": "^/p/affiliate-dashboard$",
+      "destination": "^/p/affiliate-program$",
+      "reason": "Auth-gated: unauthenticated visitors are 307'd to the public program page. Must not be rewritten."
+    },
+    {
+      "pattern": "^/legal-and-compliance/.+$",
+      "destination": "^/terms-of-service$",
+      "reason": "Legacy help-centre URLs kept alive for Search Console recovery (src/routes/legal-and-compliance.$.ts)."
+    },
+    {
+      "pattern": "^/(for-guests|for-hosts|guest-information|host-information|marketing-and-growth|pool-management|technical-support)/.+$",
+      "destination": ".*",
+      "reason": "Legacy splat routes that resolve legacy slugs to their current page."
+    }
+  ]
+}

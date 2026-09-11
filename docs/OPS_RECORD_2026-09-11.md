@@ -86,3 +86,54 @@ Backups: `/root/east-backups/linkfix-*`, `linkfix-dist2-*`, `linkfix-status-*`.
 Rollback = restore the file(s) from the backup dir, `npm run build`,
 `sudo -u ubuntu PM2_HOME=/home/ubuntu/.pm2 pm2 restart fresh-web`; DB rows restore
 from the `.bak` copies named above.
+
+## P6 — internal redirect cleanup
+
+77 redirect pairs (built from the crawl on WEST, exclusions applied there — see
+`docs/ops/linkfix-2026-09-11/redirect-map.json`) were repointed at their canonical
+destination inside `content_pages` link targets only (`](path)`, `href="path"` and
+their absolute forms — never prose). **347 rows changed**, far more than the 81
+links the crawl saw, because the same slugs repeat across hundreds of pSEO city
+pages deeper than two layers. Per-field backups under `/root/east-backups/p6/`.
+
+The 7 dead internal links the complete crawl surfaced were unwrapped (link
+removed, visible text kept) across `charleston`, `chantilly-va`, `charlestown-in`,
+`joliet`, `garden-ny`, `jackson`.
+
+`src/components/home-page.tsx` — the homepage "Terms" link pointed at
+`/legal-and-compliance/terms-of-service-pool-rental-near-me`, a **2-hop** 301
+chain. Repointed to `/terms-of-service` (verified: 0 redirects, and zero
+`/legal-and-compliance/` hrefs remain on the homepage).
+
+### Deliberately NOT repointed
+
+| Link | Why |
+|---|---|
+| 58 × `/p/course/*` (on `/p/learningacademy`) | Destinations are **not derivable from the slug**: `/p/course/essential-pool-rental-signage` → `/p/pool-rental-signage` but `/p/course/1099-k-…` → `/p/elearning-academy-1099-k-…`. These are a deliberate permanent nginx redirect documented in `sitemap-pages-courses[.]xml.ts`. Repointing safely needs the real nginx map; a guessed formula would turn working 301s into 404s. |
+| `/l/draft/<uuid>/new/details` → `/wizard/` | Marketplace listing pages (WEST), out of scope |
+| `/public-pools` → `/public-pools/` | Marketplace, trailing slash |
+| `/p/affiliate-dashboard` → `/p/affiliate-program` | 307, auth-gated flow |
+
+## Final crawl (after all changes)
+
+```
+discovered            2928
+checked               2928   (100%; 2 excluded from crawling = admin/auth paths)
+ok                    2834
+redirect                88
+internal_404             0   (was 63)
+external_failure         0   (was 1)
+timeout_or_dns           0
+external_bot_blocked     6   (counted separately — LinkedIn 999, Amazon 429 x2,
+                              Instagram 429, Peerspace 403 x2; not visitor-facing
+                              failures, not modified)
+```
+
+Live verification, all 0 redirects: `/` 150,092b · `/p/pool-host-tools` 53,580b ·
+`/p/anaheim` 54,351b · `/p/host-advocacy` 86,283b · `/p/host-advocacy-texas`
+99,605b · `/p/corpus-christi-pool-rental-laws` 83,651b · `/p/hoa-pool-rental-defense-kit`
+57,724b.
+
+Corpus Christi page: canonical `https://www.poolrentalnearme.com/p/corpus-christi-pool-rental-laws`,
+no `noindex`, present in `sitemap-static.xml`, FAQPage schema intact, links out to
+the Texas guide / HOA kit / advocacy hub (1 each), and both advocacy pages link back.

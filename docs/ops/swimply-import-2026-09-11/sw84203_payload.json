@@ -1,0 +1,223 @@
+{
+ "listing": {
+  "authorId": "6a9f4749-7082-4375-b21f-89ff214ab8ce",
+  "state": "published",
+  "title": "The Grajales Patio - Private Poolside in Fontana",
+  "description": "Whether you're looking to relax under the sun, splash and play with the family, or celebrate a special occasion, The Grajales Patio is the perfect spot for unforgettable summer moments.\n\nEnjoy a spacious, clean, and beautifully maintained pool area that's ideal for:\n- Lounging and unwinding\n- Hosting small gatherings or birthdays\n- Making fun summer memories\n\nThe Grajales Patio is more than just a pool - it's an experience that will exceed your expectations.\n\nCome swim, celebrate, or simply take a break from the everyday. We can't wait to host you!\n\nGood to know\n- Up to 30 guests.\n- 3-hour minimum booking.\n- 24 hours advance notice required.\n- Open daily 9:00 AM to 10:00 PM (Pacific).\n- Children are welcome; infants are not permitted.\n- No pets. No smoking.\n- Parties, alcohol and amplified music are welcome.\n\nPick the rate for your group size when you book: 1-5 guests $35/hr, 6-10 $45/hr, 11-15 $55/hr, 16-20 $65/hr, 21-30 $85/hr.\n\nIncluded at no extra charge: outdoor shower, floaties, and a fridge.\n\nOptional add-ons (flat fee per booking): Wi-Fi $25, pool heating $200 (24-hour advance request required), BBQ grill $30, fire pit $50, speakers/sound system $50, 10 plastic chairs $20, two 6-ft tables $30.\n\nHosted by Bibi, a verified Swimply host since June 2025, rated 5.0 from 3 reviews. Listing details imported from her Swimply listing at her request.",
+  "geolocation": {
+   "lat": 34.130001,
+   "lng": -117.460001
+  },
+  "price": {
+   "amount": 3500,
+   "currency": "USD"
+  },
+  "availabilityPlan": {
+   "type": "availability-plan/time",
+   "timezone": "America/Los_Angeles",
+   "entries": [
+    {
+     "dayOfWeek": "mon",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "tue",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "wed",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "thu",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "fri",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "sat",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    },
+    {
+     "dayOfWeek": "sun",
+     "seats": 1,
+     "startTime": "09:00",
+     "endTime": "22:00"
+    }
+   ]
+  },
+  "publicData": {
+   "listingType": "hourly-pool",
+   "unitType": "hour",
+   "transactionProcessAlias": "default-booking/release-1",
+   "categoryLevel1": "pool",
+   "categoryLevel2": "privatepool",
+   "location": {
+    "address": "Fontana, CA 92336",
+    "building": ""
+   },
+   "guestallowed": 30,
+   "minBookingHours": 3,
+   "advanceNoticeDays": 1,
+   "isInstantBooking": false,
+   "proHost": false,
+   "alcohol": "allowed",
+   "smoking": "prohibited",
+   "loud_music": "Allowed",
+   "shower": "outdoor",
+   "cancellation_policy": "24 hours",
+   "houseRules": [
+    "no_pets",
+    "no_smoking"
+   ],
+   "space": [
+    "parties",
+    "gathers",
+    "hangouts",
+    "birthdayparties",
+    "celbrai"
+   ],
+   "guestRequirement": "Children are welcome; infants are not permitted. No pets and no smoking anywhere on the property. Minimum booking is 3 hours and bookings require 24 hours advance notice. Parties, alcohol and amplified music are welcome.",
+   "priceVariationsEnabled": true,
+   "priceVariants": [
+    {
+     "name": "1-5 guests",
+     "priceInSubunits": 3500
+    },
+    {
+     "name": "6-10 guests",
+     "priceInSubunits": 4500
+    },
+    {
+     "name": "11-15 guests",
+     "priceInSubunits": 5500
+    },
+    {
+     "name": "16-20 guests",
+     "priceInSubunits": 6500
+    },
+    {
+     "name": "21-30 guests",
+     "priceInSubunits": 8500
+    }
+   ],
+   "amenities": [
+    {
+     "name": "Wi-Fi",
+     "description": "",
+     "price": {
+      "amount": 2500,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "Pool heating",
+     "description": "A 24-hour advance request is required.",
+     "price": {
+      "amount": 20000,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "BBQ grill",
+     "description": "",
+     "price": {
+      "amount": 3000,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "Fire pit",
+     "description": "",
+     "price": {
+      "amount": 5000,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "Speakers / sound system",
+     "description": "",
+     "price": {
+      "amount": 5000,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "10 plastic chairs",
+     "description": "10 available",
+     "price": {
+      "amount": 2000,
+      "currency": "USD"
+     }
+    },
+    {
+     "name": "Two 6-ft tables",
+     "description": "",
+     "price": {
+      "amount": 3000,
+      "currency": "USD"
+     }
+    }
+   ],
+   "importedFrom": "swimply:84203",
+   "externalReviews": {
+    "source": "swimply",
+    "imported": "2026-09-11",
+    "count": 3,
+    "rating": 5,
+    "items": [
+     {
+      "name": "Tatiana",
+      "rating": 5,
+      "text": "Beautiful backyard! Very clean and all the necessary amenities. We had a great relaxing time :)"
+     },
+     {
+      "name": "Samantha",
+      "rating": 5,
+      "text": "Bibi was super attentive with the replys to whatever questions I had before the event and during. Great experience."
+     },
+     {
+      "name": "Rasha",
+      "rating": 5,
+      "text": "That was an amazing experience, It was our 1st time to use Swimply and definitely not the last as we were lucky to start with Bibi, the amazing owner."
+     }
+    ]
+   }
+  },
+  "privateData": {
+   "importSource": "https://swimply.com/pooldetails/84203",
+   "importedAt": "2026-09-11",
+   "addressStatus": "Street address NOT supplied. Host reported the signup wizard address field did not populate; map pin is Swimply's rounded public coordinate for Fontana 92336."
+  }
+ },
+ "images": [
+  "https://swimply.imgix.net/thumbnails/1748936579610-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1748936578465-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1748936579840-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1748936579169-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1748936570351-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526195924-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526194651-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526194709-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526195633-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526195347-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526193825-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1749526195000-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1753578003552-image.jpg",
+  "https://swimply.imgix.net/thumbnails/1753578004244-image.jpg"
+ ]
+}

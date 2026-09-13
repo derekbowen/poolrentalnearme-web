@@ -67,7 +67,7 @@ carries Swimply's literal "24 hours"; our refund behaviour is whatever
    listing is live and bookable-looking, but the privileged transition will
    fail for a guest at checkout. She has to finish payout setup.
 2. **No street address.** Her signup stalled on exactly that — her reply in
-   the stuck-host thread was "My address is not populating?". The map pin is
+   the stuck-host thread was "My address is not popularing?". The map pin is
    Swimply's rounded public coordinate; `privateData.addressStatus` records
    this. The same wizard bug is blocking several other new hosts.
 3. **Prior import `swimply:10961` (Justice For Pools) is missing

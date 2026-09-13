@@ -1,6 +1,6 @@
 # The host address-population bug — root cause, and why it is not fixed yet
 
-Host report: **"My address is not populating?"** — Bibiana Grajales, 2026-09-07,
+Host report: **"My address is not popularing?"** — Bibiana Grajales, 2026-09-11 22:44,
 in the stuck-host SMS thread. Several other new hosts are stuck at the same step.
 
 **Status: diagnosed, not fixed. The fix is blocked on missing source code, not on

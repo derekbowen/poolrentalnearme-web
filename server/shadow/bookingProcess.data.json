@@ -1,0 +1,573 @@
+{
+  "_generated": "bun server/shadow/generate.js — do not hand-edit",
+  "_source": "ext/transaction-processes/default-booking/process.edn",
+  "processAlias": "default-booking/release-1",
+  "states": [
+    "accepted",
+    "cancelled",
+    "declined",
+    "delivered",
+    "expired",
+    "initial",
+    "inquiry",
+    "offer-sent",
+    "payment-expired",
+    "pending-payment",
+    "preauthorized",
+    "requested",
+    "reviewed",
+    "reviewed-by-customer",
+    "reviewed-by-provider"
+  ],
+  "transitions": [
+    {
+      "name": "inquire",
+      "from": "initial",
+      "to": "inquiry",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "update-protected-data"
+      ],
+      "at": null
+    },
+    {
+      "name": "request-payment",
+      "from": "initial",
+      "to": "pending-payment",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": true,
+      "actions": [
+        "update-protected-data",
+        "create-pending-booking",
+        "privileged-set-line-items",
+        "stripe-create-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "request",
+      "from": "initial",
+      "to": "requested",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": true,
+      "actions": [
+        "update-protected-data",
+        "create-pending-booking",
+        "privileged-set-line-items"
+      ],
+      "at": null
+    },
+    {
+      "name": "request-payment-after-inquiry",
+      "from": "inquiry",
+      "to": "pending-payment",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": true,
+      "actions": [
+        "update-protected-data",
+        "create-pending-booking",
+        "privileged-set-line-items",
+        "stripe-create-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "request-after-inquiry",
+      "from": "inquiry",
+      "to": "requested",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": true,
+      "actions": [
+        "update-protected-data",
+        "create-pending-booking",
+        "privileged-set-line-items"
+      ],
+      "at": null
+    },
+    {
+      "name": "send-offer",
+      "from": "inquiry",
+      "to": "offer-sent",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "update-protected-data"
+      ],
+      "at": null
+    },
+    {
+      "name": "accept-offer",
+      "from": "offer-sent",
+      "to": "pending-payment",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": true,
+      "actions": [
+        "update-protected-data",
+        "create-pending-booking",
+        "privileged-set-line-items",
+        "stripe-create-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "decline-offer",
+      "from": "offer-sent",
+      "to": "declined",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": false,
+      "actions": [],
+      "at": null
+    },
+    {
+      "name": "expire-offer",
+      "from": "offer-sent",
+      "to": "expired",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "first-entered-state",
+            "state": "offer-sent"
+          },
+          {
+            "op": "period",
+            "iso": "P3D"
+          }
+        ]
+      }
+    },
+    {
+      "name": "expire-payment",
+      "from": "pending-payment",
+      "to": "payment-expired",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "calculate-full-refund",
+        "stripe-refund-payment",
+        "decline-booking"
+      ],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "first-entered-state",
+            "state": "pending-payment"
+          },
+          {
+            "op": "period",
+            "iso": "PT15M"
+          }
+        ]
+      }
+    },
+    {
+      "name": "confirm-payment",
+      "from": "pending-payment",
+      "to": "preauthorized",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "stripe-confirm-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "accept",
+      "from": "preauthorized",
+      "to": "accepted",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "accept-booking",
+        "stripe-capture-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "accept-with-payment",
+      "from": "requested",
+      "to": "accepted",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "stripe-create-payment-intent",
+        "stripe-capture-payment-intent",
+        "accept-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "operator-accept-with-payment",
+      "from": "requested",
+      "to": "accepted",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "stripe-create-payment-intent",
+        "stripe-capture-payment-intent",
+        "accept-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "decline-without-payment",
+      "from": "requested",
+      "to": "declined",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "decline-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "operator-decline-without-payment",
+      "from": "requested",
+      "to": "declined",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "decline-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "expire-no-payment",
+      "from": "requested",
+      "to": "expired",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "decline-booking"
+      ],
+      "at": {
+        "op": "min",
+        "args": [
+          {
+            "op": "plus",
+            "args": [
+              {
+                "op": "timepoint",
+                "name": "first-entered-state",
+                "state": "requested"
+              },
+              {
+                "op": "period",
+                "iso": "P6D"
+              }
+            ]
+          },
+          {
+            "op": "plus",
+            "args": [
+              {
+                "op": "timepoint",
+                "name": "booking-start",
+                "state": null
+              },
+              {
+                "op": "period",
+                "iso": "P1D"
+              }
+            ]
+          },
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "operator-accept",
+      "from": "preauthorized",
+      "to": "accepted",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "accept-booking",
+        "stripe-capture-payment-intent"
+      ],
+      "at": null
+    },
+    {
+      "name": "decline",
+      "from": "preauthorized",
+      "to": "declined",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "calculate-full-refund",
+        "stripe-refund-payment",
+        "decline-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "operator-decline",
+      "from": "preauthorized",
+      "to": "declined",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "calculate-full-refund",
+        "stripe-refund-payment",
+        "decline-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "expire",
+      "from": "preauthorized",
+      "to": "expired",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "calculate-full-refund",
+        "stripe-refund-payment",
+        "decline-booking"
+      ],
+      "at": {
+        "op": "min",
+        "args": [
+          {
+            "op": "plus",
+            "args": [
+              {
+                "op": "timepoint",
+                "name": "first-entered-state",
+                "state": "preauthorized"
+              },
+              {
+                "op": "period",
+                "iso": "P6D"
+              }
+            ]
+          },
+          {
+            "op": "plus",
+            "args": [
+              {
+                "op": "timepoint",
+                "name": "booking-start",
+                "state": null
+              },
+              {
+                "op": "period",
+                "iso": "P1D"
+              }
+            ]
+          },
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "complete",
+      "from": "accepted",
+      "to": "delivered",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "stripe-create-payout"
+      ],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          },
+          {
+            "op": "period",
+            "iso": "P2D"
+          }
+        ]
+      }
+    },
+    {
+      "name": "operator-complete",
+      "from": "accepted",
+      "to": "delivered",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "stripe-create-payout"
+      ],
+      "at": null
+    },
+    {
+      "name": "cancel",
+      "from": "accepted",
+      "to": "cancelled",
+      "actor": "operator",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "calculate-full-refund",
+        "stripe-refund-payment",
+        "cancel-booking"
+      ],
+      "at": null
+    },
+    {
+      "name": "review-1-by-provider",
+      "from": "delivered",
+      "to": "reviewed-by-provider",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "post-review-by-provider"
+      ],
+      "at": null
+    },
+    {
+      "name": "review-2-by-provider",
+      "from": "reviewed-by-customer",
+      "to": "reviewed",
+      "actor": "provider",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "post-review-by-provider",
+        "publish-reviews"
+      ],
+      "at": null
+    },
+    {
+      "name": "review-1-by-customer",
+      "from": "delivered",
+      "to": "reviewed-by-customer",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "post-review-by-customer"
+      ],
+      "at": null
+    },
+    {
+      "name": "review-2-by-customer",
+      "from": "reviewed-by-provider",
+      "to": "reviewed",
+      "actor": "customer",
+      "automatic": false,
+      "privileged": false,
+      "actions": [
+        "post-review-by-customer",
+        "publish-reviews"
+      ],
+      "at": null
+    },
+    {
+      "name": "expire-review-period",
+      "from": "delivered",
+      "to": "reviewed",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          },
+          {
+            "op": "period",
+            "iso": "P7D"
+          }
+        ]
+      }
+    },
+    {
+      "name": "expire-provider-review-period",
+      "from": "reviewed-by-customer",
+      "to": "reviewed",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "publish-reviews"
+      ],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          },
+          {
+            "op": "period",
+            "iso": "P7D"
+          }
+        ]
+      }
+    },
+    {
+      "name": "expire-customer-review-period",
+      "from": "reviewed-by-provider",
+      "to": "reviewed",
+      "actor": null,
+      "automatic": true,
+      "privileged": false,
+      "actions": [
+        "publish-reviews"
+      ],
+      "at": {
+        "op": "plus",
+        "args": [
+          {
+            "op": "timepoint",
+            "name": "booking-end",
+            "state": null
+          },
+          {
+            "op": "period",
+            "iso": "P7D"
+          }
+        ]
+      }
+    }
+  ]
+}

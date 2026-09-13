@@ -232,8 +232,11 @@ Sharetribe via Sharetribe CLI (they are *reference copies* here —
 - `default-booking/release-1` (`ext/transaction-processes/default-booking/process.edn`, 13KB)
 - `additional-charge/release-1` (`server/api/additional-charge-initiate.js:10`)
 
-The client mirror is `src/transactions/transactionProcessBooking.js` — 38
-transitions, 15 states. The header comment is explicit: *"These strings must sync
+The client mirror is `src/transactions/transactionProcessBooking.js` — 31
+transitions, 15 states. (Verified against the `.edn` in `server/shadow/`: 31/31
+transitions and 31/31 graph edges match, zero drift. An earlier version of this
+document said 38; that came from counting keys rather than reading the
+definition.) The header comment is explicit: *"These strings must sync
 with values defined in Marketplace API."*
 
 **Engine actions Sharetribe executes, with occurrence counts from the `.edn`:**
@@ -258,7 +261,8 @@ no PRNM equivalent anywhere:
 | Timer | Fires |
 |---|---|
 | `PT15M` after request-payment | `expire-payment` |
-| `P3D` after request | `expire` (host never responded) |
+| `P3D` after an offer is sent | `expire-offer` |
+| min(entered + `P6D`, bookingStart + `P1D`, bookingEnd) | `expire` / `expire-no-payment` — the **earliest** of three, and for PRNM's hourly bookings bookingEnd always wins |
 | `booking-end + P2D` | `complete` |
 | `booking-end + P7D` | `expire-review-period` (×3 variants) |
 | `booking-start − P1D`, `booking-end + P6D` | Review reminders |
@@ -476,7 +480,7 @@ Marketplace API              ──▶  25 files, 15 containers via thunk.withEx
   stripeAccount / stripeCustomer
 
 Transaction engine           ──▶  ext/transaction-processes/default-booking/process.edn       P0/P1
-  38 transitions, 15 states       ext/transaction-processes/additional-charge/process.edn
+  31 transitions, 15 states       ext/transaction-processes/additional-charge/process.edn
   privileged-set-line-items       src/transactions/transactionProcessBooking.js  (mirror)
   create-pending-booking          server/api/{initiate,transition}-privileged.js
   5 Stripe actions                server/api-util/lineItems.js
@@ -542,7 +546,7 @@ Ordered by difficulty, hardest first.
 
 | # | Capability | Why it is hard |
 |---|---|---|
-| C1 | **Transaction state machine + durable scheduler** | 38 transitions, 15 states, 2 processes, plus timers at 15m / 3d / booking-end+2d / +7d. Needs exactly-once semantics; a missed `complete` means an unpaid host. |
+| C1 | **Transaction state machine + durable scheduler** | 31 transitions, 15 states, 2 processes, plus timers at 15m / 3d / booking-end+2d / +7d. Needs exactly-once semantics; a missed `complete` means an unpaid host. |
 | C2 | **Stripe orchestration bound to state** | 5 Stripe actions × 17 call sites. Destination charges, capture, partial/full refund, payout. Must be idempotent and replay-safe. |
 | C3 | **Mobile app API layer** | 221 Dart files, 23 features, private vendor SDK. Either a Sharetribe-shaped compatibility API or a full client rewrite. |
 | C4 | **Identity + sessions** | Signup, login, logout, password reset, email verification, 5 social IdPs, token issuance/refresh, operator impersonation. Plus migrating existing credentials — Sharetribe will not export password hashes. |
@@ -651,8 +655,9 @@ shippable and independently reversible.
 - **Exit:** C7 done, C1's timing half proven against production without touching it.
 
 **Phase 4 — Shadow the transaction engine**
-- Implement the 38 transitions, 15 states, `privileged-set-line-items`, and
-  `calculate-full-refund` in core
+- Implement the 31 transitions, 15 states, `privileged-set-line-items`, and
+  `calculate-full-refund` in core. The state machine and scheduler model now
+  exist in `server/shadow/` — see its README for corrections to this section.
 - For every real booking, run the shadow engine in parallel and diff: state,
   line items to the penny, refund amounts. **Alert on any divergence.** The 15%
   fee must equal the checkout total exactly — this is where the stale-10%

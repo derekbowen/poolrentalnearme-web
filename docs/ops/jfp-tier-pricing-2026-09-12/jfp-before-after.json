@@ -1,0 +1,81 @@
+{
+ "before": {
+  "price": {
+   "amount": 20000,
+   "currency": "USD"
+  },
+  "priceVariationsEnabled": null,
+  "priceVariants": [
+   {
+    "name": "1-5 guests",
+    "priceInSubunits": 20000
+   },
+   {
+    "name": "6-10 guests",
+    "priceInSubunits": 25000
+   },
+   {
+    "name": "11-15 guests",
+    "priceInSubunits": 30000
+   },
+   {
+    "name": "16-20 guests",
+    "priceInSubunits": 35000
+   },
+   {
+    "name": "21-30 guests",
+    "priceInSubunits": 40000
+   },
+   {
+    "name": "31-40 guests",
+    "priceInSubunits": 45000
+   },
+   {
+    "name": "41-50 guests",
+    "priceInSubunits": 50000
+   }
+  ],
+  "state": "published",
+  "title": "Justice For Pools \u2014 Private Pool  Space in Valley Stream"
+ },
+ "after": {
+  "price": {
+   "amount": 20000,
+   "currency": "USD"
+  },
+  "priceVariationsEnabled": true,
+  "priceVariants": [
+   {
+    "name": "1-5 guests",
+    "priceInSubunits": 20000
+   },
+   {
+    "name": "6-10 guests",
+    "priceInSubunits": 25000
+   },
+   {
+    "name": "11-15 guests",
+    "priceInSubunits": 30000
+   },
+   {
+    "name": "16-20 guests",
+    "priceInSubunits": 35000
+   },
+   {
+    "name": "21-30 guests",
+    "priceInSubunits": 40000
+   },
+   {
+    "name": "31-40 guests",
+    "priceInSubunits": 45000
+   },
+   {
+    "name": "41-50 guests",
+    "priceInSubunits": 50000
+   }
+  ],
+  "state": "published",
+  "title": "Justice For Pools \u2014 Private Pool  Space in Valley Stream"
+ }
+}
+

@@ -41,7 +41,13 @@ export const dateRangeFilter = {
   // Should the entire date range be available, or just part of it
   // Note: Since we don't enforce location search for dates filtering,
   //       we don't use API's 'time-full' in actual queries. It would require time zone info.
-  availability: 'time-full', // time-partial
+  // PRNM: pools are booked by the hour, so picking a day means "is there bookable
+  // time that day", not "is the whole day free". 'time-full' made /s?dates=… ask the
+  // API for a 23h (one day) or 47h (two days) uninterrupted slot, which no hourly
+  // availability plan can offer — every dated search returned 0-2 of 124 listings.
+  // Note: production reads this filter from the hosted listing-search.json asset, so
+  // SearchPage.duck.js also refuses 'time-full' when no listing type books whole days.
+  availability: 'time-partial', // time-full
   // Options: day/night. This affects counting and whether single day picking is possible.
   dateRangeMode: 'day',
 };

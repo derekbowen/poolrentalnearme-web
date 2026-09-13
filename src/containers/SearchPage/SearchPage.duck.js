@@ -171,14 +171,29 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
       : {};
   };
 
-  const datesSearchParams = (datesParam) => {
+  const datesSearchParams = (datesParam, minDurationParam) => {
     const searchTZ = 'Etc/UTC';
     const datesFilter = config.search.defaultFilters.find((f) => f.key === 'dates');
     const values = datesParam ? datesParam.split(',') : [];
     const hasValues = datesFilter && datesParam && values.length === 2;
     const { dateRangeMode, availability } = datesFilter || {};
     const isNightlyMode = dateRangeMode === 'night';
-    const isEntireRangeAvailable = availability === 'time-full';
+
+    // 'time-full' means "the whole selected range must be free", which is only a
+    // sensible reading when the marketplace sells whole days or nights. PRNM sells
+    // hours (listing type 'hourly-pool', unit type 'hour'): those listings carry
+    // time-based availability plans that only ever expose the host's open hours, so
+    // a whole-range requirement can never be satisfied. Picking two days asked the
+    // API for 47 uninterrupted hours and matched 0 of 124 listings; a single day
+    // asked for 23 and matched 2. For time-based unit types a day-level date pick
+    // means "has bookable time on these days", so we require one bookable unit
+    // (or the block of hours the guest asked for) instead of the entire range.
+    // Note: the dates filter config comes from the hosted listing-search.json asset
+    // in production, so this cannot be guarded in configSearch.js alone.
+    const hasWholeDayUnitTypes = (config.listing.listingTypes || []).some((lt) =>
+      ['day', 'night'].includes(lt.transactionType?.unitType)
+    );
+    const isEntireRangeAvailable = availability === 'time-full' && hasWholeDayUnitTypes;
 
     // SearchPage need to use a single time zone but listings can have different time zones
     // We need to expand/prolong the time window (start & end) to cover other time zones too.
@@ -208,15 +223,25 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
       startDate.getTime() >= possibleStartDate.getTime() &&
       startDate.getTime() <= endDate.getTime();
 
-    const dayCount = isEntireRangeAvailable ? daysBetween(startDate, endDate) : 1;
     const day = 1440;
     const hour = 60;
+    const dayCount = hasValidDates ? daysBetween(startDate, endDate) : 1;
+
+    // Optional 'minDuration' URL param (minutes) lets a guest ask for a block of
+    // hours inside the selected days, e.g. /s?dates=2026-12-20,2026-12-21&minDuration=180
+    // for a 3h party slot. It only makes sense for partial-range searches, and it
+    // can't be longer than the days that were picked.
+    const requestedDuration = Number.parseInt(minDurationParam, 10);
+    const hasRequestedDuration = Number.isFinite(requestedDuration) && requestedDuration >= hour;
+    const partialRangeMinDuration = hasRequestedDuration
+      ? Math.min(requestedDuration, dayCount * day)
+      : hour;
+
     // When entire range is required to be available, we count minutes of included date range,
     // but there's a need to subtract one hour due to possibility of daylight saving time.
     // If partial range is needed, then we just make sure that the shortest time unit supported
     // is available within the range.
-    // You might want to customize this to match with your time units (e.g. day: 1440 - 60)
-    const minDuration = isEntireRangeAvailable ? dayCount * day - hour : hour;
+    const minDuration = isEntireRangeAvailable ? dayCount * day - hour : partialRangeMinDuration;
     return hasValidDates
       ? {
           start: getProlongedStart(startDate),
@@ -253,6 +278,9 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
     perPage,
     price,
     dates,
+    // minDuration is only valid alongside an availability window, so it's picked
+    // out here and handed to datesSearchParams instead of passing through raw.
+    minDuration,
     seats,
     sort,
     mapSearch,
@@ -261,7 +289,7 @@ export const searchListings = (searchParams, config) => (dispatch, getState, sdk
     ...restOfParams
   } = searchParams;
   const priceMaybe = priceSearchParams(price);
-  const datesMaybe = datesSearchParams(dates);
+  const datesMaybe = datesSearchParams(dates, minDuration);
   const stockMaybe = stockFilters(datesMaybe);
   const seatsMaybe = seatsSearchParams(seats, datesMaybe);
   const sortMaybe = sort === config.search.sortConfig.relevanceKey || sort === SORT_BY_DISTANCE ? {} : { sort };

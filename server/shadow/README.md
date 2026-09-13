@@ -51,6 +51,17 @@ Console (see `ext/transaction-processes/README.md`). **Verifying the copy agains
 Console is still outstanding** and is the one thing that would make this model
 authoritative rather than merely self-consistent.
 
+Two of its premises *are* now confirmed against live production, by reading
+listing `6a837f37-d170-4258-9a3e-5369c4478ee8` (public, linked from `/s`)
+through the Marketplace API:
+
+- `transactionProcessAlias` is `default-booking/release-1` — the alias this
+  model pins in `PROCESS_ALIAS`.
+- `listingType` is `hourly-pool` and `unitType` is `hour`, which is the premise
+  the dead-arm finding below rests on.
+
+Neither confirms the transition table itself. Only Console does that.
+
 The hand-maintained client mirror `src/transactions/transactionProcessBooking.js`
 was also checked against the `.edn` while building this: 31/31 transitions and
 31/31 graph edges match, zero drift. It is correct and was left alone.
@@ -102,9 +113,16 @@ be run against historical transactions and the tests are deterministic.
 
 - **No replay against real data yet.** `st_transactions.transitions` holds the
   full history of every real transaction, so every one can be replayed through
-  `replay()` and divergence counted. That harness needs Supabase, which is not
-  reachable from the audit environment. It is the obvious next step and the first
+  `replay()` and divergence counted. It is the obvious next step and the first
   real evidence of whether this model matches production.
+
+  Bulk replay still needs Supabase (`ptfjspcphskifoseidut`), which the audit
+  environment's network policy refuses at CONNECT. Replaying *individual*
+  transactions does not: the Marketplace API is reachable, and one
+  transaction's transitions and booking window can be read by id. What is
+  missing is only a way to enumerate ids — there is no list-transactions read
+  path outside Supabase or Console. A handful of ids pasted by hand is enough
+  to start checking this model against reality.
 - **No Stripe shadow.** `stripeActionsFor()` is the groundwork — it says which of
   the five money-moving actions each transition runs — but nothing computes
   amounts or asserts against real PaymentIntents. That is C2.

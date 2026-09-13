@@ -155,3 +155,105 @@ and has not been applied.
 `check:production-drift` expects the deploy to stamp `.deployed-sha` in the repo
 root. Nothing writes that today, so the check currently reports drift — correctly:
 a deploy that does not record what it shipped cannot be verified.
+
+---
+
+## 2026-09-12/13 — the gate is now load-bearing
+
+Both weaknesses this document was written about are closed.
+
+### The deploy path before
+
+```
+ agent --ship.py (base64 over SSM)--> EAST /home/ubuntu/fresh-web (loose copy)
+                                          npm run build ; pm2 restart
+ repo <-- mirrored afterwards, by hand, as copies
+```
+
+Nothing recorded a SHA. `verify:production` checked the live site but was
+indifferent to which code produced it, so a green run proved nothing about what
+was deployed. `check-production-drift.mjs` was not even present on EAST, and
+`.deployed-sha` was written by nothing.
+
+### The deploy path after
+
+```
+ commit --> push to derekbowen/fresh-web-702e04c3
+        --> EAST fetches that commit (tree must be CLEAN)
+        --> ops/deploy-east.sh:
+              build            (npm postbuild stamps sha+tree+dirty+assets)
+              stamp == HEAD && dirty == 0     else abort
+              smoke on :3005 with .env loaded else abort + restore dist
+              pm2 restart
+              poll until production reports THIS sha
+              check:deployed-sha EXPECTED_SHA=HEAD else abort + restore
+              verify:production                    else abort + restore
+              check:price-variants                 else abort + restore
+              write .deployed-sha  { sha, tree, verify:"pass", deployedAt }
+              check:production-drift               else abort + restore
+```
+
+EAST's HEAD is now `ops/deploy-sha-enforcement`, and every commit it runs exists
+on GitHub first. Production answers
+`GET /fw-assets/__build.json` with the sha, tree, dirty count and asset
+fingerprint it was built from.
+
+### The deployed-SHA mechanism
+
+The stamp is written by **npm's `postbuild`**, not by the deploy wrapper. That
+placement is the whole point: a deploy that skips `ops/deploy-east.sh` and runs
+`npm run build` by hand still produces an honest stamp, and still gets caught.
+
+`.deployed-sha` is separate and is an **attestation** — `ops/deploy-east.sh`
+writes it only after `check:deployed-sha` and `verify:production` have both
+passed against the live site. Its presence means "this sha was verified in
+production", not "someone deployed something".
+
+### Drift is a three-way comparison, failing closed
+
+| leg | source | what it answers |
+|---|---|---|
+| EXPECTED | `.deployed-sha` | which sha was last *verified* |
+| DEPLOYED | `dist/client/fw-assets/__build.json` | what the build output was built from |
+| ACTUAL | live `/fw-assets/__build.json` + git HEAD + dirty files | what production serves, and whether the tree moved |
+
+Missing pieces are drift too — no `.deployed-sha`, no stamp, unreachable
+endpoint, `sha: "unknown"`, a dirty tree. There is no assume-fine path.
+
+Proven on the box:
+
+| test | result |
+|---|---|
+| drift on the real matching state | **PASS**, exit 0 |
+| drift with `.deployed-sha` sha replaced by `000…0` | **DRIFT**, exit 1, names both mismatches |
+| drift with no deploy record at all | **DRIFT**, exit 1 |
+| `check:deployed-sha` with a wrong `EXPECTED_SHA` | **FAIL**, exit 1 |
+
+### Production cannot silently advance
+
+- Edit source and rebuild without committing → the stamp records `dirty > 0` and
+  lists the files; `check:deployed-sha` and drift both fail.
+- Commit and `vite build` + restart, skipping the wrapper → the stamp moves but
+  `.deployed-sha` does not, so EXPECTED != DEPLOYED and drift fails.
+- Rebuild nothing and hand-edit `dist/` → the asset fingerprint diverges from the
+  recorded one and drift fails.
+
+### Remaining bypasses — stated plainly
+
+1. **GitHub required status checks are not configured.** That is a repository
+   setting and cannot be set from this session (no branch-protection tool, no
+   raw GitHub token). The workflow runs but does not block a merge. The
+   enforcement that *does* bite is on the deploy path itself, which is strictly
+   stronger for production safety — but a merge to `main` is still unguarded.
+2. **`ops/deploy-east.sh` can be bypassed** by running `npm run build` and
+   `pm2 restart` by hand. Drift then reports it, but only when drift is run. Run
+   it on a schedule to bound the detection window.
+3. **A raw `vite build`** (not `npm run build`) skips `postbuild`, leaving a
+   stale stamp. Drift catches that as a live-vs-local mismatch.
+4. **Hand-editing a file inside `dist/` without renaming it** does not change the
+   asset-name fingerprint. Not detected.
+5. **WEST's cache holds a year-long entry for the bare
+   `/fw-assets/__build.json` URL**, created while the stamp was still being
+   served `immutable`. The checks cache-bust every request, so they read through
+   it; a human curling that URL without a query string will see a stale stamp
+   until WEST's cache is purged for that path.

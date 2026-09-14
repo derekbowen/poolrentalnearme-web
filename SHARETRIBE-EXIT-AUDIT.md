@@ -258,14 +258,32 @@ with values defined in Marketplace API."*
 **Sharetribe also runs a durable scheduler.** These are automatic transitions with
 no PRNM equivalent anywhere:
 
-| Timer | Fires |
-|---|---|
-| `PT15M` after request-payment | `expire-payment` |
-| `P3D` after an offer is sent | `expire-offer` |
-| min(entered + `P6D`, bookingStart + `P1D`, bookingEnd) | `expire` / `expire-no-payment` — the **earliest** of three, and for PRNM's hourly bookings bookingEnd always wins |
-| `booking-end + P2D` | `complete` |
-| `booking-end + P7D` | `expire-review-period` (×3 variants) |
-| `booking-start − P1D`, `booking-end + P6D` | Review reminders |
+All eight, from the definition rather than from memory — these are every
+automatic transition in `default-booking`, and the generated table in
+`server/shadow/bookingProcess.data.json` is derived from the same file:
+
+| From state | Fires | When |
+|---|---|---|
+| `pending-payment` | `expire-payment` | entered + `PT15M` |
+| `offer-sent` | `expire-offer` | entered + `P3D` |
+| `requested` | `expire-no-payment` | min(entered + `P6D`, bookingStart + `P1D`, **bookingEnd**) |
+| `preauthorized` | `expire` | min(entered + `P6D`, bookingStart + `P1D`, **bookingEnd**) |
+| `accepted` | `complete` | bookingEnd + `P2D` ← **releases the payout** |
+| `delivered` | `expire-review-period` | bookingEnd + `P7D` |
+| `reviewed-by-customer` | `expire-provider-review-period` | bookingEnd + `P7D` |
+| `reviewed-by-provider` | `expire-customer-review-period` | bookingEnd + `P7D` |
+
+For PRNM's hourly bookings the `bookingStart + P1D` arm is dead — `bookingEnd`
+is always earlier for anything under 24 hours. See `server/shadow/README.md`.
+
+An earlier version of this table listed a sixth row, *"`booking-start − P1D`,
+`booking-end + P6D` — review reminders"*. **No such timers exist.** Neither
+expression appears in the `.edn`: `booking-start` occurs exactly twice, both
+times as `booking-start + P1D` (the expiry arm above), and both occurrences of
+`P6D` are `first-entered-state + P6D` inside the same `min()`. There is no
+subtraction anywhere in the file and no reminder transition at all. The row was
+invented, and it is recorded here rather than quietly deleted because that is
+the failure mode these notes exist to prevent.
 
 ## 9. Stripe / payment / payout dependencies
 
@@ -354,15 +372,22 @@ This is the single largest rebuild in the programme and it is gated on a vendor.
 
 **Three naming conventions for one credential pair, and a live drift:**
 
-`.env-template:38-39` declares `SHARETRIBE_INTEGRATION_CLIENT_ID` /
-`SHARETRIBE_INTEGRATION_CLIENT_SECRET`. `server/api-util/integration.js:8-9` reads
-`SHARETRIBE_INTEGRATION_SDK_CLIENT_ID` / `..._SDK_CLIENT_SECRET`. EAST uses a third
-spelling, `SHARETRIBE_INTEG_*`.
+**Fixed in this branch (commit `24c8f99`); described here as it was found.**
+`.env-template` declared `SHARETRIBE_INTEGRATION_CLIENT_ID` /
+`SHARETRIBE_INTEGRATION_CLIENT_SECRET`, `server/api-util/integration.js` read
+`SHARETRIBE_INTEGRATION_SDK_CLIENT_ID` / `..._SDK_CLIENT_SECRET`, and EAST used a
+third spelling, `SHARETRIBE_INTEG_*`.
 
-Because `integration.js:30-31` returns `null` rather than throwing when the
-credentials are absent, provisioning a box from `.env-template` yields a silently
-disabled Integration SDK — promo codes 500, iCal answers `{enabled:false}`, the
-SMS poller stops, wishlist writes fail. Worth fixing regardless of the migration.
+Because `integration.js` returned `null` rather than throwing when the credentials
+were absent, provisioning a box from `.env-template` yielded a *silently* disabled
+Integration SDK — promo codes 500, iCal answers `{enabled:false}`, the SMS poller
+stops, wishlist writes fail, and nothing says why.
+
+`server/api-util/integrationCredentials.js` now resolves all three spellings, WEST
+first so production resolution is unchanged, and warns on the console whenever a
+credential is missing or the id and secret come from different spellings. The
+null-not-throw contract is deliberately kept: 25 call sites guard on
+`if (!integrationSdk)`.
 
 ## 13. Webhooks and background jobs
 

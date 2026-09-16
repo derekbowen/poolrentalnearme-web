@@ -105,6 +105,31 @@ actually stops scrapers from hitting EAST directly). Separate GO.
 | Mail breaks | Mail records never proxied; MX/SPF/DKIM answers diffed in step 3 |
 | Anything unexpected | Grey cloud = instant; NS back to Hostinger = full rollback, Hostinger still serving the zone |
 
+## Execution log
+
+**Steps 1 and 2 done 2026-09-16 21:30–21:39Z (Derek GO).** Zone still pending, 0 proxied.
+- Zone: ssl strict, min TLS 1.2, Always-HTTPS on, automatic HTTPS rewrites off, browser
+  check OFF, obfuscation/Rocket/Mirage/Polish off, bot management confirmed off. WAF custom
+  rules: (1) `skip` — ruleset current + phases http_ratelimit / http_request_sbfm /
+  http_request_firewall_managed + products rateLimit, securityLevel, bic, hot, uaBlock,
+  zoneLockdown, waf — for `/.well-known/`, `/api/`, `/csp-report`, `/fw-assets/`,
+  `/assets/`, `/tools/`, `/static/`; (2) scanner block. Rate limit 60/10 s per IP, verified
+  bots exempt, skip paths excluded again in the expression. All read back as set.
+- WEST: `/etc/nginx/conf.d/cloudflare-real-ip.conf` (22 ranges, mirrored at
+  `ops/cloudflare/west-nginx/`), nginx -t ok, reload; smoke PASS afterwards. `/etc/hosts`:
+  `13.56.113.85 www.poolrentalnearme.com` (backup `config-backups/hosts.bak-orig-*`); the
+  production container already had the same via `--add-host`, which is why its ~2,500
+  daily self-calls never touch DNS.
+- **New scheduled job:** `ns-watchdog` — ubuntu crontab `17 * * * *` runs
+  `/usr/bin/python3 /home/ubuntu/ns-watchdog/ns-watchdog.py` (mirror
+  `ops/monitors/west/ns-watchdog.py`). Asks each TLD registry for the four domains'
+  nameservers, logs every run to `~/ns-watchdog.log`, emails Derek via Emailit only when a
+  set changes from the previous run. Baseline recorded 21:39Z.
+- **Incident during the test:** the alert path was exercised with a faked previous state
+  under `DRY_RUN=1`, but `sudo -u ubuntu` dropped the variable, so one real email went to
+  Derek at 21:39Z: subject "⚠️ PRNM nameservers changed: poolrentalnearme.ca", body
+  showing .ca dns-parking → Cloudflare (true, but a test). Nobody else received anything.
+
 ## What I need from Derek
 1. Step 0 (Worker routes) — or extend the `prnm-edge` token with "Workers Routes: Read" so I
    can check it myself.

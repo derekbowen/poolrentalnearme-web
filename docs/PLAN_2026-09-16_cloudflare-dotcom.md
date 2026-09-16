@@ -153,6 +153,21 @@ session cookie keeps `Secure`, http→https 301, smoke test PASS. First 91 reque
 flip: 0 5xx, 0 499, 21 distinct visitor IPs (real-IP working). `/.well-known/openid-configuration`
 and `jwks.json` 404 at origin too (pre-existing, not the edge).
 
+**Certbot proven 22:11Z:** `certbot renew --dry-run --cert-name www.poolrentalnearme.com`
+through the proxy → "all simulated renewals succeeded" (nginx authenticator; the acme path
+is in the skip rule). First attempt only looked hung because non-interactive renew sleeps a
+random ~200 s before starting.
+
+**Step 6 done 22:13Z.** Apex proxied (edge 104.21.84.187). `/` and `/robots.txt` 301 →
+www as before, http→https 301, scanner path 403, edge cert valid, smoke PASS. Both `.com`
+hosts now behind Cloudflare; all other 59 records untouched and DNS-only.
+
+Observed and harmless: Cloudflare IPs (172.70.x, 104.23.x, 2a06:98c0::) fetch
+`/.well-known/cf-custom-hostname-challenge/374b9876-…` directly at the origin and get 404 —
+that is a Cloudflare-for-SaaS custom-hostname validation some third party (most likely the
+old Lovable publish of fresh-web) still has registered for this domain. Nothing to do; it
+has been failing since before today.
+
 ## What I need from Derek
 1. Step 0 (Worker routes) — or extend the `prnm-edge` token with "Workers Routes: Read" so I
    can check it myself.

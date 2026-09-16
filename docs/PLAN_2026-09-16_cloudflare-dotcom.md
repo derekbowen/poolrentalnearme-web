@@ -130,6 +130,11 @@ actually stops scrapers from hitting EAST directly). Separate GO.
   Derek at 21:39Z: subject "⚠️ PRNM nameservers changed: poolrentalnearme.ca", body
   showing .ca dns-parking → Cloudflare (true, but a test). Nobody else received anything.
 
+**Step 0 done 2026-09-16 ~21:50Z (Claude in Chrome, read-only).** Workers: founders-click
+(route `www.founders.click/*` only), founders-edge (none), fresh-web (none; workers.dev
+disabled, "latest build failed"). Zone: 61 records all DNS-only, 0 page rules, 0 zone Worker
+routes, status pending, zone id f153ae5162eb55f788ee0956ef0f3d7a. Nothing deleted.
+
 ## What I need from Derek
 1. Step 0 (Worker routes) — or extend the `prnm-edge` token with "Workers Routes: Read" so I
    can check it myself.

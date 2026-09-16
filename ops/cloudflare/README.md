@@ -20,8 +20,8 @@ Supabase outage analysis (crawler on .co.uk → EAST → 15k DB calls in 4 min).
 |---|---|---|---|
 | poolrentalnearme.com | anna.ns.cloudflare.com / max.ns.cloudflare.com | 61 | 0 |
 | poolrentalnearme.co.uk | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 2 (apex+www, since 2026-09-16 19:53Z) |
-| poolrentalnearme.ca | anna.ns.cloudflare.com / max.ns.cloudflare.com | 3 | 0 |
-| poolrentalnearme.com.au | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 0 |
+| poolrentalnearme.ca | anna.ns.cloudflare.com / max.ns.cloudflare.com | 3 | 2 (apex+www, ACTIVE + protected 2026-09-16 21:19Z) |
+| poolrentalnearme.com.au | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 2 (apex+www, ACTIVE + protected 2026-09-16 21:14Z) |
 
 Nameservers: .co.uk moved to Cloudflare 2026-09-16 19:49Z (Derek, Hostinger hPanel), zone active 19:50:45Z. .com/.ca/.com.au still ns1/ns2.dns-parking.com.
 
@@ -84,3 +84,17 @@ no Bot Fight Mode / JS challenge / browser check; a WAF skip for `/.well-known/*
 rate limit only; WEST trusts CF-Connecting-IP first; proxy apex+www only (mail, go., hostpro.,
 help. stay DNS-only). Evidence: no app traffic hits .com; universal links, Apple/Google
 sign-in, Stripe, iCal all do.
+
+## 2026-09-16 21:05–21:19Z — .ca and .com.au moved, proxied, protected (Derek GO)
+Nameservers changed at Hostinger by Claude in Chrome 20:57Z. .com.au active 21:06Z (auDA
+fast); .ca active 21:14Z (CIRA took ~15 min). Same recipe as .co.uk: strict TLS, min 1.2,
+Always-HTTPS, obfuscation/Rocket/Mirage/Polish off; scanner block; 60/10s per-IP rate limit
+(verified bots exempt); Bot Fight Mode. Verified through the edge: apex 302 → hub, hub 200
+same bytes as origin (bar render timestamps), robots/sitemap 200, http→https 301, edge cert
+Let's Encrypt to 2026-12-15.
+**Lesson:** Universal SSL is issued a few minutes AFTER the zone goes active. .com.au was
+proxied before the edge had a cert (edge served no certificate) — pulled back within a minute,
+re-proxied once `openssl s_client` showed the cert. The token cannot read certificate packs
+(9109), so the check is TLS-by-SNI, not the API. `cf_ca_proxy_safe.py` pattern: settings →
+wait for edge cert → proxy → verify. Use that for .com.
+Plan for .com: `docs/PLAN_2026-09-16_cloudflare-dotcom.md`.

@@ -53,3 +53,12 @@ runs as ubuntu. No audit trail of the original owner exists; the only consistent
 is that `state.json` was created by a root-run test before the first cron run and chowned on
 2026-08-08. Impact while broken: `fails` never persisted, so the DOWN text could never fire
 (the crash was after the health probe, so no false alerts either). No change made.
+
+## 4. sitemap: last-good-count fallback (Derek GO, deployed 08:25Z)
+
+fresh-web `b2d42ea` (`src/routes/sitemap[.]xml.ts`): a count that fails twice now reuses the
+last value that succeeded in this process and logs `using last good count N`; the
+page-1-only fallback applies only before any count for that entry has ever succeeded.
+Motivation: 6 double failures in ~3,600 counts over 28h with an empty-message error while
+the same PostgREST query answers in 60-80 ms by hand. Deployed through `ops/deploy-east.sh`
+(typecheck gate PASS, all 9 gates PASS, drift check: verified SHA = built = live).

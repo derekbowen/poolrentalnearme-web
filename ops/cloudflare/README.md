@@ -58,3 +58,21 @@ Rollback at any point: proxy OFF (grey cloud) or nameservers back to Hostinger.
   robots.txt/sitemap-country.xml 200, http→https 301, edge cert Let's Encrypt via Cloudflare, no 5xx on EAST.
 - Not yet on .co.uk: bot rules, rate limits, cache rules (cf-cache-status DYNAMIC on pages). Next after a
   day of observation.
+
+## .co.uk protection — 2026-09-16 20:10Z (Derek GO)
+- **WAF custom rule** `prnm: block scanner/garbage paths`: `.php`, `/.env*`, `/.git*`, `/wp-*`, `xmlrpc`,
+  `/actuator*`, `phpinfo`, `/cgi-bin*`, `/.aws`, `/vendor/phpunit`, `/dns-query`, `/resolve`, `/query`,
+  `/fw-assets/fw-assets/*` → 403 at the edge. Verified: all probe paths 403, real pages 200.
+- **Rate limit** (Free-plan shape): per IP+colo, 60 requests / 10 s on anything except `/fw-assets/*` and
+  `/static/*`, block 10 s, `cf.client.bot` (verified crawlers) exempt. Verified with Bot Fight Mode
+  briefly off: 100-request burst → 60×200 + 40×429 (`retry-after: 9`), 200 again after cooldown; EAST saw
+  only the allowed 60.
+- **Bot Fight Mode** on (requires JavaScript Detections on; that injects Cloudflare's small
+  `challenge-platform` script into HTML pages — the one deliberate deviation from byte-identical HTML).
+  It challenges non-browser clients (curl from WEST gets 403 `cf-mitigated: challenge`); verified
+  bots (Googlebot/Bingbot) pass; real browsers pass the invisible JS check. Consequences to remember:
+  SEO tools (Semrush/Ahrefs/Linkup) and any curl-based monitor get challenged on this zone. **Do NOT
+  replicate Bot Fight Mode on .com as-is** — it would challenge the smoke monitor, deploy gates,
+  UptimeRobot/Sentry, and server-to-server webhooks. .com needs Pro + Super Bot Fight Mode with WAF skip
+  rules, or no bot mode at all.
+- Not yet: cache rules (pages still `cf-cache-status: DYNAMIC`).

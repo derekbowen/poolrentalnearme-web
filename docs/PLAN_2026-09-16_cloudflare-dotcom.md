@@ -135,6 +135,24 @@ actually stops scrapers from hitting EAST directly). Separate GO.
 disabled, "latest build failed"). Zone: 61 records all DNS-only, 0 page rules, 0 zone Worker
 routes, status pending, zone id f153ae5162eb55f788ee0956ef0f3d7a. Nothing deleted.
 
+**Step 3 done 2026-09-16 22:01Z.** Claude in Chrome set anna/max at Hostinger (~21:58Z, no
+prompts appeared, nothing else touched). Registry showed the new NS immediately; zone active
+22:01:10Z; 0 proxied. Record diff Cloudflare vs Hostinger over all 60 export rows: identical
+except the two known ALIAS cases (`stage.host`, `designs`, Cloudflare serves CNAME to the same
+cdn.hstgr.net targets). Public resolvers: www → 13.56.113.85, MX → Hostinger mx1/mx2 on both
+1.1.1.1 (already on Cloudflare NS) and 8.8.8.8 (still cached old NS); site 200 direct.
+
+**Steps 4–5 done 2026-09-16 22:02–22:04Z.** Edge cert (Let's Encrypt via Cloudflare,
+`poolrentalnearme.com` + www, to 2026-12-15) appeared 22:02:56Z, ~2 min after activation.
+`www` proxied 22:03Z (edge 172.67.195.185). Checklist via edge: `/` 200, `/s` 200 and is the
+marketplace app (asset markers present), `/login` `/signup` 200, a real listing page 200,
+`/p/hosting` and `/p/rent-out-your-pool-uk` 200 (EAST via WEST), sitemap/robots 200,
+`/fw-assets/__build.json` `no-store` honoured (DYNAMIC), AASA + assetlinks byte-identical to
+origin, booking POST `{}` → 400 JSON as the smoke test expects, scanner path 403 at the edge,
+session cookie keeps `Secure`, http→https 301, smoke test PASS. First 91 requests after the
+flip: 0 5xx, 0 499, 21 distinct visitor IPs (real-IP working). `/.well-known/openid-configuration`
+and `jwks.json` 404 at origin too (pre-existing, not the edge).
+
 ## What I need from Derek
 1. Step 0 (Worker routes) — or extend the `prnm-edge` token with "Workers Routes: Read" so I
    can check it myself.

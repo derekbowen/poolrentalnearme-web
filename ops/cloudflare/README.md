@@ -76,3 +76,11 @@ Rollback at any point: proxy OFF (grey cloud) or nameservers back to Hostinger.
   UptimeRobot/Sentry, and server-to-server webhooks. .com needs Pro + Super Bot Fight Mode with WAF skip
   rules, or no bot mode at all.
 - Not yet: cache rules (pages still `cf-cache-status: DYNAMIC`).
+
+## 2026-09-16 20:53Z — ccTLD marketplace-path redirects + the .com app-safety recipe
+See `docs/OPS_RECORD_2026-09-16_country-launch-pages.md` §2 and §4. Short version for .com:
+no Bot Fight Mode / JS challenge / browser check; a WAF skip for `/.well-known/*`, `/api/*`,
+`/csp-report`, `/fw-assets/*`, `/assets/*`, `/tools/*`; scanner block + verified-bot-exempt
+rate limit only; WEST trusts CF-Connecting-IP first; proxy apex+www only (mail, go., hostpro.,
+help. stay DNS-only). Evidence: no app traffic hits .com; universal links, Apple/Google
+sign-in, Stripe, iCal all do.

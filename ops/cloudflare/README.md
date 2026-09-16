@@ -19,11 +19,11 @@ Supabase outage analysis (crawler on .co.uk → EAST → 15k DB calls in 4 min).
 | zone | Cloudflare nameservers | records | proxied |
 |---|---|---|---|
 | poolrentalnearme.com | anna.ns.cloudflare.com / max.ns.cloudflare.com | 61 | 0 |
-| poolrentalnearme.co.uk | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 0 |
+| poolrentalnearme.co.uk | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 2 (apex+www, since 2026-09-16 19:53Z) |
 | poolrentalnearme.ca | anna.ns.cloudflare.com / max.ns.cloudflare.com | 3 | 0 |
 | poolrentalnearme.com.au | angelina.ns.cloudflare.com / norm.ns.cloudflare.com | 3 | 0 |
 
-Hostinger nameservers today on all four: ns1/ns2.dns-parking.com. **Not changed yet.**
+Nameservers: .co.uk moved to Cloudflare 2026-09-16 19:49Z (Derek, Hostinger hPanel), zone active 19:50:45Z. .com/.ca/.com.au still ns1/ns2.dns-parking.com.
 
 ## DNS reconciliation (done 2026-09-16, API from WEST)
 Cloudflare's scan found 19 of 60 .com records and proxied 11 of them. All 60 records from
@@ -46,3 +46,15 @@ both are Hostinger-hosted side sites.
    Sharetribe) allowlisted; WEST nginx trusts CF-Connecting-IP; certbot .well-known bypass.
 4. EAST security group: 80/443 only from WEST + Cloudflare ranges.
 Rollback at any point: proxy OFF (grey cloud) or nameservers back to Hostinger.
+
+## .co.uk proxied — 2026-09-16 19:53Z (Derek GO)
+- EAST nginx: `snippets/cloudflare-real-ip.conf` (22 Cloudflare ranges + `real_ip_header CF-Connecting-IP`)
+  included from nginx.conf http block; backup `config-backups/nginx.conf.bak-realip-*`. Logs show
+  visitor IPs again.
+- Zone settings: SSL Full (strict) against EAST's Let's Encrypt cert (valid to 2026-11-04), min TLS 1.2,
+  Always Use HTTPS on. Email obfuscation, Rocket Loader, Mirage, Polish, minify all OFF so the edge
+  serves byte-identical HTML to the origin (obfuscation had rewritten support@ and injected a script).
+- Verified: cf-ray present, apex 302 → /p/rent-out-your-pool-uk unchanged, page 200 identical bytes,
+  robots.txt/sitemap-country.xml 200, http→https 301, edge cert Let's Encrypt via Cloudflare, no 5xx on EAST.
+- Not yet on .co.uk: bot rules, rate limits, cache rules (cf-cache-status DYNAMIC on pages). Next after a
+  day of observation.

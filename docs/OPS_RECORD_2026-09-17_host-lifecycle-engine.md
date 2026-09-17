@@ -155,6 +155,73 @@ is eligible yet (24 h clocks from first observation; 10 d for no-booking).
 No cron. Mode left at `dry_run`, `HOST_LIFECYCLE_EMAILS_ENABLED=false`;
 allowlist, phone and postal address remain configured for GO 2.
 
+## 2026-09-17 03:28Z — GO 2: first live cohort, 5 real hosts, `no_listing_1` only
+
+**Code first** (fresh-web `4943829`, deployed, ritual verified): hand-run
+restrictions `HOST_LIFECYCLE_ONLY_USERS` / `HOST_LIFECYCLE_ONLY_CAMPAIGNS`
+(the evaluator enqueues nothing outside them; the sender leaves anything
+outside them queued and untouched) and an explicit "already genuinely sent"
+guard immediately before the provider call. Tests 36/36 + lease integration.
+
+**Selection** (SQL over `host_lifecycle_state` + all suppression tables):
+SIGNED_UP, provider, no listing, verified email, not deleted/banned, account
+1–90 days old, no `suppressed_emails` / used unsubscribe token /
+`composer_unsubscribes` / `host_subscribers` unsubscribed-paused-excluded-
+Intercom-paused, no prior `sent`, no test/dev-looking email or name; five
+most recent signups. Review table printed before the send: five queued jobs,
+all under production keys, none suppressed, none previously sent.
+
+| user_id | recipient | first name | signup | reason |
+|---|---|---|---|---|
+| 6aa32d8f… | ed***@gmail.com | Edison | 2026-09-10 | provider account with no listing |
+| 6a983ddf… | su***@comcast.net | susan | 2026-09-02 | provider account with no listing |
+| 6a94ab21… | sa***@gmail.com | Sarah | 2026-08-30 | provider account with no listing |
+| 6a8b1f24… | sa***@icloud.com | Saundra | 2026-08-23 | provider account with no listing |
+| 6a8b0bfa… | jo***@gmail.com | jose | 2026-08-23 | provider account with no listing |
+
+**Send** (`HOST_LIFECYCLE_EMAILS_ENABLED=true`, `HOST_EMAIL_MODE=production`,
+cap 5, cohort + campaign restricted; sync → evaluate enqueued exactly 5,
+19 eligible hosts outside the cohort untouched):
+
+| recipient | subject | Emailit id | sent_at (UTC) | status |
+|---|---|---|---|---|
+| sa***@icloud.com | Need help getting your pool listed? | em_4JRDJQmbaR5nbc0RxMPGKUS980O | 03:15:14 | sent |
+| jo***@gmail.com | Need help getting your pool listed? | em_4JRDJQmbaR5UHmRE7OGx6oVleIr | 03:15:14 | sent |
+| sa***@gmail.com | Need help getting your pool listed? | em_4JRDJVeOcLFQ718hiNkA5HzfkZb | 03:15:15 | sent |
+| ed***@gmail.com | Need help getting your pool listed? | em_4JREsJvn7NUAPmtRTCWQLivtRTE | 03:28:05 | sent (attempt 2) |
+| su***@comcast.net | Need help getting your pool listed? | em_4JREsRir9akflEYtNz38nnhSa5F | 03:28:06 | sent (attempt 2) |
+
+The first pass sent 3 and got **Emailit 429 "Maximum 2 messages per
+second"** on the other 2 (the engine fired all five within a second). Those
+two are the same reviewed hosts, not replacements: fix `0e089a3` spaces
+provider calls 600 ms apart and retries once inline after a 429 honouring
+`retry_after` (regression test added); their two retry jobs were made due
+by SQL (`scheduled_at = now()`), and a second restricted production pass
+sent them. Total real emails: **5**.
+
+**Post-send verification (SQL):** 5 rows `sent`, all with `sent_at` and a
+provider id; 0 sent outside the cohort; 0 sent for any other campaign; 0
+queued/leased; simulation history untouched (21 `would_send`, 6
+`suppressed`, all `sim:` keys); test-send runs still 8. Duplicate
+protection: inserting a second row under a sent host's production key
+fails with `23505`; `send` again leased 0; `evaluate` again reports the 5
+as "already sent" (eligible 24 → 19). No renter path exists in the engine.
+No cron (ubuntu and root crontabs: 0 entries).
+
+**Returned to:** `HOST_LIFECYCLE_EMAILS_ENABLED=false`, `HOST_EMAIL_MODE=dry_run`,
+cap 25, `ONLY_*` removed; `pm2 restart --update-env && pm2 save`.
+
+**Side incident:** the deploy of `0e089a3` aborted at `verify:production`
+("homepage 429"): our own Cloudflare per-IP rate limit blocked EAST's
+verifier after its ~500 URL checks. The ritual rolled production back to
+`4943829` (healthy, verified). The rate-limit phase cannot use `ip.src` on
+this plan, so a WAF custom rule now skips the rate limit for EAST
+(3.222.110.146) and WEST (13.56.113.85) only: `action: skip`,
+`action_parameters.phases: ["http_ratelimit"]` (a first attempt with
+`products: ["rateLimit"]` targeted the legacy product and did nothing).
+Proven with 80/80 `200` from EAST, then `0e089a3` redeployed and verified
+(03:43Z; production, stamp and working tree agree).
+
 ## Next gates (each needs Derek's explicit GO)
 
 1. Support phone chosen → set `HOST_LIFECYCLE_SUPPORT_PHONE`, restart.

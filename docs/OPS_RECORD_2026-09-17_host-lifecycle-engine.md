@@ -117,6 +117,44 @@ Open decision before production: the 21 `dry_run` rows from the first run
 count as "already sent" for their campaign, so those hosts would never get
 `no_listing_1`. Reset them (mark `cancelled`) at production GO, or leave them.
 
+## 2026-09-17 02:35Z — GO 1: dry-run state bug fixed, 21 hosts reset
+
+**Root cause (three leaks, all in fresh-web `ops/host-lifecycle`):**
+1. `queue.ts loadHistory()` loaded status `dry_run` alongside `sent` and put
+   both into `history.sent[campaign]`, so `evaluateCampaign` said "already
+   sent" for a simulated host.
+2. The evaluator enqueued every eligible host under the production
+   idempotency key `user:campaign` before the mode decision, so the row that
+   ended as `dry_run` kept the key and a later real enqueue was silently
+   dropped as a duplicate.
+3. `send.ts lastEmailToUser()` counted `dry_run` toward the per-user gap.
+
+**Fix (fresh-web `3a056f1` … `0fce812`, deployed, ritual verified):**
+simulations are status `would_send` under a `sim:user:campaign:<day>` key
+(one per host per campaign per UTC day, audit only, `sent_at` never set);
+`sent` is the only status that counts as delivered, for campaign history,
+per-user gap and daily cap; the evaluator asks `decideDelivery()` at enqueue
+time and only a real send intent takes the production key; a
+production-keyed job that ends record-only releases its key; test sends
+write only `host_lifecycle_runs`. Migration
+`20260917010000_host_lifecycle_would_send` applied: 21 `dry_run` rows →
+`would_send` with `sim:` keys (audit preserved), 3 record-only `suppressed`
+rows also moved to `sim:` keys. Verified: 0 production keys, 0 rows with
+`sent_at`, 0 `sent`.
+
+**Tests:** 34 pass / 0 fail / 1 opt-in skipped (unit + new
+`lifecycle.regression.test.ts` driving the real evaluate/send code against
+an in-memory DB), plus the lease integration test against the real RPC:
+pass. `check:types` PASS.
+
+**Dry run re-run (02:33Z, mode dry_run, switch off, 0 external sends):**
+300 hosts; `evaluate` reports 24 eligible for `no_listing_1` (all 24 again;
+the "already sent" reason no longer appears), 21 already simulated today,
+3 newly simulated and suppressed by prior unsubscribes. No other campaign
+is eligible yet (24 h clocks from first observation; 10 d for no-booking).
+No cron. Mode left at `dry_run`, `HOST_LIFECYCLE_EMAILS_ENABLED=false`;
+allowlist, phone and postal address remain configured for GO 2.
+
 ## Next gates (each needs Derek's explicit GO)
 
 1. Support phone chosen → set `HOST_LIFECYCLE_SUPPORT_PHONE`, restart.

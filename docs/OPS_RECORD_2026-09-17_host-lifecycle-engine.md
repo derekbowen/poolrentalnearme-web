@@ -222,6 +222,110 @@ this plan, so a WAF custom rule now skips the rate limit for EAST
 Proven with 80/80 `200` from EAST, then `0e089a3` redeployed and verified
 (03:43Z; production, stamp and working tree agree).
 
+## 2026-09-17 04:47Z — GO 3: controlled production, cap 25, `no_listing_1` only
+
+**Safeguards shipped first** (fresh-web `2bc06e5` … `ff9af81`, each deployed
+by the ritual, 43 engine tests + lease integration green):
+
+- `HOST_PRODUCTION_CAMPAIGNS` — fail-closed campaign allowlist enforced in
+  `decideDelivery()` per campaign: empty = nothing sends in any mode; a
+  campaign not listed is evaluated and recorded as `would_send` under a
+  `sim:` key (reason "not in HOST_PRODUCTION_CAMPAIGNS"). Set to
+  `no_listing_1`.
+- **One sender, globally**: `host_lifecycle_locks` + RPCs
+  `acquire_lifecycle_lock` / `release_lifecycle_lock` (migration
+  `20260917020000`). `sendDue` leases nothing unless it holds
+  `emailit-sender` (TTL 300 s), releases in `finally`. Proven on the real DB
+  (A acquires, B refused, A re-entrant, B cannot release A's, B acquires
+  after release) and in the regression suite (two concurrent senders → one
+  works, lock released after). With one sender anywhere, the in-process
+  600 ms spacing is the provider-wide rate. `test-send` bypasses the lock
+  (single hand-run message).
+- **Typed 429 handling**: `EmailitHttpError{status, retryAfterMs}` from the
+  real HTTP status; `Retry-After` header, else body `retry_after`; one inline
+  retry only for 429 after that wait; other statuses go straight to the
+  job-level bounded retry (3 attempts → `failed`); `sent` is written only
+  after the provider accepts; same idempotency key throughout; a failed job
+  is never leased again. All regression-tested.
+- `run.mjs explain` — read-only per-campaign counts with masked examples.
+- Suppressed outcomes now release the production key (re-checked once a
+  day), so a host who re-subscribes can be evaluated for real; the three
+  suppressed rows from this run were released by SQL the same way.
+
+**Pre-run checks:** GO 2's 5 rows `sent` with production keys intact; total
+sent 5; queue empty; only `refresh-related-slugs-monthly` in `cron.job`;
+no lifecycle crontab / cron.d / systemd timer on EAST.
+
+**Run** (fresh sync 04:46Z: 1,196 users → 300 hosts). `explain`:
+no_listing_1 eligible 16, suppressed 3, timing 1, already sent 5, not
+verified 55. Every other campaign eligible 0 (24 h clocks from the first
+sync at 00:05Z; see table below). `evaluate` enqueued 19 production-keyed
+`no_listing_1` jobs (16 clean + 3 suppressed-at-send). Pre-send list
+reviewed (all provider accounts, no listing, verified, no prior send, none
+test-looking). `send`: **16 sent, 3 suppressed** (2 `host_subscribers:
+unsubscribed`, 1 `suppressed_emails:unsubscribe`), 0 failed, 0 capped,
+sends spaced ≈0.9 s (04:47:08 → 04:47:22), lock released. Second `send`
+leased 0. `evaluate` again: "already sent" = 21, eligible 3 (the suppressed
+three, re-checked tomorrow).
+
+| user | recipient | Emailit id | sent_at |
+|---|---|---|---|
+| 6a828030 | je***@hotmail.com | em_4JROUJUFTkdfKTLnTioe60RM9Jj | 04:47:08 |
+| 6a7def90 | ms***@yahoo.com | em_4JROURHJVxti66BAd6hiNWTvIxo | 04:47:09 |
+| 6a621041 | cy***@wpp.com | em_4JROUbzeYUGnMhtJNtSJqHaVkef | 04:47:10 |
+| 6a56ecc1 | bi***@icloud.com | em_4JROUgrRaOQZX1bW1yK6iKWxytV | 04:47:11 |
+| 6a8440f6 | aa***@gmail.com | em_4JROUoeVcbgvcVHJg9M5EPSEKv4 | 04:47:12 |
+| 6a827555 | v4***@privaterelay.appleid.com | em_4JROUzMqf841h1FGGCchHsMpEAw | 04:47:13 |
+| 6a7a57c8 | ha***@gmail.com | em_4JROUzMqf83rEBu5dsqMZCJrvEl | 04:47:14 |
+| 6a750a33 | di***@gmail.com | em_4JROV4Edh2DeCPubqnUR6xLHj85 | 04:47:14 |
+| 6a4acc56 | jo***@gmail.com | em_4JROVC1hjFU9wp4FHCbZo7QXA0u | 04:47:15 |
+| 6a4147c1 | da***@gmail.com | em_4JROVJollSkCJUsjiiegmsVMcgj | 04:47:16 |
+| 6a41472c | we***@yahoo.com | em_4JROVUX6nz78K8Zv5ql0glamqzK | 04:47:17 |
+| 6a823c9d | mo***@gmail.com | em_4JROVZOtptHDoICYNBYRfqIlrKV | 04:47:18 |
+| 6a81186c | to***@gmail.com | em_4JROVk7EsPdzl3wy7jzMUdGL3WO | 04:47:19 |
+| 6a6800c6 | va***@gmail.com | em_4JROVoz1uJncfPZqPMJHvUtmEVM | 04:47:20 |
+| 6a42b816 | br***@gmail.com | em_4JROVwm5wX48PoLIAFWBTpVYjc9 | 04:47:21 |
+| 6a8899a2 | ka***@gmail.com | em_4JROW4Z9ykKLFJwI7MX5zXXSNZQ | 04:47:22 |
+
+All 16: campaign `no_listing_1`, subject "Need help getting your pool
+listed?", attempt 1, status `sent`.
+
+**Post-run (SQL):** sent today 21 (≤ 25); campaigns sent = {no_listing_1};
+duplicate (user, campaign) sent = 0; queued 0; leased 0; would_send 21
+(unchanged); test-send runs 8; lock holder null. No renter path exists.
+
+**Other campaigns (evaluate-only, from `explain`):**
+
+| campaign | eligible | suppressed | timing not reached | would send eventually |
+|---|---:|---:|---:|---:|
+| no_listing_2 | 0 | 0 | 72 (waiting for no_listing_1 + 72 h) | 72 |
+| incomplete_photos | 0 | 0 | 4 | 4 |
+| incomplete_info | 0 | 0 | 4 | 4 |
+| publish_1 | 0 | 0 | 0 (no host in LISTING_READY) | 0 |
+| stripe_1 | 0 | 0 | 7 | 7 |
+| stripe_2 | 0 | 0 | 7 (waiting for stripe_1) | 7 |
+| no_booking_1 | 0 | 0 | 77 (10 d live) | 77 |
+
+Observation for Derek: one `stripe_1` candidate (ro***@gmail.com) is a
+**published** listing whose `publicData.location.address` is empty — our
+address check may miss a location format, or the listing really has none.
+
+**End state:** `HOST_LIFECYCLE_EMAILS_ENABLED=true`, `HOST_EMAIL_MODE=production`,
+`HOST_LIFECYCLE_DAILY_CAP=25`, `HOST_PRODUCTION_CAMPAIGNS=no_listing_1`,
+no `ONLY_*`. Left on because nothing can invoke the sender automatically:
+no crontab (ubuntu/root), no `/etc/cron.d`, no systemd timer, pm2 runs
+only `fresh-web`, the admin page has no send action, the old hook routes
+are deleted. **No cron installed.**
+
+**Cloudflare exemption scope (read back 04:41Z):** custom rule
+`(ip.src in {3.222.110.146 13.56.113.85})` → `skip`,
+`action_parameters = {phases: ["http_ratelimit"]}` only; no `ruleset:
+current`, no `products`. So for those two IPs only the per-IP rate limit is
+skipped. Still applied to them: the junk-UA block, the scanner-path block
+(both in the same custom ruleset), security level (medium), Bot Fight Mode
+(off on .com anyway), application authentication (Sharetribe, not
+Cloudflare). No managed WAF ruleset exists on this plan.
+
 ## Next gates (each needs Derek's explicit GO)
 
 1. Support phone chosen → set `HOST_LIFECYCLE_SUPPORT_PHONE`, restart.

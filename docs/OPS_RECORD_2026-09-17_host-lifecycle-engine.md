@@ -91,6 +91,32 @@ watchdogs). Until Derek picks one, every template renders
   `node --env-file=.env`, which does not override an existing process env, so
   the file is the source of truth for both the app and the CLI.
 
+## 2026-09-17 02:00Z — Derek's GO: allowlist test
+
+Derek supplied the support phone (909-272-8096) and postal address
+(7785 Halbrook Terrace, Riverside, CA 92509) and said GO. Done:
+
+- fresh-web `f2e5c99` deployed (ritual verified, drift PASS): adds
+  `run.mjs test-send <template> <to>`, allowed only in allowlist mode, only to
+  an allowlisted address, only with the switch on and the phone set; every
+  call recorded in `host_lifecycle_runs` (phase `test-send`). 28/28 unit tests.
+- EAST `.env`: `HOST_LIFECYCLE_EMAILS_ENABLED=true`, `HOST_EMAIL_MODE=allowlist`,
+  `HOST_EMAIL_ALLOWLIST=derekcbowen@outlook.com` (Derek's session identity;
+  no other address was given), phone + postal address set, cap 25.
+  `pm2 restart --update-env` + `pm2 save` done. **No cron installed.**
+- **8 emails sent, all to derekcbowen@outlook.com, subjects prefixed
+  `[TEST]`**, Emailit ids `em_4JR56jJ7…` (no_listing_1), `em_4JR56oAu…`
+  (no_listing_2), `em_4JR56vxy…` (incomplete_photos), `em_4JR573l2…`
+  (incomplete_info), `em_4JR576gJ…` (publish_1), `em_4JR57BY6…` (stripe_1),
+  `em_4JR57MGR…` (stripe_2), `em_4JR57R8E…` (no_booking_1).
+- Guard proven: a non-allowlisted address is refused before any provider call.
+- Real hosts: 0 emails. In allowlist mode every non-allowlisted recipient is
+  recorded as `dry_run`.
+
+Open decision before production: the 21 `dry_run` rows from the first run
+count as "already sent" for their campaign, so those hosts would never get
+`no_listing_1`. Reset them (mark `cancelled`) at production GO, or leave them.
+
 ## Next gates (each needs Derek's explicit GO)
 
 1. Support phone chosen → set `HOST_LIFECYCLE_SUPPORT_PHONE`, restart.

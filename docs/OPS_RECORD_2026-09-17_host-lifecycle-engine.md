@@ -326,6 +326,81 @@ skipped. Still applied to them: the junk-UA block, the scanner-path block
 (off on .com anyway), application authentication (Sharetribe, not
 Cloudflare). No managed WAF ruleset exists on this plan.
 
+## 2026-09-17 05:50Z — GO 4 preparation (no cohort sent yet: timing + cap)
+
+**Address/location anomaly — detector CORRECT.** Listing
+`6a735ac6-aa3e-42ec-b9ec-2c6b138d8ae3` ("Paws and Relax – Private Pool with
+Game Room", state `published`, 5 images, created 2026-08-05): raw Sharetribe
+`attributes.geolocation = null`, `publicData` has no `location` key at all
+(keys: advantagesSelection, amenities, isInstantBooking, listingType,
+priceVariationsEnabled, refundableDeposit, transactionProcessAlias,
+unitType). The detector reads `attributes.geolocation` and
+`publicData.location.address` and returns `has_address=false`, `missing:
+["address"]` — correct. Across all 125 published listings: 123 have
+`location{address…}` + geolocation, 2 have neither. No detector change.
+**Policy tightened instead:** `stripe_1`/`stripe_2` now require
+`listing_ready` (published AND complete) — a listing that cannot appear in
+search is not an actionable payout nudge; reason string "published but
+incomplete (address); payout nudge not actionable". Regression-tested.
+
+**Stripe CTA was wrong and is fixed.** WEST `routeConfiguration.js`:
+`StripePayoutPage` is `/account/payments` (`/account/payments/:returnURLType`
+for onboarding return). `/account/payouts` does not exist; the SPA shell
+returns 200 for any path, which is what fooled the earlier check. Fixed in
+`urls.ts` (`STRIPE_PAYOUT_PATH`), tested, documented. The 8 test emails Derek
+received on 2026-09-17 02:00Z carried the wrong payout link; no real host
+has received a Stripe email.
+
+**incomplete_info copy is now specific** (`incompleteInfoCopy`): names
+exactly what is missing (address / hourly price / title / description),
+explains why, and the CTA lands on the wizard tab of the first missing piece
+(details → location → pricing; tabs verified on WEST:
+`/l/:slug/:id/draft|edit/details|location|pricing|availability|photos`).
+`incomplete_photos` names a missing price too when applicable, CTA
+`…/draft/photos`. Progression stop conditions proven through the real
+queue + send code: photos added → incomplete_photos blocked (evaluate) and a
+stale queued job cancelled (send); fields completed → incomplete_info
+blocked; Stripe connected → stripe_1/stripe_2 blocked. fresh-web `7069d6e`
+… `339e183` deployed; engine suite 47 pass / 0 fail + lease integration.
+
+**Candidates revalidated (SQL over state + all suppression tables, 05:40Z):**
+
+| cohort | user | listing | recipient | state | missing | notes |
+|---|---|---|---|---|---|---|
+| incomplete_photos | 6a33334b… | 6a3333fc… | li***@gmail.com | ADDRESS_ADDED | photos | |
+| incomplete_photos | 6a20783c… | 6a207937… | sw***@springcreekpool.com | ADDRESS_ADDED | photos | |
+| incomplete_photos | 6a165cd5… | 6a165dc9… | ch***@gmail.com | ADDRESS_ADDED | price, photos | copy names the price |
+| incomplete_photos | 697510e2… | 6a272d23… | sc***@gmail.com | ADDRESS_ADDED | price, photos | copy names the price |
+| incomplete_info | 6a6bd26b… | 6a6bd4ff… | pj***@gmail.com | LISTING_STARTED | address, price, photos | Stripe already connected |
+| incomplete_info | 69ee12a0… | 69ee158d… | lo***@gmail.com | LISTING_STARTED | address, price, photos | |
+| incomplete_info | 6a6b4549… | 6a6b4b38… | as***@gmail.com | LISTING_STARTED | address, price, photos | |
+| incomplete_info | 6a821bb9… | 6a8d44f4… | tr***@gmail.com | LISTING_STARTED | address, photos | **excluded: userType `customer`**, not a provider account |
+| stripe_1 | 6a9f4749… | 6aa62481… | bi***@hotmail.com | PUBLISHED, complete | – | |
+| stripe_1 | 6a93189c… | 6a931da5… | li***@yahoo.com | PUBLISHED, complete | – | |
+| stripe_1 | 6a8affdf… | 6a93e608… | fo***@outlook.com | PUBLISHED, complete | – | |
+| stripe_1 | 6a8278bd… | 6a8b36f6… | my***@gmail.com | PUBLISHED, complete | – | |
+| stripe_1 | 6a81f688… | 6a81f86c… | jw***@privaterelay.appleid.com | PUBLISHED, complete | – | |
+| stripe_1 | 6a0f6b06… | 6a5d2ef1… | cc***@yahoo.com | PUBLISHED, complete | – | 6th; oldest signup, held back to keep max 5 |
+| (stripe_1) | 6a7359b2… | 6a735ac6… | ro***@gmail.com | PUBLISHED, incomplete | address | excluded by the new rule |
+
+All: provider (except the noted customer), verified email, no suppression of
+any kind, no prior genuine send, not test-looking, no Intercom pause.
+
+**Why nothing was sent in this pass.** (1) Timing: every candidate's
+`state_entered_at` is the first sync (2026-09-17 00:05Z); the 24 h minimum
+is reached at **2026-09-18 00:05Z**. Eligibility is not relaxed. (2) Cap:
+21 sent today, 4 remaining, cohorts requested 4 + 3 + 5 = 12. Per GO 4 §6
+the excess is not rolled into another day automatically; sends wait for
+Derek's word. Cohort scripts are ready (`east_cohort_go4_prepare.py` /
+`east_cohort_go4_send.py`): each fences `HOST_LIFECYCLE_ONLY_CAMPAIGNS` +
+`HOST_LIFECYCLE_ONLY_USERS`, adds the campaign to
+`HOST_PRODUCTION_CAMPAIGNS` only for the run, prints cap accounting first
+and refuses if the cohort does not fit, then restores the allowlist to
+`no_listing_1`.
+
+**State now:** production, cap 25, allowlist `no_listing_1`, no fence, no
+cron/timer/cron.d, queue empty, CLI rebuilt on `339e183`.
+
 ## Next gates (each needs Derek's explicit GO)
 
 1. Support phone chosen → set `HOST_LIFECYCLE_SUPPORT_PHONE`, restart.

@@ -46,8 +46,47 @@ BANNED="$BANNED"'|your (pool|home|property|data) (is|are) (covered|insured|prote
 # a guard that cries wolf gets disabled.
 BANNED="$BANNED"'|hartford|lloyd.?s of london|chubb|a-rated carrier|our a.rated'
 BANNED="$BANNED"'|\$2M host|\$2 ?million host'
+# Added 2026-09-21 (Derek). Two new classes:
+#  (a) automatic/universal coverage framing — nobody is insured by default, and
+#      the policy does not attach to a booking, a host, or a renter;
+#  (b) the stale blanket denial. "PRNM does not provide or arrange insurance"
+#      was true before 2026-08-17 and is false now; it must not come back as a
+#      substitute for the marketing block while the gate is shut. Omit instead.
+BANNED="$BANNED"'|automatically insured|insured automatically|insurance on every booking'
+BANNED="$BANNED"'|every (booking|host|renter|guest|rental) is (insured|covered)'
+BANNED="$BANNED"'|(each|every) booking (is|comes) (insured|covered|with insurance)'
+
+# The stale blanket denial, scanned separately because it is banned in MARKETING
+# copy only. "PRNM does not provide or arrange insurance" was true before
+# 2026-08-17 and reads as false now that a CGL policy is bound; it must not come
+# back as a stand-in for the marketing block while the publish gate is shut. The
+# correct behaviour there is to omit the block, not to deny.
+#
+# It is NOT banned in the legal documents. ToS §11.1 ("PRNM does not provide,
+# arrange, underwrite, or guarantee insurance of any kind to Hosts, Renters, or
+# their guests") is a different and still-accurate statement: PRNM's own policy
+# covers PRNM's operations, hosts are not additional insureds, and Section I
+# Property is deleted. That section is counsel's to change, not this guard's.
+STALE='does not (provide|offer|arrange|carry) (or arrange )?insurance'
+STALE="$STALE"'|(provides|offers|arranges) no insurance'
+STALE_ALLOW='^(src/containers/TermsOfServicePage/|src/containers/HostPreparednessPolicyPage/|src/containers/PrivacyPolicyPage/)'
+
+# The policy number is an internal administrative record. It must never appear
+# in anything that can be bundled, served, or crawled. Matched BY SHAPE so the
+# number itself is not written into this guard. docs/ is out of scope here on
+# purpose: that is where the internal record legitimately lives.
+POLICY_SHAPE='[A-Z]{2,4}-[0-9]{6,10}-[0-9]{2}'
 
 fail=0
+
+policy=$(grep -rInE "$POLICY_SHAPE" src/ server/ public/ --include='*.js' --include='*.jsx' \
+  --include='*.json' --include='*.css' --include='*.html' 2>/dev/null || true)
+if [ -n "$policy" ]; then
+  echo "BLOCKED: what looks like an insurance policy number in bundled/served source."
+  echo "It belongs in docs/insurance/policy-facts.json only."
+  echo "$policy"
+  fail=1
+fi
 
 # Pure comment lines are excluded from the BANNED scan. The changelog comments
 # in host-preparedness-2026-1.js name the phrases that were REMOVED, and a guard
@@ -58,6 +97,17 @@ banned=$(grep -rInEi "$BANNED" src/ server/ --include='*.js' --include='*.jsx' 2
 if [ -n "$banned" ]; then
   echo "BLOCKED: prohibited insurance phrasing (never allowed, no baseline):"
   echo "$banned"
+  fail=1
+fi
+
+stale=$(grep -rInEi "$STALE" src/ server/ --include='*.js' --include='*.jsx' 2>/dev/null \
+  | grep -vE '^[^:]+:[0-9]+: *(//|\*|/\*)' \
+  | grep -vE "$STALE_ALLOW" || true)
+if [ -n "$stale" ]; then
+  echo "BLOCKED: stale blanket insurance denial in marketing copy."
+  echo "PRNM has carried a commercial general liability policy since 2026-08-17."
+  echo "While the publish gate is shut, OMIT the insurance block — do not deny."
+  echo "$stale"
   fail=1
 fi
 

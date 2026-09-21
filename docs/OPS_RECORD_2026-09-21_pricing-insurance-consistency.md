@@ -80,8 +80,10 @@ The file's own rationale: the declarations issue the policy to the trade name
 and *"a named insured that does not match the entity in the contract is the kind
 of gap that gets argued at claim time, so nothing renders until this is endorsed."*
 
-A real policy exists — Spinnaker Insurance Company, via Coterie, `CSG-00536699-00`,
-BOP, bound 2026-08-17, $2M occurrence / $4M aggregate. The gate is shut on the
+A real policy exists — Spinnaker Insurance Company, via Coterie, BOP, bound
+2026-08-17, $2M occurrence / $4M aggregate. (Identifiers for the current
+insurance policy stay in `docs/insurance/policy-facts.json`, the internal
+administrative record; they are not repeated in ops logs.) The gate is shut on the
 named-insured mismatch alone, not on whether coverage exists.
 
 ### The live contradiction

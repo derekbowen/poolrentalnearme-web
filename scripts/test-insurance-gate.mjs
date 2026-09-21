@@ -75,8 +75,50 @@ const onlyInConfig = (label, pattern) => {
 };
 
 onlyInConfig('carrier name appears only in the config', 'Spinnaker|Coterie');
-onlyInConfig('policy number appears only in the config', 'CSG-00536699');
 onlyInConfig('broker contact appears only in the config', 'undercardgroup|Dunmire');
+
+// The policy number is different in kind: it is not allowed in the config
+// either, because the config is imported by a client component and everything
+// in it is one render away from the browser bundle. Matched by shape so the
+// number is not reproduced here.
+const bundledPolicyNumber = execSync(
+  `grep -rlIE '[A-Z]{2,4}-[0-9]{6,10}-[0-9]{2}' src/ server/ --include='*.js' --include='*.jsx' 2>/dev/null || true`,
+  { encoding: 'utf8' }
+)
+  .split('\n')
+  .filter(Boolean);
+check(
+  'policy number is in NO bundled source, config included' +
+    (bundledPolicyNumber.length ? ' — found in: ' + bundledPolicyNumber.join(', ') : ''),
+  bundledPolicyNumber.length === 0
+);
+check('policy_number field is null in the config', INSURANCE_CONFIG.policy_number === null);
+
+// ---- Derek's marketing wording (2026-09-21) ----
+// Stored verbatim rather than tokenised, so the one way it can drift is for a
+// limit to change and the sentence not to. That drift fails here.
+const { marketing_heading: mh, marketing_body: mb } = mod.INSURANCE_COPY;
+check('marketing heading is the approved wording', mh === '$2M Commercial Liability Coverage');
+check(
+  'marketing body states the same limits as the declarations',
+  mb.includes('$2 million per occurrence') &&
+    mb.includes('$4 million aggregate') &&
+    INSURANCE_CONFIG.limit_per_occurrence === '$2,000,000' &&
+    INSURANCE_CONFIG.limit_general_aggregate === '$4,000,000'
+);
+check(
+  'marketing body carries the terms-and-exclusions qualifier',
+  /subject to the policy's terms, conditions, limitations, and exclusions\./.test(mb)
+);
+check(
+  'marketing copy makes no per-booking or universal claim',
+  !/per booking|every booking|every host|every renter|fully insured/i.test(mh + ' ' + mb)
+);
+check('marketing copy carries no policy number', !/[A-Z]{2,4}-\d{6,10}-\d{2}/.test(mh + ' ' + mb));
+check(
+  'marketing copy does not render while the gate is shut',
+  insuranceCopy('marketing_heading') === null && insuranceCopy('marketing_body') === null
+);
 
 // ---- components must not author their own insurance sentences ----
 const codeOnly = comp.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');

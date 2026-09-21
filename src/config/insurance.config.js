@@ -21,10 +21,11 @@
  * If a field cannot be pointed to on the document, it stays null and it does
  * not render.
  *
- * SOURCE: policy CSG-00536699-00, bound 2026-08-17, extracted to
- * policy-facts.json and reviewed against the coverage forms, endorsement
- * schedule, and declarations. Host-facing sentences come from
- * APPROVED-LANGUAGE.md and are reproduced verbatim in APPROVED_COPY below.
+ * SOURCE: the current insurance policy, bound 2026-08-17, extracted to
+ * docs/insurance/policy-facts.json and reviewed against the coverage forms,
+ * endorsement schedule, and declarations. That file — not this one — carries
+ * the policy number. Host-facing sentences come from APPROVED-LANGUAGE.md and
+ * are reproduced verbatim in APPROVED_COPY below.
  *
  * Note on shape: the spec called for a .ts file with `as const`. This repo has
  * no TypeScript and no tsconfig, so `as const` would be stripped with no type
@@ -58,7 +59,13 @@ const CONFIG = {
   carrier: 'Spinnaker Insurance Company', // underwriter, as printed
   underwriter: 'Spinnaker Insurance Company',
   program_administrator: 'Coterie Insurance Agency, LLC',
-  policy_number: 'CSG-00536699-00', // internal record only - never rendered publicly
+  // Deliberately absent. This module is imported by InsuranceDisclosure, a
+  // client component, so every literal in CONFIG is one `render` away from the
+  // browser bundle — and "never rendered publicly" is a property of the caller,
+  // not of the value. The policy number is an internal administrative record
+  // and is held in docs/insurance/policy-facts.json, which is never bundled.
+  // Do not re-add it here, or to any file under src/ or server/.
+  policy_number: null,
   policy_type: 'Businessowners Policy (BOP)',
   base_form: 'BP 00 03 07 13',
 
@@ -170,6 +177,25 @@ const APPROVED_COPY = {
     'We can request a certificate of insurance from our broker. Additional insured ' +
     'status requires a written agreement executed before any loss and is reviewed ' +
     'case by case.',
+
+  // ---- MARKETING SURFACE (Derek, 2026-09-21) ----
+  // The only wording approved for a customer-facing marketing block. Supplied
+  // as exact words, so they are stored verbatim and are not tokenised: rendering
+  // {perOccurrence} here would print "$2,000,000" and change what he wrote.
+  // test-insurance-gate.mjs asserts these figures still agree with the limits
+  // above, so a limit change fails the build rather than silently diverging.
+  //
+  // These go through insuranceCopy(), which means they render only when the gate
+  // opens. While it is shut the marketing block is OMITTED — it is not replaced
+  // with a denial, and it is not hardcoded past the gate on any surface.
+  //
+  // Deliberately absent, and not to be added: the policy number, "per booking",
+  // "every booking", "every host", "every renter", "fully insured".
+  marketing_heading: '$2M Commercial Liability Coverage',
+  marketing_body:
+    'Pool Rental Near Me carries commercial general liability insurance with ' +
+    "$2 million per occurrence and $4 million aggregate limits. Coverage is " +
+    "subject to the policy's terms, conditions, limitations, and exclusions.",
 };
 
 // Deep freeze: nested arrays must not be mutable either, or a caller could push

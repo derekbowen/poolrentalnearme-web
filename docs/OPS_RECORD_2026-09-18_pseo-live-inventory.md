@@ -203,3 +203,80 @@ the coordinates needed for the nearby tier.
   (`could not read Username for 'https://github.com'`). The commit exists
   locally on the box; it needs pushing from somewhere with credentials or the
   work lives only on that disk.
+
+---
+
+# Addendum — 2026-09-21 — operational gap closure
+
+Verified fresh; the 2026-09-18 commits had **not** been superseded.
+
+## Commit IDs (corrected)
+
+| what | id |
+|---|---|
+| Deployed on EAST **now** | **`0afa6c86`** (`dirty 0`, `check:deployed-sha` PASS) |
+| Pushed to `derekbowen/fresh-web-702e04c3` `ops/deploy-sha-enforcement` | **`0afa6c86`** |
+| Inventory feature commit, as pushed | **`349f1edd`** |
+| Inventory feature commit, as originally built on EAST | `24d14a99` — tree-identical to `349f1edd` (`32033194…`), superseded |
+| Repo mirror (this repo) | `7b42bd9`, plus this addendum |
+
+**Why the feature commit SHA changed.** EAST had never pushed (`no upstream
+configured`). I transferred the commit to a clone with credentials; the first
+transfer used `git format-patch` + `git am`, which re-creates the commit object,
+so it landed as `349f1edd` rather than `24d14a99`. I intended to push the exact
+object and a `git reset --hard` in my transfer step silently failed, so the
+rewritten commit went up. It was a clean fast-forward (`339e183..349f1ed`), no
+force, nothing lost, and the **tree is byte-identical**. I then re-pointed EAST
+at the pushed commit and re-stamped — no rebuild was needed precisely because
+the tree matched. The later fix commit was transferred by `git bundle`, which
+preserves the object, so `0afa6c86` is identical on both sides.
+
+## Fixed this pass — silent staleness defect
+
+`listing-sync.server.ts` reconciled vanished listings with
+`.not("sharetribe_id","in","(<every id>)")` and **discarded the error**. Two
+failure modes: the URL grows with the catalogue and eventually exceeds
+PostgREST's limit, and because the error was swallowed the sweep could fail
+without anyone knowing — leaving closed or deleted pools visible on city pages
+indefinitely, defeating the one guarantee the step exists to provide.
+
+Replaced with a single per-run timestamp and a `last_synced_at < runStartedAt`
+sweep: cost independent of catalogue size, and it now throws so the run is
+recorded as failed in `listing_sync_log`. Still guarded on `seenIds` so an API
+outage returning zero rows cannot wipe the catalogue.
+
+**Proved against production data**, twice (once per implementation): a probe row
+with a stale `last_synced_at` is tombstoned by the next sync, while all 199 real
+listings keep `is_deleted = false` and the eligible count holds at 124. Probe
+rows were deliberately given no image so they could never render, and both were
+deleted afterwards.
+
+## Freshness — the honest position
+
+| fact | value |
+|---|---|
+| Last successful sync | **2026-09-21 08:11 UTC** (run by me, by hand) |
+| Total sync runs, ever | 4 — all manual (2 on 09-18, 2 today) |
+| Automatic refresh running? | **No.** Zero cron entries, zero systemd timers |
+| Sync runtime | 3.2–3.7 s, 2 Sharetribe API calls per run |
+
+Before today's runs the data was **2 days 20 hours stale**. Correctness of the
+propagation path is now proven — new listings insert, price/state changes
+upsert, closures arrive as `state='closed'` and fail eligibility, vanished
+listings are tombstoned — but **all of it depends on someone triggering the
+hook.** This is not finished.
+
+## Coverage recount
+
+163 of 598 `cities` rows lack coordinates (162 published); only **13** are
+recoverable from the internal `pp_cities` table. The larger constraint: of 4,008
+published city pages, **3,376 (84%) have no `cities` row at all** and a further
+216 match a row with null coordinates — so about **3,592 pages have no usable
+centroid** and can only ever show exact-city matches. Proposal (unexecuted):
+`ops/east/pseo-inventory/PROPOSED_CENTROID_BACKFILL.md`.
+
+## Still unapplied, by instruction
+
+- Indexes — `PROPOSED_INDEXES.sql`, unchanged.
+- Sync schedule — `PROPOSED_SYNC_SCHEDULE.md`, prepared, **awaiting specific GO**.
+- Centroid backfill — proposed, awaiting approval.

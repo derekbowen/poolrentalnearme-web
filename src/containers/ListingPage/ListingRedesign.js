@@ -1,6 +1,7 @@
 import React from 'react';
 import { AvatarLarge } from 'components/Avatar/Avatar';
 import { NamedLink } from '../../components';
+import { corroboratedAdvantages } from '../../util/amenityClaims';
 
 // Truncate at a word boundary — never mid-word ("trust we g" bug).
 const cut = (str, n) => {
@@ -475,9 +476,15 @@ export const SectionAddOns = props => {
   );
 };
 
-/** Why you'll love it — top advantages as feature cards. */
+/**
+ * Why you'll love it — top advantages as feature cards.
+ *
+ * Only highlights the host's own poolAmenities confirm, exactly. The raw
+ * advantagesSelection is a marketing picker and was rendering "Heated pool" on
+ * listings whose hosts never ticked `heated`. See util/amenityClaims.js.
+ */
 export const SectionWhyLove = props => {
-  const items = (Array.isArray(props.publicData?.advantagesSelection) ? props.publicData.advantagesSelection : [])
+  const items = corroboratedAdvantages(props.publicData)
     .map(sl => ADVANTAGES[sl])
     .filter(Boolean)
     .slice(0, 3);

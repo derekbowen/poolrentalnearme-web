@@ -260,12 +260,22 @@ export const priceWithBookingFee = price => {
     return price;
   }
   try {
-    const divisor = unitDivisor(price.currency);
-    const major = convertMoneyToNumber(price);
     // Exact all-in price - the header must match the checkout total to the
     // penny or guests (rightly) think the math is broken.
-    const allInSubunits = Math.round(major * (1 + CUSTOMER_BOOKING_FEE_PCT / 100) * divisor);
-    return new Money(allInSubunits, price.currency);
+    //
+    // Computed the SAME way checkout computes it (server/api-util/
+    // lineItemHelpers.js calculateTotalPriceFromPercentage): the fee is the
+    // base in subunits x 15 / 100, rounded ROUND_HALF_UP in Decimal, then added.
+    // The previous float version, Math.round(major * 1.15 * divisor), landed on
+    // x.4999... whenever the fee was exactly half a cent and rounded DOWN:
+    // $38.90 base showed $44.73 while checkout charged $44.74. The fee
+    // percentage itself is unchanged.
+    const base = new Decimal(price.amount);
+    const fee = base
+      .times(CUSTOMER_BOOKING_FEE_PCT)
+      .dividedBy(100)
+      .toNearest(1, Decimal.ROUND_HALF_UP);
+    return new Money(base.plus(fee).toNumber(), price.currency);
   } catch (e) {
     return price;
   }
@@ -291,7 +301,21 @@ export const formatMoney = (intl, value) => {
   const options = {};
   const numberFormatOptions = getCurrencyFormatting(value.currency, options);
 
-  return intl.formatNumber(valueAsNumber, numberFormatOptions);
+  // The shared config allows 0-2 fraction digits so a whole amount prints as
+  // "$50" — but that also printed $57.50 as "$57.5", which is not a currency
+  // string. It stayed hidden while host prices were round; the 15% all-in fee
+  // made it visible on 40 of 124 listings. Decide per value instead: a whole
+  // amount keeps no decimals, anything with cents always shows exactly two.
+  // Scoped to formatMoney on purpose: getCurrencyFormatting also configures the
+  // host's price INPUT field, which must keep accepting partial decimals.
+  const divisor = unitDivisor(value.currency);
+  const fractionDigits = divisor > 1 && value.amount % divisor !== 0 ? 2 : 0;
+
+  return intl.formatNumber(valueAsNumber, {
+    ...numberFormatOptions,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
 };
 
 /**

@@ -80,6 +80,7 @@ import CustomListingFields from './CustomListingFields';
 import ShareButton from '../../components/ShareButton/ShareButton';
 
 import css from './ListingPage.module.css';
+import { corroboratedAdvantages } from '../../util/amenityClaims';
 
 const MIN_LENGTH_FOR_LONG_WORDS_IN_TITLE = 16;
 
@@ -197,13 +198,14 @@ export const ListingPageComponent = (props) => {
     listingType,
     transactionProcessAlias,
     unitType,
-    advantagesSelection = [],
     priceVariants,
     location: listingLocation,
   } = publicData;
 
-  const advantagesContent = advantages.filter((advantage) =>
-    advantagesSelection.includes(advantage.id)
+  // Only highlights the host's own poolAmenities confirm (util/amenityClaims.js).
+  const shownAdvantages = corroboratedAdvantages(publicData);
+  const advantagesContent = advantages.filter(advantage =>
+    shownAdvantages.includes(advantage.id)
   );
 
   if (!(listingType && transactionProcessAlias && unitType)) {

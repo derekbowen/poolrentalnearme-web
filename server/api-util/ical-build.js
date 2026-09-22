@@ -1,7 +1,11 @@
 // VCALENDAR builder for per-listing feeds. Generic event titles only — NO renter
 // names/phones/payment (feeds land in third-party CRMs; treat as semi-public).
-// Times are emitted in the listing's local timezone with a real VTIMEZONE
-// (US DST rules, which cover our market), never UTC-naive.
+// Event times are explicit UTC instants (DTSTART:...Z). They used to be
+// TZID-qualified local times with an embedded VTIMEZONE; that is valid
+// RFC 5545, but Swimply ignores TZID and read our 4-8 PM EDT booking as
+// 16:00-20:00 UTC, i.e. 12-4 PM — leaving the real booked hours open there.
+// UTC is the one form every consumer resolves identically (Swimply's own
+// feed uses it). X-WR-TIMEZONE stays as a display hint only.
 const moment = require('moment-timezone');
 
 const pad = n => String(n).padStart(2, '0');
@@ -38,66 +42,13 @@ function fmtUtc(d) {
   );
 }
 
-// Local wall-clock YYYYMMDDTHHMMSS in the listing tz (paired with TZID).
-function fmtLocal(d, tz) {
-  return moment.tz(d, tz).format('YYYYMMDDTHHmmss');
-}
-
-// A VTIMEZONE valid for US zones. Samples winter/summer offsets via moment-timezone;
-// if they differ, emit STANDARD + DAYLIGHT with the standard US transition rules
-// (DST: 2nd Sun Mar 02:00 -> 1st Sun Nov 02:00). No-DST zones (AZ, HI) get STANDARD only.
-function buildVtimezone(tz) {
-  const year = moment.tz(tz).year();
-  const winter = moment.tz(`${year}-01-15`, tz);
-  const summer = moment.tz(`${year}-07-15`, tz);
-  const stdOffset = winter.utcOffset(); // minutes
-  const dstOffset = summer.utcOffset();
-  const stdName = winter.zoneAbbr();
-  const dstName = summer.zoneAbbr();
-  const offStr = mins => {
-    const sign = mins < 0 ? '-' : '+';
-    const a = Math.abs(mins);
-    return `${sign}${pad(Math.floor(a / 60))}${pad(a % 60)}`;
-  };
-  const L = [`BEGIN:VTIMEZONE`, `TZID:${tz}`, `X-LIC-LOCATION:${tz}`];
-  if (stdOffset === dstOffset) {
-    L.push(
-      `BEGIN:STANDARD`,
-      `DTSTART:19700101T000000`,
-      `TZOFFSETFROM:${offStr(stdOffset)}`,
-      `TZOFFSETTO:${offStr(stdOffset)}`,
-      `TZNAME:${stdName}`,
-      `END:STANDARD`
-    );
-  } else {
-    L.push(
-      `BEGIN:DAYLIGHT`,
-      `DTSTART:19700308T020000`,
-      `RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU`,
-      `TZOFFSETFROM:${offStr(stdOffset)}`,
-      `TZOFFSETTO:${offStr(dstOffset)}`,
-      `TZNAME:${dstName}`,
-      `END:DAYLIGHT`,
-      `BEGIN:STANDARD`,
-      `DTSTART:19701101T020000`,
-      `RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU`,
-      `TZOFFSETFROM:${offStr(dstOffset)}`,
-      `TZOFFSETTO:${offStr(stdOffset)}`,
-      `TZNAME:${stdName}`,
-      `END:STANDARD`
-    );
-  }
-  L.push(`END:VTIMEZONE`);
-  return L;
-}
-
-function vevent({ uid, tz, start, end, summary }) {
+function vevent({ uid, start, end, summary }) {
   return [
     `BEGIN:VEVENT`,
     `UID:${uid}`,
     `DTSTAMP:${fmtUtc(new Date())}`,
-    `DTSTART;TZID=${tz}:${fmtLocal(start, tz)}`,
-    `DTEND;TZID=${tz}:${fmtLocal(end, tz)}`,
+    `DTSTART:${fmtUtc(start)}`,
+    `DTEND:${fmtUtc(end)}`,
     `SUMMARY:${esc(summary)}`,
     `STATUS:CONFIRMED`,
     `TRANSP:OPAQUE`,
@@ -106,7 +57,8 @@ function vevent({ uid, tz, start, end, summary }) {
 }
 
 /**
- * @param bookings  [{ id, start, end }]  (accepted bookings)
+ * @param bookings  [{ id, start, end, state }]  (bookings holding inventory:
+ *                  accepted, or pending = request awaiting the host)
  * @param exceptions [{ id, start, end }] (seats:0 availability exceptions)
  */
 function buildCalendar({ listingTitle, tz, bookings = [], exceptions = [] }) {
@@ -119,16 +71,15 @@ function buildCalendar({ listingTitle, tz, bookings = [], exceptions = [] }) {
     `METHOD:PUBLISH`,
     `X-WR-CALNAME:${esc((listingTitle || 'Pool') + ' — Bookings')}`,
     `X-WR-TIMEZONE:${zone}`,
-    ...buildVtimezone(zone),
   ];
   for (const b of bookings) {
     lines.push(
       ...vevent({
         uid: `booking-${b.id}@poolrentalnearme.com`,
-        tz: zone,
         start: b.start,
         end: b.end,
-        summary: 'Booked',
+        // Same UID in both states, so acceptance updates the event in place.
+        summary: b.state === 'pending' ? 'Requested (on hold)' : 'Booked',
       })
     );
   }
@@ -136,7 +87,6 @@ function buildCalendar({ listingTitle, tz, bookings = [], exceptions = [] }) {
     lines.push(
       ...vevent({
         uid: `exception-${e.id}@poolrentalnearme.com`,
-        tz: zone,
         start: e.start,
         end: e.end,
         summary: 'Unavailable',

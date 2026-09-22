@@ -189,3 +189,54 @@ made.
    becomes build-from-source into the image, and patching `dist/` directly is
    refused by the same kind of guard as `check:insurance-claims` — a check that
    fails when `dist/` is newer than the source it claims to come from.
+
+---
+
+# Amenity truth + currency — c198 (marketplace) and fb9e5f21+ (EAST), on Derek's GO
+
+**Trigger.** The Backyard Oasis CT host (Ledyard) reported the listing claimed
+"Heated pool". He has a hot tub; the pool is not heated.
+
+## Amenity truth
+
+`advantagesSelection` (a marketing picker) was rendered as fact. The host's own
+`poolAmenities` checklist is now authoritative (`src/util/amenityClaims.js`,
+mirrored in EAST `src/lib/amenity-claims.ts`). A highlight renders only when the
+host selected that exact amenity; nothing is inferred (`hot_tub` is neither
+`heated-pool` nor `spa-and-sauna-nearby`). Five exact mappings exist; every
+other highlight is suppressed. No host data was modified.
+
+Strict exact-key matching suppresses the heated card on **57** listings (4 more
+than the 53 with no heating evidence anywhere — those four mention heat in their
+description but never ticked `heated`). 29 listings whose hosts did tick
+`heated` still show it. Verified live on 13 representative listings, 0
+violations.
+
+## Currency and checkout parity
+
+`formatMoney` now shows exactly two decimals whenever there are cents ($57.50,
+$113.85) and none for whole amounts ($50, $115). The parity test then found a
+real one-cent bug: `priceWithBookingFee` rounded half-cent fees DOWN in floating
+point ($38.90 base showed $44.73; checkout charges $44.74). It now computes the
+fee as checkout does (Decimal, subunits, ROUND_HALF_UP). Same fix to EAST
+`allInCents`. The 15% rate and the checkout code are unchanged.
+
+## Also found and fixed on EAST
+
+* The pSEO mirror stored paid add-on objects through `String()`; live city pages
+  rendered **31** `[object Object]` chips. The mirror now stores `poolAmenities`
+  codes (resynced: 199 rows, 0 failures).
+* `/phoenix` and `/riverside` priced cards from a build-time snapshot of host
+  BASE rates, some badly stale ($45/hr shown for a pool now $172.50 all-in).
+  Those cards now omit the price rather than state a wrong one.
+* The markdown `h1` override leaked `node="[object Object]"` into every
+  host-city page's HTML.
+
+## Tests and verification
+
+71/71 in the image build stage (bun), including listing price == checkout total
+for every base price $1.00–$500.00 in one-cent steps using the real server
+line-item code. Gated flip to c198 (rollback c197), nginx pid unchanged. Live
+browser check: SSR prices == hydrated prices, desktop == mobile, 0 hydration
+errors. `check:amenity-and-price-truth` added to `verify:production`; it failed
+7 ways on production before these fixes.

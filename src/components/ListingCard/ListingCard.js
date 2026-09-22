@@ -13,6 +13,7 @@ import { ensureListing, ensureUser } from '../../util/data';
 import { richText } from '../../util/richText';
 import { propTypes } from '../../util/types';
 import { createSlug } from '../../util/urlHelpers';
+import { publicLocationLabel } from '../../util/address';
 
 import { AspectRatioWrapper, NamedLink, ResponsiveImage } from '../../components';
 import BookmarkButton from '../../extensions/wishlist/components/BookmarkButton/BookmarkButton';
@@ -204,21 +205,12 @@ export const ListingCard = props => {
       }
     : null;
 
-  const getCityFromLocation = () => {
-    const { address } = location;
-    const addressArray = address?.split(',');
-    if (!addressArray) return '';
-
-    if (addressArray?.length >= 3) {
-      return addressArray[addressArray.length - 3]?.trim();
-    }
-    if (addressArray?.length > 0) {
-      return addressArray[0]?.trim();
-    }
-    return null;
-  };
-
-  const city = location?.city || getCityFromLocation() || '';
+  // Was addressArray[length - 3]: the city for a four-part US address and the
+  // STREET for a three-part international one ("2 Gal Cres, Moorebank NSW 2170,
+  // Australia" -> "2 Gal Cres"). publicLocationLabel validates every candidate
+  // instead of trusting a position, and degrades to region/country/blank rather
+  // than ever printing a street. See src/util/address.test.js.
+  const city = publicLocationLabel(location);
   const guests = publicData?.guestallowed;
   const isInstantBooking = !!publicData?.isInstantBooking;
   const category = publicData?.categoryLevel2 || publicData?.categoryLevel1;

@@ -289,7 +289,7 @@ export const ListingPageComponent = (props) => {
   // Social/meta description leads with price + location so a texted or posted
   // link previews as "$X/… · City, ST — <description>" instead of raw copy.
   const cleanDescription = (description || '').replace(/\s+/g, ' ').trim();
-  const socialLead = [formattedPrice, shortLocationLabel(listingLocation?.address)]
+  const socialLead = [formattedPrice, shortLocationLabel(listingLocation)]
     .filter(Boolean)
     .join(' · ');
   const socialDescription = socialLead

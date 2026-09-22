@@ -5,6 +5,7 @@ import { obfuscatedCoordinates } from '../../util/maps';
 import { Heading, Map } from '../../components';
 
 import css from './ListingPage.module.css';
+import { publicLocationLabel } from '../../util/address';
 
 /**
  * The SectionMapMaybe component.
@@ -30,7 +31,10 @@ class SectionMapMaybe extends Component {
       return null;
     }
 
-    const address = publicData && publicData.location ? publicData.location.address : '';
+    // Render-time backstop. publicData is host-supplied and has historically
+    // carried full street addresses; this section prints it on the public
+    // listing page, so it goes through the same safe formatter as the cards.
+    const address = publicLocationLabel(publicData?.location);
     const classes = classNames(rootClassName || css.sectionMap, className);
     const cacheKey = listingId ? `${listingId.uuid}_${geolocation.lat}_${geolocation.lng}` : null;
 

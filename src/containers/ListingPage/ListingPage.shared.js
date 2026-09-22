@@ -5,6 +5,7 @@ import { createResourceLocatorString, findRouteByRouteName } from '../../util/ro
 import { convertMoneyToNumber, formatMoney } from '../../util/currency';
 import { timestampToDate } from '../../util/dates';
 import { hasPermissionToInitiateTransactions, isUserAuthorized } from '../../util/userHelpers';
+import { publicLocationLabel } from '../../util/address';
 import {
   NO_ACCESS_PAGE_INITIATE_TRANSACTIONS,
   NO_ACCESS_PAGE_USER_PENDING_APPROVAL,
@@ -145,51 +146,28 @@ export const listingImages = (listing, variantName) =>
     .filter(variant => variant != null);
 
 /**
- * Derive a privacy-safe "City, ST" label from a full listing address.
+ * Privacy-safe location label for a shareable link preview / meta description.
  *
  * Hosts store a full street address in publicData.location.address (e.g.
- * "16721 104th Ave NE, Bothell, WA 98011, USA"). We must NEVER surface that
- * exact street address in a shareable link preview / meta description, so this
- * strips it down to just the city and 2-letter state. If the city can't be
- * confidently parsed (e.g. it still looks like a street line), we return only
- * the state, or null — better to omit the location than leak an address.
+ * "16721 104th Ave NE, Bothell, WA 98011, USA"). That must NEVER reach a link
+ * preview, so this returns city-level detail only, degrading to region,
+ * country, then null — better to omit the location than leak an address.
  *
- * @param {string} address the full address string
+ * @param {Object|string} location publicData.location, or a bare address string
  * @returns {string|null} "City, ST", "City", "ST", or null
  */
-export const shortLocationLabel = address => {
-  if (!address || typeof address !== 'string') {
+export const shortLocationLabel = location => {
+  // This used to parse the address itself: it took parts[length - 2] as the
+  // city and guarded only against a LEADING DIGIT, so "Gal Crescent, Moorebank"
+  // put a street name straight into a social link preview. It now delegates to
+  // the one validated formatter, which prefers structured city/state and can
+  // never return a street component. Accepts a location object (preferred, so
+  // the structured fields are used) or a bare address string.
+  const loc = typeof location === 'string' ? { address: location } : location;
+  if (!loc) {
     return null;
   }
-  const countryTokens = ['usa', 'us', 'u.s.', 'u.s.a.', 'united states', 'united states of america'];
-  let parts = address
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-  // Drop a trailing country token.
-  if (parts.length > 1 && countryTokens.includes(parts[parts.length - 1].toLowerCase())) {
-    parts = parts.slice(0, -1);
-  }
-  if (parts.length === 0) {
-    return null;
-  }
-  const last = parts[parts.length - 1];
-  const stateMatch = last.match(/\b([A-Z]{2})\b/);
-  const state = stateMatch ? stateMatch[1] : null;
-  // City is the part before the "ST zip" chunk when we have multiple parts;
-  // for a single part like "Austin TX" strip the trailing state code.
-  let city =
-    parts.length >= 2
-      ? parts[parts.length - 2]
-      : last.replace(/\s*\b[A-Z]{2}\b.*$/, '').trim();
-  // Guard against leaking a street line (starts with a house number).
-  if (/^\d/.test(city)) {
-    return state || null;
-  }
-  if (!city) {
-    return state || null;
-  }
-  return state ? `${city}, ${state}` : city;
+  return publicLocationLabel(loc) || null;
 };
 
 /**

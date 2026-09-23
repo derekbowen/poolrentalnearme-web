@@ -109,10 +109,10 @@ export const PayoutDashboardPageComponent = (props) => {
   const title = intl.formatMessage({ id: 'PayoutDashboardPage.title' });
 
   const noAccount = phase === 'ready' && summary && !summary.stripeAccount;
+  // Warn only when Stripe itself reports missing information. 'unknown' (the
+  // account could not be read) is not a host problem and shows nothing.
   const onboardingIncomplete =
-    phase === 'ready' &&
-    summary?.stripeAccount &&
-    (summary.requirementsCurrentlyDue?.length > 0 || !summary.payoutsEnabled);
+    phase === 'ready' && summary?.stripeAccount && summary.accountStatus === 'action_required';
 
   const schedule = summary?.payoutSchedule;
   const scheduleLabel = schedule

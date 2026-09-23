@@ -14,6 +14,8 @@ const { getSdk, handleError } = require('../api-util/sdk');
  * answer 501 so the UI can show a "not configured" state instead of breaking.
  */
 
+const { statusFields } = require('../api-util/payoutStatus');
+
 const STRIPE_API = 'https://api.stripe.com/v1';
 
 const stripeGet = async (path, params, stripeAccount) => {
@@ -77,8 +79,7 @@ const summary = guard(async (req, res, acct) => {
     currency,
     availableAmount: sum(balance.available),
     pendingAmount: sum(balance.pending),
-    payoutsEnabled: account ? !!account.payouts_enabled : null,
-    requirementsCurrentlyDue: account?.requirements?.currently_due || [],
+    ...statusFields(account),
     payoutSchedule: account?.settings?.payouts?.schedule || null,
     accountDetailsAvailable: !!account,
   });

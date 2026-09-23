@@ -1,4 +1,4 @@
-import { stripStreetAddress } from '../util/address';
+import { publicLocationLabel } from '../util/address';
 /**
  * Maps Sharetribe SDK entities into the templateProps shape
  * expected by all listing page templates.
@@ -51,11 +51,16 @@ export const mapListingToTemplateProps = (listing, author, reviews = [], config,
   })();
 
   // --- Location ---
+  // Privacy backstop: templates only ever see the same public label the live
+  // listing page uses (publicLocationLabel), never publicData.location.address.
+  // stripStreetAddress alone let a number-less street ("Park Creek Drive")
+  // through. None of these templates is routed today; this keeps them safe if
+  // one ever is.
+  const publicAddress = publicLocationLabel(
+    publicData?.location || { address: publicData?.address || '' }
+  );
   const location = (() => {
-    // Backstop: never hand a street address to a public template.
-    const address = stripStreetAddress(
-      publicData?.location?.address || publicData?.address || ''
-    );
+    const address = publicAddress;
     const coords = geolocation
       ? { lat: geolocation.lat, lng: geolocation.lng }
       : null;
@@ -107,7 +112,12 @@ export const mapListingToTemplateProps = (listing, author, reviews = [], config,
     host,
     amenities: Array.isArray(amenities) ? amenities : [],
     reviews: mappedReviews,
-    publicData,
+    // Same backstop for the raw publicData handed to templates.
+    publicData: {
+      ...publicData,
+      ...(publicData?.location ? { location: { ...publicData.location, address: publicAddress } } : {}),
+      ...(publicData?.address !== undefined ? { address: publicAddress } : {}),
+    },
   };
 };
 

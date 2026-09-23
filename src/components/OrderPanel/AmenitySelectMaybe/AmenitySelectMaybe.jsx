@@ -9,6 +9,7 @@ import IconArrowHead from 'components/IconArrowHead/IconArrowHead';
 import classNames from 'classnames';
 import { types } from 'util/sdkLoader';
 import { formatMoney } from 'util/currency';
+import { allInSubunits } from 'util/allInPrice';
 import css from './AmenitySelectMaybe.module.css';
 
 const { Money } = types;
@@ -34,7 +35,8 @@ const AmenitySelectMaybe = (props) => {
     }
 
     const { name, price } = amenity;
-    const priceAsMoney = new Money(price.amount, price.currency);
+    // All-in (incl. the 15% booking fee): exactly what adding it adds at checkout.
+    const priceAsMoney = new Money(allInSubunits(price.amount), price.currency);
     const formattedPrice = formatMoney(intl, priceAsMoney);
 
     return (

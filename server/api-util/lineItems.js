@@ -2,12 +2,14 @@ const {
   calculateQuantityFromDates,
   calculateQuantityFromHours,
   calculateTotalFromLineItems,
+  calculateLineTotal,
   calculateShippingFee,
   hasCommissionPercentage,
   LINE_ITEM_AMENITY,
   LINE_ITEM_REFUNDABLE_DEPOSIT,
 } = require('./lineItemHelpers');
 const { types } = require('sharetribe-flex-sdk');
+const { guestFeeSubunits } = require('./guestFee');
 const { Money } = types;
 
 /**
@@ -112,6 +114,17 @@ const getDateRangeQuantityAndLineItems = (orderData, code) => {
   // E.g. 3 nights x 4 seats (aka unit price is multiplied by 12)
   return hasSeats ? { units, seats, extraLineItems: [] } : { quantity: units, extraLineItems: [] };
 };
+
+// Guest booking fee as one whole-cent line, rounded per base line. See guestFee.js.
+const customerFeeLineItem = (baseLineItems, percentage, currency) => ({
+  code: 'line-item/customer-commission',
+  unitPrice: new Money(
+    guestFeeSubunits(baseLineItems.map(li => calculateLineTotal(li).amount), percentage),
+    currency
+  ),
+  quantity: 1,
+  includeFor: ['customer'],
+});
 
 const getAmenityLineItems = (amenities, listing) => {
   if (!amenities) {
@@ -264,14 +277,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
         ]
       : [];
     const addCustomerCommissionMaybe = hasCommissionPercentage(customerCommission)
-      ? [
-          {
-            code: 'line-item/customer-commission',
-            unitPrice: calculateTotalFromLineItems([addOrder]),
-            percentage: customerCommission.percentage,
-            includeFor: ['customer'],
-          },
-        ]
+      ? [customerFeeLineItem([addOrder], customerCommission.percentage, currency)]
       : [];
     return [addOrder, ...addProviderCommissionMaybe, ...addCustomerCommissionMaybe];
   }
@@ -483,14 +489,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
       ]
     : [];
   const customerCommissionMaybe = hasCommissionPercentage(customerCommission)
-    ? [
-        {
-          code: 'line-item/customer-commission',
-          unitPrice: calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]),
-          percentage: customerCommission.percentage,
-          includeFor: ['customer'],
-        },
-      ]
+    ? [customerFeeLineItem([order, ...amenityLineItemsMaybe], customerCommission.percentage, currency)]
     : [];
 
   // Let's keep the base price (order) as first line item and provider and customer commissions as last.

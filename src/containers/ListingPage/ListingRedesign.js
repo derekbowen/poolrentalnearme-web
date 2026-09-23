@@ -1,5 +1,6 @@
 import React from 'react';
 import { AvatarLarge } from 'components/Avatar/Avatar';
+import { allInSubunits } from '../../util/allInPrice';
 import { NamedLink } from '../../components';
 import { corroboratedAdvantages } from '../../util/amenityClaims';
 
@@ -467,7 +468,7 @@ export const SectionAddOns = props => {
               ) : null}
             </div>
             <span style={{ marginLeft: 'auto', flex: 'none', fontWeight: 800, fontSize: '14px', color: '#00719c', background: '#e6f6fc', border: '1px solid #cfeaf5', padding: '7px 14px', borderRadius: '999px' }}>
-              +{fmtAddon(a.price.amount)}
+              +{fmtAddon(allInSubunits(a.price.amount))}
             </span>
           </div>
         ))}

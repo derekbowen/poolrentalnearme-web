@@ -252,6 +252,16 @@ const get = (path) => {
   return request(path, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
 };
 
+// Conversation read state (server/api/conversations.js). Persisted per user in
+// Sharetribe, so it follows the user across reloads and devices.
+export const getUnreadConversations = () => {
+  return get('/api/conversations/unread');
+};
+
+export const markConversationSeen = (body) => {
+  return post('/api/conversations/seen', body);
+};
+
 export const getPayoutSummary = () => {
   return get('/api/payouts/summary');
 };

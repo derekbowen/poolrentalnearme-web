@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { FormattedMessage } from '../../util/reactIntl';
 import { ensureCurrentUser } from '../../util/data';
-import { getPayoutSummary } from '../../util/api';
+import { getPayoutSummary, getUnreadConversations } from '../../util/api';
 import { isScrollingDisabled } from '../../ducks/ui.duck';
 import { getMarketplaceEntities } from '../../ducks/marketplaceData.duck';
 
@@ -31,7 +31,6 @@ const AWAITING_HOST = [
   'transition/request-payment-after-enquiry',
   'transition/send-offer',
 ];
-const IS_INQUIRY = ['transition/inquire'];
 const IS_UPCOMING = [
   'transition/accept',
   'transition/accept-with-payment',
@@ -103,6 +102,23 @@ export const HostDashboardPageComponent = props => {
     };
   }, []);
 
+  // Real read state (server/api/conversations.js). Fetched on every mount, so
+  // coming back from a conversation shows the count without it.
+  const [unread, setUnread] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    getUnreadConversations()
+      .then(r => {
+        if (!cancelled) setUnread((r && r.unread) || []);
+      })
+      .catch(() => {
+        if (!cancelled) setUnread([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const user = ensureCurrentUser(currentUser);
   if (!user.id) {
     return <NamedRedirect name="LandingPage" />;
@@ -113,7 +129,19 @@ export const HostDashboardPageComponent = props => {
   const lastTransition = tx => tx?.attributes?.lastTransition;
 
   const needsAction = txs.filter(tx => AWAITING_HOST.includes(lastTransition(tx)));
-  const inquiries = txs.filter(tx => IS_INQUIRY.includes(lastTransition(tx)));
+  // Conversations with a guest message this host has not seen. Not the
+  // `inquiry` transaction state: that never changes when a message is read.
+  const txById = new Map(txs.map(tx => [tx.id.uuid, tx]));
+  const unreadThreads = unread
+    .filter(u => u.role === 'provider')
+    .map(
+      u =>
+        txById.get(u.transactionId) || {
+          id: { uuid: u.transactionId },
+          customer: u.otherName ? { attributes: { profile: { displayName: u.otherName } } } : null,
+          listing: u.listingTitle ? { attributes: { title: u.listingTitle } } : null,
+        }
+    );
   const upcoming = txs
     .filter(tx => IS_UPCOMING.includes(lastTransition(tx)))
     .sort((a, b) => {
@@ -128,7 +156,7 @@ export const HostDashboardPageComponent = props => {
     return b?.start && b?.end && new Date(b.start).getTime() <= nowMs && nowMs <= new Date(b.end).getTime();
   });
 
-  const waitingCount = needsAction.length + inquiries.length;
+  const waitingCount = needsAction.length + unreadThreads.length;
   const firstName = user.attributes?.profile?.firstName;
   const hostSinceYear = user.attributes?.createdAt
     ? new Date(user.attributes.createdAt).getFullYear()
@@ -174,13 +202,13 @@ export const HostDashboardPageComponent = props => {
       </span>{' '}
       <span aria-hidden="true">{'🎉'}</span>
     </>
-  ) : inquiries.length > 0 ? (
+  ) : unreadThreads.length > 0 ? (
     <>
       Hi {firstName} &mdash;{' '}
       <span className={css.partyHeadlineAccent}>
-        {inquiries.length === 1
-          ? `${guestFirst(inquiries[0])} sent you a message`
-          : `${inquiries.length} guests sent you messages`}
+        {unreadThreads.length === 1
+          ? `${guestFirst(unreadThreads[0])} sent you a message`
+          : `${unreadThreads.length} guests sent you messages`}
       </span>{' '}
       <span aria-hidden="true">{'👋'}</span>
     </>
@@ -207,14 +235,14 @@ export const HostDashboardPageComponent = props => {
         <span className={css.bigHappyTitle}>Someone wants to swim!</span>
         <span className={css.bigHappyAction}>Respond to {guestFirst(firstRequest)} &rarr;</span>
       </NamedLink>
-    ) : inquiries.length > 0 ? (
+    ) : unreadThreads.length > 0 ? (
       <NamedLink
         className={css.bigHappy}
         name="SaleDetailsPage"
-        params={{ id: inquiries[0].id.uuid }}
+        params={{ id: unreadThreads[0].id.uuid }}
       >
         <span className={css.bigHappyTitle}>New message! {'👋'}</span>
-        <span className={css.bigHappyAction}>Reply to {guestFirst(inquiries[0])} &rarr;</span>
+        <span className={css.bigHappyAction}>Reply to {guestFirst(unreadThreads[0])} &rarr;</span>
       </NamedLink>
     ) : null;
 
@@ -358,13 +386,13 @@ export const HostDashboardPageComponent = props => {
           Someone wants to swim! {'🏊'}
           {needsAction.length > 0 ? <span className={css.redDot} /> : null}
         </h2>
-        {needsAction.length === 0 && inquiries.length > 0 ? (
+        {needsAction.length === 0 && unreadThreads.length > 0 ? (
           <div className={css.card}>
             <p className={css.cardHint} style={{ margin: 0 }}>
               {'👋'} No booking requests yet &mdash; but{' '}
-              {inquiries.length === 1
-                ? `${guestFirst(inquiries[0])} sent you a message`
-                : `${inquiries.length} guests sent you messages`}
+              {unreadThreads.length === 1
+                ? `${guestFirst(unreadThreads[0])} sent you a message`
+                : `${unreadThreads.length} guests sent you messages`}
               . It&rsquo;s waiting just below, under &ldquo;People saying hello&rdquo;.
             </p>
           </div>
@@ -388,15 +416,15 @@ export const HostDashboardPageComponent = props => {
       </section>
 
       {/* ---------- people saying hello ---------- */}
-      {inquiries.length > 0 ? (
+      {unreadThreads.length > 0 ? (
         <section>
           <h2 className={css.sectionTitle}>People saying hello {'👋'}</h2>
           <p className={css.sectionSub}>
-            {inquiries.length === 1 ? '1 new message.' : `${inquiries.length} new messages.`} A
+            {unreadThreads.length === 1 ? '1 new message.' : `${unreadThreads.length} new messages.`} A
             quick reply keeps them swimming.
           </p>
           <ul className={css.cardList}>
-            {inquiries.map(tx => (
+            {unreadThreads.map(tx => (
               <li key={tx.id.uuid} className={css.guestCard}>
                 <div className={`${css.guestPhoto} ${css.tiltR}`}>
                   <Avatar className={css.guestPhotoImg} user={tx.customer} disableProfileLink />
@@ -406,7 +434,7 @@ export const HostDashboardPageComponent = props => {
                     <strong>{guestFirst(tx)}</strong>
                     <span className={css.newChip}>New</span>
                   </div>
-                  <div className={css.rowMeta}>asked about {listingTitle(tx)}</div>
+                  <div className={css.rowMeta}>messaged about {listingTitle(tx)}</div>
                 </div>
                 <NamedLink className={css.pillQuiet} name="SaleDetailsPage" params={{ id: tx.id.uuid }}>
                   Reply

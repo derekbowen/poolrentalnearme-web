@@ -36,6 +36,7 @@ const icalFeed = require('./api/ical-feed');
 const icalLink = require('./api/ical-link');
 const icalRegenerate = require('./api/ical-regenerate');
 const calendarApplyExceptions = require('./api/calendar-apply-exceptions');
+const conversations = require('./api/conversations');
 const wizardTelemetry = require('./api/wizard-telemetry');
 const createVerificationSession = require('./api/create-verification-session');
 const checkVerificationStatus = require('./api/check-verification-status');
@@ -98,6 +99,9 @@ router.post('/sync-ical', bodyParser.json({ limit: '4kb' }), syncIcal);
 router.post('/additional-charge/request', bodyParser.json({ limit: '4kb' }), additionalChargeRequest);
 router.post('/additional-charge/initiate', bodyParser.json({ limit: '4kb' }), additionalChargeInitiate);
 router.post('/additional-charge/confirm', bodyParser.json({ limit: '4kb' }), additionalChargeConfirm);
+// Per-user conversation read state (the dashboard's "sent you a message").
+router.get('/conversations/unread', conversations.unread);
+router.post('/conversations/seen', conversations.seen);
 router.get('/payouts/summary', payouts.summary);
 router.get('/payouts/list', payouts.list);
 router.get('/payouts/activity', payouts.activity);

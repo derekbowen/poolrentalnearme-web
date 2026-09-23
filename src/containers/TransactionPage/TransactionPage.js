@@ -54,6 +54,7 @@ import {
 } from './TransactionPage.duck';
 import css from './TransactionPage.module.css';
 import { getCurrentUserTypeRoles, hasPermissionToViewData } from '../../util/userHelpers.js';
+import { markConversationSeen } from '../../util/api';
 
 // Submit dispute and close the review modal
 const onDisputeOrder =
@@ -236,6 +237,21 @@ export const TransactionPageComponent = (props) => {
     routeConfiguration,
     transaction,
   ]);
+
+  // Viewing the conversation marks it read through the newest message on
+  // screen (server-persisted, so every device agrees). A message that arrives
+  // after this render is newer than `through` and stays unread.
+  const seenTxId = transaction?.id?.uuid;
+  const newestMessageIso = (messages || []).reduce((max, m) => {
+    const t = m?.attributes?.createdAt;
+    const v = t ? new Date(t).toISOString() : null;
+    return v && (!max || v > max) ? v : max;
+  }, null);
+  const viewerId = currentUser?.id?.uuid;
+  useEffect(() => {
+    if (!seenTxId || !newestMessageIso || !viewerId) return;
+    markConversationSeen({ transactionId: seenTxId, through: newestMessageIso }).catch(() => {});
+  }, [seenTxId, newestMessageIso, viewerId]);
 
   // Customer can create a booking, if the tx is in "inquiry" state.
   const handleSubmitOrderRequest = (values) => {

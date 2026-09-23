@@ -1,25 +1,42 @@
-// PROPOSED (not wired in yet): what a Swimply -> PRNM sync should create and remove.
-// See docs/calendar/CALENDAR_SYNC_FOLLOWUPS.md.
+// PROPOSED (not wired in, not deployed): what one Swimply -> PRNM sync run
+// should create and delete. See docs/calendar/CALENDAR_SYNC_FOLLOWUPS.md.
 //
-// Fixes the two known gaps in sync-ical.js / swimply-resync.js:
-//  1. Partial overlap. Today an event that overlaps ANY existing exception is
-//     treated as covered, so a Swimply booking 2-5 PM next to a PRNM block
-//     1-3 PM leaves 3-5 PM open on PRNM. Here only the uncovered remainder is
-//     created.
-//  2. Cancellation. Today the sync is create-only, so a cancelled Swimply
-//     booking stays blocked on PRNM forever. Here an exception is removed only
-//     if THIS sync created it (recorded by Swimply UID) and its UID is gone
-//     from the feed. Host blocks and bookings are never touched.
+// Safety rules, each covered by a test in icalImportPlan.test.js:
+//  - Only exceptions this sync created (recorded in `imported`, keyed by the
+//    Sharetribe exception id, with the Swimply UID it came from) can ever be
+//    deleted. Host blocks, bookings and other providers' blocks are never
+//    candidates, whatever the feed says.
+//  - An import is deleted only when its UID is gone from a feed that was read
+//    successfully and is non-empty, or when that UID's event moved and the
+//    import no longer lies inside it. A failed or empty feed deletes nothing.
+//  - Partial overlaps block only the uncovered interval.
+//  - Re-running the same feed plans nothing (idempotent).
 //
-// events:   [{ uid, start, end }]  from the Swimply feed (ISO or Date)
-// existing: [{ id, start, end }]   seats:0 exceptions on the listing
-// imported: { [exceptionId]: uid } exceptions previously created by the sync
-// now:      Date
-// -> { create: [{ uid, start, end }], remove: [exceptionId] }
+// Input
+//   feed:     { ok: boolean, events: [{ uid, start, end }] }
+//   existing: [{ id, start, end }]         seats:0 exceptions on the listing
+//   bookings: [{ start, end }]             bookings holding the listing (never deleted)
+//   imported: { [exceptionId]: { uid } }   provenance written by previous runs
+//   now:      Date
+// Output
+//   { create: [{ uid, start, end }], remove: [exceptionId], forget: [exceptionId] }
+//   `forget` = provenance for exceptions that no longer exist (someone deleted
+//   them); drop the record, never recreate from provenance alone.
 const t = v => new Date(v).getTime();
+const iso = ms => new Date(ms).toISOString();
 
-// Parts of [s, e) not covered by any interval in `covers` (sorted, merged).
-const uncoveredParts = (s, e, covers) => {
+const merge = intervals => {
+  const out = [];
+  for (const i of intervals.slice().sort((a, b) => a.s - b.s)) {
+    const last = out[out.length - 1];
+    if (last && i.s <= last.e) last.e = Math.max(last.e, i.e);
+    else out.push({ s: i.s, e: i.e });
+  }
+  return out;
+};
+
+// Parts of [s, e) not covered by `covers` (sorted and merged).
+const uncovered = (s, e, covers) => {
   const out = [];
   let cursor = s;
   for (const c of covers) {
@@ -33,42 +50,60 @@ const uncoveredParts = (s, e, covers) => {
   return out;
 };
 
-const merge = intervals => {
-  const sorted = intervals.slice().sort((a, b) => a.s - b.s);
-  const out = [];
-  for (const i of sorted) {
-    const last = out[out.length - 1];
-    if (last && i.s <= last.e) last.e = Math.max(last.e, i.e);
-    else out.push({ ...i });
-  }
-  return out;
-};
+const inside = (x, intervals) => intervals.some(i => x.s >= i.s && x.e <= i.e);
 
-const planImport = ({ events, existing, imported = {}, now = new Date() }) => {
+const planImport = ({ feed, existing = [], bookings = [], imported = {}, now = new Date() }) => {
   const nowMs = t(now);
-  const liveUids = new Set(events.map(ev => ev.uid));
+  const plan = { create: [], remove: [], forget: [] };
+  const existingById = new Map(existing.map(x => [x.id, { s: t(x.start), e: t(x.end) }]));
 
-  // 2. Cancellations: only our own imports whose Swimply event is gone.
-  const remove = existing
-    .filter(x => imported[x.id] && !liveUids.has(imported[x.id]) && t(x.end) > nowMs)
-    .map(x => x.id);
-  const removed = new Set(remove);
+  // Provenance for exceptions that no longer exist is dropped, never acted on.
+  for (const id of Object.keys(imported)) if (!existingById.has(id)) plan.forget.push(id);
 
-  // 1. Partial overlap: cover what is not already covered.
-  let covers = merge(
-    existing.filter(x => !removed.has(x.id)).map(x => ({ s: t(x.start), e: t(x.end) }))
-  );
-  const create = [];
-  for (const ev of events.slice().sort((a, b) => t(a.start) - t(b.start))) {
-    const s = Math.max(t(ev.start), nowMs);
+  // A feed we could not read, or one with no events at all, is not evidence
+  // that everything was cancelled. Swimply feeds carry their full history
+  // (the Ledyard feed has 534 events), so an empty feed means "broken", not
+  // "nothing booked". Do nothing.
+  if (!feed || !feed.ok || !Array.isArray(feed.events) || feed.events.length === 0) return plan;
+
+  // Desired coverage per UID; a duplicated UID contributes the union of its events.
+  const byUid = new Map();
+  for (const ev of feed.events) {
+    if (!ev || !ev.uid) continue;
+    const s = t(ev.start);
     const e = t(ev.end);
     if (!(e > s)) continue;
-    for (const part of uncoveredParts(s, e, covers)) {
-      create.push({ uid: ev.uid, start: new Date(part.s).toISOString(), end: new Date(part.e).toISOString() });
-    }
-    covers = merge([...covers, { s, e }]);
+    if (!byUid.has(ev.uid)) byUid.set(ev.uid, []);
+    byUid.get(ev.uid).push({ s, e });
   }
-  return { create, remove };
+  for (const [uid, ivs] of byUid) byUid.set(uid, merge(ivs));
+
+  // Deletions: only our own, future imports whose event vanished or moved away.
+  for (const [id, rec] of Object.entries(imported)) {
+    const x = existingById.get(id);
+    if (!x || x.e <= nowMs) continue;
+    const wanted = byUid.get(rec && rec.uid);
+    if (!wanted || !inside(x, wanted)) plan.remove.push(id);
+  }
+
+  // Creations: the uncovered parts of every future event.
+  const removed = new Set(plan.remove);
+  let covers = merge([
+    ...existing.filter(x => !removed.has(x.id)).map(x => ({ s: t(x.start), e: t(x.end) })),
+    ...bookings.map(b => ({ s: t(b.start), e: t(b.end) })),
+  ]);
+  const uids = [...byUid.keys()].sort();
+  for (const uid of uids) {
+    for (const iv of byUid.get(uid)) {
+      const s = Math.max(iv.s, nowMs);
+      if (!(iv.e > s)) continue;
+      for (const part of uncovered(s, iv.e, covers)) {
+        plan.create.push({ uid, start: iso(part.s), end: iso(part.e) });
+      }
+      covers = merge([...covers, { s, e: iv.e }]);
+    }
+  }
+  return plan;
 };
 
 module.exports = { planImport };

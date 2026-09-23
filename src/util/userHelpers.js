@@ -1,5 +1,6 @@
 import { EXTENDED_DATA_SCHEMA_TYPES } from './types';
 import { getFieldValue } from './fieldHelpers';
+import { paymentTabsFor } from './accountLinks';
 
 /**
  * Get the namespaced attribute key based on the specified extended data scope and attribute key
@@ -241,15 +242,7 @@ export const showCreateListingLinkForUser = (config, currentUser) => {
  */
 export const showPaymentDetailsForUser = (config, currentUser) => {
   const currentUserTypeConfig = getCurrentUserTypeConfig(config, currentUser);
-  const { paymentMethods = true, payoutDetails = true } =
-    currentUserTypeConfig?.accountLinksVisibility || {};
-
-  return (
-    currentUser && {
-      showPayoutDetails: payoutDetails,
-      showPaymentMethods: paymentMethods,
-    }
-  );
+  return currentUser && paymentTabsFor(currentUserTypeConfig?.accountLinksVisibility);
 };
 
 /**

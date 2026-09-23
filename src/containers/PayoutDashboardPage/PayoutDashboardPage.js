@@ -249,10 +249,13 @@ export const PayoutDashboardPageComponent = (props) => {
       </>
     );
 
+  // Same tab rules as every other account-settings page (no page-specific
+  // overrides, which is what made Payment Methods appear only here).
+  const { showPayoutDetails, showPaymentMethods } = showPaymentDetailsForUser(config, user) || {};
   const accountSettingsNavProps = {
     currentPage: 'PayoutDashboardPage',
-    showPaymentMethods: true,
-    showPayoutDetails: true,
+    showPaymentMethods,
+    showPayoutDetails,
   };
 
   return (

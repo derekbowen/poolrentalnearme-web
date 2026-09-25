@@ -7,6 +7,7 @@ const {
   LINE_ITEM_AMENITY,
   LINE_ITEM_REFUNDABLE_DEPOSIT,
 } = require('./lineItemHelpers');
+const { hasDurationTiers, selectDurationTier } = require('./durationTiers');
 const { types } = require('sharetribe-flex-sdk');
 const { Money } = types;
 
@@ -346,9 +347,22 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   }
 
   const { priceVariantName } = orderData || {};
-  const priceVariantConfig = priceVariants
-    ? priceVariants.find(pv => pv.name === priceVariantName)
-    : null;
+  // Duration tiers ("3+ hours") are chosen from the booked duration, never from
+  // the guest's selection: a 2-hour booking cannot get the 3+ hour rate.
+  // Clients that send no tier name keep the listing's base price, as before.
+  const bookingMs =
+    orderData && orderData.bookingStart && orderData.bookingEnd
+      ? new Date(orderData.bookingEnd).getTime() - new Date(orderData.bookingStart).getTime()
+      : NaN;
+  const bookedHours = bookingMs / (1000 * 60 * 60);
+  const useDurationTiers =
+    unitType === 'hour' && !!priceVariantName && hasDurationTiers(priceVariants);
+  let priceVariantConfig = null;
+  if (useDurationTiers) {
+    priceVariantConfig = selectDurationTier(priceVariants, bookedHours, priceVariantName).variant;
+  } else if (priceVariants) {
+    priceVariantConfig = priceVariants.find((pv) => pv.name === priceVariantName);
+  }
   const { priceInSubunits } = priceVariantConfig || {};
   const isPriceInSubunitsValid = Number.isInteger(priceInSubunits) && priceInSubunits >= 0;
 

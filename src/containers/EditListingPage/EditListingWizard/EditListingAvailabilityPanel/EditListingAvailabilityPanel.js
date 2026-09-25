@@ -288,6 +288,17 @@ const EditListingAvailabilityPanel = props => {
   //   { pricePerHour:<subunits>, variant, open, close, closed }.
   // pricePerHour is read by server/api-util/lineItems.js and charges correctly.
   const existingAvailabilityPd = listing?.attributes?.publicData?.availability || {};
+  // Exception tracking is server-owned (listing privateData, written only by
+  // /api/calendar-apply-exceptions). The legacy calendarExceptionIds key is
+  // passed through untouched and never written by this panel.
+  const { calendarExceptionIds: legacyExceptionIds, ...panelAvailabilityPd } =
+    existingAvailabilityPd;
+  const availabilityToSave = (dateOverrides) => ({
+    ...panelAvailabilityPd,
+    ...(legacyExceptionIds ? { calendarExceptionIds: legacyExceptionIds } : {}),
+    dateOverrides,
+  });
+  const [calEnforce, setCalEnforce] = useState(null);
   const existingDateOverrides = existingAvailabilityPd.dateOverrides || {};
   const calRows = Object.keys(existingDateOverrides)
     .sort()
@@ -353,9 +364,12 @@ const EditListingAvailabilityPanel = props => {
       if (r.closed) o.closed = true; else delete o.closed;
       dov[r.date] = o;
     });
-    onSubmit({ publicData: { availability: { ...existingAvailabilityPd, dateOverrides: dov } } })
+    onSubmit({ publicData: { availability: availabilityToSave(dov) } })
       .then(() => applyCalendarExceptions({ listingId: listing?.id?.uuid }).catch(() => null))
-      .then(() => setCalSaveStatus('saved'))
+      .then((result) => {
+        setCalEnforce(result);
+        setCalSaveStatus('saved');
+      })
       .catch(() => setCalSaveStatus('error'))
       .finally(() => setCalSaveInProgress(false));
   };
@@ -419,9 +433,10 @@ const EditListingAvailabilityPanel = props => {
       if (r.closed) o.closed = true; else delete o.closed;
       dov[r.date] = o;
     });
-    onSubmit({ publicData: { availability: { ...existingAvailabilityPd, dateOverrides: dov } } })
+    onSubmit({ publicData: { availability: availabilityToSave(dov) } })
       .then(() => applyCalendarExceptions({ listingId: lid }).catch(() => null))
-      .then(() => {
+      .then((result) => {
+        setCalEnforce(result);
         setRangeResult(
           isUndo
             ? { ok: true, action: 'undo', count: dates.length }
@@ -678,6 +693,11 @@ const EditListingAvailabilityPanel = props => {
           ) : null}
           {calSaveStatus === 'error' ? (
             <span style={{ color: '#b91c1c', fontSize: '13px' }}>Couldn’t save — try again</span>
+          ) : null}
+          {calEnforce && calEnforce.ok === false ? (
+            <span style={{ color: '#b45309', fontSize: '13px' }}>
+              Some blocked times didn’t apply — please save again.
+            </span>
           ) : null}
         </div>
 

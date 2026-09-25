@@ -55,7 +55,7 @@ for (const id of ids) {
   }
 
   const html = await res.text();
-  const title = (html.match(TITLE_RE)?.[1] || '').trim();
+  const title = decode(html.match(TITLE_RE)?.[1] || '').trim();
 
   const blocks = [...html.matchAll(LD_RE)].map(m => m[1]);
   if (blocks.length === 0) {

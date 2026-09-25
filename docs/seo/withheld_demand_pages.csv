@@ -1,0 +1,21 @@
+url,kind,gsc_clicks,gsc_impr,ai_impr,position,status,robots,words,why_withheld,data,recommendation
+/public-pools/oklahoma/tulsa/,city,9,672,12,14.29,200,"noindex, follow",264,"city gate: 0 pools, 0 indexable",,HOLD
+/public-pools/north-carolina/charlotte/keith-family-ymca-outdoor-swimming-pools/,pool,11,552,5,8.65,200,"noindex, follow",435,held: <2 real signals,signals 1/4 ['photo'] rating=5 reviews=3,HOLD
+/public-pools/new-york/bronx/swimming-pool-6/,pool,9,429,6,8.54,200,"noindex, follow",426,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/pennsylvania/philadelphia/stinger-square-pool/,pool,11,413,0,6.11,200,"noindex, follow",475,held: <2 real signals,signals 1/4 ['photo'] rating=5 reviews=7,HOLD
+/public-pools/clothing-optional/,state,8,260,24,8.21,404,"noindex, follow",10,"city gate: 0 pools, 0 indexable",,HOLD
+/public-pools/texas/laredo/east-pool/,pool,5,255,0,8.04,200,"noindex, follow",437,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/north-carolina/charlotte/swimming-pool-30/,pool,10,231,0,10.51,200,"noindex, follow",284,held: <2 real signals,signals 0/4 [] rating=5 reviews=2,HOLD
+/public-pools/connecticut/stamford/dorothy-heroy-community-pool/,pool,7,168,0,8.42,200,"noindex, follow",393,held: <2 real signals,signals 1/4 ['rating10'] rating=3.9 reviews=159,HOLD
+/public-pools/new-york/brooklyn/the-ymca/,pool,4,144,0,10.03,200,"noindex, follow",463,held: <2 real signals,signals 0/4 [] rating=3 reviews=1,HOLD
+/public-pools/north-carolina/concord/concord-community-pool/,state,3,133,21,8.59,200,"index, follow",400,"city gate: 5 pools, 5 indexable",,HOLD
+/public-pools/nevada/las-vegas/swimply-backyard-pool-oasis/,pool,3,131,0,8.27,200,"noindex, follow",542,held: <2 real signals,signals 1/4 ['photo'] rating=5 reviews=1,HOLD
+/public-pools/north-carolina/greensboro/leisure-lagoon/,pool,7,121,5,7.79,200,"noindex, follow",374,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/texas/austin/avana-swim-center/,pool,3,88,0,4.49,200,"noindex, follow",492,held: <2 real signals,signals 1/4 ['photo'] rating=4.9 reviews=8,HOLD
+/public-pools/new-york/bronx/tilden-towers-pool/,pool,5,75,0,5.8,200,"noindex, follow",506,held: <2 real signals,signals 0/4 [] rating=3 reviews=5,HOLD
+/public-pools/tennessee/memphis/canale-pool-memphis/,pool,6,73,0,6.97,200,"noindex, follow",404,held: <2 real signals,signals 0/4 [] rating=None reviews=None,HOLD
+/public-pools/north-carolina/greensboro/thunder-bay-wave-pool/,pool,2,71,0,8.44,200,"noindex, follow",432,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/north-carolina/greensboro/shipwreck-cove/,pool,2,64,0,8.28,200,"noindex, follow",449,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/kentucky/lexington/willow-oak-swimming-pool/,pool,4,61,7,12.66,200,"noindex, follow",483,held: <2 real signals,signals 1/4 ['photo'] rating=None reviews=None,HOLD
+/public-pools/pennsylvania/philadelphia/friends-select-aquatics/,pool,2,54,0,7.43,200,"noindex, follow",444,held: <2 real signals,signals 1/4 ['hours'] rating=None reviews=None,HOLD
+/public-pools/idaho/boise/the-mountain-retreat/,pool,2,41,4,6.49,200,"noindex, follow",418,held: <2 real signals,signals 1/4 ['photo'] rating=5 reviews=1,HOLD

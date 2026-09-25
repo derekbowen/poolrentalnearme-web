@@ -1,0 +1,917 @@
+url,city,feature,current_status,gsc_clicks_3mo,gsc_impressions_3mo,ai_feature_impr_3mo,googlebot_req_14d,all_req_14d,matching_pools,matching_indexable,hub_indexable,internal_referer_hits_14d,external_referer_hits_14d,classification,proposed_destination
+/public-pools/alabama/birmingham/feature/lap-swimming/,"Birmingham, AL",lap-swimming,301 -> /public-pools/alabama/birmingham/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/alabama/birmingham/
+/public-pools/alabama/birmingham/feature/olympic-size/,"Birmingham, AL",olympic-size,301 -> /public-pools/alabama/birmingham/,3,105,0,0,2,1,1,True,0,1,CONSOLIDATE,/public-pools/alabama/birmingham/
+/public-pools/alabama/birmingham/feature/splash-pad/,"Birmingham, AL",splash-pad,301 -> /public-pools/alabama/birmingham/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/alabama/birmingham/
+/public-pools/alabama/birmingham/feature/wave-pool/,"Birmingham, AL",wave-pool,301 -> /public-pools/alabama/birmingham/,7,91,9,1,4,1,1,True,1,0,CONSOLIDATE,/public-pools/alabama/birmingham/
+/public-pools/alabama/huntsville/feature/lap-swimming/,"Huntsville, AL",lap-swimming,301 -> /public-pools/alabama/huntsville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/alabama/huntsville/
+/public-pools/alabama/mobile/feature/indoor/,"Mobile, AL",indoor,301 -> /public-pools/alabama/mobile/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/alabama/mobile/
+/public-pools/alabama/mobile/feature/lap-swimming/,"Mobile, AL",lap-swimming,301 -> /public-pools/alabama/mobile/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/alabama/mobile/
+/public-pools/alabama/mobile/feature/olympic-size/,"Mobile, AL",olympic-size,301 -> /public-pools/alabama/mobile/,3,26,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/alabama/mobile/
+/public-pools/arizona/avondale/feature/lap-swimming/,"Avondale, AZ",lap-swimming,301 -> /public-pools/arizona/avondale/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/arizona/avondale/
+/public-pools/arizona/avondale/feature/splash-pad/,"Avondale, AZ",splash-pad,301 -> /public-pools/arizona/avondale/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/arizona/avondale/
+/public-pools/arizona/avondale/feature/wave-pool/,"Avondale, AZ",wave-pool,301 -> /public-pools/arizona/avondale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/avondale/
+/public-pools/arizona/buckeye/feature/lap-swimming/,"Buckeye, AZ",lap-swimming,301 -> /public-pools/arizona/buckeye/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/arizona/buckeye/
+/public-pools/arizona/casa-grande/feature/heated/,"Casa Grande, AZ",heated,301 -> /public-pools/arizona/casa-grande/,0,0,4,1,1,1,1,True,0,0,CONSOLIDATE,/public-pools/arizona/casa-grande/
+/public-pools/arizona/casa-grande/feature/indoor/,"Casa Grande, AZ",indoor,301 -> /public-pools/arizona/casa-grande/,2,141,3,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/casa-grande/
+/public-pools/arizona/casa-grande/feature/lap-swimming/,"Casa Grande, AZ",lap-swimming,301 -> /public-pools/arizona/casa-grande/,0,0,0,0,2,2,2,True,1,1,CONSOLIDATE,/public-pools/arizona/casa-grande/
+/public-pools/arizona/casa-grande/feature/lazy-river/,"Casa Grande, AZ",lazy-river,301 -> /public-pools/arizona/casa-grande/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/arizona/casa-grande/
+/public-pools/arizona/casa-grande/feature/wave-pool/,"Casa Grande, AZ",wave-pool,301 -> /public-pools/arizona/casa-grande/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/arizona/casa-grande/
+/public-pools/arizona/chandler/feature/heated/,"Chandler, AZ",heated,301 -> /public-pools/arizona/chandler/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/arizona/chandler/
+/public-pools/arizona/chandler/feature/indoor/,"Chandler, AZ",indoor,301 -> /public-pools/arizona/chandler/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/arizona/chandler/
+/public-pools/arizona/chandler/feature/kiddie-pool/,"Chandler, AZ",kiddie-pool,301 -> /public-pools/arizona/chandler/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/chandler/
+/public-pools/arizona/chandler/feature/lap-swimming/,"Chandler, AZ",lap-swimming,301 -> /public-pools/arizona/chandler/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/arizona/chandler/
+/public-pools/arizona/chandler/feature/water-slides/,"Chandler, AZ",water-slides,301 -> /public-pools/arizona/chandler/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/chandler/
+/public-pools/arizona/gilbert/feature/kiddie-pool/,"Gilbert, AZ",kiddie-pool,301 -> /public-pools/arizona/gilbert/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/gilbert/
+/public-pools/arizona/glendale/feature/heated/,"Glendale, AZ",heated,301 -> /public-pools/arizona/glendale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/glendale/
+/public-pools/arizona/glendale/feature/indoor/,"Glendale, AZ",indoor,301 -> /public-pools/arizona/glendale/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/arizona/glendale/
+/public-pools/arizona/glendale/feature/kiddie-pool/,"Glendale, AZ",kiddie-pool,301 -> /public-pools/arizona/glendale/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/arizona/glendale/
+/public-pools/arizona/glendale/feature/lap-swimming/,"Glendale, AZ",lap-swimming,301 -> /public-pools/arizona/glendale/,0,0,0,0,2,2,2,True,1,1,CONSOLIDATE,/public-pools/arizona/glendale/
+/public-pools/arizona/glendale/feature/lazy-river/,"Glendale, AZ",lazy-river,301 -> /public-pools/arizona/glendale/,0,0,0,3,4,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/glendale/
+/public-pools/arizona/glendale/feature/water-slides/,"Glendale, AZ",water-slides,301 -> /public-pools/arizona/glendale/,2,9,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/arizona/glendale/
+/public-pools/arizona/goodyear/feature/diving-board/,"Goodyear, AZ",diving-board,301 -> /public-pools/arizona/goodyear/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/arizona/goodyear/
+/public-pools/arizona/mesa/feature/olympic-size/,"Mesa, AZ",olympic-size,301 -> /public-pools/arizona/mesa/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/mesa/
+/public-pools/arizona/peoria/feature/diving-board/,"Peoria, AZ",diving-board,301 -> /public-pools/arizona/peoria/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/arizona/peoria/
+/public-pools/arizona/phoenix/feature/lap-swimming/,"Phoenix, AZ",lap-swimming,301 -> /public-pools/arizona/phoenix/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/arizona/phoenix/
+/public-pools/arizona/queen-creek/feature/diving-board/,"Queen Creek, AZ",diving-board,301 -> /public-pools/arizona/queen-creek/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/queen-creek/
+/public-pools/arizona/queen-creek/feature/indoor/,"Queen Creek, AZ",indoor,301 -> /public-pools/arizona/queen-creek/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/arizona/queen-creek/
+/public-pools/arizona/queen-creek/feature/lap-swimming/,"Queen Creek, AZ",lap-swimming,301 -> /public-pools/arizona/queen-creek/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/arizona/queen-creek/
+/public-pools/arizona/scottsdale/feature/heated/,"Scottsdale, AZ",heated,301 -> /public-pools/arizona/scottsdale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/scottsdale/
+/public-pools/arizona/scottsdale/feature/indoor/,"Scottsdale, AZ",indoor,301 -> /public-pools/arizona/scottsdale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/scottsdale/
+/public-pools/arizona/scottsdale/feature/water-slides/,"Scottsdale, AZ",water-slides,301 -> /public-pools/arizona/scottsdale/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/arizona/scottsdale/
+/public-pools/arizona/surprise/feature/indoor/,"Surprise, AZ",indoor,301 -> /public-pools/arizona/surprise/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/arizona/surprise/
+/public-pools/arizona/surprise/feature/kiddie-pool/,"Surprise, AZ",kiddie-pool,301 -> /public-pools/arizona/surprise/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/arizona/surprise/
+/public-pools/arizona/surprise/feature/lap-swimming/,"Surprise, AZ",lap-swimming,301 -> /public-pools/arizona/surprise/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/arizona/surprise/
+/public-pools/arizona/surprise/feature/olympic-size/,"Surprise, AZ",olympic-size,301 -> /public-pools/arizona/surprise/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/surprise/
+/public-pools/arizona/tucson/feature/heated/,"Tucson, AZ",heated,301 -> /public-pools/arizona/tucson/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/arizona/tucson/
+/public-pools/arizona/tucson/feature/indoor/,"Tucson, AZ",indoor,301 -> /public-pools/arizona/tucson/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/arizona/tucson/
+/public-pools/arkansas/fayetteville/feature/lazy-river/,"Fayetteville, AR",lazy-river,301 -> /public-pools/arkansas/fayetteville/,0,0,0,1,1,0,0,False,0,0,RETIRE,/public-pools/arkansas/
+/public-pools/arkansas/little-rock/feature/heated/,"Little Rock, AR",heated,301 -> /public-pools/arkansas/little-rock/,0,0,0,3,3,1,0,True,0,0,CONSOLIDATE,/public-pools/arkansas/little-rock/
+/public-pools/arkansas/little-rock/feature/indoor/,"Little Rock, AR",indoor,301 -> /public-pools/arkansas/little-rock/,0,0,22,0,1,2,1,True,1,0,CONSOLIDATE,/public-pools/arkansas/little-rock/
+/public-pools/arkansas/little-rock/feature/olympic-size/,"Little Rock, AR",olympic-size,301 -> /public-pools/arkansas/little-rock/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/arkansas/little-rock/
+/public-pools/california/anaheim/feature/lap-swimming/,"Anaheim, CA",lap-swimming,301 -> /public-pools/california/anaheim/,0,0,3,0,2,1,1,True,0,2,CONSOLIDATE,/public-pools/california/anaheim/
+/public-pools/california/anaheim/feature/lazy-river/,"Anaheim, CA",lazy-river,301 -> /public-pools/california/anaheim/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/anaheim/
+/public-pools/california/antioch/feature/lazy-river/,"Antioch, CA",lazy-river,301 -> /public-pools/california/antioch/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/antioch/
+/public-pools/california/antioch/feature/olympic-size/,"Antioch, CA",olympic-size,301 -> /public-pools/california/antioch/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/antioch/
+/public-pools/california/azusa/feature/diving-board/,"Azusa, CA",diving-board,301 -> /public-pools/california/azusa/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/azusa/
+/public-pools/california/azusa/feature/lap-swimming/,"Azusa, CA",lap-swimming,301 -> /public-pools/california/azusa/,0,0,11,0,4,1,1,True,3,1,CONSOLIDATE,/public-pools/california/azusa/
+/public-pools/california/azusa/feature/splash-pad/,"Azusa, CA",splash-pad,301 -> /public-pools/california/azusa/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/azusa/
+/public-pools/california/bakersfield/feature/indoor/,"Bakersfield, CA",indoor,301 -> /public-pools/california/bakersfield/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/bakersfield/
+/public-pools/california/bakersfield/feature/lap-swimming/,"Bakersfield, CA",lap-swimming,301 -> /public-pools/california/bakersfield/,2,43,3,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/bakersfield/
+/public-pools/california/bakersfield/feature/olympic-size/,"Bakersfield, CA",olympic-size,301 -> /public-pools/california/bakersfield/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/bakersfield/
+/public-pools/california/bakersfield/feature/splash-pad/,"Bakersfield, CA",splash-pad,301 -> /public-pools/california/bakersfield/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/bakersfield/
+/public-pools/california/beaumont/feature/kiddie-pool/,"Beaumont, CA",kiddie-pool,301 -> /public-pools/california/beaumont/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/beaumont/
+/public-pools/california/beaumont/feature/lap-swimming/,"Beaumont, CA",lap-swimming,301 -> /public-pools/california/beaumont/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/beaumont/
+/public-pools/california/beaumont/feature/water-slides/,"Beaumont, CA",water-slides,301 -> /public-pools/california/beaumont/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/beaumont/
+/public-pools/california/berkeley/feature/diving-board/,"Berkeley, CA",diving-board,301 -> /public-pools/california/berkeley/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/berkeley/
+/public-pools/california/berkeley/feature/heated/,"Berkeley, CA",heated,301 -> /public-pools/california/berkeley/,0,0,6,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/berkeley/
+/public-pools/california/berkeley/feature/lap-swimming/,"Berkeley, CA",lap-swimming,301 -> /public-pools/california/berkeley/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/california/berkeley/
+/public-pools/california/berkeley/feature/olympic-size/,"Berkeley, CA",olympic-size,301 -> /public-pools/california/berkeley/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/berkeley/
+/public-pools/california/beverly-hills/feature/heated/,"Beverly Hills, CA",heated,301 -> /public-pools/california/beverly-hills/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/beverly-hills/
+/public-pools/california/beverly-hills/feature/lap-swimming/,"Beverly Hills, CA",lap-swimming,301 -> /public-pools/california/beverly-hills/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/beverly-hills/
+/public-pools/california/calimesa/feature/lap-swimming/,"Calimesa, CA",lap-swimming,301 -> /public-pools/california/calimesa/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/calimesa/
+/public-pools/california/carlsbad/feature/kiddie-pool/,"Carlsbad, CA",kiddie-pool,301 -> /public-pools/california/carlsbad/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/carlsbad/
+/public-pools/california/carlsbad/feature/lap-swimming/,"Carlsbad, CA",lap-swimming,301 -> /public-pools/california/carlsbad/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/carlsbad/
+/public-pools/california/carlsbad/feature/lazy-river/,"Carlsbad, CA",lazy-river,301 -> /public-pools/california/carlsbad/,2,41,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/carlsbad/
+/public-pools/california/carlsbad/feature/olympic-size/,"Carlsbad, CA",olympic-size,301 -> /public-pools/california/carlsbad/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/carlsbad/
+/public-pools/california/chino-hills/feature/kiddie-pool/,"Chino Hills, CA",kiddie-pool,301 -> /public-pools/california/chino-hills/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/chino-hills/
+/public-pools/california/chino/feature/diving-board/,"Chino, CA",diving-board,301 -> /public-pools/california/chino/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/california/chino/
+/public-pools/california/chino/feature/lap-swimming/,"Chino, CA",lap-swimming,301 -> /public-pools/california/chino/,2,14,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/chino/
+/public-pools/california/chula-vista/feature/diving-board/,"Chula Vista, CA",diving-board,301 -> /public-pools/california/chula-vista/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/chula-vista/
+/public-pools/california/chula-vista/feature/heated/,"Chula Vista, CA",heated,301 -> /public-pools/california/chula-vista/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/chula-vista/
+/public-pools/california/chula-vista/feature/indoor/,"Chula Vista, CA",indoor,301 -> /public-pools/california/chula-vista/,0,0,10,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/california/chula-vista/
+/public-pools/california/chula-vista/feature/olympic-size/,"Chula Vista, CA",olympic-size,301 -> /public-pools/california/chula-vista/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/chula-vista/
+/public-pools/california/chula-vista/feature/wave-pool/,"Chula Vista, CA",wave-pool,301 -> /public-pools/california/chula-vista/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/chula-vista/
+/public-pools/california/claremont/feature/lap-swimming/,"Claremont, CA",lap-swimming,301 -> /public-pools/california/claremont/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/claremont/
+/public-pools/california/claremont/feature/olympic-size/,"Claremont, CA",olympic-size,301 -> /public-pools/california/claremont/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/claremont/
+/public-pools/california/claremont/feature/splash-pad/,"Claremont, CA",splash-pad,301 -> /public-pools/california/claremont/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/claremont/
+/public-pools/california/concord/feature/lap-swimming/,"Concord, CA",lap-swimming,301 -> /public-pools/california/concord/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/concord/
+/public-pools/california/concord/feature/lazy-river/,"Concord, CA",lazy-river,301 -> /public-pools/california/concord/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/concord/
+/public-pools/california/concord/feature/olympic-size/,"Concord, CA",olympic-size,301 -> /public-pools/california/concord/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/concord/
+/public-pools/california/concord/feature/water-slides/,"Concord, CA",water-slides,301 -> /public-pools/california/concord/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/concord/
+/public-pools/california/concord/feature/wave-pool/,"Concord, CA",wave-pool,301 -> /public-pools/california/concord/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/concord/
+/public-pools/california/corona/feature/kiddie-pool/,"Corona, CA",kiddie-pool,301 -> /public-pools/california/corona/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/corona/
+/public-pools/california/corona/feature/lap-swimming/,"Corona, CA",lap-swimming,301 -> /public-pools/california/corona/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/corona/
+/public-pools/california/corona/feature/water-slides/,"Corona, CA",water-slides,301 -> /public-pools/california/corona/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/corona/
+/public-pools/california/coronado/feature/heated/,"Coronado, CA",heated,301 -> /public-pools/california/coronado/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/coronado/
+/public-pools/california/costa-mesa/feature/heated/,"Costa Mesa, CA",heated,301 -> /public-pools/california/costa-mesa/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/costa-mesa/
+/public-pools/california/costa-mesa/feature/lap-swimming/,"Costa Mesa, CA",lap-swimming,301 -> /public-pools/california/costa-mesa/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/costa-mesa/
+/public-pools/california/costa-mesa/feature/lazy-river/,"Costa Mesa, CA",lazy-river,301 -> /public-pools/california/costa-mesa/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/costa-mesa/
+/public-pools/california/costa-mesa/feature/splash-pad/,"Costa Mesa, CA",splash-pad,301 -> /public-pools/california/costa-mesa/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/costa-mesa/
+/public-pools/california/covina/feature/lap-swimming/,"Covina, CA",lap-swimming,301 -> /public-pools/california/covina/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/california/covina/
+/public-pools/california/desert-hot-springs/feature/water-slides/,"Desert Hot Springs, CA",water-slides,301 -> /public-pools/california/desert-hot-springs/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/california/desert-hot-springs/
+/public-pools/california/diamond-bar/feature/lap-swimming/,"Diamond Bar, CA",lap-swimming,301 -> /public-pools/california/diamond-bar/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/diamond-bar/
+/public-pools/california/elk-grove/feature/indoor/,"Elk Grove, CA",indoor,301 -> /public-pools/california/elk-grove/,0,0,0,0,3,0,0,True,3,0,CONSOLIDATE,/public-pools/california/elk-grove/
+/public-pools/california/escondido/feature/olympic-size/,"Escondido, CA",olympic-size,301 -> /public-pools/california/escondido/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/escondido/
+/public-pools/california/escondido/feature/splash-pad/,"Escondido, CA",splash-pad,301 -> /public-pools/california/escondido/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/escondido/
+/public-pools/california/escondido/feature/wave-pool/,"Escondido, CA",wave-pool,301 -> /public-pools/california/escondido/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/escondido/
+/public-pools/california/folsom/feature/lazy-river/,"Folsom, CA",lazy-river,301 -> /public-pools/california/folsom/,0,0,0,4,4,1,1,True,0,0,CONSOLIDATE,/public-pools/california/folsom/
+/public-pools/california/folsom/feature/water-slides/,"Folsom, CA",water-slides,301 -> /public-pools/california/folsom/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/folsom/
+/public-pools/california/fontana/feature/diving-board/,"Fontana, CA",diving-board,301 -> /public-pools/california/fontana/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fontana/
+/public-pools/california/fontana/feature/heated/,"Fontana, CA",heated,301 -> /public-pools/california/fontana/,0,0,3,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fontana/
+/public-pools/california/fontana/feature/kiddie-pool/,"Fontana, CA",kiddie-pool,301 -> /public-pools/california/fontana/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/fontana/
+/public-pools/california/fontana/feature/lazy-river/,"Fontana, CA",lazy-river,301 -> /public-pools/california/fontana/,0,0,5,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fontana/
+/public-pools/california/fontana/feature/olympic-size/,"Fontana, CA",olympic-size,301 -> /public-pools/california/fontana/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/fontana/
+/public-pools/california/fountain-valley/feature/lap-swimming/,"Fountain Valley, CA",lap-swimming,301 -> /public-pools/california/fountain-valley/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/fountain-valley/
+/public-pools/california/fountain-valley/feature/splash-pad/,"Fountain Valley, CA",splash-pad,301 -> /public-pools/california/fountain-valley/,0,0,0,0,3,0,0,True,3,0,CONSOLIDATE,/public-pools/california/fountain-valley/
+/public-pools/california/fremont/feature/lazy-river/,"Fremont, CA",lazy-river,301 -> /public-pools/california/fremont/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/fremont/
+/public-pools/california/fremont/feature/wave-pool/,"Fremont, CA",wave-pool,301 -> /public-pools/california/fremont/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/california/fremont/
+/public-pools/california/fresno/feature/diving-board/,"Fresno, CA",diving-board,301 -> /public-pools/california/fresno/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/fresno/
+/public-pools/california/fullerton/feature/kiddie-pool/,"Fullerton, CA",kiddie-pool,301 -> /public-pools/california/fullerton/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fullerton/
+/public-pools/california/fullerton/feature/lap-swimming/,"Fullerton, CA",lap-swimming,301 -> /public-pools/california/fullerton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/fullerton/
+/public-pools/california/fullerton/feature/lazy-river/,"Fullerton, CA",lazy-river,301 -> /public-pools/california/fullerton/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fullerton/
+/public-pools/california/fullerton/feature/splash-pad/,"Fullerton, CA",splash-pad,301 -> /public-pools/california/fullerton/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/fullerton/
+/public-pools/california/glendora/feature/diving-board/,"Glendora, CA",diving-board,301 -> /public-pools/california/glendora/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/glendora/
+/public-pools/california/glendora/feature/heated/,"Glendora, CA",heated,301 -> /public-pools/california/glendora/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/glendora/
+/public-pools/california/glendora/feature/lap-swimming/,"Glendora, CA",lap-swimming,301 -> /public-pools/california/glendora/,2,45,6,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/glendora/
+/public-pools/california/glendora/feature/splash-pad/,"Glendora, CA",splash-pad,301 -> /public-pools/california/glendora/,2,41,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/california/glendora/
+/public-pools/california/hayward/feature/heated/,"Hayward, CA",heated,301 -> /public-pools/california/hayward/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/hayward/
+/public-pools/california/hayward/feature/lap-swimming/,"Hayward, CA",lap-swimming,301 -> /public-pools/california/hayward/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/hayward/
+/public-pools/california/hemet/feature/diving-board/,"Hemet, CA",diving-board,301 -> /public-pools/california/hemet/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/hemet/
+/public-pools/california/hemet/feature/heated/,"Hemet, CA",heated,301 -> /public-pools/california/hemet/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/hemet/
+/public-pools/california/hemet/feature/lap-swimming/,"Hemet, CA",lap-swimming,301 -> /public-pools/california/hemet/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/hemet/
+/public-pools/california/hemet/feature/olympic-size/,"Hemet, CA",olympic-size,301 -> /public-pools/california/hemet/,0,0,0,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/california/hemet/
+/public-pools/california/hesperia/feature/lap-swimming/,"Hesperia, CA",lap-swimming,301 -> /public-pools/california/hesperia/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/hesperia/
+/public-pools/california/irvine/feature/diving-board/,"Irvine, CA",diving-board,301 -> /public-pools/california/irvine/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/irvine/
+/public-pools/california/irvine/feature/lap-swimming/,"Irvine, CA",lap-swimming,301 -> /public-pools/california/irvine/,2,69,0,1,3,2,2,True,1,0,CONSOLIDATE,/public-pools/california/irvine/
+/public-pools/california/la-mesa/feature/heated/,"La Mesa, CA",heated,301 -> /public-pools/california/la-mesa/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/la-mesa/
+/public-pools/california/la-mesa/feature/lap-swimming/,"La Mesa, CA",lap-swimming,301 -> /public-pools/california/la-mesa/,0,0,5,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/la-mesa/
+/public-pools/california/la-verne/feature/kiddie-pool/,"La Verne, CA",kiddie-pool,301 -> /public-pools/california/la-verne/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/la-verne/
+/public-pools/california/la-verne/feature/lap-swimming/,"La Verne, CA",lap-swimming,301 -> /public-pools/california/la-verne/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/la-verne/
+/public-pools/california/la-verne/feature/olympic-size/,"La Verne, CA",olympic-size,301 -> /public-pools/california/la-verne/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/la-verne/
+/public-pools/california/laguna-niguel/feature/diving-board/,"Laguna Niguel, CA",diving-board,301 -> /public-pools/california/laguna-niguel/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/laguna-niguel/
+/public-pools/california/laguna-niguel/feature/indoor/,"Laguna Niguel, CA",indoor,301 -> /public-pools/california/laguna-niguel/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/laguna-niguel/
+/public-pools/california/laguna-niguel/feature/splash-pad/,"Laguna Niguel, CA",splash-pad,301 -> /public-pools/california/laguna-niguel/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/california/laguna-niguel/
+/public-pools/california/lake-elsinore/feature/indoor/,"Lake Elsinore, CA",indoor,301 -> /public-pools/california/lake-elsinore/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/lake-elsinore/
+/public-pools/california/lake-elsinore/feature/lap-swimming/,"Lake Elsinore, CA",lap-swimming,301 -> /public-pools/california/lake-elsinore/,2,103,0,0,5,1,1,True,0,0,CONSOLIDATE,/public-pools/california/lake-elsinore/
+/public-pools/california/livermore/feature/lap-swimming/,"Livermore, CA",lap-swimming,301 -> /public-pools/california/livermore/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/livermore/
+/public-pools/california/lodi/feature/indoor/,"Lodi, CA",indoor,301 -> /public-pools/california/lodi/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/lodi/
+/public-pools/california/lodi/feature/lazy-river/,"Lodi, CA",lazy-river,301 -> /public-pools/california/lodi/,0,0,7,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/california/lodi/
+/public-pools/california/lodi/feature/water-slides/,"Lodi, CA",water-slides,301 -> /public-pools/california/lodi/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/lodi/
+/public-pools/california/long-beach/feature/diving-board/,"Long Beach, CA",diving-board,301 -> /public-pools/california/long-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/long-beach/
+/public-pools/california/long-beach/feature/lap-swimming/,"Long Beach, CA",lap-swimming,301 -> /public-pools/california/long-beach/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/california/long-beach/
+/public-pools/california/long-beach/feature/splash-pad/,"Long Beach, CA",splash-pad,301 -> /public-pools/california/long-beach/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/california/long-beach/
+/public-pools/california/los-angeles/feature/lap-swimming/,"Los Angeles, CA",lap-swimming,301 -> /public-pools/california/los-angeles/,2,30,0,0,2,2,2,True,1,0,CONSOLIDATE,/public-pools/california/los-angeles/
+/public-pools/california/los-angeles/feature/lazy-river/,"Los Angeles, CA",lazy-river,301 -> /public-pools/california/los-angeles/,0,0,4,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/california/los-angeles/
+/public-pools/california/los-angeles/feature/olympic-size/,"Los Angeles, CA",olympic-size,301 -> /public-pools/california/los-angeles/,0,0,0,2,3,0,0,True,1,0,CONSOLIDATE,/public-pools/california/los-angeles/
+/public-pools/california/los-gatos/feature/heated/,"Los Gatos, CA",heated,301 -> /public-pools/california/los-gatos/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/los-gatos/
+/public-pools/california/los-gatos/feature/olympic-size/,"Los Gatos, CA",olympic-size,301 -> /public-pools/california/los-gatos/,0,0,0,0,4,1,1,True,3,1,CONSOLIDATE,/public-pools/california/los-gatos/
+/public-pools/california/los-gatos/feature/splash-pad/,"Los Gatos, CA",splash-pad,301 -> /public-pools/california/los-gatos/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/los-gatos/
+/public-pools/california/menifee/feature/diving-board/,"Menifee, CA",diving-board,301 -> /public-pools/california/menifee/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/menifee/
+/public-pools/california/menifee/feature/kiddie-pool/,"Menifee, CA",kiddie-pool,301 -> /public-pools/california/menifee/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/menifee/
+/public-pools/california/menifee/feature/water-slides/,"Menifee, CA",water-slides,301 -> /public-pools/california/menifee/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/menifee/
+/public-pools/california/menifee/feature/wave-pool/,"Menifee, CA",wave-pool,301 -> /public-pools/california/menifee/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/menifee/
+/public-pools/california/mill-valley/feature/indoor/,"Mill Valley, CA",indoor,301 -> /public-pools/california/mill-valley/,0,0,0,1,3,1,1,True,2,0,CONSOLIDATE,/public-pools/california/mill-valley/
+/public-pools/california/mission-viejo/feature/heated/,"Mission Viejo, CA",heated,301 -> /public-pools/california/mission-viejo/,0,0,6,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/california/mission-viejo/
+/public-pools/california/mission-viejo/feature/splash-pad/,"Mission Viejo, CA",splash-pad,301 -> /public-pools/california/mission-viejo/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/california/mission-viejo/
+/public-pools/california/mission-viejo/feature/water-slides/,"Mission Viejo, CA",water-slides,301 -> /public-pools/california/mission-viejo/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/california/mission-viejo/
+/public-pools/california/moreno-valley/feature/lap-swimming/,"Moreno Valley, CA",lap-swimming,301 -> /public-pools/california/moreno-valley/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/moreno-valley/
+/public-pools/california/mountain-view/feature/heated/,"Mountain View, CA",heated,301 -> /public-pools/california/mountain-view/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/mountain-view/
+/public-pools/california/mountain-view/feature/lap-swimming/,"Mountain View, CA",lap-swimming,301 -> /public-pools/california/mountain-view/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/mountain-view/
+/public-pools/california/mountain-view/feature/olympic-size/,"Mountain View, CA",olympic-size,301 -> /public-pools/california/mountain-view/,0,0,3,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/mountain-view/
+/public-pools/california/murrieta/feature/kiddie-pool/,"Murrieta, CA",kiddie-pool,301 -> /public-pools/california/murrieta/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/murrieta/
+/public-pools/california/murrieta/feature/lazy-river/,"Murrieta, CA",lazy-river,301 -> /public-pools/california/murrieta/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/california/murrieta/
+/public-pools/california/napa/feature/heated/,"Napa, CA",heated,301 -> /public-pools/california/napa/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/napa/
+/public-pools/california/napa/feature/lap-swimming/,"Napa, CA",lap-swimming,301 -> /public-pools/california/napa/,2,65,7,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/napa/
+/public-pools/california/napa/feature/lazy-river/,"Napa, CA",lazy-river,301 -> /public-pools/california/napa/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/napa/
+/public-pools/california/newport-beach/feature/lap-swimming/,"Newport Beach, CA",lap-swimming,301 -> /public-pools/california/newport-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/newport-beach/
+/public-pools/california/norco/feature/diving-board/,"Norco, CA",diving-board,301 -> /public-pools/california/norco/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/norco/
+/public-pools/california/norco/feature/lazy-river/,"Norco, CA",lazy-river,301 -> /public-pools/california/norco/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/norco/
+/public-pools/california/norco/feature/wave-pool/,"Norco, CA",wave-pool,301 -> /public-pools/california/norco/,0,0,0,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/california/norco/
+/public-pools/california/oakland/feature/lap-swimming/,"Oakland, CA",lap-swimming,301 -> /public-pools/california/oakland/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/oakland/
+/public-pools/california/oceanside/feature/lazy-river/,"Oceanside, CA",lazy-river,301 -> /public-pools/california/oceanside/,2,59,0,4,5,1,1,True,0,0,CONSOLIDATE,/public-pools/california/oceanside/
+/public-pools/california/oceanside/feature/water-slides/,"Oceanside, CA",water-slides,301 -> /public-pools/california/oceanside/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/oceanside/
+/public-pools/california/ontario/feature/kiddie-pool/,"Ontario, CA",kiddie-pool,301 -> /public-pools/california/ontario/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/ontario/
+/public-pools/california/ontario/feature/lap-swimming/,"Ontario, CA",lap-swimming,301 -> /public-pools/california/ontario/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/ontario/
+/public-pools/california/palmdale/feature/lap-swimming/,"Palmdale, CA",lap-swimming,301 -> /public-pools/california/palmdale/,0,0,5,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/palmdale/
+/public-pools/california/palmdale/feature/wave-pool/,"Palmdale, CA",wave-pool,301 -> /public-pools/california/palmdale/,0,0,4,0,4,1,1,True,3,0,CONSOLIDATE,/public-pools/california/palmdale/
+/public-pools/california/palo-alto/feature/diving-board/,"Palo Alto, CA",diving-board,301 -> /public-pools/california/palo-alto/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/palo-alto/
+/public-pools/california/palo-alto/feature/indoor/,"Palo Alto, CA",indoor,301 -> /public-pools/california/palo-alto/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/california/palo-alto/
+/public-pools/california/palo-alto/feature/lap-swimming/,"Palo Alto, CA",lap-swimming,301 -> /public-pools/california/palo-alto/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/palo-alto/
+/public-pools/california/palo-alto/feature/olympic-size/,"Palo Alto, CA",olympic-size,301 -> /public-pools/california/palo-alto/,0,0,0,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/california/palo-alto/
+/public-pools/california/palo-alto/feature/wave-pool/,"Palo Alto, CA",wave-pool,301 -> /public-pools/california/palo-alto/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/palo-alto/
+/public-pools/california/pasadena/feature/indoor/,"Pasadena, CA",indoor,301 -> /public-pools/california/pasadena/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/pasadena/
+/public-pools/california/pasadena/feature/lap-swimming/,"Pasadena, CA",lap-swimming,301 -> /public-pools/california/pasadena/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/pasadena/
+/public-pools/california/pasadena/feature/olympic-size/,"Pasadena, CA",olympic-size,301 -> /public-pools/california/pasadena/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/pasadena/
+/public-pools/california/perris/feature/kiddie-pool/,"Perris, CA",kiddie-pool,301 -> /public-pools/california/perris/,0,0,9,1,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/perris/
+/public-pools/california/perris/feature/lap-swimming/,"Perris, CA",lap-swimming,301 -> /public-pools/california/perris/,2,25,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/perris/
+/public-pools/california/perris/feature/olympic-size/,"Perris, CA",olympic-size,301 -> /public-pools/california/perris/,0,0,8,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/california/perris/
+/public-pools/california/pomona/feature/indoor/,"Pomona, CA",indoor,301 -> /public-pools/california/pomona/,0,0,3,1,1,0,0,True,0,0,CONSOLIDATE,/public-pools/california/pomona/
+/public-pools/california/pomona/feature/lap-swimming/,"Pomona, CA",lap-swimming,301 -> /public-pools/california/pomona/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/pomona/
+/public-pools/california/rancho-cucamonga/feature/lap-swimming/,"Rancho Cucamonga, CA",lap-swimming,301 -> /public-pools/california/rancho-cucamonga/,0,0,0,1,3,1,1,True,0,2,CONSOLIDATE,/public-pools/california/rancho-cucamonga/
+/public-pools/california/redlands/feature/diving-board/,"Redlands, CA",diving-board,301 -> /public-pools/california/redlands/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/redlands/
+/public-pools/california/redlands/feature/heated/,"Redlands, CA",heated,301 -> /public-pools/california/redlands/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/redlands/
+/public-pools/california/redlands/feature/lap-swimming/,"Redlands, CA",lap-swimming,301 -> /public-pools/california/redlands/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/redlands/
+/public-pools/california/richmond/feature/indoor/,"Richmond, CA",indoor,301 -> /public-pools/california/richmond/,0,0,0,2,3,1,1,True,1,0,CONSOLIDATE,/public-pools/california/richmond/
+/public-pools/california/richmond/feature/lap-swimming/,"Richmond, CA",lap-swimming,301 -> /public-pools/california/richmond/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/richmond/
+/public-pools/california/riverside/feature/indoor/,"Riverside, CA",indoor,301 -> /public-pools/california/riverside/,0,0,0,0,4,1,1,True,4,0,CONSOLIDATE,/public-pools/california/riverside/
+/public-pools/california/riverside/feature/lap-swimming/,"Riverside, CA",lap-swimming,301 -> /public-pools/california/riverside/,0,0,7,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/riverside/
+/public-pools/california/roseville/feature/lap-swimming/,"Roseville, CA",lap-swimming,301 -> /public-pools/california/roseville/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/roseville/
+/public-pools/california/rowland-heights/feature/lap-swimming/,"Rowland Heights, CA",lap-swimming,301 -> /public-pools/california/rowland-heights/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/rowland-heights/
+/public-pools/california/sacramento/feature/heated/,"Sacramento, CA",heated,301 -> /public-pools/california/sacramento/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/sacramento/
+/public-pools/california/sacramento/feature/splash-pad/,"Sacramento, CA",splash-pad,301 -> /public-pools/california/sacramento/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/sacramento/
+/public-pools/california/san-bernardino/feature/heated/,"San Bernardino, CA",heated,301 -> /public-pools/california/san-bernardino/,2,48,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/san-bernardino/
+/public-pools/california/san-bernardino/feature/indoor/,"San Bernardino, CA",indoor,301 -> /public-pools/california/san-bernardino/,2,169,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/california/san-bernardino/
+/public-pools/california/san-bernardino/feature/wave-pool/,"San Bernardino, CA",wave-pool,301 -> /public-pools/california/san-bernardino/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/san-bernardino/
+/public-pools/california/san-diego/feature/heated/,"San Diego, CA",heated,301 -> /public-pools/california/san-diego/,0,0,0,0,4,1,1,True,4,0,CONSOLIDATE,/public-pools/california/san-diego/
+/public-pools/california/san-diego/feature/lap-swimming/,"San Diego, CA",lap-swimming,301 -> /public-pools/california/san-diego/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/san-diego/
+/public-pools/california/san-diego/feature/water-slides/,"San Diego, CA",water-slides,301 -> /public-pools/california/san-diego/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/san-diego/
+/public-pools/california/san-francisco/feature/heated/,"San Francisco, CA",heated,301 -> /public-pools/california/san-francisco/,0,0,7,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/san-francisco/
+/public-pools/california/san-francisco/feature/lap-swimming/,"San Francisco, CA",lap-swimming,301 -> /public-pools/california/san-francisco/,2,16,0,0,3,1,1,True,1,1,CONSOLIDATE,/public-pools/california/san-francisco/
+/public-pools/california/san-jacinto/feature/heated/,"San Jacinto, CA",heated,301 -> /public-pools/california/san-jacinto/,0,0,7,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/san-jacinto/
+/public-pools/california/san-jacinto/feature/indoor/,"San Jacinto, CA",indoor,301 -> /public-pools/california/san-jacinto/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/san-jacinto/
+/public-pools/california/san-jacinto/feature/wave-pool/,"San Jacinto, CA",wave-pool,301 -> /public-pools/california/san-jacinto/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/san-jacinto/
+/public-pools/california/san-jose/feature/heated/,"San Jose, CA",heated,301 -> /public-pools/california/san-jose/,2,61,28,4,5,0,0,True,0,0,CONSOLIDATE,/public-pools/california/san-jose/
+/public-pools/california/san-mateo/feature/olympic-size/,"San Mateo, CA",olympic-size,301 -> /public-pools/california/san-mateo/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/california/san-mateo/
+/public-pools/california/san-mateo/feature/water-slides/,"San Mateo, CA",water-slides,301 -> /public-pools/california/san-mateo/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/san-mateo/
+/public-pools/california/san-rafael/feature/diving-board/,"San Rafael, CA",diving-board,301 -> /public-pools/california/san-rafael/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/california/san-rafael/
+/public-pools/california/san-rafael/feature/indoor/,"San Rafael, CA",indoor,301 -> /public-pools/california/san-rafael/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/san-rafael/
+/public-pools/california/san-rafael/feature/lap-swimming/,"San Rafael, CA",lap-swimming,301 -> /public-pools/california/san-rafael/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/san-rafael/
+/public-pools/california/san-rafael/feature/olympic-size/,"San Rafael, CA",olympic-size,301 -> /public-pools/california/san-rafael/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/california/san-rafael/
+/public-pools/california/santa-barbara/feature/heated/,"Santa Barbara, CA",heated,301 -> /public-pools/california/santa-barbara/,0,0,15,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/santa-barbara/
+/public-pools/california/santa-barbara/feature/olympic-size/,"Santa Barbara, CA",olympic-size,301 -> /public-pools/california/santa-barbara/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/santa-barbara/
+/public-pools/california/santa-clara/feature/heated/,"Santa Clara, CA",heated,301 -> /public-pools/california/santa-clara/,0,0,9,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/santa-clara/
+/public-pools/california/santa-clarita/feature/lap-swimming/,"Santa Clarita, CA",lap-swimming,301 -> /public-pools/california/santa-clarita/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/santa-clarita/
+/public-pools/california/santa-clarita/feature/olympic-size/,"Santa Clarita, CA",olympic-size,301 -> /public-pools/california/santa-clarita/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/santa-clarita/
+/public-pools/california/santa-cruz/feature/heated/,"Santa Cruz, CA",heated,301 -> /public-pools/california/santa-cruz/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/santa-cruz/
+/public-pools/california/santa-cruz/feature/lap-swimming/,"Santa Cruz, CA",lap-swimming,301 -> /public-pools/california/santa-cruz/,0,0,6,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/santa-cruz/
+/public-pools/california/santa-monica/feature/heated/,"Santa Monica, CA",heated,301 -> /public-pools/california/santa-monica/,0,0,7,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/santa-monica/
+/public-pools/california/santa-monica/feature/lap-swimming/,"Santa Monica, CA",lap-swimming,301 -> /public-pools/california/santa-monica/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/santa-monica/
+/public-pools/california/santa-monica/feature/olympic-size/,"Santa Monica, CA",olympic-size,301 -> /public-pools/california/santa-monica/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/santa-monica/
+/public-pools/california/santa-rosa/feature/heated/,"Santa Rosa, CA",heated,301 -> /public-pools/california/santa-rosa/,0,0,13,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/santa-rosa/
+/public-pools/california/santa-rosa/feature/lap-swimming/,"Santa Rosa, CA",lap-swimming,301 -> /public-pools/california/santa-rosa/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/california/santa-rosa/
+/public-pools/california/santa-rosa/feature/lazy-river/,"Santa Rosa, CA",lazy-river,301 -> /public-pools/california/santa-rosa/,2,36,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/california/santa-rosa/
+/public-pools/california/simi-valley/feature/wave-pool/,"Simi Valley, CA",wave-pool,301 -> /public-pools/california/simi-valley/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/simi-valley/
+/public-pools/california/stockton/feature/lap-swimming/,"Stockton, CA",lap-swimming,301 -> /public-pools/california/stockton/,0,0,0,1,3,1,1,True,2,0,CONSOLIDATE,/public-pools/california/stockton/
+/public-pools/california/stockton/feature/lazy-river/,"Stockton, CA",lazy-river,301 -> /public-pools/california/stockton/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/stockton/
+/public-pools/california/stockton/feature/splash-pad/,"Stockton, CA",splash-pad,301 -> /public-pools/california/stockton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/stockton/
+/public-pools/california/sunnyvale/feature/diving-board/,"Sunnyvale, CA",diving-board,301 -> /public-pools/california/sunnyvale/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/sunnyvale/
+/public-pools/california/sunnyvale/feature/heated/,"Sunnyvale, CA",heated,301 -> /public-pools/california/sunnyvale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/sunnyvale/
+/public-pools/california/sunnyvale/feature/lap-swimming/,"Sunnyvale, CA",lap-swimming,301 -> /public-pools/california/sunnyvale/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/california/sunnyvale/
+/public-pools/california/temecula/feature/heated/,"Temecula, CA",heated,301 -> /public-pools/california/temecula/,0,0,7,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/temecula/
+/public-pools/california/temecula/feature/lap-swimming/,"Temecula, CA",lap-swimming,301 -> /public-pools/california/temecula/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/temecula/
+/public-pools/california/temecula/feature/lazy-river/,"Temecula, CA",lazy-river,301 -> /public-pools/california/temecula/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/temecula/
+/public-pools/california/temecula/feature/water-slides/,"Temecula, CA",water-slides,301 -> /public-pools/california/temecula/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/temecula/
+/public-pools/california/thousand-oaks/feature/diving-board/,"Thousand Oaks, CA",diving-board,301 -> /public-pools/california/thousand-oaks/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/thousand-oaks/
+/public-pools/california/thousand-oaks/feature/heated/,"Thousand Oaks, CA",heated,301 -> /public-pools/california/thousand-oaks/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/thousand-oaks/
+/public-pools/california/thousand-oaks/feature/lap-swimming/,"Thousand Oaks, CA",lap-swimming,301 -> /public-pools/california/thousand-oaks/,0,0,3,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/thousand-oaks/
+/public-pools/california/thousand-oaks/feature/olympic-size/,"Thousand Oaks, CA",olympic-size,301 -> /public-pools/california/thousand-oaks/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/california/thousand-oaks/
+/public-pools/california/torrance/feature/diving-board/,"Torrance, CA",diving-board,301 -> /public-pools/california/torrance/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/torrance/
+/public-pools/california/torrance/feature/heated/,"Torrance, CA",heated,301 -> /public-pools/california/torrance/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/torrance/
+/public-pools/california/torrance/feature/olympic-size/,"Torrance, CA",olympic-size,301 -> /public-pools/california/torrance/,0,0,6,0,3,0,0,True,3,0,CONSOLIDATE,/public-pools/california/torrance/
+/public-pools/california/upland/feature/kiddie-pool/,"Upland, CA",kiddie-pool,301 -> /public-pools/california/upland/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/upland/
+/public-pools/california/upland/feature/lap-swimming/,"Upland, CA",lap-swimming,301 -> /public-pools/california/upland/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/upland/
+/public-pools/california/upland/feature/water-slides/,"Upland, CA",water-slides,301 -> /public-pools/california/upland/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/upland/
+/public-pools/california/walnut-creek/feature/heated/,"Walnut Creek, CA",heated,301 -> /public-pools/california/walnut-creek/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/california/walnut-creek/
+/public-pools/california/watsonville/feature/splash-pad/,"Watsonville, CA",splash-pad,301 -> /public-pools/california/watsonville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/california/watsonville/
+/public-pools/california/west-covina/feature/kiddie-pool/,"West Covina, CA",kiddie-pool,301 -> /public-pools/california/west-covina/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/california/west-covina/
+/public-pools/california/whittier/feature/indoor/,"Whittier, CA",indoor,301 -> /public-pools/california/whittier/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/california/whittier/
+/public-pools/california/whittier/feature/kiddie-pool/,"Whittier, CA",kiddie-pool,301 -> /public-pools/california/whittier/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/california/whittier/
+/public-pools/california/whittier/feature/lazy-river/,"Whittier, CA",lazy-river,301 -> /public-pools/california/whittier/,0,0,0,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/california/whittier/
+/public-pools/california/whittier/feature/olympic-size/,"Whittier, CA",olympic-size,301 -> /public-pools/california/whittier/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/california/whittier/
+/public-pools/california/wildomar/feature/lap-swimming/,"Wildomar, CA",lap-swimming,301 -> /public-pools/california/wildomar/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/california/wildomar/
+/public-pools/california/yucaipa/feature/diving-board/,"Yucaipa, CA",diving-board,301 -> /public-pools/california/yucaipa/,0,0,3,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/california/yucaipa/
+/public-pools/colorado/arvada/feature/lap-swimming/,"Arvada, CO",lap-swimming,301 -> /public-pools/colorado/arvada/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/colorado/arvada/
+/public-pools/colorado/aurora/feature/indoor/,"Aurora, CO",indoor,301 -> /public-pools/colorado/aurora/,2,156,0,1,3,7,1,True,1,0,CONSOLIDATE,/public-pools/colorado/aurora/
+/public-pools/colorado/aurora/feature/kiddie-pool/,"Aurora, CO",kiddie-pool,301 -> /public-pools/colorado/aurora/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/colorado/aurora/
+/public-pools/colorado/aurora/feature/lazy-river/,"Aurora, CO",lazy-river,301 -> /public-pools/colorado/aurora/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/colorado/aurora/
+/public-pools/colorado/aurora/feature/olympic-size/,"Aurora, CO",olympic-size,301 -> /public-pools/colorado/aurora/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/colorado/aurora/
+/public-pools/colorado/aurora/feature/splash-pad/,"Aurora, CO",splash-pad,301 -> /public-pools/colorado/aurora/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/colorado/aurora/
+/public-pools/colorado/aurora/feature/wave-pool/,"Aurora, CO",wave-pool,301 -> /public-pools/colorado/aurora/,0,0,3,1,1,0,0,True,0,0,CONSOLIDATE,/public-pools/colorado/aurora/
+/public-pools/colorado/broomfield/feature/diving-board/,"Broomfield, CO",diving-board,301 -> /public-pools/colorado/broomfield/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/broomfield/
+/public-pools/colorado/broomfield/feature/lap-swimming/,"Broomfield, CO",lap-swimming,301 -> /public-pools/colorado/broomfield/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/colorado/broomfield/
+/public-pools/colorado/broomfield/feature/water-slides/,"Broomfield, CO",water-slides,301 -> /public-pools/colorado/broomfield/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/broomfield/
+/public-pools/colorado/castle-rock/feature/diving-board/,"Castle Rock, CO",diving-board,301 -> /public-pools/colorado/castle-rock/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/colorado/castle-rock/
+/public-pools/colorado/castle-rock/feature/heated/,"Castle Rock, CO",heated,301 -> /public-pools/colorado/castle-rock/,0,0,8,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/colorado/castle-rock/
+/public-pools/colorado/castle-rock/feature/indoor/,"Castle Rock, CO",indoor,301 -> /public-pools/colorado/castle-rock/,2,47,6,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/castle-rock/
+/public-pools/colorado/castle-rock/feature/kiddie-pool/,"Castle Rock, CO",kiddie-pool,301 -> /public-pools/colorado/castle-rock/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/castle-rock/
+/public-pools/colorado/centennial/feature/indoor/,"Centennial, CO",indoor,301 -> /public-pools/colorado/centennial/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/centennial/
+/public-pools/colorado/colorado-springs/feature/lap-swimming/,"Colorado Springs, CO",lap-swimming,301 -> /public-pools/colorado/colorado-springs/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/colorado/colorado-springs/
+/public-pools/colorado/colorado-springs/feature/water-slides/,"Colorado Springs, CO",water-slides,301 -> /public-pools/colorado/colorado-springs/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/colorado/colorado-springs/
+/public-pools/colorado/denver/feature/diving-board/,"Denver, CO",diving-board,301 -> /public-pools/colorado/denver/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/denver/
+/public-pools/colorado/denver/feature/heated/,"Denver, CO",heated,301 -> /public-pools/colorado/denver/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/colorado/denver/
+/public-pools/colorado/denver/feature/indoor/,"Denver, CO",indoor,301 -> /public-pools/colorado/denver/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/colorado/denver/
+/public-pools/colorado/denver/feature/lazy-river/,"Denver, CO",lazy-river,301 -> /public-pools/colorado/denver/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/colorado/denver/
+/public-pools/colorado/fort-collins/feature/lap-swimming/,"Fort Collins, CO",lap-swimming,301 -> /public-pools/colorado/fort-collins/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/fort-collins/
+/public-pools/colorado/highlands-ranch/feature/indoor/,"Highlands Ranch, CO",indoor,301 -> /public-pools/colorado/highlands-ranch/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/highlands-ranch/
+/public-pools/colorado/highlands-ranch/feature/kiddie-pool/,"Highlands Ranch, CO",kiddie-pool,301 -> /public-pools/colorado/highlands-ranch/,0,0,4,1,1,1,1,True,0,0,CONSOLIDATE,/public-pools/colorado/highlands-ranch/
+/public-pools/colorado/highlands-ranch/feature/lap-swimming/,"Highlands Ranch, CO",lap-swimming,301 -> /public-pools/colorado/highlands-ranch/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/highlands-ranch/
+/public-pools/colorado/lakewood/feature/diving-board/,"Lakewood, CO",diving-board,301 -> /public-pools/colorado/lakewood/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/colorado/lakewood/
+/public-pools/colorado/lakewood/feature/lazy-river/,"Lakewood, CO",lazy-river,301 -> /public-pools/colorado/lakewood/,0,0,7,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/lakewood/
+/public-pools/colorado/lakewood/feature/olympic-size/,"Lakewood, CO",olympic-size,301 -> /public-pools/colorado/lakewood/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/lakewood/
+/public-pools/colorado/lakewood/feature/wave-pool/,"Lakewood, CO",wave-pool,301 -> /public-pools/colorado/lakewood/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/lakewood/
+/public-pools/colorado/littleton/feature/indoor/,"Littleton, CO",indoor,301 -> /public-pools/colorado/littleton/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/colorado/littleton/
+/public-pools/colorado/littleton/feature/splash-pad/,"Littleton, CO",splash-pad,301 -> /public-pools/colorado/littleton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/colorado/littleton/
+/public-pools/colorado/parker/feature/indoor/,"Parker, CO",indoor,301 -> /public-pools/colorado/parker/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/parker/
+/public-pools/colorado/parker/feature/kiddie-pool/,"Parker, CO",kiddie-pool,301 -> /public-pools/colorado/parker/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/colorado/parker/
+/public-pools/colorado/thornton/feature/diving-board/,"Thornton, CO",diving-board,301 -> /public-pools/colorado/thornton/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/colorado/thornton/
+/public-pools/colorado/thornton/feature/indoor/,"Thornton, CO",indoor,301 -> /public-pools/colorado/thornton/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/colorado/thornton/
+/public-pools/colorado/thornton/feature/lap-swimming/,"Thornton, CO",lap-swimming,301 -> /public-pools/colorado/thornton/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/colorado/thornton/
+/public-pools/colorado/thornton/feature/wave-pool/,"Thornton, CO",wave-pool,301 -> /public-pools/colorado/thornton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/thornton/
+/public-pools/colorado/westminster/feature/diving-board/,"Westminster, CO",diving-board,301 -> /public-pools/colorado/westminster/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/westminster/
+/public-pools/colorado/westminster/feature/lap-swimming/,"Westminster, CO",lap-swimming,301 -> /public-pools/colorado/westminster/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/westminster/
+/public-pools/colorado/westminster/feature/splash-pad/,"Westminster, CO",splash-pad,301 -> /public-pools/colorado/westminster/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/colorado/westminster/
+/public-pools/colorado/westminster/feature/water-slides/,"Westminster, CO",water-slides,301 -> /public-pools/colorado/westminster/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/colorado/westminster/
+/public-pools/connecticut/new-haven/feature/heated/,"New Haven, CT",heated,301 -> /public-pools/connecticut/new-haven/,3,92,3,0,2,1,0,True,1,0,CONSOLIDATE,/public-pools/connecticut/new-haven/
+/public-pools/connecticut/new-haven/feature/indoor/,"New Haven, CT",indoor,301 -> /public-pools/connecticut/new-haven/,3,85,0,0,3,2,1,True,1,1,CONSOLIDATE,/public-pools/connecticut/new-haven/
+/public-pools/connecticut/new-haven/feature/olympic-size/,"New Haven, CT",olympic-size,301 -> /public-pools/connecticut/new-haven/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/connecticut/new-haven/
+/public-pools/connecticut/stamford/feature/indoor/,"Stamford, CT",indoor,301 -> /public-pools/connecticut/stamford/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/connecticut/stamford/
+/public-pools/connecticut/stamford/feature/kiddie-pool/,"Stamford, CT",kiddie-pool,301 -> /public-pools/connecticut/stamford/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/connecticut/stamford/
+/public-pools/connecticut/stamford/feature/lazy-river/,"Stamford, CT",lazy-river,301 -> /public-pools/connecticut/stamford/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/connecticut/stamford/
+/public-pools/connecticut/stamford/feature/splash-pad/,"Stamford, CT",splash-pad,301 -> /public-pools/connecticut/stamford/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/connecticut/stamford/
+/public-pools/delaware/wilmington/feature/indoor/,"Wilmington, DE",indoor,301 -> /public-pools/delaware/wilmington/,7,135,6,0,4,2,2,True,1,1,CONSOLIDATE,/public-pools/delaware/wilmington/
+/public-pools/florida/boca-raton/feature/indoor/,"Boca Raton, FL",indoor,301 -> /public-pools/florida/boca-raton/,4,21,3,0,2,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/boca-raton/
+/public-pools/florida/boca-raton/feature/lap-swimming/,"Boca Raton, FL",lap-swimming,301 -> /public-pools/florida/boca-raton/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/boca-raton/
+/public-pools/florida/boca-raton/feature/olympic-size/,"Boca Raton, FL",olympic-size,301 -> /public-pools/florida/boca-raton/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/boca-raton/
+/public-pools/florida/bonita-springs/feature/kiddie-pool/,"Bonita Springs, FL",kiddie-pool,301 -> /public-pools/florida/bonita-springs/,0,0,0,0,1,2,2,True,0,1,CONSOLIDATE,/public-pools/florida/bonita-springs/
+/public-pools/florida/bonita-springs/feature/lap-swimming/,"Bonita Springs, FL",lap-swimming,301 -> /public-pools/florida/bonita-springs/,0,0,7,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/bonita-springs/
+/public-pools/florida/boynton-beach/feature/lap-swimming/,"Boynton Beach, FL",lap-swimming,301 -> /public-pools/florida/boynton-beach/,3,17,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/florida/boynton-beach/
+/public-pools/florida/boynton-beach/feature/lazy-river/,"Boynton Beach, FL",lazy-river,301 -> /public-pools/florida/boynton-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/boynton-beach/
+/public-pools/florida/boynton-beach/feature/olympic-size/,"Boynton Beach, FL",olympic-size,301 -> /public-pools/florida/boynton-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/boynton-beach/
+/public-pools/florida/boynton-beach/feature/splash-pad/,"Boynton Beach, FL",splash-pad,301 -> /public-pools/florida/boynton-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/boynton-beach/
+/public-pools/florida/bradenton/feature/lap-swimming/,"Bradenton, FL",lap-swimming,301 -> /public-pools/florida/bradenton/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/bradenton/
+/public-pools/florida/bradenton/feature/lazy-river/,"Bradenton, FL",lazy-river,301 -> /public-pools/florida/bradenton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/bradenton/
+/public-pools/florida/cape-coral/feature/diving-board/,"Cape Coral, FL",diving-board,301 -> /public-pools/florida/cape-coral/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/heated/,"Cape Coral, FL",heated,301 -> /public-pools/florida/cape-coral/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/indoor/,"Cape Coral, FL",indoor,301 -> /public-pools/florida/cape-coral/,0,0,5,3,7,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/kiddie-pool/,"Cape Coral, FL",kiddie-pool,301 -> /public-pools/florida/cape-coral/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/lap-swimming/,"Cape Coral, FL",lap-swimming,301 -> /public-pools/florida/cape-coral/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/lazy-river/,"Cape Coral, FL",lazy-river,301 -> /public-pools/florida/cape-coral/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/cape-coral/feature/water-slides/,"Cape Coral, FL",water-slides,301 -> /public-pools/florida/cape-coral/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/cape-coral/
+/public-pools/florida/clearwater/feature/diving-board/,"Clearwater, FL",diving-board,301 -> /public-pools/florida/clearwater/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/clearwater/
+/public-pools/florida/clearwater/feature/lap-swimming/,"Clearwater, FL",lap-swimming,301 -> /public-pools/florida/clearwater/,0,0,0,2,2,3,3,True,0,0,CONSOLIDATE,/public-pools/florida/clearwater/
+/public-pools/florida/clearwater/feature/lazy-river/,"Clearwater, FL",lazy-river,301 -> /public-pools/florida/clearwater/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/clearwater/
+/public-pools/florida/clearwater/feature/water-slides/,"Clearwater, FL",water-slides,301 -> /public-pools/florida/clearwater/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/clearwater/
+/public-pools/florida/coral-springs/feature/lap-swimming/,"Coral Springs, FL",lap-swimming,301 -> /public-pools/florida/coral-springs/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/coral-springs/
+/public-pools/florida/coral-springs/feature/lazy-river/,"Coral Springs, FL",lazy-river,301 -> /public-pools/florida/coral-springs/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/coral-springs/
+/public-pools/florida/daytona-beach/feature/diving-board/,"Daytona Beach, FL",diving-board,301 -> /public-pools/florida/daytona-beach/,2,14,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/florida/daytona-beach/
+/public-pools/florida/daytona-beach/feature/heated/,"Daytona Beach, FL",heated,301 -> /public-pools/florida/daytona-beach/,0,0,6,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/daytona-beach/
+/public-pools/florida/deltona/feature/heated/,"Deltona, FL",heated,301 -> /public-pools/florida/deltona/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/deltona/
+/public-pools/florida/deltona/feature/indoor/,"Deltona, FL",indoor,301 -> /public-pools/florida/deltona/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/deltona/
+/public-pools/florida/deltona/feature/lap-swimming/,"Deltona, FL",lap-swimming,301 -> /public-pools/florida/deltona/,3,71,8,1,3,3,3,True,1,0,REBUILD,/public-pools/florida/deltona/feature/lap-swimming/
+/public-pools/florida/deltona/feature/wave-pool/,"Deltona, FL",wave-pool,301 -> /public-pools/florida/deltona/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/deltona/
+/public-pools/florida/fort-lauderdale/feature/indoor/,"Fort Lauderdale, FL",indoor,301 -> /public-pools/florida/fort-lauderdale/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/fort-lauderdale/
+/public-pools/florida/fort-lauderdale/feature/kiddie-pool/,"Fort Lauderdale, FL",kiddie-pool,301 -> /public-pools/florida/fort-lauderdale/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/fort-lauderdale/
+/public-pools/florida/fort-lauderdale/feature/lap-swimming/,"Fort Lauderdale, FL",lap-swimming,301 -> /public-pools/florida/fort-lauderdale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/fort-lauderdale/
+/public-pools/florida/fort-lauderdale/feature/olympic-size/,"Fort Lauderdale, FL",olympic-size,301 -> /public-pools/florida/fort-lauderdale/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/fort-lauderdale/
+/public-pools/florida/fort-lauderdale/feature/wave-pool/,"Fort Lauderdale, FL",wave-pool,301 -> /public-pools/florida/fort-lauderdale/,0,0,0,0,2,0,0,True,0,0,RETIRE,/public-pools/florida/fort-lauderdale/
+/public-pools/florida/fort-myers/feature/heated/,"Fort Myers, FL",heated,301 -> /public-pools/florida/fort-myers/,0,0,3,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/fort-myers/
+/public-pools/florida/fort-myers/feature/lap-swimming/,"Fort Myers, FL",lap-swimming,301 -> /public-pools/florida/fort-myers/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/fort-myers/
+/public-pools/florida/fort-myers/feature/olympic-size/,"Fort Myers, FL",olympic-size,301 -> /public-pools/florida/fort-myers/,0,0,0,2,5,0,0,True,0,2,CONSOLIDATE,/public-pools/florida/fort-myers/
+/public-pools/florida/fort-pierce/feature/splash-pad/,"Fort Pierce, FL",splash-pad,301 -> /public-pools/florida/fort-pierce/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/fort-pierce/
+/public-pools/florida/fort-pierce/feature/water-slides/,"Fort Pierce, FL",water-slides,301 -> /public-pools/florida/fort-pierce/,0,0,3,1,1,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/fort-pierce/
+/public-pools/florida/gainesville/feature/lap-swimming/,"Gainesville, FL",lap-swimming,301 -> /public-pools/florida/gainesville/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/gainesville/
+/public-pools/florida/hollywood/feature/diving-board/,"Hollywood, FL",diving-board,301 -> /public-pools/florida/hollywood/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/hollywood/
+/public-pools/florida/hollywood/feature/heated/,"Hollywood, FL",heated,301 -> /public-pools/florida/hollywood/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/florida/hollywood/
+/public-pools/florida/hollywood/feature/indoor/,"Hollywood, FL",indoor,301 -> /public-pools/florida/hollywood/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/hollywood/
+/public-pools/florida/jacksonville/feature/diving-board/,"Jacksonville, FL",diving-board,301 -> /public-pools/florida/jacksonville/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/jacksonville/
+/public-pools/florida/jacksonville/feature/splash-pad/,"Jacksonville, FL",splash-pad,301 -> /public-pools/florida/jacksonville/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/jacksonville/
+/public-pools/florida/jay/feature/diving-board/,"Jay, FL",diving-board,301 -> /public-pools/florida/jay/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/jay/
+/public-pools/florida/jay/feature/splash-pad/,"Jay, FL",splash-pad,301 -> /public-pools/florida/jay/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/jay/
+/public-pools/florida/jay/feature/water-slides/,"Jay, FL",water-slides,301 -> /public-pools/florida/jay/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/jay/
+/public-pools/florida/jay/feature/wave-pool/,"Jay, FL",wave-pool,301 -> /public-pools/florida/jay/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/jay/
+/public-pools/florida/kissimmee/feature/indoor/,"Kissimmee, FL",indoor,301 -> /public-pools/florida/kissimmee/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/kissimmee/
+/public-pools/florida/kissimmee/feature/lap-swimming/,"Kissimmee, FL",lap-swimming,301 -> /public-pools/florida/kissimmee/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/kissimmee/
+/public-pools/florida/kissimmee/feature/wave-pool/,"Kissimmee, FL",wave-pool,301 -> /public-pools/florida/kissimmee/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/kissimmee/
+/public-pools/florida/lakeland/feature/diving-board/,"Lakeland, FL",diving-board,301 -> /public-pools/florida/lakeland/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/lakeland/
+/public-pools/florida/lakeland/feature/indoor/,"Lakeland, FL",indoor,301 -> /public-pools/florida/lakeland/,0,0,3,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/lakeland/
+/public-pools/florida/lakeland/feature/lazy-river/,"Lakeland, FL",lazy-river,301 -> /public-pools/florida/lakeland/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/lakeland/
+/public-pools/florida/lakeland/feature/wave-pool/,"Lakeland, FL",wave-pool,301 -> /public-pools/florida/lakeland/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/lakeland/
+/public-pools/florida/miami-beach/feature/indoor/,"Miami Beach, FL",indoor,301 -> /public-pools/florida/miami-beach/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/miami-beach/
+/public-pools/florida/miami-beach/feature/kiddie-pool/,"Miami Beach, FL",kiddie-pool,301 -> /public-pools/florida/miami-beach/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/florida/miami-beach/
+/public-pools/florida/miami-beach/feature/lazy-river/,"Miami Beach, FL",lazy-river,301 -> /public-pools/florida/miami-beach/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/miami-beach/
+/public-pools/florida/miami-beach/feature/olympic-size/,"Miami Beach, FL",olympic-size,301 -> /public-pools/florida/miami-beach/,0,0,0,1,3,0,0,True,2,0,CONSOLIDATE,/public-pools/florida/miami-beach/
+/public-pools/florida/miami-beach/feature/wave-pool/,"Miami Beach, FL",wave-pool,301 -> /public-pools/florida/miami-beach/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/miami-beach/
+/public-pools/florida/miami/feature/lap-swimming/,"Miami, FL",lap-swimming,301 -> /public-pools/florida/miami/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/miami/
+/public-pools/florida/naples/feature/kiddie-pool/,"Naples, FL",kiddie-pool,301 -> /public-pools/florida/naples/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/naples/
+/public-pools/florida/naples/feature/lap-swimming/,"Naples, FL",lap-swimming,301 -> /public-pools/florida/naples/,2,71,5,0,2,3,3,True,1,0,REBUILD,/public-pools/florida/naples/feature/lap-swimming/
+/public-pools/florida/naples/feature/olympic-size/,"Naples, FL",olympic-size,301 -> /public-pools/florida/naples/,0,0,0,0,2,0,0,True,1,1,CONSOLIDATE,/public-pools/florida/naples/
+/public-pools/florida/ocala/feature/indoor/,"Ocala, FL",indoor,301 -> /public-pools/florida/ocala/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/ocala/
+/public-pools/florida/ocala/feature/lap-swimming/,"Ocala, FL",lap-swimming,301 -> /public-pools/florida/ocala/,0,0,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/florida/ocala/
+/public-pools/florida/ocala/feature/splash-pad/,"Ocala, FL",splash-pad,301 -> /public-pools/florida/ocala/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/ocala/
+/public-pools/florida/ocala/feature/wave-pool/,"Ocala, FL",wave-pool,301 -> /public-pools/florida/ocala/,0,0,0,0,5,1,1,True,0,0,RETIRE,/public-pools/florida/ocala/
+/public-pools/florida/orlando/feature/heated/,"Orlando, FL",heated,301 -> /public-pools/florida/orlando/,0,0,3,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/orlando/
+/public-pools/florida/orlando/feature/indoor/,"Orlando, FL",indoor,301 -> /public-pools/florida/orlando/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/florida/orlando/
+/public-pools/florida/orlando/feature/kiddie-pool/,"Orlando, FL",kiddie-pool,301 -> /public-pools/florida/orlando/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/florida/orlando/
+/public-pools/florida/orlando/feature/lap-swimming/,"Orlando, FL",lap-swimming,301 -> /public-pools/florida/orlando/,2,28,0,1,3,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/orlando/
+/public-pools/florida/orlando/feature/water-slides/,"Orlando, FL",water-slides,301 -> /public-pools/florida/orlando/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/orlando/
+/public-pools/florida/port-st-lucie/feature/diving-board/,"Port St. Lucie, FL",diving-board,301 -> /public-pools/florida/port-st-lucie/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/port-st-lucie/feature/heated/,"Port St. Lucie, FL",heated,301 -> /public-pools/florida/port-st-lucie/,0,0,3,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/port-st-lucie/feature/kiddie-pool/,"Port St. Lucie, FL",kiddie-pool,301 -> /public-pools/florida/port-st-lucie/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/port-st-lucie/feature/olympic-size/,"Port St. Lucie, FL",olympic-size,301 -> /public-pools/florida/port-st-lucie/,0,0,4,1,1,0,0,True,0,0,CONSOLIDATE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/port-st-lucie/feature/splash-pad/,"Port St. Lucie, FL",splash-pad,301 -> /public-pools/florida/port-st-lucie/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/port-st-lucie/feature/water-slides/,"Port St. Lucie, FL",water-slides,301 -> /public-pools/florida/port-st-lucie/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/florida/port-st-lucie/
+/public-pools/florida/sarasota/feature/wave-pool/,"Sarasota, FL",wave-pool,301 -> /public-pools/florida/sarasota/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/sarasota/
+/public-pools/florida/spring-hill/feature/heated/,"Spring Hill, FL",heated,301 -> /public-pools/florida/spring-hill/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/spring-hill/
+/public-pools/florida/st-petersburg/feature/heated/,"St. Petersburg, FL",heated,301 -> /public-pools/florida/st-petersburg/,0,0,4,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/florida/st-petersburg/
+/public-pools/florida/st-petersburg/feature/lap-swimming/,"St. Petersburg, FL",lap-swimming,301 -> /public-pools/florida/st-petersburg/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/florida/st-petersburg/
+/public-pools/florida/tallahassee/feature/diving-board/,"Tallahassee, FL",diving-board,301 -> /public-pools/florida/tallahassee/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/tallahassee/
+/public-pools/florida/tallahassee/feature/kiddie-pool/,"Tallahassee, FL",kiddie-pool,301 -> /public-pools/florida/tallahassee/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/tallahassee/
+/public-pools/florida/tallahassee/feature/lap-swimming/,"Tallahassee, FL",lap-swimming,301 -> /public-pools/florida/tallahassee/,0,0,9,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/tallahassee/
+/public-pools/florida/tallahassee/feature/olympic-size/,"Tallahassee, FL",olympic-size,301 -> /public-pools/florida/tallahassee/,0,0,5,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/tallahassee/
+/public-pools/florida/tampa/feature/diving-board/,"Tampa, FL",diving-board,301 -> /public-pools/florida/tampa/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/tampa/
+/public-pools/florida/tampa/feature/kiddie-pool/,"Tampa, FL",kiddie-pool,301 -> /public-pools/florida/tampa/,0,0,0,1,3,1,1,True,2,0,CONSOLIDATE,/public-pools/florida/tampa/
+/public-pools/florida/wesley-chapel/feature/diving-board/,"Wesley Chapel, FL",diving-board,301 -> /public-pools/florida/wesley-chapel/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/florida/wesley-chapel/
+/public-pools/florida/wesley-chapel/feature/kiddie-pool/,"Wesley Chapel, FL",kiddie-pool,301 -> /public-pools/florida/wesley-chapel/,0,0,0,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/florida/wesley-chapel/
+/public-pools/florida/wesley-chapel/feature/lap-swimming/,"Wesley Chapel, FL",lap-swimming,301 -> /public-pools/florida/wesley-chapel/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/florida/wesley-chapel/
+/public-pools/florida/winter-park/feature/heated/,"Winter Park, FL",heated,301 -> /public-pools/florida/winter-park/,0,0,0,0,3,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/winter-park/
+/public-pools/florida/winter-park/feature/kiddie-pool/,"Winter Park, FL",kiddie-pool,301 -> /public-pools/florida/winter-park/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/florida/winter-park/
+/public-pools/georgia/alpharetta/feature/diving-board/,"Alpharetta, GA",diving-board,301 -> /public-pools/georgia/alpharetta/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/georgia/alpharetta/
+/public-pools/georgia/alpharetta/feature/kiddie-pool/,"Alpharetta, GA",kiddie-pool,301 -> /public-pools/georgia/alpharetta/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/alpharetta/
+/public-pools/georgia/alpharetta/feature/lap-swimming/,"Alpharetta, GA",lap-swimming,301 -> /public-pools/georgia/alpharetta/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/alpharetta/
+/public-pools/georgia/atlanta/feature/heated/,"Atlanta, GA",heated,301 -> /public-pools/georgia/atlanta/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/georgia/atlanta/
+/public-pools/georgia/atlanta/feature/kiddie-pool/,"Atlanta, GA",kiddie-pool,301 -> /public-pools/georgia/atlanta/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/georgia/atlanta/
+/public-pools/georgia/atlanta/feature/lazy-river/,"Atlanta, GA",lazy-river,301 -> /public-pools/georgia/atlanta/,0,0,0,0,6,0,0,True,2,0,CONSOLIDATE,/public-pools/georgia/atlanta/
+/public-pools/georgia/augusta/feature/indoor/,"Augusta, GA",indoor,301 -> /public-pools/georgia/augusta/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/georgia/augusta/
+/public-pools/georgia/augusta/feature/lap-swimming/,"Augusta, GA",lap-swimming,301 -> /public-pools/georgia/augusta/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/georgia/augusta/
+/public-pools/georgia/canton/feature/kiddie-pool/,"Canton, GA",kiddie-pool,301 -> /public-pools/georgia/canton/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/canton/
+/public-pools/georgia/canton/feature/lap-swimming/,"Canton, GA",lap-swimming,301 -> /public-pools/georgia/canton/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/canton/
+/public-pools/georgia/canton/feature/olympic-size/,"Canton, GA",olympic-size,301 -> /public-pools/georgia/canton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/canton/
+/public-pools/georgia/cleveland/feature/indoor/,"Cleveland, GA",indoor,301 -> /public-pools/georgia/cleveland/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/georgia/cleveland/
+/public-pools/georgia/decatur/feature/lap-swimming/,"Decatur, GA",lap-swimming,301 -> /public-pools/georgia/decatur/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/decatur/
+/public-pools/georgia/decatur/feature/lazy-river/,"Decatur, GA",lazy-river,301 -> /public-pools/georgia/decatur/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/decatur/
+/public-pools/georgia/decatur/feature/splash-pad/,"Decatur, GA",splash-pad,301 -> /public-pools/georgia/decatur/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/decatur/
+/public-pools/georgia/johns-creek/feature/heated/,"Johns Creek, GA",heated,301 -> /public-pools/georgia/johns-creek/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/georgia/johns-creek/
+/public-pools/georgia/johns-creek/feature/lazy-river/,"Johns Creek, GA",lazy-river,301 -> /public-pools/georgia/johns-creek/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/georgia/johns-creek/
+/public-pools/georgia/kennesaw/feature/kiddie-pool/,"Kennesaw, GA",kiddie-pool,301 -> /public-pools/georgia/kennesaw/,0,0,3,0,1,2,2,True,0,1,CONSOLIDATE,/public-pools/georgia/kennesaw/
+/public-pools/georgia/kennesaw/feature/lap-swimming/,"Kennesaw, GA",lap-swimming,301 -> /public-pools/georgia/kennesaw/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/georgia/kennesaw/
+/public-pools/georgia/kennesaw/feature/lazy-river/,"Kennesaw, GA",lazy-river,301 -> /public-pools/georgia/kennesaw/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/georgia/kennesaw/
+/public-pools/georgia/lawrenceville/feature/diving-board/,"Lawrenceville, GA",diving-board,301 -> /public-pools/georgia/lawrenceville/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/lawrenceville/
+/public-pools/georgia/lawrenceville/feature/heated/,"Lawrenceville, GA",heated,301 -> /public-pools/georgia/lawrenceville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/georgia/lawrenceville/
+/public-pools/georgia/lawrenceville/feature/indoor/,"Lawrenceville, GA",indoor,301 -> /public-pools/georgia/lawrenceville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/georgia/lawrenceville/
+/public-pools/georgia/lawrenceville/feature/lap-swimming/,"Lawrenceville, GA",lap-swimming,301 -> /public-pools/georgia/lawrenceville/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/lawrenceville/
+/public-pools/georgia/lawrenceville/feature/water-slides/,"Lawrenceville, GA",water-slides,301 -> /public-pools/georgia/lawrenceville/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/georgia/lawrenceville/
+/public-pools/georgia/marietta/feature/splash-pad/,"Marietta, GA",splash-pad,301 -> /public-pools/georgia/marietta/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/marietta/
+/public-pools/georgia/marietta/feature/wave-pool/,"Marietta, GA",wave-pool,301 -> /public-pools/georgia/marietta/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/marietta/
+/public-pools/georgia/peachtree-city/feature/indoor/,"Peachtree City, GA",indoor,301 -> /public-pools/georgia/peachtree-city/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/peachtree-city/
+/public-pools/georgia/roswell/feature/kiddie-pool/,"Roswell, GA",kiddie-pool,301 -> /public-pools/georgia/roswell/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/roswell/
+/public-pools/georgia/savannah/feature/indoor/,"Savannah, GA",indoor,301 -> /public-pools/georgia/savannah/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/savannah/
+/public-pools/georgia/savannah/feature/water-slides/,"Savannah, GA",water-slides,301 -> /public-pools/georgia/savannah/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/georgia/savannah/
+/public-pools/georgia/woodstock/feature/diving-board/,"Woodstock, GA",diving-board,301 -> /public-pools/georgia/woodstock/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/georgia/woodstock/
+/public-pools/georgia/woodstock/feature/indoor/,"Woodstock, GA",indoor,301 -> /public-pools/georgia/woodstock/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/georgia/woodstock/
+/public-pools/georgia/woodstock/feature/lap-swimming/,"Woodstock, GA",lap-swimming,301 -> /public-pools/georgia/woodstock/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/georgia/woodstock/
+/public-pools/hawaii/hilo/feature/lap-swimming/,"Hilo, HI",lap-swimming,301 -> /public-pools/hawaii/hilo/,0,0,0,1,1,0,0,False,0,0,RETIRE,/public-pools/hawaii/
+/public-pools/hawaii/hilo/feature/splash-pad/,"Hilo, HI",splash-pad,301 -> /public-pools/hawaii/hilo/,0,0,0,1,1,0,0,False,0,0,RETIRE,/public-pools/hawaii/
+/public-pools/hawaii/honolulu/feature/heated/,"Honolulu, HI",heated,301 -> /public-pools/hawaii/honolulu/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/hawaii/honolulu/
+/public-pools/hawaii/honolulu/feature/indoor/,"Honolulu, HI",indoor,301 -> /public-pools/hawaii/honolulu/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/hawaii/honolulu/
+/public-pools/hawaii/honolulu/feature/lap-swimming/,"Honolulu, HI",lap-swimming,301 -> /public-pools/hawaii/honolulu/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/hawaii/honolulu/
+/public-pools/idaho/boise/feature/heated/,"Boise, ID",heated,301 -> /public-pools/idaho/boise/,0,0,0,0,1,2,1,True,1,0,CONSOLIDATE,/public-pools/idaho/boise/
+/public-pools/idaho/boise/feature/indoor/,"Boise, ID",indoor,301 -> /public-pools/idaho/boise/,0,0,0,1,6,3,2,True,5,0,CONSOLIDATE,/public-pools/idaho/boise/
+/public-pools/idaho/boise/feature/olympic-size/,"Boise, ID",olympic-size,301 -> /public-pools/idaho/boise/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/idaho/boise/
+/public-pools/idaho/boise/feature/water-slides/,"Boise, ID",water-slides,301 -> /public-pools/idaho/boise/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/idaho/boise/
+/public-pools/illinois/chicago/feature/diving-board/,"Chicago, IL",diving-board,301 -> /public-pools/illinois/chicago/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/illinois/chicago/
+/public-pools/illinois/chicago/feature/heated/,"Chicago, IL",heated,301 -> /public-pools/illinois/chicago/,2,121,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/illinois/chicago/
+/public-pools/illinois/chicago/feature/wave-pool/,"Chicago, IL",wave-pool,301 -> /public-pools/illinois/chicago/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/illinois/chicago/
+/public-pools/illinois/downers-grove/feature/indoor/,"Downers Grove, IL",indoor,301 -> /public-pools/illinois/downers-grove/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/illinois/downers-grove/
+/public-pools/illinois/downers-grove/feature/lap-swimming/,"Downers Grove, IL",lap-swimming,301 -> /public-pools/illinois/downers-grove/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/illinois/downers-grove/
+/public-pools/illinois/downers-grove/feature/olympic-size/,"Downers Grove, IL",olympic-size,301 -> /public-pools/illinois/downers-grove/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/illinois/downers-grove/
+/public-pools/illinois/elmhurst/feature/heated/,"Elmhurst, IL",heated,301 -> /public-pools/illinois/elmhurst/,0,0,0,0,2,2,2,True,1,1,CONSOLIDATE,/public-pools/illinois/elmhurst/
+/public-pools/illinois/evanston/feature/indoor/,"Evanston, IL",indoor,301 -> /public-pools/illinois/evanston/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/illinois/evanston/
+/public-pools/illinois/evanston/feature/kiddie-pool/,"Evanston, IL",kiddie-pool,301 -> /public-pools/illinois/evanston/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/illinois/evanston/
+/public-pools/illinois/northbrook/feature/indoor/,"Northbrook, IL",indoor,301 -> /public-pools/illinois/northbrook/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/illinois/northbrook/
+/public-pools/illinois/northbrook/feature/kiddie-pool/,"Northbrook, IL",kiddie-pool,301 -> /public-pools/illinois/northbrook/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/illinois/northbrook/
+/public-pools/illinois/northbrook/feature/lap-swimming/,"Northbrook, IL",lap-swimming,301 -> /public-pools/illinois/northbrook/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/illinois/northbrook/
+/public-pools/illinois/schaumburg/feature/kiddie-pool/,"Schaumburg, IL",kiddie-pool,301 -> /public-pools/illinois/schaumburg/,0,0,5,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/illinois/schaumburg/
+/public-pools/illinois/schaumburg/feature/lazy-river/,"Schaumburg, IL",lazy-river,301 -> /public-pools/illinois/schaumburg/,0,0,3,1,1,1,1,True,0,0,CONSOLIDATE,/public-pools/illinois/schaumburg/
+/public-pools/illinois/schaumburg/feature/olympic-size/,"Schaumburg, IL",olympic-size,301 -> /public-pools/illinois/schaumburg/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/illinois/schaumburg/
+/public-pools/illinois/schaumburg/feature/water-slides/,"Schaumburg, IL",water-slides,301 -> /public-pools/illinois/schaumburg/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/illinois/schaumburg/
+/public-pools/indiana/carmel/feature/heated/,"Carmel, IN",heated,301 -> /public-pools/indiana/carmel/,0,0,0,0,2,1,1,True,1,1,CONSOLIDATE,/public-pools/indiana/carmel/
+/public-pools/indiana/carmel/feature/indoor/,"Carmel, IN",indoor,301 -> /public-pools/indiana/carmel/,2,58,0,0,2,2,2,True,0,1,CONSOLIDATE,/public-pools/indiana/carmel/
+/public-pools/indiana/carmel/feature/kiddie-pool/,"Carmel, IN",kiddie-pool,301 -> /public-pools/indiana/carmel/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/indiana/carmel/
+/public-pools/indiana/carmel/feature/lap-swimming/,"Carmel, IN",lap-swimming,301 -> /public-pools/indiana/carmel/,0,0,0,0,1,4,4,True,1,0,CONSOLIDATE,/public-pools/indiana/carmel/
+/public-pools/indiana/fishers/feature/diving-board/,"Fishers, IN",diving-board,301 -> /public-pools/indiana/fishers/,0,0,0,0,1,3,3,True,0,0,CONSOLIDATE,/public-pools/indiana/fishers/
+/public-pools/indiana/fishers/feature/splash-pad/,"Fishers, IN",splash-pad,301 -> /public-pools/indiana/fishers/,0,0,0,4,4,1,1,True,0,0,CONSOLIDATE,/public-pools/indiana/fishers/
+/public-pools/indiana/fishers/feature/water-slides/,"Fishers, IN",water-slides,301 -> /public-pools/indiana/fishers/,0,0,0,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/indiana/fishers/
+/public-pools/indiana/fort-wayne/feature/indoor/,"Fort Wayne, IN",indoor,301 -> /public-pools/indiana/fort-wayne/,3,58,7,2,3,0,0,True,0,0,CONSOLIDATE,/public-pools/indiana/fort-wayne/
+/public-pools/indiana/fort-wayne/feature/lazy-river/,"Fort Wayne, IN",lazy-river,301 -> /public-pools/indiana/fort-wayne/,2,88,7,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/indiana/fort-wayne/
+/public-pools/indiana/fort-wayne/feature/splash-pad/,"Fort Wayne, IN",splash-pad,301 -> /public-pools/indiana/fort-wayne/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/indiana/fort-wayne/
+/public-pools/indiana/indianapolis/feature/diving-board/,"Indianapolis, IN",diving-board,301 -> /public-pools/indiana/indianapolis/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/indiana/indianapolis/
+/public-pools/indiana/indianapolis/feature/indoor/,"Indianapolis, IN",indoor,301 -> /public-pools/indiana/indianapolis/,2,64,0,3,4,0,0,True,0,0,CONSOLIDATE,/public-pools/indiana/indianapolis/
+/public-pools/indiana/indianapolis/feature/kiddie-pool/,"Indianapolis, IN",kiddie-pool,301 -> /public-pools/indiana/indianapolis/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/indiana/indianapolis/
+/public-pools/iowa/cedar-rapids/feature/splash-pad/,"Cedar Rapids, IA",splash-pad,301 -> /public-pools/iowa/cedar-rapids/,0,0,9,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/iowa/cedar-rapids/
+/public-pools/iowa/des-moines/feature/indoor/,"Des Moines, IA",indoor,301 -> /public-pools/iowa/des-moines/,0,0,0,0,2,0,0,True,1,1,CONSOLIDATE,/public-pools/iowa/des-moines/
+/public-pools/iowa/des-moines/feature/splash-pad/,"Des Moines, IA",splash-pad,301 -> /public-pools/iowa/des-moines/,0,0,9,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/iowa/des-moines/
+/public-pools/iowa/des-moines/feature/wave-pool/,"Des Moines, IA",wave-pool,301 -> /public-pools/iowa/des-moines/,2,68,11,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/iowa/des-moines/
+/public-pools/kansas/olathe/feature/indoor/,"Olathe, KS",indoor,301 -> /public-pools/kansas/olathe/,2,113,14,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/kansas/olathe/
+/public-pools/kansas/olathe/feature/lap-swimming/,"Olathe, KS",lap-swimming,301 -> /public-pools/kansas/olathe/,2,41,0,1,6,1,1,True,4,0,CONSOLIDATE,/public-pools/kansas/olathe/
+/public-pools/kansas/olathe/feature/olympic-size/,"Olathe, KS",olympic-size,301 -> /public-pools/kansas/olathe/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/kansas/olathe/
+/public-pools/kansas/olathe/feature/water-slides/,"Olathe, KS",water-slides,301 -> /public-pools/kansas/olathe/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/kansas/olathe/
+/public-pools/kansas/wichita/feature/diving-board/,"Wichita, KS",diving-board,301 -> /public-pools/kansas/wichita/,0,0,0,0,6,1,1,True,0,0,RETIRE,/public-pools/kansas/wichita/
+/public-pools/kansas/wichita/feature/lap-swimming/,"Wichita, KS",lap-swimming,301 -> /public-pools/kansas/wichita/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/kansas/wichita/
+/public-pools/kansas/wichita/feature/water-slides/,"Wichita, KS",water-slides,301 -> /public-pools/kansas/wichita/,0,0,7,0,4,1,1,True,2,0,CONSOLIDATE,/public-pools/kansas/wichita/
+/public-pools/kentucky/louisville/feature/indoor/,"Louisville, KY",indoor,301 -> /public-pools/kentucky/louisville/,2,187,0,3,4,1,1,True,0,0,CONSOLIDATE,/public-pools/kentucky/louisville/
+/public-pools/kentucky/louisville/feature/lap-swimming/,"Louisville, KY",lap-swimming,301 -> /public-pools/kentucky/louisville/,0,0,10,2,3,3,3,True,1,0,CONSOLIDATE,/public-pools/kentucky/louisville/
+/public-pools/kentucky/louisville/feature/lazy-river/,"Louisville, KY",lazy-river,301 -> /public-pools/kentucky/louisville/,0,0,0,0,1,1,1,True,0,0,RETIRE,/public-pools/kentucky/louisville/
+/public-pools/kentucky/louisville/feature/splash-pad/,"Louisville, KY",splash-pad,301 -> /public-pools/kentucky/louisville/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/kentucky/louisville/
+/public-pools/kentucky/louisville/feature/water-slides/,"Louisville, KY",water-slides,301 -> /public-pools/kentucky/louisville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/kentucky/louisville/
+/public-pools/kentucky/louisville/feature/wave-pool/,"Louisville, KY",wave-pool,301 -> /public-pools/kentucky/louisville/,0,0,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/kentucky/louisville/
+/public-pools/louisiana/baton-rouge/feature/heated/,"Baton Rouge, LA",heated,301 -> /public-pools/louisiana/baton-rouge/,0,0,6,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/louisiana/baton-rouge/
+/public-pools/louisiana/baton-rouge/feature/lap-swimming/,"Baton Rouge, LA",lap-swimming,301 -> /public-pools/louisiana/baton-rouge/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/louisiana/baton-rouge/
+/public-pools/louisiana/baton-rouge/feature/lazy-river/,"Baton Rouge, LA",lazy-river,301 -> /public-pools/louisiana/baton-rouge/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/louisiana/baton-rouge/
+/public-pools/louisiana/baton-rouge/feature/splash-pad/,"Baton Rouge, LA",splash-pad,301 -> /public-pools/louisiana/baton-rouge/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/louisiana/baton-rouge/
+/public-pools/louisiana/baton-rouge/feature/water-slides/,"Baton Rouge, LA",water-slides,301 -> /public-pools/louisiana/baton-rouge/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/louisiana/baton-rouge/
+/public-pools/louisiana/new-orleans/feature/diving-board/,"New Orleans, LA",diving-board,301 -> /public-pools/louisiana/new-orleans/,0,0,0,0,1,4,4,True,1,0,CONSOLIDATE,/public-pools/louisiana/new-orleans/
+/public-pools/louisiana/new-orleans/feature/indoor/,"New Orleans, LA",indoor,301 -> /public-pools/louisiana/new-orleans/,2,65,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/louisiana/new-orleans/
+/public-pools/louisiana/new-orleans/feature/kiddie-pool/,"New Orleans, LA",kiddie-pool,301 -> /public-pools/louisiana/new-orleans/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/louisiana/new-orleans/
+/public-pools/louisiana/shreveport/feature/heated/,"Shreveport, LA",heated,301 -> /public-pools/louisiana/shreveport/,2,84,5,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/shreveport/feature/indoor/,"Shreveport, LA",indoor,301 -> /public-pools/louisiana/shreveport/,2,121,3,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/shreveport/feature/kiddie-pool/,"Shreveport, LA",kiddie-pool,301 -> /public-pools/louisiana/shreveport/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/shreveport/feature/lap-swimming/,"Shreveport, LA",lap-swimming,301 -> /public-pools/louisiana/shreveport/,0,0,8,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/shreveport/feature/lazy-river/,"Shreveport, LA",lazy-river,301 -> /public-pools/louisiana/shreveport/,5,82,4,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/shreveport/feature/splash-pad/,"Shreveport, LA",splash-pad,301 -> /public-pools/louisiana/shreveport/,2,127,6,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/louisiana/shreveport/
+/public-pools/louisiana/slidell/feature/kiddie-pool/,"Slidell, LA",kiddie-pool,301 -> /public-pools/louisiana/slidell/,0,0,5,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/louisiana/slidell/
+/public-pools/louisiana/slidell/feature/wave-pool/,"Slidell, LA",wave-pool,301 -> /public-pools/louisiana/slidell/,0,0,4,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/louisiana/slidell/
+/public-pools/maryland/baltimore/feature/kiddie-pool/,"Baltimore, MD",kiddie-pool,301 -> /public-pools/maryland/baltimore/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/maryland/baltimore/
+/public-pools/maryland/baltimore/feature/lap-swimming/,"Baltimore, MD",lap-swimming,301 -> /public-pools/maryland/baltimore/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/maryland/baltimore/
+/public-pools/maryland/baltimore/feature/splash-pad/,"Baltimore, MD",splash-pad,301 -> /public-pools/maryland/baltimore/,0,0,0,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/maryland/baltimore/
+/public-pools/maryland/baltimore/feature/wave-pool/,"Baltimore, MD",wave-pool,301 -> /public-pools/maryland/baltimore/,0,0,0,4,4,0,0,True,0,0,CONSOLIDATE,/public-pools/maryland/baltimore/
+/public-pools/maryland/columbia/feature/diving-board/,"Columbia, MD",diving-board,301 -> /public-pools/maryland/columbia/,2,22,0,1,2,1,1,True,0,0,CONSOLIDATE,/public-pools/maryland/columbia/
+/public-pools/maryland/gaithersburg/feature/indoor/,"Gaithersburg, MD",indoor,301 -> /public-pools/maryland/gaithersburg/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/maryland/gaithersburg/
+/public-pools/maryland/gaithersburg/feature/water-slides/,"Gaithersburg, MD",water-slides,301 -> /public-pools/maryland/gaithersburg/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/maryland/gaithersburg/
+/public-pools/maryland/rockville/feature/indoor/,"Rockville, MD",indoor,301 -> /public-pools/maryland/rockville/,0,0,0,0,5,1,1,True,1,0,CONSOLIDATE,/public-pools/maryland/rockville/
+/public-pools/maryland/rockville/feature/olympic-size/,"Rockville, MD",olympic-size,301 -> /public-pools/maryland/rockville/,0,0,0,1,2,0,0,True,1,0,CONSOLIDATE,/public-pools/maryland/rockville/
+/public-pools/maryland/silver-spring/feature/indoor/,"Silver Spring, MD",indoor,301 -> /public-pools/maryland/silver-spring/,0,0,0,0,3,1,1,True,1,0,CONSOLIDATE,/public-pools/maryland/silver-spring/
+/public-pools/maryland/silver-spring/feature/splash-pad/,"Silver Spring, MD",splash-pad,301 -> /public-pools/maryland/silver-spring/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/maryland/silver-spring/
+/public-pools/massachusetts/framingham/feature/lap-swimming/,"Framingham, MA",lap-swimming,301 -> /public-pools/massachusetts/framingham/,0,0,0,5,6,2,2,True,1,0,CONSOLIDATE,/public-pools/massachusetts/framingham/
+/public-pools/massachusetts/framingham/feature/lazy-river/,"Framingham, MA",lazy-river,301 -> /public-pools/massachusetts/framingham/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/massachusetts/framingham/
+/public-pools/massachusetts/framingham/feature/olympic-size/,"Framingham, MA",olympic-size,301 -> /public-pools/massachusetts/framingham/,0,0,0,4,4,1,1,True,0,0,CONSOLIDATE,/public-pools/massachusetts/framingham/
+/public-pools/massachusetts/framingham/feature/water-slides/,"Framingham, MA",water-slides,301 -> /public-pools/massachusetts/framingham/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/massachusetts/framingham/
+/public-pools/michigan/ann-arbor/feature/heated/,"Ann Arbor, MI",heated,301 -> /public-pools/michigan/ann-arbor/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/michigan/ann-arbor/
+/public-pools/michigan/ann-arbor/feature/indoor/,"Ann Arbor, MI",indoor,301 -> /public-pools/michigan/ann-arbor/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/michigan/ann-arbor/
+/public-pools/michigan/ann-arbor/feature/lazy-river/,"Ann Arbor, MI",lazy-river,301 -> /public-pools/michigan/ann-arbor/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/michigan/ann-arbor/
+/public-pools/michigan/ann-arbor/feature/splash-pad/,"Ann Arbor, MI",splash-pad,301 -> /public-pools/michigan/ann-arbor/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/michigan/ann-arbor/
+/public-pools/michigan/ann-arbor/feature/water-slides/,"Ann Arbor, MI",water-slides,301 -> /public-pools/michigan/ann-arbor/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/michigan/ann-arbor/
+/public-pools/michigan/detroit/feature/indoor/,"Detroit, MI",indoor,301 -> /public-pools/michigan/detroit/,2,25,0,1,2,0,0,True,0,0,CONSOLIDATE,/public-pools/michigan/detroit/
+/public-pools/michigan/detroit/feature/olympic-size/,"Detroit, MI",olympic-size,301 -> /public-pools/michigan/detroit/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/michigan/detroit/
+/public-pools/michigan/detroit/feature/splash-pad/,"Detroit, MI",splash-pad,301 -> /public-pools/michigan/detroit/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/michigan/detroit/
+/public-pools/michigan/detroit/feature/water-slides/,"Detroit, MI",water-slides,301 -> /public-pools/michigan/detroit/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/michigan/detroit/
+/public-pools/michigan/grand-rapids/feature/heated/,"Grand Rapids, MI",heated,301 -> /public-pools/michigan/grand-rapids/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/michigan/grand-rapids/
+/public-pools/michigan/grand-rapids/feature/kiddie-pool/,"Grand Rapids, MI",kiddie-pool,301 -> /public-pools/michigan/grand-rapids/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/michigan/grand-rapids/
+/public-pools/michigan/grand-rapids/feature/splash-pad/,"Grand Rapids, MI",splash-pad,301 -> /public-pools/michigan/grand-rapids/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/michigan/grand-rapids/
+/public-pools/michigan/grand-rapids/feature/water-slides/,"Grand Rapids, MI",water-slides,301 -> /public-pools/michigan/grand-rapids/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/michigan/grand-rapids/
+/public-pools/michigan/novi/feature/diving-board/,"Novi, MI",diving-board,301 -> /public-pools/michigan/novi/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/michigan/novi/
+/public-pools/michigan/novi/feature/lap-swimming/,"Novi, MI",lap-swimming,301 -> /public-pools/michigan/novi/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/michigan/novi/
+/public-pools/michigan/union-city/feature/indoor/,"Union City, MI",indoor,301 -> /public-pools/michigan/union-city/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/michigan/union-city/
+/public-pools/minnesota/edina/feature/indoor/,"Edina, MN",indoor,301 -> /public-pools/minnesota/edina/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/minnesota/edina/
+/public-pools/minnesota/edina/feature/water-slides/,"Edina, MN",water-slides,301 -> /public-pools/minnesota/edina/,0,0,5,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/minnesota/edina/
+/public-pools/minnesota/lakeville/feature/kiddie-pool/,"Lakeville, MN",kiddie-pool,301 -> /public-pools/minnesota/lakeville/,2,32,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/minnesota/lakeville/
+/public-pools/minnesota/minneapolis/feature/diving-board/,"Minneapolis, MN",diving-board,301 -> /public-pools/minnesota/minneapolis/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/minnesota/minneapolis/
+/public-pools/minnesota/minneapolis/feature/heated/,"Minneapolis, MN",heated,301 -> /public-pools/minnesota/minneapolis/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/minnesota/minneapolis/
+/public-pools/minnesota/minneapolis/feature/indoor/,"Minneapolis, MN",indoor,301 -> /public-pools/minnesota/minneapolis/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/minnesota/minneapolis/
+/public-pools/minnesota/minneapolis/feature/lazy-river/,"Minneapolis, MN",lazy-river,301 -> /public-pools/minnesota/minneapolis/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/minnesota/minneapolis/
+/public-pools/minnesota/minneapolis/feature/water-slides/,"Minneapolis, MN",water-slides,301 -> /public-pools/minnesota/minneapolis/,0,0,0,0,1,3,3,True,0,0,CONSOLIDATE,/public-pools/minnesota/minneapolis/
+/public-pools/minnesota/minnetonka/feature/diving-board/,"Minnetonka, MN",diving-board,301 -> /public-pools/minnesota/minnetonka/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/minnesota/minnetonka/
+/public-pools/minnesota/minnetonka/feature/kiddie-pool/,"Minnetonka, MN",kiddie-pool,301 -> /public-pools/minnesota/minnetonka/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/minnesota/minnetonka/
+/public-pools/minnesota/minnetonka/feature/lap-swimming/,"Minnetonka, MN",lap-swimming,301 -> /public-pools/minnesota/minnetonka/,0,0,3,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/minnesota/minnetonka/
+/public-pools/minnesota/woodbury/feature/lap-swimming/,"Woodbury, MN",lap-swimming,301 -> /public-pools/minnesota/woodbury/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/minnesota/woodbury/
+/public-pools/minnesota/woodbury/feature/water-slides/,"Woodbury, MN",water-slides,301 -> /public-pools/minnesota/woodbury/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/minnesota/woodbury/
+/public-pools/mississippi/jackson/feature/indoor/,"Jackson, MS",indoor,301 -> /public-pools/mississippi/jackson/,4,214,4,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/mississippi/jackson/
+/public-pools/mississippi/jackson/feature/lap-swimming/,"Jackson, MS",lap-swimming,301 -> /public-pools/mississippi/jackson/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/mississippi/jackson/
+/public-pools/missouri/chesterfield/feature/heated/,"Chesterfield, MO",heated,301 -> /public-pools/missouri/chesterfield/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/missouri/chesterfield/
+/public-pools/missouri/chesterfield/feature/lap-swimming/,"Chesterfield, MO",lap-swimming,301 -> /public-pools/missouri/chesterfield/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/missouri/chesterfield/
+/public-pools/missouri/chesterfield/feature/lazy-river/,"Chesterfield, MO",lazy-river,301 -> /public-pools/missouri/chesterfield/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/missouri/chesterfield/
+/public-pools/missouri/chesterfield/feature/splash-pad/,"Chesterfield, MO",splash-pad,301 -> /public-pools/missouri/chesterfield/,2,102,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/missouri/chesterfield/
+/public-pools/missouri/kansas-city/feature/heated/,"Kansas City, MO",heated,301 -> /public-pools/missouri/kansas-city/,4,224,36,0,2,2,2,True,1,0,CONSOLIDATE,/public-pools/missouri/kansas-city/
+/public-pools/missouri/kansas-city/feature/indoor/,"Kansas City, MO",indoor,301 -> /public-pools/missouri/kansas-city/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/missouri/kansas-city/
+/public-pools/missouri/kansas-city/feature/olympic-size/,"Kansas City, MO",olympic-size,301 -> /public-pools/missouri/kansas-city/,0,0,3,1,1,0,0,True,0,0,CONSOLIDATE,/public-pools/missouri/kansas-city/
+/public-pools/missouri/kansas-city/feature/splash-pad/,"Kansas City, MO",splash-pad,301 -> /public-pools/missouri/kansas-city/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/missouri/kansas-city/
+/public-pools/nebraska/omaha/feature/diving-board/,"Omaha, NE",diving-board,301 -> /public-pools/nebraska/omaha/,0,0,0,1,2,1,1,True,0,1,CONSOLIDATE,/public-pools/nebraska/omaha/
+/public-pools/nebraska/omaha/feature/heated/,"Omaha, NE",heated,301 -> /public-pools/nebraska/omaha/,0,0,16,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/nebraska/omaha/
+/public-pools/nebraska/omaha/feature/indoor/,"Omaha, NE",indoor,301 -> /public-pools/nebraska/omaha/,0,0,3,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/nebraska/omaha/
+/public-pools/nebraska/omaha/feature/water-slides/,"Omaha, NE",water-slides,301 -> /public-pools/nebraska/omaha/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/nebraska/omaha/
+/public-pools/nevada/henderson/feature/indoor/,"Henderson, NV",indoor,301 -> /public-pools/nevada/henderson/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/nevada/henderson/
+/public-pools/nevada/las-vegas/feature/lap-swimming/,"Las Vegas, NV",lap-swimming,301 -> /public-pools/nevada/las-vegas/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/nevada/las-vegas/
+/public-pools/nevada/las-vegas/feature/lazy-river/,"Las Vegas, NV",lazy-river,301 -> /public-pools/nevada/las-vegas/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/nevada/las-vegas/
+/public-pools/nevada/las-vegas/feature/wave-pool/,"Las Vegas, NV",wave-pool,301 -> /public-pools/nevada/las-vegas/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/nevada/las-vegas/
+/public-pools/nevada/north-las-vegas/feature/kiddie-pool/,"North Las Vegas, NV",kiddie-pool,301 -> /public-pools/nevada/north-las-vegas/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/nevada/north-las-vegas/
+/public-pools/nevada/north-las-vegas/feature/olympic-size/,"North Las Vegas, NV",olympic-size,301 -> /public-pools/nevada/north-las-vegas/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/nevada/north-las-vegas/
+/public-pools/nevada/sparks/feature/lap-swimming/,"Sparks, NV",lap-swimming,301 -> /public-pools/nevada/sparks/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/nevada/sparks/
+/public-pools/nevada/sparks/feature/olympic-size/,"Sparks, NV",olympic-size,301 -> /public-pools/nevada/sparks/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/nevada/sparks/
+/public-pools/nevada/sparks/feature/wave-pool/,"Sparks, NV",wave-pool,301 -> /public-pools/nevada/sparks/,2,45,4,1,3,1,1,True,1,0,CONSOLIDATE,/public-pools/nevada/sparks/
+/public-pools/nevada/summerlin/feature/lazy-river/,"Summerlin, NV",lazy-river,301 -> /public-pools/nevada/summerlin/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/nevada/summerlin/
+/public-pools/nevada/summerlin/feature/wave-pool/,"Summerlin, NV",wave-pool,301 -> /public-pools/nevada/summerlin/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/nevada/summerlin/
+/public-pools/new-jersey/clifton/feature/indoor/,"Clifton, NJ",indoor,301 -> /public-pools/new-jersey/clifton/,0,0,0,1,3,1,1,True,0,0,RETIRE,/public-pools/new-jersey/clifton/
+/public-pools/new-jersey/clifton/feature/splash-pad/,"Clifton, NJ",splash-pad,301 -> /public-pools/new-jersey/clifton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/new-jersey/clifton/
+/public-pools/new-jersey/princeton/feature/indoor/,"Princeton, NJ",indoor,301 -> /public-pools/new-jersey/princeton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/new-jersey/princeton/
+/public-pools/new-jersey/princeton/feature/olympic-size/,"Princeton, NJ",olympic-size,301 -> /public-pools/new-jersey/princeton/,0,0,0,0,2,1,1,True,1,1,CONSOLIDATE,/public-pools/new-jersey/princeton/
+/public-pools/new-jersey/princeton/feature/splash-pad/,"Princeton, NJ",splash-pad,301 -> /public-pools/new-jersey/princeton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/new-jersey/princeton/
+/public-pools/new-mexico/albuquerque/feature/indoor/,"Albuquerque, NM",indoor,301 -> /public-pools/new-mexico/albuquerque/,3,56,0,0,3,1,1,True,2,0,CONSOLIDATE,/public-pools/new-mexico/albuquerque/
+/public-pools/new-mexico/albuquerque/feature/kiddie-pool/,"Albuquerque, NM",kiddie-pool,301 -> /public-pools/new-mexico/albuquerque/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/new-mexico/albuquerque/
+/public-pools/new-mexico/albuquerque/feature/lap-swimming/,"Albuquerque, NM",lap-swimming,301 -> /public-pools/new-mexico/albuquerque/,0,0,0,1,3,1,1,True,2,0,CONSOLIDATE,/public-pools/new-mexico/albuquerque/
+/public-pools/new-mexico/albuquerque/feature/splash-pad/,"Albuquerque, NM",splash-pad,301 -> /public-pools/new-mexico/albuquerque/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/new-mexico/albuquerque/
+/public-pools/new-mexico/albuquerque/feature/wave-pool/,"Albuquerque, NM",wave-pool,301 -> /public-pools/new-mexico/albuquerque/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/new-mexico/albuquerque/
+/public-pools/new-york/bronx/feature/olympic-size/,"Bronx, NY",olympic-size,301 -> /public-pools/new-york/bronx/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/new-york/bronx/
+/public-pools/new-york/brooklyn/feature/olympic-size/,"Brooklyn, NY",olympic-size,301 -> /public-pools/new-york/brooklyn/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/new-york/brooklyn/
+/public-pools/new-york/garden-city/feature/kiddie-pool/,"Garden City, NY",kiddie-pool,301 -> /public-pools/new-york/garden-city/,0,0,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/new-york/garden-city/
+/public-pools/new-york/garden-city/feature/lap-swimming/,"Garden City, NY",lap-swimming,301 -> /public-pools/new-york/garden-city/,2,15,0,0,1,3,3,True,0,0,REBUILD,/public-pools/new-york/garden-city/feature/lap-swimming/
+/public-pools/new-york/new-york/feature/heated/,"New York, NY",heated,301 -> /public-pools/new-york/new-york/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/new-york/new-york/
+/public-pools/new-york/new-york/feature/indoor/,"New York, NY",indoor,301 -> /public-pools/new-york/new-york/,3,88,0,0,2,1,1,True,0,1,CONSOLIDATE,/public-pools/new-york/new-york/
+/public-pools/new-york/new-york/feature/kiddie-pool/,"New York, NY",kiddie-pool,301 -> /public-pools/new-york/new-york/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/new-york/new-york/
+/public-pools/new-york/new-york/feature/water-slides/,"New York, NY",water-slides,301 -> /public-pools/new-york/new-york/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/new-york/new-york/
+/public-pools/new-york/queens/feature/water-slides/,"Queens, NY",water-slides,301 -> /public-pools/new-york/queens/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/new-york/queens/
+/public-pools/new-york/staten-island/feature/heated/,"Staten Island, NY",heated,301 -> /public-pools/new-york/staten-island/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/new-york/staten-island/
+/public-pools/new-york/staten-island/feature/indoor/,"Staten Island, NY",indoor,301 -> /public-pools/new-york/staten-island/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/new-york/staten-island/
+/public-pools/new-york/staten-island/feature/kiddie-pool/,"Staten Island, NY",kiddie-pool,301 -> /public-pools/new-york/staten-island/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/new-york/staten-island/
+/public-pools/new-york/staten-island/feature/olympic-size/,"Staten Island, NY",olympic-size,301 -> /public-pools/new-york/staten-island/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/new-york/staten-island/
+/public-pools/new-york/staten-island/feature/water-slides/,"Staten Island, NY",water-slides,301 -> /public-pools/new-york/staten-island/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/new-york/staten-island/
+/public-pools/new-york/staten-island/feature/wave-pool/,"Staten Island, NY",wave-pool,301 -> /public-pools/new-york/staten-island/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/new-york/staten-island/
+/public-pools/north-carolina/apex/feature/diving-board/,"Apex, NC",diving-board,301 -> /public-pools/north-carolina/apex/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/apex/
+/public-pools/north-carolina/apex/feature/heated/,"Apex, NC",heated,301 -> /public-pools/north-carolina/apex/,2,27,0,0,2,2,2,True,1,0,CONSOLIDATE,/public-pools/north-carolina/apex/
+/public-pools/north-carolina/apex/feature/indoor/,"Apex, NC",indoor,301 -> /public-pools/north-carolina/apex/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/north-carolina/apex/
+/public-pools/north-carolina/apex/feature/kiddie-pool/,"Apex, NC",kiddie-pool,301 -> /public-pools/north-carolina/apex/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/north-carolina/apex/
+/public-pools/north-carolina/apex/feature/wave-pool/,"Apex, NC",wave-pool,301 -> /public-pools/north-carolina/apex/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/north-carolina/apex/
+/public-pools/north-carolina/cary/feature/lap-swimming/,"Cary, NC",lap-swimming,301 -> /public-pools/north-carolina/cary/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/north-carolina/cary/
+/public-pools/north-carolina/cary/feature/wave-pool/,"Cary, NC",wave-pool,301 -> /public-pools/north-carolina/cary/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/cary/
+/public-pools/north-carolina/chapel-hill/feature/heated/,"Chapel Hill, NC",heated,301 -> /public-pools/north-carolina/chapel-hill/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/chapel-hill/
+/public-pools/north-carolina/chapel-hill/feature/indoor/,"Chapel Hill, NC",indoor,301 -> /public-pools/north-carolina/chapel-hill/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/north-carolina/chapel-hill/
+/public-pools/north-carolina/chapel-hill/feature/kiddie-pool/,"Chapel Hill, NC",kiddie-pool,301 -> /public-pools/north-carolina/chapel-hill/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/north-carolina/chapel-hill/
+/public-pools/north-carolina/chapel-hill/feature/lap-swimming/,"Chapel Hill, NC",lap-swimming,301 -> /public-pools/north-carolina/chapel-hill/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/chapel-hill/
+/public-pools/north-carolina/concord/feature/indoor/,"Concord, NC",indoor,301 -> /public-pools/north-carolina/concord/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/concord/
+/public-pools/north-carolina/concord/feature/splash-pad/,"Concord, NC",splash-pad,301 -> /public-pools/north-carolina/concord/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/concord/
+/public-pools/north-carolina/concord/feature/wave-pool/,"Concord, NC",wave-pool,301 -> /public-pools/north-carolina/concord/,0,0,0,0,1,1,1,True,0,0,RETIRE,/public-pools/north-carolina/concord/
+/public-pools/north-carolina/durham/feature/heated/,"Durham, NC",heated,301 -> /public-pools/north-carolina/durham/,2,34,5,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/north-carolina/durham/
+/public-pools/north-carolina/durham/feature/indoor/,"Durham, NC",indoor,301 -> /public-pools/north-carolina/durham/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/durham/
+/public-pools/north-carolina/durham/feature/kiddie-pool/,"Durham, NC",kiddie-pool,301 -> /public-pools/north-carolina/durham/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/north-carolina/durham/
+/public-pools/north-carolina/durham/feature/lap-swimming/,"Durham, NC",lap-swimming,301 -> /public-pools/north-carolina/durham/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/north-carolina/durham/
+/public-pools/north-carolina/fayetteville/feature/diving-board/,"Fayetteville, NC",diving-board,301 -> /public-pools/north-carolina/fayetteville/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/north-carolina/fayetteville/
+/public-pools/north-carolina/fayetteville/feature/kiddie-pool/,"Fayetteville, NC",kiddie-pool,301 -> /public-pools/north-carolina/fayetteville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/fayetteville/
+/public-pools/north-carolina/fayetteville/feature/lap-swimming/,"Fayetteville, NC",lap-swimming,301 -> /public-pools/north-carolina/fayetteville/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/north-carolina/fayetteville/
+/public-pools/north-carolina/fayetteville/feature/olympic-size/,"Fayetteville, NC",olympic-size,301 -> /public-pools/north-carolina/fayetteville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/fayetteville/
+/public-pools/north-carolina/mooresville/feature/indoor/,"Mooresville, NC",indoor,301 -> /public-pools/north-carolina/mooresville/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/north-carolina/mooresville/
+/public-pools/north-carolina/mooresville/feature/kiddie-pool/,"Mooresville, NC",kiddie-pool,301 -> /public-pools/north-carolina/mooresville/,0,0,5,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/mooresville/
+/public-pools/north-carolina/mooresville/feature/lap-swimming/,"Mooresville, NC",lap-swimming,301 -> /public-pools/north-carolina/mooresville/,2,63,9,0,1,3,3,True,0,0,REBUILD,/public-pools/north-carolina/mooresville/feature/lap-swimming/
+/public-pools/north-carolina/raleigh/feature/indoor/,"Raleigh, NC",indoor,301 -> /public-pools/north-carolina/raleigh/,2,192,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/raleigh/
+/public-pools/north-carolina/raleigh/feature/lap-swimming/,"Raleigh, NC",lap-swimming,301 -> /public-pools/north-carolina/raleigh/,0,0,8,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/raleigh/
+/public-pools/north-carolina/wake-forest/feature/indoor/,"Wake Forest, NC",indoor,301 -> /public-pools/north-carolina/wake-forest/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/north-carolina/wake-forest/
+/public-pools/north-carolina/wake-forest/feature/kiddie-pool/,"Wake Forest, NC",kiddie-pool,301 -> /public-pools/north-carolina/wake-forest/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/wake-forest/
+/public-pools/north-carolina/wake-forest/feature/olympic-size/,"Wake Forest, NC",olympic-size,301 -> /public-pools/north-carolina/wake-forest/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/north-carolina/wake-forest/
+/public-pools/north-carolina/wilmington/feature/heated/,"Wilmington, NC",heated,301 -> /public-pools/north-carolina/wilmington/,2,73,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/north-carolina/wilmington/
+/public-pools/north-carolina/wilmington/feature/indoor/,"Wilmington, NC",indoor,301 -> /public-pools/north-carolina/wilmington/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/north-carolina/wilmington/
+/public-pools/north-carolina/wilmington/feature/kiddie-pool/,"Wilmington, NC",kiddie-pool,301 -> /public-pools/north-carolina/wilmington/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/north-carolina/wilmington/
+/public-pools/north-carolina/wilmington/feature/lap-swimming/,"Wilmington, NC",lap-swimming,301 -> /public-pools/north-carolina/wilmington/,0,0,0,0,1,4,4,True,1,0,CONSOLIDATE,/public-pools/north-carolina/wilmington/
+/public-pools/north-carolina/wilmington/feature/lazy-river/,"Wilmington, NC",lazy-river,301 -> /public-pools/north-carolina/wilmington/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/north-carolina/wilmington/
+/public-pools/ohio/akron/feature/kiddie-pool/,"Akron, OH",kiddie-pool,301 -> /public-pools/ohio/akron/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/ohio/akron/
+/public-pools/ohio/cincinnati/feature/lap-swimming/,"Cincinnati, OH",lap-swimming,301 -> /public-pools/ohio/cincinnati/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/ohio/cincinnati/
+/public-pools/ohio/cincinnati/feature/splash-pad/,"Cincinnati, OH",splash-pad,301 -> /public-pools/ohio/cincinnati/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/ohio/cincinnati/
+/public-pools/ohio/columbus/feature/heated/,"Columbus, OH",heated,301 -> /public-pools/ohio/columbus/,2,97,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/ohio/columbus/
+/public-pools/ohio/dayton/feature/diving-board/,"Dayton, OH",diving-board,301 -> /public-pools/ohio/dayton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/indoor/,"Dayton, OH",indoor,301 -> /public-pools/ohio/dayton/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/kiddie-pool/,"Dayton, OH",kiddie-pool,301 -> /public-pools/ohio/dayton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/lap-swimming/,"Dayton, OH",lap-swimming,301 -> /public-pools/ohio/dayton/,0,0,0,1,1,3,3,True,0,0,CONSOLIDATE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/lazy-river/,"Dayton, OH",lazy-river,301 -> /public-pools/ohio/dayton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/olympic-size/,"Dayton, OH",olympic-size,301 -> /public-pools/ohio/dayton/,2,26,0,2,3,1,1,True,0,0,CONSOLIDATE,/public-pools/ohio/dayton/
+/public-pools/ohio/dayton/feature/water-slides/,"Dayton, OH",water-slides,301 -> /public-pools/ohio/dayton/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/ohio/dayton/
+/public-pools/ohio/dublin/feature/lap-swimming/,"Dublin, OH",lap-swimming,301 -> /public-pools/ohio/dublin/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/ohio/dublin/
+/public-pools/oklahoma/norman/feature/indoor/,"Norman, OK",indoor,301 -> /public-pools/oklahoma/norman/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/oklahoma/norman/
+/public-pools/oklahoma/norman/feature/kiddie-pool/,"Norman, OK",kiddie-pool,301 -> /public-pools/oklahoma/norman/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/oklahoma/norman/
+/public-pools/oklahoma/norman/feature/splash-pad/,"Norman, OK",splash-pad,301 -> /public-pools/oklahoma/norman/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/oklahoma/norman/
+/public-pools/oklahoma/norman/feature/water-slides/,"Norman, OK",water-slides,301 -> /public-pools/oklahoma/norman/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/oklahoma/norman/
+/public-pools/oklahoma/oklahoma-city/feature/heated/,"Oklahoma City, OK",heated,301 -> /public-pools/oklahoma/oklahoma-city/,9,453,41,3,6,1,1,True,1,0,CONSOLIDATE,/public-pools/oklahoma/oklahoma-city/
+/public-pools/oklahoma/oklahoma-city/feature/indoor/,"Oklahoma City, OK",indoor,301 -> /public-pools/oklahoma/oklahoma-city/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/oklahoma/oklahoma-city/
+/public-pools/oklahoma/oklahoma-city/feature/lap-swimming/,"Oklahoma City, OK",lap-swimming,301 -> /public-pools/oklahoma/oklahoma-city/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/oklahoma/oklahoma-city/
+/public-pools/oklahoma/oklahoma-city/feature/olympic-size/,"Oklahoma City, OK",olympic-size,301 -> /public-pools/oklahoma/oklahoma-city/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/oklahoma/oklahoma-city/
+/public-pools/oregon/beaverton/feature/lazy-river/,"Beaverton, OR",lazy-river,301 -> /public-pools/oregon/beaverton/,1,416,4,0,3,1,1,True,1,0,CONSOLIDATE,/public-pools/oregon/beaverton/
+/public-pools/oregon/beaverton/feature/olympic-size/,"Beaverton, OR",olympic-size,301 -> /public-pools/oregon/beaverton/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/oregon/beaverton/
+/public-pools/oregon/beaverton/feature/wave-pool/,"Beaverton, OR",wave-pool,301 -> /public-pools/oregon/beaverton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/oregon/beaverton/
+/public-pools/oregon/portland/feature/diving-board/,"Portland, OR",diving-board,301 -> /public-pools/oregon/portland/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/oregon/portland/
+/public-pools/oregon/portland/feature/olympic-size/,"Portland, OR",olympic-size,301 -> /public-pools/oregon/portland/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/oregon/portland/
+/public-pools/oregon/portland/feature/splash-pad/,"Portland, OR",splash-pad,301 -> /public-pools/oregon/portland/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/oregon/portland/
+/public-pools/pennsylvania/harrisburg/feature/diving-board/,"Harrisburg, PA",diving-board,301 -> /public-pools/pennsylvania/harrisburg/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/harrisburg/
+/public-pools/pennsylvania/harrisburg/feature/heated/,"Harrisburg, PA",heated,301 -> /public-pools/pennsylvania/harrisburg/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/pennsylvania/harrisburg/
+/public-pools/pennsylvania/harrisburg/feature/indoor/,"Harrisburg, PA",indoor,301 -> /public-pools/pennsylvania/harrisburg/,2,107,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/harrisburg/
+/public-pools/pennsylvania/harrisburg/feature/kiddie-pool/,"Harrisburg, PA",kiddie-pool,301 -> /public-pools/pennsylvania/harrisburg/,2,93,4,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/harrisburg/
+/public-pools/pennsylvania/harrisburg/feature/lap-swimming/,"Harrisburg, PA",lap-swimming,301 -> /public-pools/pennsylvania/harrisburg/,0,0,4,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/harrisburg/
+/public-pools/pennsylvania/lancaster/feature/diving-board/,"Lancaster, PA",diving-board,301 -> /public-pools/pennsylvania/lancaster/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/lancaster/
+/public-pools/pennsylvania/lancaster/feature/heated/,"Lancaster, PA",heated,301 -> /public-pools/pennsylvania/lancaster/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/lancaster/
+/public-pools/pennsylvania/philadelphia/feature/indoor/,"Philadelphia, PA",indoor,301 -> /public-pools/pennsylvania/philadelphia/,2,51,0,6,7,0,0,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/philadelphia/
+/public-pools/pennsylvania/philadelphia/feature/kiddie-pool/,"Philadelphia, PA",kiddie-pool,301 -> /public-pools/pennsylvania/philadelphia/,0,0,0,5,5,0,0,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/philadelphia/
+/public-pools/pennsylvania/philadelphia/feature/olympic-size/,"Philadelphia, PA",olympic-size,301 -> /public-pools/pennsylvania/philadelphia/,0,0,0,0,4,0,0,True,2,1,CONSOLIDATE,/public-pools/pennsylvania/philadelphia/
+/public-pools/pennsylvania/pittsburgh/feature/diving-board/,"Pittsburgh, PA",diving-board,301 -> /public-pools/pennsylvania/pittsburgh/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/pittsburgh/
+/public-pools/pennsylvania/pittsburgh/feature/lap-swimming/,"Pittsburgh, PA",lap-swimming,301 -> /public-pools/pennsylvania/pittsburgh/,3,82,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/pennsylvania/pittsburgh/
+/public-pools/pennsylvania/pittsburgh/feature/olympic-size/,"Pittsburgh, PA",olympic-size,301 -> /public-pools/pennsylvania/pittsburgh/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/pittsburgh/
+/public-pools/pennsylvania/york/feature/indoor/,"York, PA",indoor,301 -> /public-pools/pennsylvania/york/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/pennsylvania/york/
+/public-pools/south-carolina/charleston/feature/lap-swimming/,"Charleston, SC",lap-swimming,301 -> /public-pools/south-carolina/charleston/,0,0,4,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/south-carolina/charleston/
+/public-pools/south-carolina/columbia/feature/diving-board/,"Columbia, SC",diving-board,301 -> /public-pools/south-carolina/columbia/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/columbia/feature/heated/,"Columbia, SC",heated,301 -> /public-pools/south-carolina/columbia/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/columbia/feature/kiddie-pool/,"Columbia, SC",kiddie-pool,301 -> /public-pools/south-carolina/columbia/,2,38,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/columbia/feature/lap-swimming/,"Columbia, SC",lap-swimming,301 -> /public-pools/south-carolina/columbia/,0,0,10,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/columbia/feature/lazy-river/,"Columbia, SC",lazy-river,301 -> /public-pools/south-carolina/columbia/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/columbia/feature/splash-pad/,"Columbia, SC",splash-pad,301 -> /public-pools/south-carolina/columbia/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/south-carolina/columbia/
+/public-pools/south-carolina/greenville/feature/indoor/,"Greenville, SC",indoor,301 -> /public-pools/south-carolina/greenville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/south-carolina/greenville/
+/public-pools/south-carolina/greenville/feature/olympic-size/,"Greenville, SC",olympic-size,301 -> /public-pools/south-carolina/greenville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/south-carolina/greenville/
+/public-pools/south-carolina/greenville/feature/water-slides/,"Greenville, SC",water-slides,301 -> /public-pools/south-carolina/greenville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/greenville/
+/public-pools/south-carolina/mount-pleasant/feature/indoor/,"Mount Pleasant, SC",indoor,301 -> /public-pools/south-carolina/mount-pleasant/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/mount-pleasant/
+/public-pools/south-carolina/mount-pleasant/feature/lap-swimming/,"Mount Pleasant, SC",lap-swimming,301 -> /public-pools/south-carolina/mount-pleasant/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/south-carolina/mount-pleasant/
+/public-pools/south-carolina/mount-pleasant/feature/olympic-size/,"Mount Pleasant, SC",olympic-size,301 -> /public-pools/south-carolina/mount-pleasant/,0,0,0,0,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/mount-pleasant/
+/public-pools/south-carolina/mount-pleasant/feature/water-slides/,"Mount Pleasant, SC",water-slides,301 -> /public-pools/south-carolina/mount-pleasant/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/mount-pleasant/
+/public-pools/south-carolina/myrtle-beach/feature/splash-pad/,"Myrtle Beach, SC",splash-pad,301 -> /public-pools/south-carolina/myrtle-beach/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/south-carolina/myrtle-beach/
+/public-pools/tennessee/chattanooga/feature/diving-board/,"Chattanooga, TN",diving-board,301 -> /public-pools/tennessee/chattanooga/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/tennessee/chattanooga/
+/public-pools/tennessee/chattanooga/feature/kiddie-pool/,"Chattanooga, TN",kiddie-pool,301 -> /public-pools/tennessee/chattanooga/,0,0,5,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/tennessee/chattanooga/
+/public-pools/tennessee/chattanooga/feature/lap-swimming/,"Chattanooga, TN",lap-swimming,301 -> /public-pools/tennessee/chattanooga/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/tennessee/chattanooga/
+/public-pools/tennessee/chattanooga/feature/olympic-size/,"Chattanooga, TN",olympic-size,301 -> /public-pools/tennessee/chattanooga/,0,0,0,0,3,0,0,True,3,0,CONSOLIDATE,/public-pools/tennessee/chattanooga/
+/public-pools/tennessee/chattanooga/feature/splash-pad/,"Chattanooga, TN",splash-pad,301 -> /public-pools/tennessee/chattanooga/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/tennessee/chattanooga/
+/public-pools/tennessee/clinton/feature/kiddie-pool/,"Clinton, TN",kiddie-pool,301 -> /public-pools/tennessee/clinton/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/tennessee/clinton/
+/public-pools/tennessee/clinton/feature/splash-pad/,"Clinton, TN",splash-pad,301 -> /public-pools/tennessee/clinton/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/tennessee/clinton/
+/public-pools/tennessee/franklin/feature/diving-board/,"Franklin, TN",diving-board,301 -> /public-pools/tennessee/franklin/,2,28,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/heated/,"Franklin, TN",heated,301 -> /public-pools/tennessee/franklin/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/kiddie-pool/,"Franklin, TN",kiddie-pool,301 -> /public-pools/tennessee/franklin/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/lap-swimming/,"Franklin, TN",lap-swimming,301 -> /public-pools/tennessee/franklin/,0,0,0,0,2,3,3,True,2,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/lazy-river/,"Franklin, TN",lazy-river,301 -> /public-pools/tennessee/franklin/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/olympic-size/,"Franklin, TN",olympic-size,301 -> /public-pools/tennessee/franklin/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/splash-pad/,"Franklin, TN",splash-pad,301 -> /public-pools/tennessee/franklin/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/water-slides/,"Franklin, TN",water-slides,301 -> /public-pools/tennessee/franklin/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/franklin/feature/wave-pool/,"Franklin, TN",wave-pool,301 -> /public-pools/tennessee/franklin/,0,0,5,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/tennessee/franklin/
+/public-pools/tennessee/knoxville/feature/heated/,"Knoxville, TN",heated,301 -> /public-pools/tennessee/knoxville/,0,0,0,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/tennessee/knoxville/
+/public-pools/tennessee/knoxville/feature/indoor/,"Knoxville, TN",indoor,301 -> /public-pools/tennessee/knoxville/,2,105,11,0,2,1,1,True,0,1,CONSOLIDATE,/public-pools/tennessee/knoxville/
+/public-pools/tennessee/knoxville/feature/lap-swimming/,"Knoxville, TN",lap-swimming,301 -> /public-pools/tennessee/knoxville/,0,0,0,4,4,4,4,True,0,0,CONSOLIDATE,/public-pools/tennessee/knoxville/
+/public-pools/tennessee/knoxville/feature/water-slides/,"Knoxville, TN",water-slides,301 -> /public-pools/tennessee/knoxville/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/tennessee/knoxville/
+/public-pools/tennessee/memphis/feature/lazy-river/,"Memphis, TN",lazy-river,301 -> /public-pools/tennessee/memphis/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/tennessee/memphis/
+/public-pools/tennessee/memphis/feature/water-slides/,"Memphis, TN",water-slides,301 -> /public-pools/tennessee/memphis/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/tennessee/memphis/
+/public-pools/tennessee/memphis/feature/wave-pool/,"Memphis, TN",wave-pool,301 -> /public-pools/tennessee/memphis/,4,137,13,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/tennessee/memphis/
+/public-pools/tennessee/murfreesboro/feature/diving-board/,"Murfreesboro, TN",diving-board,301 -> /public-pools/tennessee/murfreesboro/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/tennessee/murfreesboro/
+/public-pools/tennessee/murfreesboro/feature/lap-swimming/,"Murfreesboro, TN",lap-swimming,301 -> /public-pools/tennessee/murfreesboro/,0,0,0,0,2,3,3,True,2,0,CONSOLIDATE,/public-pools/tennessee/murfreesboro/
+/public-pools/tennessee/murfreesboro/feature/lazy-river/,"Murfreesboro, TN",lazy-river,301 -> /public-pools/tennessee/murfreesboro/,2,25,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/tennessee/murfreesboro/
+/public-pools/tennessee/murfreesboro/feature/olympic-size/,"Murfreesboro, TN",olympic-size,301 -> /public-pools/tennessee/murfreesboro/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/tennessee/murfreesboro/
+/public-pools/tennessee/nashville/feature/diving-board/,"Nashville, TN",diving-board,301 -> /public-pools/tennessee/nashville/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/tennessee/nashville/
+/public-pools/tennessee/nashville/feature/indoor/,"Nashville, TN",indoor,301 -> /public-pools/tennessee/nashville/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/tennessee/nashville/
+/public-pools/tennessee/nashville/feature/kiddie-pool/,"Nashville, TN",kiddie-pool,301 -> /public-pools/tennessee/nashville/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/tennessee/nashville/
+/public-pools/tennessee/nashville/feature/splash-pad/,"Nashville, TN",splash-pad,301 -> /public-pools/tennessee/nashville/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/tennessee/nashville/
+/public-pools/tennessee/nashville/feature/water-slides/,"Nashville, TN",water-slides,301 -> /public-pools/tennessee/nashville/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/tennessee/nashville/
+/public-pools/texas/allen/feature/indoor/,"Allen, TX",indoor,301 -> /public-pools/texas/allen/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/allen/
+/public-pools/texas/allen/feature/kiddie-pool/,"Allen, TX",kiddie-pool,301 -> /public-pools/texas/allen/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/allen/
+/public-pools/texas/allen/feature/lap-swimming/,"Allen, TX",lap-swimming,301 -> /public-pools/texas/allen/,0,0,0,0,1,4,4,True,1,0,CONSOLIDATE,/public-pools/texas/allen/
+/public-pools/texas/arlington/feature/indoor/,"Arlington, TX",indoor,301 -> /public-pools/texas/arlington/,0,0,0,0,3,0,0,True,3,0,CONSOLIDATE,/public-pools/texas/arlington/
+/public-pools/texas/arlington/feature/kiddie-pool/,"Arlington, TX",kiddie-pool,301 -> /public-pools/texas/arlington/,0,0,7,3,3,1,1,True,0,0,CONSOLIDATE,/public-pools/texas/arlington/
+/public-pools/texas/arlington/feature/lazy-river/,"Arlington, TX",lazy-river,301 -> /public-pools/texas/arlington/,2,67,0,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/texas/arlington/
+/public-pools/texas/austin/feature/diving-board/,"Austin, TX",diving-board,301 -> /public-pools/texas/austin/,0,0,0,0,2,1,1,True,1,1,CONSOLIDATE,/public-pools/texas/austin/
+/public-pools/texas/austin/feature/heated/,"Austin, TX",heated,301 -> /public-pools/texas/austin/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/austin/
+/public-pools/texas/austin/feature/indoor/,"Austin, TX",indoor,301 -> /public-pools/texas/austin/,0,0,0,0,2,0,0,True,1,1,CONSOLIDATE,/public-pools/texas/austin/
+/public-pools/texas/austin/feature/olympic-size/,"Austin, TX",olympic-size,301 -> /public-pools/texas/austin/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/austin/
+/public-pools/texas/cedar-park/feature/heated/,"Cedar Park, TX",heated,301 -> /public-pools/texas/cedar-park/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/cedar-park/
+/public-pools/texas/cedar-park/feature/kiddie-pool/,"Cedar Park, TX",kiddie-pool,301 -> /public-pools/texas/cedar-park/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/cedar-park/
+/public-pools/texas/cedar-park/feature/lap-swimming/,"Cedar Park, TX",lap-swimming,301 -> /public-pools/texas/cedar-park/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/cedar-park/
+/public-pools/texas/cedar-park/feature/water-slides/,"Cedar Park, TX",water-slides,301 -> /public-pools/texas/cedar-park/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/cedar-park/
+/public-pools/texas/cedar-park/feature/wave-pool/,"Cedar Park, TX",wave-pool,301 -> /public-pools/texas/cedar-park/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/cedar-park/
+/public-pools/texas/conroe/feature/splash-pad/,"Conroe, TX",splash-pad,301 -> /public-pools/texas/conroe/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/conroe/
+/public-pools/texas/corpus-christi/feature/diving-board/,"Corpus Christi, TX",diving-board,301 -> /public-pools/texas/corpus-christi/,0,0,0,0,1,1,1,True,0,0,RETIRE,/public-pools/texas/corpus-christi/
+/public-pools/texas/corpus-christi/feature/indoor/,"Corpus Christi, TX",indoor,301 -> /public-pools/texas/corpus-christi/,2,89,0,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/corpus-christi/
+/public-pools/texas/corpus-christi/feature/splash-pad/,"Corpus Christi, TX",splash-pad,301 -> /public-pools/texas/corpus-christi/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/corpus-christi/
+/public-pools/texas/dallas/feature/heated/,"Dallas, TX",heated,301 -> /public-pools/texas/dallas/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/dallas/
+/public-pools/texas/dallas/feature/lap-swimming/,"Dallas, TX",lap-swimming,301 -> /public-pools/texas/dallas/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/dallas/
+/public-pools/texas/decatur/feature/indoor/,"Decatur, TX",indoor,301 -> /public-pools/texas/decatur/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/texas/decatur/
+/public-pools/texas/el-paso/feature/lazy-river/,"El Paso, TX",lazy-river,301 -> /public-pools/texas/el-paso/,0,0,0,3,5,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/el-paso/
+/public-pools/texas/el-paso/feature/splash-pad/,"El Paso, TX",splash-pad,301 -> /public-pools/texas/el-paso/,0,0,5,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/el-paso/
+/public-pools/texas/el-paso/feature/water-slides/,"El Paso, TX",water-slides,301 -> /public-pools/texas/el-paso/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/el-paso/
+/public-pools/texas/flower-mound/feature/diving-board/,"Flower Mound, TX",diving-board,301 -> /public-pools/texas/flower-mound/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/flower-mound/
+/public-pools/texas/flower-mound/feature/lazy-river/,"Flower Mound, TX",lazy-river,301 -> /public-pools/texas/flower-mound/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/texas/flower-mound/
+/public-pools/texas/fort-worth/feature/diving-board/,"Fort Worth, TX",diving-board,301 -> /public-pools/texas/fort-worth/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/texas/fort-worth/
+/public-pools/texas/fort-worth/feature/lazy-river/,"Fort Worth, TX",lazy-river,301 -> /public-pools/texas/fort-worth/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/texas/fort-worth/
+/public-pools/texas/frisco/feature/diving-board/,"Frisco, TX",diving-board,301 -> /public-pools/texas/frisco/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/texas/frisco/
+/public-pools/texas/frisco/feature/lap-swimming/,"Frisco, TX",lap-swimming,301 -> /public-pools/texas/frisco/,0,0,0,1,2,3,3,True,1,0,CONSOLIDATE,/public-pools/texas/frisco/
+/public-pools/texas/frisco/feature/olympic-size/,"Frisco, TX",olympic-size,301 -> /public-pools/texas/frisco/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/frisco/
+/public-pools/texas/frisco/feature/splash-pad/,"Frisco, TX",splash-pad,301 -> /public-pools/texas/frisco/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/frisco/
+/public-pools/texas/georgetown/feature/indoor/,"Georgetown, TX",indoor,301 -> /public-pools/texas/georgetown/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/texas/georgetown/
+/public-pools/texas/georgetown/feature/lap-swimming/,"Georgetown, TX",lap-swimming,301 -> /public-pools/texas/georgetown/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/texas/georgetown/
+/public-pools/texas/georgetown/feature/olympic-size/,"Georgetown, TX",olympic-size,301 -> /public-pools/texas/georgetown/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/georgetown/
+/public-pools/texas/georgetown/feature/splash-pad/,"Georgetown, TX",splash-pad,301 -> /public-pools/texas/georgetown/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/georgetown/
+/public-pools/texas/georgetown/feature/water-slides/,"Georgetown, TX",water-slides,301 -> /public-pools/texas/georgetown/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/georgetown/
+/public-pools/texas/houston/feature/diving-board/,"Houston, TX",diving-board,301 -> /public-pools/texas/houston/,3,102,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/houston/
+/public-pools/texas/houston/feature/heated/,"Houston, TX",heated,301 -> /public-pools/texas/houston/,0,0,0,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/texas/houston/
+/public-pools/texas/houston/feature/wave-pool/,"Houston, TX",wave-pool,301 -> /public-pools/texas/houston/,0,0,0,0,1,0,0,True,0,1,CONSOLIDATE,/public-pools/texas/houston/
+/public-pools/texas/irving/feature/diving-board/,"Irving, TX",diving-board,301 -> /public-pools/texas/irving/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/irving/
+/public-pools/texas/irving/feature/indoor/,"Irving, TX",indoor,301 -> /public-pools/texas/irving/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/irving/
+/public-pools/texas/irving/feature/kiddie-pool/,"Irving, TX",kiddie-pool,301 -> /public-pools/texas/irving/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/irving/
+/public-pools/texas/irving/feature/lap-swimming/,"Irving, TX",lap-swimming,301 -> /public-pools/texas/irving/,2,36,0,0,2,3,3,True,0,1,REBUILD,/public-pools/texas/irving/feature/lap-swimming/
+/public-pools/texas/irving/feature/olympic-size/,"Irving, TX",olympic-size,301 -> /public-pools/texas/irving/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/irving/
+/public-pools/texas/katy/feature/indoor/,"Katy, TX",indoor,301 -> /public-pools/texas/katy/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/katy/
+/public-pools/texas/katy/feature/lap-swimming/,"Katy, TX",lap-swimming,301 -> /public-pools/texas/katy/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/katy/
+/public-pools/texas/katy/feature/water-slides/,"Katy, TX",water-slides,301 -> /public-pools/texas/katy/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/katy/
+/public-pools/texas/katy/feature/wave-pool/,"Katy, TX",wave-pool,301 -> /public-pools/texas/katy/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/texas/katy/
+/public-pools/texas/kyle/feature/heated/,"Kyle, TX",heated,301 -> /public-pools/texas/kyle/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/texas/kyle/
+/public-pools/texas/kyle/feature/kiddie-pool/,"Kyle, TX",kiddie-pool,301 -> /public-pools/texas/kyle/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/texas/kyle/
+/public-pools/texas/league-city/feature/diving-board/,"League City, TX",diving-board,301 -> /public-pools/texas/league-city/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/league-city/
+/public-pools/texas/league-city/feature/heated/,"League City, TX",heated,301 -> /public-pools/texas/league-city/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/texas/league-city/
+/public-pools/texas/league-city/feature/kiddie-pool/,"League City, TX",kiddie-pool,301 -> /public-pools/texas/league-city/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/league-city/
+/public-pools/texas/mansfield/feature/diving-board/,"Mansfield, TX",diving-board,301 -> /public-pools/texas/mansfield/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/texas/mansfield/
+/public-pools/texas/mansfield/feature/kiddie-pool/,"Mansfield, TX",kiddie-pool,301 -> /public-pools/texas/mansfield/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/mansfield/
+/public-pools/texas/mansfield/feature/lap-swimming/,"Mansfield, TX",lap-swimming,301 -> /public-pools/texas/mansfield/,0,0,0,1,1,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/mansfield/
+/public-pools/texas/mckinney/feature/heated/,"Mckinney, TX",heated,301 -> /public-pools/texas/mckinney/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/mckinney/
+/public-pools/texas/mckinney/feature/indoor/,"Mckinney, TX",indoor,301 -> /public-pools/texas/mckinney/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/mckinney/
+/public-pools/texas/mckinney/feature/kiddie-pool/,"Mckinney, TX",kiddie-pool,301 -> /public-pools/texas/mckinney/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/mckinney/
+/public-pools/texas/mckinney/feature/olympic-size/,"Mckinney, TX",olympic-size,301 -> /public-pools/texas/mckinney/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/mckinney/
+/public-pools/texas/new-braunfels/feature/diving-board/,"New Braunfels, TX",diving-board,301 -> /public-pools/texas/new-braunfels/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/new-braunfels/
+/public-pools/texas/new-braunfels/feature/indoor/,"New Braunfels, TX",indoor,301 -> /public-pools/texas/new-braunfels/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/texas/new-braunfels/
+/public-pools/texas/new-braunfels/feature/kiddie-pool/,"New Braunfels, TX",kiddie-pool,301 -> /public-pools/texas/new-braunfels/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/new-braunfels/
+/public-pools/texas/new-braunfels/feature/lap-swimming/,"New Braunfels, TX",lap-swimming,301 -> /public-pools/texas/new-braunfels/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/texas/new-braunfels/
+/public-pools/texas/new-braunfels/feature/olympic-size/,"New Braunfels, TX",olympic-size,301 -> /public-pools/texas/new-braunfels/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/new-braunfels/
+/public-pools/texas/pearland/feature/diving-board/,"Pearland, TX",diving-board,301 -> /public-pools/texas/pearland/,2,15,0,0,1,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/pearland/
+/public-pools/texas/pflugerville/feature/diving-board/,"Pflugerville, TX",diving-board,301 -> /public-pools/texas/pflugerville/,0,0,0,3,3,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/pflugerville/
+/public-pools/texas/pflugerville/feature/indoor/,"Pflugerville, TX",indoor,301 -> /public-pools/texas/pflugerville/,0,0,0,2,2,1,1,True,0,0,CONSOLIDATE,/public-pools/texas/pflugerville/
+/public-pools/texas/pflugerville/feature/kiddie-pool/,"Pflugerville, TX",kiddie-pool,301 -> /public-pools/texas/pflugerville/,0,0,0,2,2,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/pflugerville/
+/public-pools/texas/pflugerville/feature/lap-swimming/,"Pflugerville, TX",lap-swimming,301 -> /public-pools/texas/pflugerville/,2,22,0,0,1,3,3,True,0,0,REBUILD,/public-pools/texas/pflugerville/feature/lap-swimming/
+/public-pools/texas/plano/feature/heated/,"Plano, TX",heated,301 -> /public-pools/texas/plano/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/plano/
+/public-pools/texas/plano/feature/indoor/,"Plano, TX",indoor,301 -> /public-pools/texas/plano/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/plano/
+/public-pools/texas/plano/feature/lap-swimming/,"Plano, TX",lap-swimming,301 -> /public-pools/texas/plano/,0,0,0,0,2,3,3,True,2,0,CONSOLIDATE,/public-pools/texas/plano/
+/public-pools/texas/plano/feature/water-slides/,"Plano, TX",water-slides,301 -> /public-pools/texas/plano/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/plano/
+/public-pools/texas/richardson/feature/heated/,"Richardson, TX",heated,301 -> /public-pools/texas/richardson/,2,36,0,0,2,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/richardson/
+/public-pools/texas/richardson/feature/indoor/,"Richardson, TX",indoor,301 -> /public-pools/texas/richardson/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/richardson/
+/public-pools/texas/richardson/feature/kiddie-pool/,"Richardson, TX",kiddie-pool,301 -> /public-pools/texas/richardson/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/richardson/
+/public-pools/texas/richardson/feature/lap-swimming/,"Richardson, TX",lap-swimming,301 -> /public-pools/texas/richardson/,3,33,0,0,2,4,4,True,1,0,REBUILD,/public-pools/texas/richardson/feature/lap-swimming/
+/public-pools/texas/round-rock/feature/kiddie-pool/,"Round Rock, TX",kiddie-pool,301 -> /public-pools/texas/round-rock/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/round-rock/
+/public-pools/texas/round-rock/feature/lap-swimming/,"Round Rock, TX",lap-swimming,301 -> /public-pools/texas/round-rock/,0,0,0,0,2,3,3,True,2,0,CONSOLIDATE,/public-pools/texas/round-rock/
+/public-pools/texas/round-rock/feature/splash-pad/,"Round Rock, TX",splash-pad,301 -> /public-pools/texas/round-rock/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/round-rock/
+/public-pools/texas/round-rock/feature/wave-pool/,"Round Rock, TX",wave-pool,301 -> /public-pools/texas/round-rock/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/texas/round-rock/
+/public-pools/texas/san-antonio/feature/indoor/,"San Antonio, TX",indoor,301 -> /public-pools/texas/san-antonio/,0,0,5,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/texas/san-antonio/
+/public-pools/texas/san-antonio/feature/splash-pad/,"San Antonio, TX",splash-pad,301 -> /public-pools/texas/san-antonio/,2,27,0,0,1,0,0,True,0,0,CONSOLIDATE,/public-pools/texas/san-antonio/
+/public-pools/texas/san-antonio/feature/wave-pool/,"San Antonio, TX",wave-pool,301 -> /public-pools/texas/san-antonio/,0,0,0,1,2,0,0,True,0,0,RETIRE,/public-pools/texas/san-antonio/
+/public-pools/texas/san-marcos/feature/diving-board/,"San Marcos, TX",diving-board,301 -> /public-pools/texas/san-marcos/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/san-marcos/
+/public-pools/texas/san-marcos/feature/heated/,"San Marcos, TX",heated,301 -> /public-pools/texas/san-marcos/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/san-marcos/
+/public-pools/texas/san-marcos/feature/indoor/,"San Marcos, TX",indoor,301 -> /public-pools/texas/san-marcos/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/san-marcos/
+/public-pools/texas/southlake/feature/kiddie-pool/,"Southlake, TX",kiddie-pool,301 -> /public-pools/texas/southlake/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/southlake/
+/public-pools/texas/southlake/feature/lap-swimming/,"Southlake, TX",lap-swimming,301 -> /public-pools/texas/southlake/,0,0,0,2,2,2,2,True,0,0,CONSOLIDATE,/public-pools/texas/southlake/
+/public-pools/texas/southlake/feature/lazy-river/,"Southlake, TX",lazy-river,301 -> /public-pools/texas/southlake/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/southlake/
+/public-pools/texas/southlake/feature/water-slides/,"Southlake, TX",water-slides,301 -> /public-pools/texas/southlake/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/southlake/
+/public-pools/texas/southlake/feature/wave-pool/,"Southlake, TX",wave-pool,301 -> /public-pools/texas/southlake/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/texas/southlake/
+/public-pools/texas/spring/feature/heated/,"Spring, TX",heated,301 -> /public-pools/texas/spring/,0,0,0,0,1,2,2,True,0,1,CONSOLIDATE,/public-pools/texas/spring/
+/public-pools/texas/spring/feature/indoor/,"Spring, TX",indoor,301 -> /public-pools/texas/spring/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/spring/
+/public-pools/texas/spring/feature/lazy-river/,"Spring, TX",lazy-river,301 -> /public-pools/texas/spring/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/texas/spring/
+/public-pools/texas/sugar-land/feature/heated/,"Sugar Land, TX",heated,301 -> /public-pools/texas/sugar-land/,0,0,6,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/texas/sugar-land/
+/public-pools/texas/sugar-land/feature/indoor/,"Sugar Land, TX",indoor,301 -> /public-pools/texas/sugar-land/,0,0,0,0,2,2,2,True,2,0,CONSOLIDATE,/public-pools/texas/sugar-land/
+/public-pools/texas/sugar-land/feature/kiddie-pool/,"Sugar Land, TX",kiddie-pool,301 -> /public-pools/texas/sugar-land/,0,0,0,1,1,1,1,True,0,0,RETIRE,/public-pools/texas/sugar-land/
+/public-pools/texas/sugar-land/feature/lap-swimming/,"Sugar Land, TX",lap-swimming,301 -> /public-pools/texas/sugar-land/,0,0,0,0,1,4,4,True,1,0,CONSOLIDATE,/public-pools/texas/sugar-land/
+/public-pools/utah/murray/feature/diving-board/,"Murray, UT",diving-board,301 -> /public-pools/utah/murray/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/utah/murray/
+/public-pools/utah/murray/feature/lap-swimming/,"Murray, UT",lap-swimming,301 -> /public-pools/utah/murray/,0,0,0,0,3,1,1,True,3,0,CONSOLIDATE,/public-pools/utah/murray/
+/public-pools/utah/murray/feature/lazy-river/,"Murray, UT",lazy-river,301 -> /public-pools/utah/murray/,0,0,4,1,1,1,1,True,0,0,CONSOLIDATE,/public-pools/utah/murray/
+/public-pools/utah/murray/feature/olympic-size/,"Murray, UT",olympic-size,301 -> /public-pools/utah/murray/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/utah/murray/
+/public-pools/utah/orem/feature/indoor/,"Orem, UT",indoor,301 -> /public-pools/utah/orem/,0,0,0,0,2,1,1,True,1,1,CONSOLIDATE,/public-pools/utah/orem/
+/public-pools/utah/salt-lake-city/feature/indoor/,"Salt Lake City, UT",indoor,301 -> /public-pools/utah/salt-lake-city/,2,99,0,0,3,2,2,True,2,0,CONSOLIDATE,/public-pools/utah/salt-lake-city/
+/public-pools/utah/salt-lake-city/feature/kiddie-pool/,"Salt Lake City, UT",kiddie-pool,301 -> /public-pools/utah/salt-lake-city/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/utah/salt-lake-city/
+/public-pools/utah/salt-lake-city/feature/splash-pad/,"Salt Lake City, UT",splash-pad,301 -> /public-pools/utah/salt-lake-city/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/utah/salt-lake-city/
+/public-pools/utah/salt-lake-city/feature/water-slides/,"Salt Lake City, UT",water-slides,301 -> /public-pools/utah/salt-lake-city/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/utah/salt-lake-city/
+/public-pools/utah/west-valley-city/feature/heated/,"West Valley City, UT",heated,301 -> /public-pools/utah/west-valley-city/,2,12,5,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/utah/west-valley-city/
+/public-pools/utah/west-valley-city/feature/indoor/,"West Valley City, UT",indoor,301 -> /public-pools/utah/west-valley-city/,0,0,0,1,2,2,2,True,1,0,CONSOLIDATE,/public-pools/utah/west-valley-city/
+/public-pools/virginia/arlington/feature/indoor/,"Arlington, VA",indoor,301 -> /public-pools/virginia/arlington/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/arlington/
+/public-pools/virginia/arlington/feature/kiddie-pool/,"Arlington, VA",kiddie-pool,301 -> /public-pools/virginia/arlington/,2,57,0,0,2,3,3,True,1,0,REBUILD,/public-pools/virginia/arlington/feature/kiddie-pool/
+/public-pools/virginia/arlington/feature/lap-swimming/,"Arlington, VA",lap-swimming,301 -> /public-pools/virginia/arlington/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/virginia/arlington/
+/public-pools/virginia/chesapeake/feature/heated/,"Chesapeake, VA",heated,301 -> /public-pools/virginia/chesapeake/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/chesapeake/
+/public-pools/virginia/chesapeake/feature/kiddie-pool/,"Chesapeake, VA",kiddie-pool,301 -> /public-pools/virginia/chesapeake/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/chesapeake/
+/public-pools/virginia/chesapeake/feature/lap-swimming/,"Chesapeake, VA",lap-swimming,301 -> /public-pools/virginia/chesapeake/,4,38,0,0,4,2,2,True,1,2,CONSOLIDATE,/public-pools/virginia/chesapeake/
+/public-pools/virginia/chesapeake/feature/splash-pad/,"Chesapeake, VA",splash-pad,301 -> /public-pools/virginia/chesapeake/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/virginia/chesapeake/
+/public-pools/virginia/fairfax/feature/heated/,"Fairfax, VA",heated,301 -> /public-pools/virginia/fairfax/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/virginia/fairfax/
+/public-pools/virginia/fairfax/feature/kiddie-pool/,"Fairfax, VA",kiddie-pool,301 -> /public-pools/virginia/fairfax/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/fairfax/
+/public-pools/virginia/hampton/feature/kiddie-pool/,"Hampton, VA",kiddie-pool,301 -> /public-pools/virginia/hampton/,0,0,0,0,1,3,3,True,1,0,CONSOLIDATE,/public-pools/virginia/hampton/
+/public-pools/virginia/mclean/feature/diving-board/,"Mclean, VA",diving-board,301 -> /public-pools/virginia/mclean/,0,0,4,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/mclean/
+/public-pools/virginia/mclean/feature/lap-swimming/,"Mclean, VA",lap-swimming,301 -> /public-pools/virginia/mclean/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/virginia/mclean/
+/public-pools/virginia/midlothian/feature/diving-board/,"Midlothian, VA",diving-board,301 -> /public-pools/virginia/midlothian/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/virginia/midlothian/
+/public-pools/virginia/midlothian/feature/lazy-river/,"Midlothian, VA",lazy-river,301 -> /public-pools/virginia/midlothian/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/midlothian/
+/public-pools/virginia/midlothian/feature/olympic-size/,"Midlothian, VA",olympic-size,301 -> /public-pools/virginia/midlothian/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/midlothian/
+/public-pools/virginia/newport-news/feature/heated/,"Newport News, VA",heated,301 -> /public-pools/virginia/newport-news/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/virginia/newport-news/
+/public-pools/virginia/newport-news/feature/indoor/,"Newport News, VA",indoor,301 -> /public-pools/virginia/newport-news/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/newport-news/
+/public-pools/virginia/newport-news/feature/lap-swimming/,"Newport News, VA",lap-swimming,301 -> /public-pools/virginia/newport-news/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/virginia/newport-news/
+/public-pools/virginia/newport-news/feature/lazy-river/,"Newport News, VA",lazy-river,301 -> /public-pools/virginia/newport-news/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/newport-news/
+/public-pools/virginia/newport-news/feature/water-slides/,"Newport News, VA",water-slides,301 -> /public-pools/virginia/newport-news/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/newport-news/
+/public-pools/virginia/newport-news/feature/wave-pool/,"Newport News, VA",wave-pool,301 -> /public-pools/virginia/newport-news/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/newport-news/
+/public-pools/virginia/norfolk/feature/diving-board/,"Norfolk, VA",diving-board,301 -> /public-pools/virginia/norfolk/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/norfolk/
+/public-pools/virginia/norfolk/feature/kiddie-pool/,"Norfolk, VA",kiddie-pool,301 -> /public-pools/virginia/norfolk/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/virginia/norfolk/
+/public-pools/virginia/norfolk/feature/lazy-river/,"Norfolk, VA",lazy-river,301 -> /public-pools/virginia/norfolk/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/norfolk/
+/public-pools/virginia/norfolk/feature/olympic-size/,"Norfolk, VA",olympic-size,301 -> /public-pools/virginia/norfolk/,0,0,5,0,2,1,1,True,1,1,CONSOLIDATE,/public-pools/virginia/norfolk/
+/public-pools/virginia/sterling/feature/heated/,"Sterling, VA",heated,301 -> /public-pools/virginia/sterling/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/sterling/
+/public-pools/virginia/sterling/feature/indoor/,"Sterling, VA",indoor,301 -> /public-pools/virginia/sterling/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/sterling/
+/public-pools/virginia/sterling/feature/kiddie-pool/,"Sterling, VA",kiddie-pool,301 -> /public-pools/virginia/sterling/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/virginia/sterling/
+/public-pools/virginia/sterling/feature/wave-pool/,"Sterling, VA",wave-pool,301 -> /public-pools/virginia/sterling/,0,0,0,3,3,0,0,True,0,0,CONSOLIDATE,/public-pools/virginia/sterling/
+/public-pools/virginia/virginia-beach/feature/diving-board/,"Virginia Beach, VA",diving-board,301 -> /public-pools/virginia/virginia-beach/,0,0,0,1,2,3,3,True,1,0,CONSOLIDATE,/public-pools/virginia/virginia-beach/
+/public-pools/virginia/virginia-beach/feature/heated/,"Virginia Beach, VA",heated,301 -> /public-pools/virginia/virginia-beach/,0,0,0,0,1,1,1,True,0,1,CONSOLIDATE,/public-pools/virginia/virginia-beach/
+/public-pools/virginia/virginia-beach/feature/lap-swimming/,"Virginia Beach, VA",lap-swimming,301 -> /public-pools/virginia/virginia-beach/,4,75,0,0,4,3,3,True,1,1,REBUILD,/public-pools/virginia/virginia-beach/feature/lap-swimming/
+/public-pools/virginia/virginia-beach/feature/olympic-size/,"Virginia Beach, VA",olympic-size,301 -> /public-pools/virginia/virginia-beach/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/virginia/virginia-beach/
+/public-pools/virginia/virginia-beach/feature/wave-pool/,"Virginia Beach, VA",wave-pool,301 -> /public-pools/virginia/virginia-beach/,3,146,8,0,1,1,1,True,0,0,CONSOLIDATE,/public-pools/virginia/virginia-beach/
+/public-pools/washington/bellevue/feature/heated/,"Bellevue, WA",heated,301 -> /public-pools/washington/bellevue/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bellevue/
+/public-pools/washington/bellevue/feature/indoor/,"Bellevue, WA",indoor,301 -> /public-pools/washington/bellevue/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bellevue/
+/public-pools/washington/bellevue/feature/lap-swimming/,"Bellevue, WA",lap-swimming,301 -> /public-pools/washington/bellevue/,0,0,0,0,2,1,1,True,2,0,CONSOLIDATE,/public-pools/washington/bellevue/
+/public-pools/washington/bellevue/feature/water-slides/,"Bellevue, WA",water-slides,301 -> /public-pools/washington/bellevue/,0,0,0,1,2,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bellevue/
+/public-pools/washington/bellevue/feature/wave-pool/,"Bellevue, WA",wave-pool,301 -> /public-pools/washington/bellevue/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bellevue/
+/public-pools/washington/bremerton/feature/heated/,"Bremerton, WA",heated,301 -> /public-pools/washington/bremerton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bremerton/
+/public-pools/washington/bremerton/feature/lap-swimming/,"Bremerton, WA",lap-swimming,301 -> /public-pools/washington/bremerton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bremerton/
+/public-pools/washington/bremerton/feature/lazy-river/,"Bremerton, WA",lazy-river,301 -> /public-pools/washington/bremerton/,2,31,0,0,3,1,1,True,2,0,CONSOLIDATE,/public-pools/washington/bremerton/
+/public-pools/washington/bremerton/feature/water-slides/,"Bremerton, WA",water-slides,301 -> /public-pools/washington/bremerton/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/bremerton/
+/public-pools/washington/lynnwood/feature/lap-swimming/,"Lynnwood, WA",lap-swimming,301 -> /public-pools/washington/lynnwood/,0,0,0,1,3,1,1,True,2,0,CONSOLIDATE,/public-pools/washington/lynnwood/
+/public-pools/washington/lynnwood/feature/lazy-river/,"Lynnwood, WA",lazy-river,301 -> /public-pools/washington/lynnwood/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/lynnwood/
+/public-pools/washington/seattle/feature/diving-board/,"Seattle, WA",diving-board,301 -> /public-pools/washington/seattle/,0,0,0,0,2,0,0,True,2,0,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/seattle/feature/heated/,"Seattle, WA",heated,301 -> /public-pools/washington/seattle/,4,290,0,0,5,1,1,True,3,1,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/seattle/feature/indoor/,"Seattle, WA",indoor,301 -> /public-pools/washington/seattle/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/seattle/feature/kiddie-pool/,"Seattle, WA",kiddie-pool,301 -> /public-pools/washington/seattle/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/seattle/feature/olympic-size/,"Seattle, WA",olympic-size,301 -> /public-pools/washington/seattle/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/seattle/feature/wave-pool/,"Seattle, WA",wave-pool,301 -> /public-pools/washington/seattle/,0,0,0,0,1,0,0,True,1,0,CONSOLIDATE,/public-pools/washington/seattle/
+/public-pools/washington/spokane/feature/lazy-river/,"Spokane, WA",lazy-river,301 -> /public-pools/washington/spokane/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/washington/spokane/
+/public-pools/washington/spokane/feature/wave-pool/,"Spokane, WA",wave-pool,301 -> /public-pools/washington/spokane/,0,0,0,2,2,0,0,True,0,0,CONSOLIDATE,/public-pools/washington/spokane/
+/public-pools/washington/sultan/feature/lap-swimming/,"Sultan, WA",lap-swimming,301 -> /public-pools/washington/sultan/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/washington/sultan/
+/public-pools/washington/sultan/feature/lazy-river/,"Sultan, WA",lazy-river,301 -> /public-pools/washington/sultan/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/washington/sultan/
+/public-pools/washington/sultan/feature/water-slides/,"Sultan, WA",water-slides,301 -> /public-pools/washington/sultan/,0,0,0,1,1,0,0,True,0,0,RETIRE,/public-pools/washington/sultan/
+/public-pools/washington/vancouver/feature/heated/,"Vancouver, WA",heated,301 -> /public-pools/washington/vancouver/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/vancouver/
+/public-pools/washington/vancouver/feature/indoor/,"Vancouver, WA",indoor,301 -> /public-pools/washington/vancouver/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/vancouver/
+/public-pools/washington/vancouver/feature/lap-swimming/,"Vancouver, WA",lap-swimming,301 -> /public-pools/washington/vancouver/,0,0,0,0,1,2,2,True,1,0,CONSOLIDATE,/public-pools/washington/vancouver/
+/public-pools/washington/vancouver/feature/wave-pool/,"Vancouver, WA",wave-pool,301 -> /public-pools/washington/vancouver/,0,0,6,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/washington/vancouver/
+/public-pools/wisconsin/madison/feature/heated/,"Madison, WI",heated,301 -> /public-pools/wisconsin/madison/,3,99,9,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/madison/
+/public-pools/wisconsin/madison/feature/lap-swimming/,"Madison, WI",lap-swimming,301 -> /public-pools/wisconsin/madison/,2,19,0,1,3,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/madison/
+/public-pools/wisconsin/madison/feature/water-slides/,"Madison, WI",water-slides,301 -> /public-pools/wisconsin/madison/,0,0,0,0,1,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/madison/
+/public-pools/wisconsin/milwaukee/feature/heated/,"Milwaukee, WI",heated,301 -> /public-pools/wisconsin/milwaukee/,2,150,5,0,2,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/milwaukee/
+/public-pools/wisconsin/milwaukee/feature/indoor/,"Milwaukee, WI",indoor,301 -> /public-pools/wisconsin/milwaukee/,0,0,0,2,3,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/milwaukee/
+/public-pools/wisconsin/milwaukee/feature/lazy-river/,"Milwaukee, WI",lazy-river,301 -> /public-pools/wisconsin/milwaukee/,3,265,8,3,5,1,1,True,1,0,CONSOLIDATE,/public-pools/wisconsin/milwaukee/

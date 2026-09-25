@@ -62,6 +62,7 @@ import {
 import TopbarContainer from '../TopbarContainer/TopbarContainer';
 import FooterContainer from '../FooterContainer/FooterContainer';
 import NotFoundPage from '../NotFoundPage/NotFoundPage';
+import { useSsrSignal } from '../../context/ssrSignalContext';
 
 import {
   sendInquiry,
@@ -80,6 +81,7 @@ import {
   handleSubmit,
   priceVariantsForSchemaMaybe,
   shortLocationLabel,
+  listingCanonicalPath,
 } from './ListingPage.shared';
 import { priceWithBookingFee } from '../../util/currency';
 import ActionBarMaybe from './ActionBarMaybe';
@@ -111,6 +113,8 @@ export const ListingPageComponent = (props) => {
     props.inquiryModalOpenForListingId === props.params.id
   );
   const [mounted, setMounted] = useState(false);
+  // Server render only: lets this page tell the renderer its canonical path.
+  const ssrSignal = useSsrSignal();
 
   useEffect(() => {
     setMounted(true);
@@ -284,7 +288,14 @@ export const ListingPageComponent = (props) => {
   // Clean canonical listing URL for sharing — no query string, no hash, no
   // Google SERP redirect. This is what we hand to the native share sheet or
   // copy to the clipboard.
-  const shareUrl = `${config.marketplaceRootURL}${location.pathname}`;
+  // The listing's one public path, /l/<title slug>/<id>. Declared on the SSR
+  // signal so the server 301s /l/<id> and stale or wrong slugs here. Variants
+  // (draft, pending-approval) are owner views and keep their own URL.
+  const canonicalPath = isVariant ? null : listingCanonicalPath(currentListing);
+  if (ssrSignal && canonicalPath) {
+    ssrSignal.canonicalPath = canonicalPath;
+  }
+  const shareUrl = `${config.marketplaceRootURL}${canonicalPath || location.pathname}`;
 
   // Social/meta description leads with price + location so a texted or posted
   // link previews as "$X/… · City, ST — <description>" instead of raw copy.
@@ -458,7 +469,9 @@ export const ListingPageComponent = (props) => {
   // You could add reviews, sku, etc. into page schema
   // Read more about product schema
   // https://developers.google.com/search/docs/advanced/structured-data/product
-  const productURL = `${config.marketplaceRootURL}${location.pathname}${location.search}${location.hash}`;
+  const productURL = canonicalPath
+    ? `${config.marketplaceRootURL}${canonicalPath}`
+    : `${config.marketplaceRootURL}${location.pathname}${location.search}${location.hash}`;
   const currentStock = currentListing.currentStock?.attributes?.quantity || 0;
   const schemaAvailability = !currentListing.currentStock
     ? null
@@ -516,6 +529,7 @@ export const ListingPageComponent = (props) => {
   return (
     <Page
       title={schemaTitle}
+      canonicalPath={canonicalPath}
       scrollingDisabled={scrollingDisabled}
       author={authorDisplayName}
       description={socialDescription}

@@ -24,6 +24,24 @@ import css from './ListingPage.module.css';
 const { UUID, Money } = sdkTypes;
 
 /**
+ * The one public URL path of a listing: /l/<title slug>/<id>.
+ *
+ * Internal links (NamedLink 'ListingPage' with createSlug(title)), the sitemap,
+ * the <link rel="canonical">, og:url and the schema offer URL all use this
+ * form. /l/<id>, a stale slug left by a title edit, or any other slug renders
+ * the same listing, so the server 301s those here (see ssrStatus
+ * resolveListingRedirect). The slug comes from the listing's current title,
+ * never from the request, so a wrong slug cannot canonicalise itself.
+ *
+ * @param {Object} listing listing entity with id and attributes.title
+ * @returns {String|null} path, or null when the listing is not loaded
+ */
+export const listingCanonicalPath = (listing) => {
+  const id = listing?.id?.uuid;
+  return id ? `/l/${createSlug(listing.attributes?.title || '')}/${id}` : null;
+};
+
+/**
  * Helper to get formattedPrice and priceTitle for SectionHeading component.
  * @param {Money} price listing's price
  * @param {String} marketplaceCurrency currency of the price (e.g. 'USD')

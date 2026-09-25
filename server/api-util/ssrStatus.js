@@ -162,6 +162,49 @@ const resolveCanonicalRedirect = (req, notFound) => {
 };
 
 /**
+ * Should a rendered listing be answered with one 301 to its canonical path?
+ *
+ * A listing is reachable as /l/<id>, /l/<any slug>/<id> and — after a title
+ * edit — its old slug. All render the same page. The listing page declares
+ * its one public path, /l/<createSlug(title)>/<id>, on the per-request SSR
+ * signal while rendering; any other spelling gets a single 301 there, query
+ * kept (?ref attribution survives). The target is built from the listing's
+ * own title, so it renders the same listing and declares the same path: no
+ * second hop and no loop.
+ *
+ * Only GET/HEAD, only a page that actually rendered (not NotFoundPage), and
+ * only a declared path of the exact /l/<slug>/<uuid> shape.
+ *
+ * @param {Object} req express request (method, path, originalUrl)
+ * @param {Object} signal per-request SSR signal (res.locals.ssrSignal)
+ * @param {boolean} notFound whether the render ended on NotFoundPage
+ * @returns {string|null} redirect target (canonical path + original query) or null
+ */
+const LISTING_CANONICAL_RE = new RegExp(
+  '^/l/[a-z0-9_-]+/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+);
+const resolveListingRedirect = (req, signal, notFound) => {
+  if (!req || typeof req !== 'object' || notFound) {
+    return null;
+  }
+  const method = typeof req.method === 'string' ? req.method.toUpperCase() : 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    return null;
+  }
+  const target = signal && typeof signal === 'object' ? signal.canonicalPath : null;
+  if (typeof target !== 'string' || !LISTING_CANONICAL_RE.test(target)) {
+    return null;
+  }
+  const path = typeof req.path === 'string' ? req.path : '';
+  if (path === target) {
+    return null;
+  }
+  const raw = typeof req.originalUrl === 'string' ? req.originalUrl : req.url;
+  const q = typeof raw === 'string' ? raw.indexOf('?') : -1;
+  return target + (q >= 0 ? raw.slice(q) : '');
+};
+
+/**
  * Entity routes whose id segment cannot possibly resolve.
  *
  * `/l/:slug/:id[/…]` and `/u/:id[/…]` take a Sharetribe UUID. When the id
@@ -205,6 +248,7 @@ module.exports = {
   canonicalPath,
   isMalformedEntityPath,
   resolveCanonicalRedirect,
+  resolveListingRedirect,
   isNotFoundContext,
   isNotFoundLocals,
   resolveRenderStatus,

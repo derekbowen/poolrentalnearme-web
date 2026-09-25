@@ -111,8 +111,14 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // is a plain 404 and never a redirect hop. Nothing has been written to
         // the response yet, so the redirect is clean; the render stream is
         // simply never piped and is aborted by the streaming timer.
+        // A listing reached by /l/<id> or a stale slug goes straight to its
+        // declared /l/<slug>/<id> path; that target is already lowercase and
+        // slash-free, so it is checked first to keep this to a single hop.
         const redirectTo =
-          status === 200 ? ssrStatus.resolveCanonicalRedirect(req, notFound) : null;
+          status === 200
+            ? ssrStatus.resolveListingRedirect(req, res.locals.ssrSignal, notFound) ||
+              ssrStatus.resolveCanonicalRedirect(req, notFound)
+            : null;
         if (redirectTo) {
           res.set('Cache-Control', 'public, max-age=86400');
           res.redirect(301, redirectTo);

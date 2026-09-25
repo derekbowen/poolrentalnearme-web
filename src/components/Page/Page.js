@@ -118,6 +118,7 @@ class PageComponent extends Component {
       scrollingDisabled,
       referrer,
       author,
+      canonicalPath: canonicalPathOverride,
       openGraphType = 'website',
       description,
       facebookImages,
@@ -142,7 +143,11 @@ class PageComponent extends Component {
 
     const { marketplaceRootURL } = config;
     const shouldReturnPathOnly = referrer && referrer !== 'unsafe-url';
-    const canonicalPath = canonicalRoutePath(routeConfiguration, location, shouldReturnPathOnly);
+    // A page that knows its own public path (a listing: /l/<title slug>/<id>)
+    // passes it; everything else derives it from the request.
+    const canonicalPath =
+      canonicalPathOverride ||
+      canonicalRoutePath(routeConfiguration, location, shouldReturnPathOnly);
     const canonicalUrl = `${marketplaceRootURL}${canonicalPath}`;
 
     const { marketplaceName } = config;
@@ -360,6 +365,7 @@ class PageComponent extends Component {
  * @param {boolean} props.scrollingDisabled - Whether the scrolling is disabled
  * @param {string} props.referrer - Handle referrer policy
  * @param {string} props.author - The author
+ * @param {string} [props.canonicalPath] - Path to use for rel=canonical and og:url instead of the request path
  * @param {string} props.openGraphType - The open graph type (aka 'og:type')
  * @param {string} props.description - The description
  * @param {Array<ImageConfig>} props.facebookImages - The facebook images

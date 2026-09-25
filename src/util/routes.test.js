@@ -87,7 +87,7 @@ describe('util/routes.js', () => {
         hash: '',
       };
       expect(canonicalRoutePath(routes, location)).toEqual(
-        '/l/00000000-0000-0000-0000-000000000000'
+        '/l/some-slug-here/00000000-0000-0000-0000-000000000000'
       );
     });
     it('handles ListingPage book', () => {
@@ -97,7 +97,7 @@ describe('util/routes.js', () => {
         hash: '',
       };
       expect(canonicalRoutePath(routes, location)).toEqual(
-        '/l/00000000-0000-0000-0000-000000000000?book=true'
+        '/l/some-slug-here/00000000-0000-0000-0000-000000000000?book=true'
       );
     });
     it('drops tracking params from a listing canonical (the /go/ share link)', () => {
@@ -109,7 +109,7 @@ describe('util/routes.js', () => {
         hash: '',
       };
       expect(canonicalRoutePath(routes, location)).toEqual(
-        '/l/6a713580-85d9-43eb-8f84-35a431128c2f'
+        '/l/the-backyard-oasis/6a713580-85d9-43eb-8f84-35a431128c2f'
       );
     });
     it('drops any query from a listing canonical, not just tracking', () => {
@@ -119,7 +119,7 @@ describe('util/routes.js', () => {
         hash: '#reviews',
       };
       expect(canonicalRoutePath(routes, location)).toEqual(
-        '/l/00000000-0000-0000-0000-000000000000'
+        '/l/some-slug-here/00000000-0000-0000-0000-000000000000'
       );
     });
     it('strips tracking params from a non-listing canonical', () => {
@@ -163,7 +163,7 @@ describe('util/routes.js', () => {
         hash: '',
       };
       expect(canonicalRoutePath(routes, location)).toEqual(
-        '/l/00000000-0000-0000-0000-000000000000'
+        '/l/some-slug-here/00000000-0000-0000-0000-000000000000'
       );
     });
   });

@@ -127,7 +127,10 @@ export const canonicalRoutePath = (routes, location, pathOnly = false) => {
   const isListingRoute = matches.length === 1 && matches[0].route.name === 'ListingPage';
 
   if (isListingRoute) {
-    // Remove the dynamic slug from the listing page canonical URL
+    // Listings canonicalise to /l/<slug>/<id>, the form every internal link and
+    // the sitemap use. The listing page passes its true path (slug from the
+    // current title) to <Page> directly; this is the fallback when it cannot,
+    // e.g. while the listing is still loading.
 
     // Remove possible trailing slash
     const cleanedPathName = pathname.replace(/\/$/, '');
@@ -138,7 +141,7 @@ export const canonicalRoutePath = (routes, location, pathOnly = false) => {
     }
     // A listing page renders the same listing whatever the query says — ?ref,
     // ?orderOpen, prefilled dates — so its canonical carries no query at all.
-    return canonicalListingPathname;
+    return `/${parts[1]}/${parts[2]}/${parts[3]}`;
   }
 
   return pathOnly ? pathname : `${pathname}${withoutTrackingParams(search)}${hash}`;

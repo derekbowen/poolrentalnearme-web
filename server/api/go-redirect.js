@@ -1,4 +1,5 @@
 const integrationSdk = require('../api-util/integration');
+const { createSlug } = require('../api-util/listingSlug');
 
 // c153: tracked host share links. /go/<title-slug>-<uuid8> 302s to the listing
 // page (with ?ref=host-share for signup attribution) and logs the click so the
@@ -10,7 +11,7 @@ const slugify = t =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'pool';
 
-let cache = { at: 0, list: [] }; // [{uuid, slug}]
+let cache = { at: 0, list: [] }; // [{uuid, slug, path}]
 const CACHE_MS = 10 * 60 * 1000;
 
 const refresh = async () => {
@@ -27,7 +28,13 @@ const refresh = async () => {
     );
     const entities = Array.isArray(r) ? r : [];
     for (const l of entities) {
-      list.push({ uuid: l.id.uuid, slug: slugify(l.attributes.title) });
+      // slug matches the cosmetic /go/ token; path is the listing's canonical
+      // /l/<createSlug(title)>/<id>, so the click lands without a second 301.
+      list.push({
+        uuid: l.id.uuid,
+        slug: slugify(l.attributes.title),
+        path: `/l/${createSlug(l.attributes.title)}/${l.id.uuid}`,
+      });
     }
     totalPages = (r && r._raw && r._raw.data && r._raw.data.meta && r._raw.data.meta.totalPages) || 1;
     page++;
@@ -72,5 +79,5 @@ module.exports = async (req, res) => {
     cache.list.find(l => l.slug === token);
   if (!hit) return res.redirect(302, '/s');
   logClick(hit.uuid, token);
-  return res.redirect(302, `/l/${hit.slug}/${hit.uuid}?ref=host-share`);
+  return res.redirect(302, `${hit.path}?ref=host-share`);
 };

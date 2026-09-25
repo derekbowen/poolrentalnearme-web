@@ -190,3 +190,39 @@ describe('isMalformedEntityPath — ids that can never resolve are 404 before re
     ).toBeNull();
   });
 });
+
+describe('resolveListingRedirect — every listing spelling 301s once to /l/<slug>/<id>', () => {
+  const { resolveListingRedirect } = require('./ssrStatus');
+  const ID = '689d6690-2fad-40ab-bf82-f89b07771533';
+  const CANON = `/l/the-orange-grove-lagoon/${ID}`;
+  const signal = { notFound: false, canonicalPath: CANON };
+  const get = (path, query = '') => ({ method: 'GET', path, originalUrl: path + query });
+
+  it('redirects the bare id form', () => {
+    expect(resolveListingRedirect(get(`/l/${ID}`), signal, false)).toBe(CANON);
+  });
+
+  it('redirects a stale or wrong slug, keeping the query (share attribution)', () => {
+    expect(
+      resolveListingRedirect(get(`/l/the-orange-grove-lagoon-689d6690/${ID}`, '?ref=host-share'), signal, false)
+    ).toBe(`${CANON}?ref=host-share`);
+  });
+
+  it('leaves the canonical path alone — no loop', () => {
+    expect(resolveListingRedirect(get(CANON), signal, false)).toBeNull();
+    expect(resolveListingRedirect(get(CANON, '?orderOpen=true'), signal, false)).toBeNull();
+  });
+
+  it('never redirects a not-found render, a POST, or without a declared path', () => {
+    expect(resolveListingRedirect(get(`/l/${ID}`), signal, true)).toBeNull();
+    expect(resolveListingRedirect({ ...get(`/l/${ID}`), method: 'POST' }, signal, false)).toBeNull();
+    expect(resolveListingRedirect(get(`/l/${ID}`), { notFound: false }, false)).toBeNull();
+    expect(resolveListingRedirect(get(`/l/${ID}`), null, false)).toBeNull();
+  });
+
+  it('ignores a declared path that is not exactly /l/<slug>/<uuid>', () => {
+    for (const bad of [`/l/${ID}`, `/l/x/${ID}/draft`, `//evil.com/l/x/${ID}`, `/l/Upper/${ID}`, `/p/x/${ID}`]) {
+      expect(resolveListingRedirect(get('/l/other/' + ID), { canonicalPath: bad }, false)).toBeNull();
+    }
+  });
+});

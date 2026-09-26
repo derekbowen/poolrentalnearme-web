@@ -166,8 +166,10 @@ const serialize = (key, fn) => {
  */
 const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } = {}) =>
   serialize(listingId, async () => {
-    const shown = await integrationSdk.listings.show({ id: listingId });
-    const attrs = (((shown || {}).data || {}).data || {}).attributes || {};
+    // The integration SDK is wrapped (wrapInstanceWithResponseTransformer): the
+    // raw Sharetribe body is only on `_raw`, and only with allowRawResponse.
+    const shown = await integrationSdk.listings.show({ id: listingId }, { allowRawResponse: true });
+    const attrs = ((((shown || {})._raw || {}).data || {}).data || {}).attributes || {};
     const availability = (attrs.publicData || {}).availability || {};
     const tz = (attrs.availabilityPlan && attrs.availabilityPlan.timezone) || 'Etc/UTC';
     const nowMs = now();
@@ -206,16 +208,16 @@ const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } 
       const start = Math.max(d.start, nowMs + 60e3);
       if (start >= d.end) continue;
       try {
-        const r = await integrationSdk.availabilityExceptions.create({
-          listingId,
-          seats: 0,
-          start: new Date(start),
-          end: new Date(d.end),
-        });
-        const id = idOf(((r || {}).data || {}).data);
+        const r = await integrationSdk.availabilityExceptions.create(
+          { listingId, seats: 0, start: new Date(start), end: new Date(d.end) },
+          { allowRawResponse: true }
+        );
+        const id = idOf((((r || {})._raw || {}).data || {}).data);
         if (id) {
           created.push(id);
           track(d.date, id);
+        } else {
+          failed.push({ op: 'create-untracked', date: d.date });
         }
       } catch (e) {
         failed.push({ op: 'create', date: d.date, status: e && e.status });

@@ -27,21 +27,31 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
     privateData: {},
   };
   const tick = () => new Promise((r) => setTimeout(r, 1));
+  // Mirrors wrapInstanceWithResponseTransformer: callers get the denormalised
+  // entity; the raw body only on `_raw`, and only with { allowRawResponse: true }.
+  const wrapped = (raw, opts) => {
+    const out = Array.isArray(raw.data.data) ? [...raw.data.data] : { ...raw.data.data };
+    if (opts && opts.allowRawResponse) out._raw = raw;
+    return out;
+  };
   const sdk = {
     listings: {
-      show: async () => {
+      show: async (params, opts) => {
         await tick();
-        return {
-          data: {
+        return wrapped(
+          {
             data: {
-              attributes: {
-                availabilityPlan: { timezone: TZ },
-                publicData: JSON.parse(JSON.stringify(listing.publicData)),
-                privateData: JSON.parse(JSON.stringify(listing.privateData)),
+              data: {
+                attributes: {
+                  availabilityPlan: { timezone: TZ },
+                  publicData: JSON.parse(JSON.stringify(listing.publicData)),
+                  privateData: JSON.parse(JSON.stringify(listing.privateData)),
+                },
               },
             },
           },
-        };
+          opts
+        );
       },
       update: async ({ publicData, privateData }) => {
         await tick();
@@ -50,7 +60,7 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
       },
     },
     availabilityExceptions: {
-      query: async ({ start, end }) => {
+      query: async ({ start, end }, opts) => {
         await tick();
         const data = [...exceptions.entries()]
           .filter(([, x]) => x.start < end.getTime() && x.end > start.getTime())
@@ -58,9 +68,9 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
             id: { uuid: id },
             attributes: { start: iso(x.start), end: iso(x.end), seats: 0 },
           }));
-        return { _raw: { data: { data, meta: { totalPages: 1 } } } };
+        return wrapped({ data: { data, meta: { totalPages: 1 } } }, opts);
       },
-      create: async ({ start, end }) => {
+      create: async ({ start, end }, opts) => {
         await tick();
         const s = start.getTime();
         const e = end.getTime();
@@ -73,7 +83,7 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
         }
         const id = `prnm-${++seq}`;
         exceptions.set(id, { start: s, end: e });
-        return { data: { data: { id: { uuid: id } } } };
+        return wrapped({ data: { data: { id: { uuid: id } } } }, opts);
       },
       delete: async ({ id }) => {
         await tick();

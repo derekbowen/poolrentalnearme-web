@@ -37,3 +37,13 @@ No exception created or deleted. Audit before/after:
   save for that listing runs the new reconcile.
 - 27 ambiguous blocks on 4 feed listings; Detroit 6a93e608 is blocked Sep 2026–Aug 2027.
 - Build tree `package.json` differs from repo (not shipped in c205; needs a drift check).
+
+## 2026-09-28 follow-up
+- Health: MAIN c205 up 2 days, 0 restarts, 0 5xx since flip, live bundle = MAIN. The
+  144/day 400/404 on line-items/privileged endpoints are WEST's own curl monitor (since Sep 14).
+- 6a5db0ae Oct 1 fixed directly (not via reconcileListing): created 2026-10-01T05:00–10:00Z
+  and 11:00Z–10-02T05:00Z around the host's manual 10–11Z block; both tracked (11 total).
+- Found: the planner scheduled a tracked block that ended <24h ago (Sep 27 evening) for
+  deletion — query window reaches back a day, desired excludes the past. Harmless to
+  availability but pointless; fixed in repo (ended blocks ignored, regression test).
+  **Not yet deployed** — ship with the next release.

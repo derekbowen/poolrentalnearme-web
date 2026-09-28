@@ -91,7 +91,9 @@ const trackedIds = (privateData, availability) => {
  * earlier than the piece (Sharetribe rejects past starts, so creation clamps).
  */
 const planReconcile = ({ actual, desired, tracked, nowMs }) => {
-  const blocked = actual.filter((a) => a.seats === 0);
+  // A block that has already ended blocks nothing: never delete or keep it
+  // (the query window reaches a day back, and desired ranges exclude the past).
+  const blocked = actual.filter((a) => a.seats === 0 && a.end > nowMs);
   const foreign = blocked.filter((a) => !tracked.has(a.id)).sort((x, y) => x.start - y.start);
   const satisfies = (a, d) =>
     a.end === d.end &&

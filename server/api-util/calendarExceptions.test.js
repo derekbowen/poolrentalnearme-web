@@ -252,6 +252,17 @@ describe('calendar exception reconciliation', () => {
     expect(f.list()).toEqual([]);
   });
 
+  it('planReconcile leaves a tracked block that has already ended alone', () => {
+    const plan = planReconcile({
+      actual: [{ id: 'past', start: NOW - 5e6, end: NOW - 1e6, seats: 0 }],
+      desired: [],
+      tracked: new Set(['past']),
+      nowMs: NOW,
+    });
+    expect(plan.toDelete).toEqual([]);
+    expect(plan.keep).toEqual([]);
+  });
+
   it('planReconcile never deletes an untracked exception', () => {
     const plan = planReconcile({
       actual: [{ id: 'x', start: NOW + 1e6, end: NOW + 2e6, seats: 0 }],

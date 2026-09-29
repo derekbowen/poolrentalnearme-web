@@ -1,5 +1,6 @@
 const {
   TRACK_KEY,
+  PRIVATE_DATA_BUDGET,
   desiredRanges,
   planReconcile,
   reconcileListing,
@@ -11,7 +12,14 @@ const iso = (ms) => new Date(ms).toISOString();
 
 // In-memory Sharetribe: overlapping exceptions 409, like the real API.
 // `panelSave` mimics the edit panel writing publicData.availability wholesale.
-const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds, tracked = [] } = {}) => {
+const fakeSharetribe = ({
+  overrides = {},
+  manual = [],
+  legacyIds,
+  tracked = [],
+  failUpdate = false,
+  totalPages,
+} = {}) => {
   let seq = 0;
   const exceptions = new Map();
   manual.forEach(([s, e]) =>
@@ -63,6 +71,12 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds, tracked = [] }
       },
       update: async ({ publicData, privateData }) => {
         await tick();
+        const next = { ...listing.privateData, ...(privateData || {}) };
+        if (failUpdate || JSON.stringify(next).length > 50000) {
+          const err = new Error('extended data too large');
+          err.status = 400;
+          throw err;
+        }
         Object.assign(listing.publicData, publicData || {});
         Object.assign(listing.privateData, privateData || {});
       },
@@ -76,7 +90,7 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds, tracked = [] }
             id: { uuid: id },
             attributes: { start: iso(x.start), end: iso(x.end), seats: 0 },
           }));
-        return wrapped({ data: { data, meta: { totalPages: 1 } } }, opts);
+        return wrapped({ data: { data, meta: { totalPages: totalPages || 1 } } }, opts);
       },
       create: async ({ start, end }, opts) => {
         await tick();
@@ -89,7 +103,8 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds, tracked = [] }
             throw err;
           }
         }
-        const id = `prnm-${++seq}`;
+        // Real ids are 36-char UUIDs; size tests depend on the real length.
+        const id = `prnm-${++seq}-`.padEnd(36, '0');
         exceptions.set(id, { start: s, end: e });
         return wrapped({ data: { data: { id: { uuid: id } } } }, opts);
       },
@@ -292,7 +307,7 @@ describe('past blocks are historical records', () => {
   const trackedAfter = (f) =>
     Object.values(f.listing.privateData[TRACK_KEY] || {}).reduce((a, x) => a.concat(x), []);
 
-  it('PRNM block that ended yesterday: not deleted, still tracked', async () => {
+  it('PRNM block that ended yesterday: not deleted; id leaves ACTIVE tracking', async () => {
     // Sep 24 was closed; the host has since removed that override.
     const f = fakeSharetribe({
       tracked: [['2026-09-24T05:00:00.000Z', '2026-09-25T05:00:00.000Z', '2026-09-24']],
@@ -300,26 +315,35 @@ describe('past blocks are historical records', () => {
     const r = await run(f);
     expect(r).toMatchObject({ deleted: 0, created: 0 });
     expect(ids(f)).toEqual(['prnm-old-1']);
-    expect(trackedAfter(f)).toEqual(['prnm-old-1']);
+    expect(trackedAfter(f)).toEqual([]);
   });
 
-  it('PRNM block that ended one minute ago: not deleted, still tracked', async () => {
+  it('PRNM block that ended one minute ago: not deleted; id leaves ACTIVE tracking', async () => {
     const f = fakeSharetribe({ tracked: [[at(NOW - 5 * H), at(NOW - 60e3), '2026-09-25']] });
     const r = await run(f);
     expect(r.deleted).toBe(0);
     expect(ids(f)).toEqual(['prnm-old-1']);
-    expect(trackedAfter(f)).toEqual(['prnm-old-1']);
+    expect(trackedAfter(f)).toEqual([]);
   });
 
-  it('PRNM block from last week (outside the query window): tracking retained', async () => {
+  it('PRNM block from last week (outside the query window): untouched; id pruned', async () => {
     const f = fakeSharetribe({
       tracked: [['2026-09-18T05:00:00.000Z', '2026-09-19T05:00:00.000Z', '2026-09-18']],
       overrides: SUNDAY_9_3,
     });
     await run(f);
     expect(ids(f)).toContain('prnm-old-1');
-    expect(trackedAfter(f)).toContain('prnm-old-1');
-    expect(f.listing.privateData[TRACK_KEY]['2026-09-18']).toEqual(['prnm-old-1']);
+    expect(trackedAfter(f)).not.toContain('prnm-old-1');
+  });
+
+  it('incomplete exception query: unseen tracked ids are kept (never pruned on a guess)', async () => {
+    const f = fakeSharetribe({
+      tracked: [['2026-09-18T05:00:00.000Z', '2026-09-19T05:00:00.000Z', '2026-09-18']],
+      manual: [['2026-10-02T10:00:00.000Z', '2026-10-02T11:00:00.000Z']],
+      totalPages: 99, // every page non-empty up to the cap: cannot prove the id is gone
+    });
+    await run(f);
+    expect(trackedAfter(f)).toContain('prnm-old-2');
   });
 
   it('host-created block that has ended: untouched', async () => {
@@ -398,5 +422,77 @@ describe('past blocks are historical records', () => {
     });
     expect(plan.toDelete).toEqual([]);
     expect(plan.keep).toEqual([]);
+  });
+});
+
+describe('tracking state is bounded', () => {
+  const H = 60 * 60 * 1000;
+  const DAY = 24 * H;
+  const bytes = (f) => JSON.stringify(f.listing.privateData).length;
+
+  it('daily custom hours for a year of saves: tracking holds only live blocks', async () => {
+    // Heavy host: 9-15 every day for the next 60 days, saving daily for 400 days.
+    const f = fakeSharetribe();
+    let maxIds = 0;
+    for (let day = 0; day < 400; day += 5) {
+      const nowMs = NOW + day * DAY;
+      const ov = {};
+      for (let k = 0; k < 60; k++) {
+        ov[new Date(nowMs + k * DAY).toISOString().slice(0, 10)] = { open: 9, close: 15 };
+      }
+      f.panelSave(ov);
+      await reconcileListing(f.sdk, 'L1', { now: () => nowMs });
+      const n = Object.values(f.listing.privateData[TRACK_KEY]).reduce((a, x) => a + x.length, 0);
+      maxIds = Math.max(maxIds, n);
+    }
+    // 60 days x 2 blocks (+ at most one day's worth in progress), never history.
+    expect(maxIds).toBeLessThanOrEqual(122);
+    expect(bytes(f)).toBeLessThan(10000);
+  });
+
+  it('never creates a block it could not record: stops at the privateData budget', async () => {
+    // Closed every day for a year, 3 interior blocks per day -> ~1,460 ranges.
+    const ov = {};
+    for (let k = 0; k < 364; k++) {
+      ov[new Date(NOW + (k + 1) * DAY).toISOString().slice(0, 10)] = {
+        open: 9,
+        close: 21,
+        blocks: [
+          [10, 11],
+          [12, 13],
+          [14, 15],
+        ],
+      };
+    }
+    const f = fakeSharetribe({ overrides: ov });
+    const r = await run(f);
+    expect(r.ok).toBe(false);
+    expect(r.failed.find((x) => x.op === 'tracking-budget').skipped).toBeGreaterThan(0);
+    expect(bytes(f)).toBeLessThanOrEqual(PRIVATE_DATA_BUDGET);
+    // Every block that exists is tracked: no orphans.
+    const tracked = new Set(Object.values(f.listing.privateData[TRACK_KEY]).flat());
+    expect(f.list().every((x) => tracked.has(x.id))).toBe(true);
+    // Nearest dates first: tomorrow is fully enforced.
+    expect(f.list()[0].start.slice(0, 10)).toBe(new Date(NOW + DAY).toISOString().slice(0, 10));
+  });
+
+  it("tracking write fails: this run's new blocks are undone (no orphans)", async () => {
+    const f = fakeSharetribe({ overrides: SUNDAY_9_3, failUpdate: true });
+    const r = await run(f);
+    expect(r.ok).toBe(false);
+    expect(r.failed.find((x) => x.op === 'track-write')).toMatchObject({ undone: 2 });
+    expect(f.list()).toEqual([]);
+  });
+
+  it('host blocks are never deleted, whatever happens to tracking', async () => {
+    const f = fakeSharetribe({
+      overrides: { '2026-10-01': { closed: true } },
+      manual: [['2026-10-01T10:00:00.000Z', '2026-10-01T11:00:00.000Z']],
+    });
+    await run(f);
+    f.listing.privateData[TRACK_KEY] = {}; // tracking lost entirely
+    f.panelSave({});
+    await run(f);
+    expect(f.list().map((x) => x.id)).toContain('manual-1');
   });
 });

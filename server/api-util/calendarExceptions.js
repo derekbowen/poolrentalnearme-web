@@ -19,6 +19,10 @@ const moment = require('moment-timezone');
  */
 
 const TRACK_KEY = 'prnmCalendarExceptionIds';
+// Sharetribe: "the total size of an extended data object as JSON string must not
+// exceed 50KB". Leave headroom for privateData's other keys (exactAddress etc.).
+const PRIVATE_DATA_BUDGET = 45000;
+const ID_BYTES_MAX = 60; // one uuid in quotes + comma, or a new "YYYY-MM-DD":[...] entry
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const idOf = (x) => (x && x.id && (x.id.uuid || x.id)) || null;
@@ -130,9 +134,13 @@ const planReconcile = ({ actual, desired, tracked, nowMs }) => {
   return { keep, toDelete, toCreate, alreadyBlocked };
 };
 
+// Returns the exceptions in [start, end); `out.complete` is false if the page cap
+// was hit, in which case callers must not treat "not seen" as "gone".
+const MAX_PAGES = 20;
 const queryAll = async (integrationSdk, listingId, start, end) => {
   const out = [];
-  for (let page = 1; page <= 20; page++) {
+  out.complete = false;
+  for (let page = 1; page <= MAX_PAGES; page++) {
     const r = await integrationSdk.availabilityExceptions.query(
       { listingId, start, end, perPage: 100, page },
       { allowRawResponse: true }
@@ -144,7 +152,10 @@ const queryAll = async (integrationSdk, listingId, start, end) => {
       out.push({ id: idOf(x), start: ms(a.start), end: ms(a.end), seats: a.seats });
     });
     const tp = (raw.meta || {}).totalPages || 1;
-    if (page >= tp || chunk.length === 0) break;
+    if (page >= tp || chunk.length === 0) {
+      out.complete = true;
+      break;
+    }
   }
   return out;
 };
@@ -198,31 +209,56 @@ const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } 
       }
     }
 
-    // Tracking is history: start from what was tracked and remove only what this
-    // run deleted or re-files. Ids of blocks that have ended (or sit outside the
-    // query window) stay recorded as PRNM-created, so past records keep their
-    // provenance. Stale ids are harmless: ids are never reused.
+    // ACTIVE reconciliation state only. Tracking exists so a save can tell PRNM's
+    // blocks from everyone else's; it only needs ids a future save might delete.
+    //   - kept ids (still wanted) and ids created now: tracked;
+    //   - a tracked id whose delete failed: stays tracked so the next save retries;
+    //   - a tracked id seen in the window whose block has not ended: stays tracked;
+    //   - a tracked id whose block has ended, or (with a complete query) was not
+    //     seen at all (ended over a day ago, or already gone): dropped.
+    // Dropping an id can only make PRNM delete LESS, never delete a host block, and
+    // the planner ignores ended blocks regardless of tracking. So the state is
+    // bounded by PRNM's live future blocks (<= one year ahead), not by history.
+    // Provenance for ended blocks lives in Sharetribe's event log (creating client).
     const prevTrack = (attrs.privateData || {})[TRACK_KEY] || {};
+    const seen = new Map(actual.map((x) => [x.id, x]));
     const refiled = new Set([...deleted, ...plan.keep.map((k) => k.id)]);
+    const stillActive = (id) => {
+      const x = seen.get(id);
+      if (x) return x.end > nowMs;
+      return !actual.complete; // unseen: keep only if the query may have missed it
+    };
     const nextTrack = {};
     const track = (date, id) => {
       const ids = nextTrack[date] || [];
       if (!ids.includes(id)) nextTrack[date] = ids.concat(id);
     };
     Object.keys(prevTrack).forEach((date) =>
-      (prevTrack[date] || []).forEach((id) => !refiled.has(id) && track(date, id))
+      (prevTrack[date] || []).forEach(
+        (id) => !refiled.has(id) && stillActive(id) && track(date, id)
+      )
     );
-    // Kept ids stay tracked under the date of the range they satisfy.
     plan.keep.forEach((k) => track(k.date, k.id));
-    // A tracked id whose delete failed stays tracked so the next save retries it
-    // (legacy publicData-only ids get recorded here).
     const allTracked = () => new Set([].concat(...Object.values(nextTrack)));
     failed.forEach((f) => f.id && !allTracked().has(f.id) && track('pending-delete', f.id));
 
+    // Sharetribe caps each extended-data object at 50KB (JSON). Never create a
+    // block PRNM could not record: stop creating once privateData would pass the
+    // budget, and report it. Blocks are created nearest-date first.
+    const privateBytes = () =>
+      Buffer.byteLength(
+        JSON.stringify({ ...(attrs.privateData || {}), [TRACK_KEY]: nextTrack }),
+        'utf8'
+      );
     const created = [];
+    let skippedForBudget = 0;
     for (const d of plan.toCreate) {
       const start = Math.max(d.start, nowMs + 60e3);
       if (start >= d.end) continue;
+      if (privateBytes() + ID_BYTES_MAX > PRIVATE_DATA_BUDGET) {
+        skippedForBudget += 1;
+        continue;
+      }
       try {
         const r = await integrationSdk.availabilityExceptions.create(
           { listingId, seats: 0, start: new Date(start), end: new Date(d.end) },
@@ -239,12 +275,27 @@ const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } 
         failed.push({ op: 'create', date: d.date, status: e && e.status });
       }
     }
+    if (skippedForBudget) failed.push({ op: 'tracking-budget', skipped: skippedForBudget });
 
-    // privateData merges by top-level key, so this touches nothing else.
-    await integrationSdk.listings.update({
-      id: listingId,
-      privateData: { [TRACK_KEY]: nextTrack },
-    });
+    // privateData merges by top-level key, so this touches nothing else. If the
+    // tracking write fails, undo this run's creations: an untracked PRNM block is
+    // an orphan a later save could never remove.
+    try {
+      await integrationSdk.listings.update({
+        id: listingId,
+        privateData: { [TRACK_KEY]: nextTrack },
+      });
+    } catch (e) {
+      for (const id of created) {
+        try {
+          await integrationSdk.availabilityExceptions.delete({ id });
+        } catch (undoErr) {
+          failed.push({ op: 'undo-create', id, status: undoErr && undoErr.status });
+        }
+      }
+      failed.push({ op: 'track-write', status: e && e.status, undone: created.length });
+      created.length = 0;
+    }
 
     const finalActual = await queryAll(
       integrationSdk,
@@ -275,6 +326,7 @@ const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } 
 
 module.exports = {
   TRACK_KEY,
+  PRIVATE_DATA_BUDGET,
   rangesForOverride,
   desiredRanges,
   trackedIds,

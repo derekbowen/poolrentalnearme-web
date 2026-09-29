@@ -11,7 +11,7 @@ const iso = (ms) => new Date(ms).toISOString();
 
 // In-memory Sharetribe: overlapping exceptions 409, like the real API.
 // `panelSave` mimics the edit panel writing publicData.availability wholesale.
-const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
+const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds, tracked = [] } = {}) => {
   let seq = 0;
   const exceptions = new Map();
   manual.forEach(([s, e]) =>
@@ -26,6 +26,14 @@ const fakeSharetribe = ({ overrides = {}, manual = [], legacyIds } = {}) => {
     },
     privateData: {},
   };
+  // Blocks PRNM created earlier and tracks: [start, end, date].
+  tracked.forEach(([st, en, date]) => {
+    const id = `prnm-old-${++seq}`;
+    exceptions.set(id, { start: Date.parse(st), end: Date.parse(en) });
+    const t = listing.privateData[TRACK_KEY] || {};
+    t[date] = (t[date] || []).concat(id);
+    listing.privateData[TRACK_KEY] = t;
+  });
   const tick = () => new Promise((r) => setTimeout(r, 1));
   // Mirrors wrapInstanceWithResponseTransformer: callers get the denormalised
   // entity; the raw body only on `_raw`, and only with { allowRawResponse: true }.
@@ -271,5 +279,124 @@ describe('calendar exception reconciliation', () => {
       nowMs: NOW,
     });
     expect(plan.toDelete).toEqual([]);
+  });
+});
+
+// Invariant: reconciliation never deletes or rewrites a block whose interval has
+// already ended. Past blocks are historical records; PRNM-created ones keep their
+// tracking (provenance). Only a separate, explicit cleanup may remove them.
+describe('past blocks are historical records', () => {
+  const H = 60 * 60 * 1000;
+  const at = (ms) => new Date(ms).toISOString();
+  const ids = (f) => f.list().map((x) => x.id);
+  const trackedAfter = (f) =>
+    Object.values(f.listing.privateData[TRACK_KEY] || {}).reduce((a, x) => a.concat(x), []);
+
+  it('PRNM block that ended yesterday: not deleted, still tracked', async () => {
+    // Sep 24 was closed; the host has since removed that override.
+    const f = fakeSharetribe({
+      tracked: [['2026-09-24T05:00:00.000Z', '2026-09-25T05:00:00.000Z', '2026-09-24']],
+    });
+    const r = await run(f);
+    expect(r).toMatchObject({ deleted: 0, created: 0 });
+    expect(ids(f)).toEqual(['prnm-old-1']);
+    expect(trackedAfter(f)).toEqual(['prnm-old-1']);
+  });
+
+  it('PRNM block that ended one minute ago: not deleted, still tracked', async () => {
+    const f = fakeSharetribe({ tracked: [[at(NOW - 5 * H), at(NOW - 60e3), '2026-09-25']] });
+    const r = await run(f);
+    expect(r.deleted).toBe(0);
+    expect(ids(f)).toEqual(['prnm-old-1']);
+    expect(trackedAfter(f)).toEqual(['prnm-old-1']);
+  });
+
+  it('PRNM block from last week (outside the query window): tracking retained', async () => {
+    const f = fakeSharetribe({
+      tracked: [['2026-09-18T05:00:00.000Z', '2026-09-19T05:00:00.000Z', '2026-09-18']],
+      overrides: SUNDAY_9_3,
+    });
+    await run(f);
+    expect(ids(f)).toContain('prnm-old-1');
+    expect(trackedAfter(f)).toContain('prnm-old-1');
+    expect(f.listing.privateData[TRACK_KEY]['2026-09-18']).toEqual(['prnm-old-1']);
+  });
+
+  it('host-created block that has ended: untouched', async () => {
+    const f = fakeSharetribe({ manual: [[at(NOW - 20 * H), at(NOW - 2 * H)]] });
+    const r = await run(f);
+    expect(r).toMatchObject({ deleted: 0, created: 0 });
+    expect(ids(f)).toEqual(['manual-1']);
+    expect(trackedAfter(f)).toEqual([]);
+  });
+
+  it('currently active PRNM block that is still wanted: kept as-is, not rewritten', async () => {
+    // Sep 25 closed (Chicago); at NOW (12:00Z) the day is in progress.
+    const f = fakeSharetribe({
+      overrides: { '2026-09-25': { closed: true } },
+      tracked: [['2026-09-25T05:00:00.000Z', '2026-09-26T05:00:00.000Z', '2026-09-25']],
+    });
+    const r = await run(f);
+    expect(r).toMatchObject({ deleted: 0, created: 0, kept: 1 });
+    expect(f.list()).toEqual([
+      { id: 'prnm-old-1', start: '2026-09-25T05:00:00.000Z', end: '2026-09-26T05:00:00.000Z' },
+    ]);
+  });
+
+  it('block beginning later today: created when wanted, removed when no longer wanted', async () => {
+    // Sep 25 Chicago, close at 16:00 → blocks 21:00Z–Sep 26 05:00Z (starts later today).
+    const f = fakeSharetribe({ overrides: { '2026-09-25': { open: 0, close: 16 } } });
+    const r = await run(f);
+    expect(r.created).toBe(1);
+    expect(f.list().map((x) => [x.start, x.end])).toEqual([
+      ['2026-09-25T21:00:00.000Z', '2026-09-26T05:00:00.000Z'],
+    ]);
+    f.panelSave({});
+    const r2 = await run(f);
+    expect(r2.deleted).toBe(1);
+    expect(f.list()).toEqual([]);
+  });
+
+  it('future PRNM block no longer wanted: deleted (normal reconcile)', async () => {
+    const f = fakeSharetribe({
+      tracked: [['2026-10-05T05:00:00.000Z', '2026-10-06T05:00:00.000Z', '2026-10-05']],
+    });
+    const r = await run(f);
+    expect(r.deleted).toBe(1);
+    expect(f.list()).toEqual([]);
+    expect(trackedAfter(f)).toEqual([]);
+  });
+
+  it('DST: closed days on the 25-hour and 23-hour Chicago days are exact and idempotent', async () => {
+    const ov = { '2026-11-01': { closed: true }, '2027-03-14': { closed: true } };
+    expect(
+      desiredRanges(ov, TZ, NOW).map((d) => [iso(d.start), iso(d.end), (d.end - d.start) / H])
+    ).toEqual([
+      ['2026-11-01T05:00:00.000Z', '2026-11-02T06:00:00.000Z', 25],
+      ['2027-03-14T06:00:00.000Z', '2027-03-15T05:00:00.000Z', 23],
+    ]);
+    const f = fakeSharetribe({ overrides: { '2026-11-01': { open: 9, close: 15 } } });
+    await run(f);
+    // Before 09:00 CST (UTC-6 after fall-back) and after 15:00 CST.
+    expect(f.list().map((x) => [x.start, x.end])).toEqual([
+      ['2026-11-01T05:00:00.000Z', '2026-11-01T15:00:00.000Z'],
+      ['2026-11-01T21:00:00.000Z', '2026-11-02T06:00:00.000Z'],
+    ]);
+    expect(await run(f)).toMatchObject({ created: 0, deleted: 0, kept: 2 });
+  });
+
+  it('planReconcile: nothing that has ended is ever deleted or kept, tracked or not', () => {
+    const plan = planReconcile({
+      actual: [
+        { id: 'prnm-yesterday', start: NOW - 30 * H, end: NOW - 6 * H, seats: 0 },
+        { id: 'prnm-1min', start: NOW - H, end: NOW - 60e3, seats: 0 },
+        { id: 'host-past', start: NOW - 3 * H, end: NOW - 2 * H, seats: 0 },
+      ],
+      desired: [],
+      tracked: new Set(['prnm-yesterday', 'prnm-1min']),
+      nowMs: NOW,
+    });
+    expect(plan.toDelete).toEqual([]);
+    expect(plan.keep).toEqual([]);
   });
 });

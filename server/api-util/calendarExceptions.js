@@ -198,12 +198,26 @@ const reconcileListing = (integrationSdk, listingId, { now = () => Date.now() } 
       }
     }
 
+    // Tracking is history: start from what was tracked and remove only what this
+    // run deleted or re-files. Ids of blocks that have ended (or sit outside the
+    // query window) stay recorded as PRNM-created, so past records keep their
+    // provenance. Stale ids are harmless: ids are never reused.
+    const prevTrack = (attrs.privateData || {})[TRACK_KEY] || {};
+    const refiled = new Set([...deleted, ...plan.keep.map((k) => k.id)]);
     const nextTrack = {};
-    const track = (date, id) => (nextTrack[date] = (nextTrack[date] || []).concat(id));
+    const track = (date, id) => {
+      const ids = nextTrack[date] || [];
+      if (!ids.includes(id)) nextTrack[date] = ids.concat(id);
+    };
+    Object.keys(prevTrack).forEach((date) =>
+      (prevTrack[date] || []).forEach((id) => !refiled.has(id) && track(date, id))
+    );
     // Kept ids stay tracked under the date of the range they satisfy.
     plan.keep.forEach((k) => track(k.date, k.id));
-    // Tracked ids whose delete failed stay tracked so the next save retries them.
-    failed.forEach((f) => track('pending-delete', f.id));
+    // A tracked id whose delete failed stays tracked so the next save retries it
+    // (legacy publicData-only ids get recorded here).
+    const allTracked = () => new Set([].concat(...Object.values(nextTrack)));
+    failed.forEach((f) => f.id && !allTracked().has(f.id) && track('pending-delete', f.id));
 
     const created = [];
     for (const d of plan.toCreate) {

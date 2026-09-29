@@ -87,8 +87,17 @@ deployed c205, 3 on `e019590` alone; 264 jest + 65 bun pass.
   **0 since the flip** — none succeeded and none failed. Booking success under c205 is
   **not yet verified**; check again after the first real booking. (Pre-flip baseline: 0–5/day.)
 - The 144/day 400/404 pairs are the WEST smoke monitor (below), present since 2026-09-14.
-- **Calendar-save path: deployed and passing tests, NOT production-proven** — 0 calls to
-  `/api/calendar-apply-exceptions` since the flip. Needs its first real host save.
+- **Calendar-save path:** correction to the 09-29 note — nginx shows **3 real host saves** on
+  2026-09-28 22:03–22:59Z (new listing "Gulf oasis" 6abaf08c / draft 6abae3a1), all 200. Outcome
+  verified correct: 274 overrides, all empty `{}` rows → 0 desired blocks, 0 exceptions, tracking
+  `{}`. Only the no-op branch has run for real; **create/delete under c205 not yet exercised by a
+  real host.**
+
+### Status (2026-09-29)
+PROVEN IN PRODUCTION: c205 serving live traffic; no c205-attributable server errors; 0 container
+restarts; 13 real price previews, all 200; calendar save no-op branch (3 real saves, correct).
+NOT YET PROVEN BY REAL USER ACTIVITY: booking request creation after c205 (0 real requests);
+calendar save that creates or deletes blocks after c205.
 
 ## Monitor noise — proposal (nothing changed)
 Source: `ubuntu` crontab `*/10 * * * * python3 /home/ubuntu/nginx-smoke-alert.py`
@@ -111,3 +120,77 @@ Proposed (ship with a normal release; then switch the monitor):
 Alternative without a release: a valid transit-encoded `transaction-line-items` request for a
 real listing (read-only speculative pricing, 200) — rejected as primary: couples the monitor to
 one listing's data and adds 144 Sharetribe API calls/day.
+
+## 2026-09-29 — Oct 1 final verified state (no further changes to 6a5db0ae)
+America/Chicago (CDT): PRNM block Oct 1 00:00–05:00 (`6abab79a`, tracked); host block 05:00–06:00
+(`6ab6a56d`, created by the web client, untracked); PRNM block 06:00–Oct 2 00:00 (`6abab79b`,
+tracked). Simulated reopen targets only the two PRNM-owned intervals. No test saves were run.
+
+## Tracking-state scalability (design review before the next release)
+Storage: Sharetribe listing `privateData.prnmCalendarExceptionIds` = `{ "YYYY-MM-DD": [uuid, …] }`.
+Limit (Sharetribe extended-data reference): "the total size of an extended data object as JSON
+string must not exceed 50KB" — the whole `privateData` (also `exactAddress`, `addressHidden*`).
+Every save rewrites the entire key (top-level merge replaces its value).
+
+Measured 2026-09-29 (202 listings): largest = Off The Hwy 6a931da5, **165 ids, 8,911 B** tracking,
+8,999 B privateData. Bytes/id: 54 B at one date per id, 47 B at two (≈39 B/uuid + ≈15 B/date key).
+
+| tracked ids | size | vs 50KB |
+|---:|---:|---|
+| 100 | 4.7–5.4 KB | fine |
+| 1,000 | 47–54 KB | at/over the limit with the other keys |
+| 5,000 | 233–270 KB | rejected |
+| 10,000 | 466–540 KB | rejected |
+
+Growth if every ended id were kept (`4724729` as written): low host (10–20 closed days/yr)
+≈0.5–1 KB/yr; normal (weekend custom hours + some closures, ~120 blocks/yr) ≈6 KB/yr, limit in
+~7 years; heavy (custom hours daily = 730 blocks/yr) ≈34 KB/yr, **limit in ~14 months**. Past
+the limit the tracking write is rejected on every save — calendar enforcement for that listing
+stops, and in `4724729` that save's new blocks are left untracked. **Not bounded → revised
+(`70e3243`) before deployment.**
+
+Revised design — minimum state for the invariant:
+- Never touch past blocks: enforced by time in the planner (ended blocks are neither deleted nor
+  kept, `e019590`) — independent of tracking.
+- Never delete a host block: the planner deletes only tracked ids, and only PRNM ever writes an
+  id (immediately after creating the block). Removing ids can only make PRNM delete less.
+- So ACTIVE tracking = ids of PRNM blocks not yet ended (kept + created + failed deletes). Ended
+  ids, and ids not seen by a complete window query, are dropped; if the query hit its page cap,
+  unseen ids are kept. Bound = PRNM's live blocks within one year: today ≤165; daily custom hours
+  all year = 730 ids ≈ 34 KB.
+- Hard guard: never create a block that cannot be recorded (45 KB privateData budget, nearest
+  dates first, reported as `tracking-budget`); if the tracking write fails, this run's creations
+  are deleted again (no orphans). Tracking shape unchanged → rollback to c205 remains safe.
+- Deployed c205 is window-bounded too (rebuilds from scratch) but lacks the budget guard and the
+  undo; no listing is near the limit (max 8.9 KB).
+
+HISTORICAL PROVENANCE: not needed for the invariant. Sharetribe's event log keeps the creating
+client for 90 days. If longer forensics are wanted: an append-only Supabase table
+(`listing_id, exception_id, start, end, action created|deleted, at, actor`) written on
+create/delete only — grows with activity, outside listing metadata. Not implemented.
+
+Related, not changed: the panel never removes past `dateOverrides` rows (publicData grows the
+same way; largest 4,856 B), and "Gulf oasis" saved 274 empty `{}` rows.
+
+## Health check (prepared for the next release; nothing live changed)
+`GET /api/health/booking` (`server/api/health-booking.js`): runs the real line-item code on a fixed
+synthetic hourly listing and checks cents (2h standard = guest 18,400 / host 16,000; 2h with "3+
+hours" requested = same, tier refused; 3h = 24,150 / 21,000) plus an internal config check.
+Body is exactly `{"ok":true}` (200) or `{"ok":false}` (503); failing check NAMES go to the server
+log only; no values, versions, container or env details ever returned. `no-store`, `noindex`.
+
+Monitor: design B — two probes of the same endpoint, so one code path with unambiguous
+classification. (a) public URL through nginx proves `location /api/` reaches the marketplace (the
+booking endpoints have no per-path nginx rules); (b) only on failure, direct
+`http://<upstream from /etc/nginx/conf.d/main-web.conf>/api/health/booking` → ROUTING if the app is
+healthy, API if not. Verified: the ubuntu user can read the upstream file and reach 127.0.0.1:4000;
+c205 returns 404 for the path today. Prepared as `ops/monitors/west/nginx-smoke-test.next.sh`
+(live copy = repo copy, md5 357e7485…); swap in only after the release is live on MAIN.
+
+## Safe real-world validation
+No authorized test host/guest account or test listing is documented; `CONFIG LISTING - DO NOT
+DELETE` is configuration, not a test listing. Stripe keys are live, so any booking request places a
+real card authorization. Decision: no production transactions to prove the release — wait for
+natural activity and monitor (calendar-apply calls and privileged-transaction 200s in nginx logs).
+If Derek wants a controlled calendar test later: a PRNM-owned account with an unpublished draft
+listing can exercise calendar save safely (no guest can book a draft).

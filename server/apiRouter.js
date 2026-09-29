@@ -42,6 +42,7 @@ const createVerificationSession = require('./api/create-verification-session');
 const checkVerificationStatus = require('./api/check-verification-status');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
+const healthBooking = require('./api/health-booking');
 
 const { authenticateFacebook, authenticateFacebookCallback } = require('./api/auth/facebook');
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
@@ -74,6 +75,8 @@ router.use((req, res, next) => {
 
 // ================ API router endpoints: ================ //
 
+// Monitor probe: {ok} only, no configuration details (see api/health-booking.js).
+router.get('/health/booking', healthBooking);
 router.get('/initiate-login-as', initiateLoginAs);
 router.get('/login-as', loginAs);
 router.post('/transaction-line-items', transactionLineItems);

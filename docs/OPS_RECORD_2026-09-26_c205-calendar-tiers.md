@@ -81,9 +81,11 @@ deployed c205, 3 on `e019590` alone; 264 jest + 65 bun pass.
   `/login` bundle hashes = MAIN's.
 - **0 5xx** in nginx since the flip. One app-log TypeError (`emailVerification.duck`, null
   currentUser during SSR) — pre-existing, not in c205's diff.
-- **Real price previews** (`transaction-line-items`, browser UAs): 200.
-- **Real booking requests** (`initiate-privileged`): 200s continue as before; none since the
-  flip in the 26–28 window checked, earlier days 1–5/day — re-check before claiming.
+- **Real price previews** (`POST /api/transaction-line-items`, non-monitor): **13 since the
+  flip, 13 × 200, 0 failures** (re-counted 2026-09-29, restarts still 0).
+- **Real booking requests** (`initiate-privileged` / `transition-privileged`, non-monitor):
+  **0 since the flip** — none succeeded and none failed. Booking success under c205 is
+  **not yet verified**; check again after the first real booking. (Pre-flip baseline: 0–5/day.)
 - The 144/day 400/404 pairs are the WEST smoke monitor (below), present since 2026-09-14.
 - **Calendar-save path: deployed and passing tests, NOT production-proven** — 0 calls to
   `/api/calendar-apply-exceptions` since the flip. Needs its first real host save.

@@ -56,6 +56,9 @@ people who may be named as company voices.
 `cNNN-name` → **gated flip**: run the new image on `:4000`, re-verify every prior
 release's markers + promo math + payment endpoints, only then move nginx and
 replace MAIN. An abort leaves production untouched. Never skip the gate.
+**Builds must be memory-capped** (`DOCKER_BUILDKIT=0 docker build --memory=2500m --memory-swap=2500m`;
+stop the rollback container while building): an uncapped c206 build OOM-killed MAIN and the box
+was power-cycled, ~11 min down (2026-10-04).
 **"Move nginx" is a file swap, not a container restart:** every marketplace
 `proxy_pass` in `sites-enabled/default` points at `upstream web`, defined in
 `/etc/nginx/conf.d/main-web.conf` (`/home/ubuntu/main-web.conf` = :3000,

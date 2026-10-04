@@ -389,6 +389,13 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       },
     },
     {
+      path: '/operating-ceo',
+      name: 'OperatingCeoPage',
+      loaders: {
+        page: () => import('../containers/OperatingCeoPage/OperatingCeoPage'),
+      },
+    },
+    {
       path: '/host-standards',
       name: 'HostPreparednessPolicyPage',
       loaders: {

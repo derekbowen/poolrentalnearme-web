@@ -43,6 +43,7 @@ const checkVerificationStatus = require('./api/check-verification-status');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
 const healthBooking = require('./api/health-booking');
+const ceoApplication = require('./api/ceo-application');
 
 const { authenticateFacebook, authenticateFacebookCallback } = require('./api/auth/facebook');
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
@@ -109,6 +110,8 @@ router.get('/payouts/summary', payouts.summary);
 router.get('/payouts/list', payouts.list);
 router.get('/payouts/activity', payouts.activity);
 router.post('/notify-signup', bodyParser.json({ limit: '2kb' }), notifySignup);
+// Operating CEO form (/operating-ceo): emails Derek + texts him. See api/ceo-application.js.
+router.post('/ceo-application', bodyParser.json({ limit: '48kb' }), ceoApplication);
 // Listing-wizard client-error beacon (uploads go browser->Sharetribe, so
 // failures are invisible server-side without this). grep WIZARD_LOG.
 router.post('/wizard-log', bodyParser.json({ limit: '4kb' }), wizardLog);

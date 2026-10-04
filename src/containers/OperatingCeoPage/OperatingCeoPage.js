@@ -4,6 +4,7 @@ import TopbarContainer from '../TopbarContainer/TopbarContainer';
 import FooterContainer from '../FooterContainer/FooterContainer';
 import { LayoutComposer, StaticPage } from '../PageBuilder/PageBuilder';
 
+import FutureHero from './FutureHero';
 import css from './OperatingCeoPage.module.css';
 
 // Posting text is Derek's (2026-10-04), word for word. The "term" and "who should
@@ -254,6 +255,7 @@ const OperatingCeoPage = () => (
             <TopbarContainer currentPage="OperatingCeoPage" />
           </Topbar>
           <Main as="main" className={css.main}>
+            <FutureHero />
             <article className={css.article}>
               <p className={css.eyebrow}>Now hiring · 2027</p>
               <h1 className={css.title}>Operating CEO for 2027</h1>

@@ -1,0 +1,76 @@
+/* ─────────────────────────── Hero video ─────────────────────────── */
+
+/**
+ * Background video behind the winter hero (2026-10-14). Built from real PRNM
+ * listing photos (no people, no AI imagery); 18 s seamless loop. Client-only:
+ * the SSR <picture> stays the first paint (LCP) and the video fades in once it
+ * is actually playing. Skipped for prefers-reduced-motion and Save-Data.
+ * Files are static on WEST (/var/www/prnm-tools/hero/, served at /tools/hero/).
+ */
+type VideoSource = { src: string; type: string };
+// Exact codec strings let a browser skip a file it cannot decode (e.g. Chromium
+// builds without H.264) and fall through to the next source instead of stalling.
+const MP4 = 'video/mp4; codecs="avc1.640028"';
+const WEBM = 'video/webm; codecs="vp9"';
+const HERO_VIDEO: Record<"desktop" | "mobile" | "mobileSlow", VideoSource[]> = {
+  desktop: [
+    { src: "/tools/hero/hero-desktop.mp4", type: MP4 },
+    { src: "/tools/hero/hero-desktop.webm", type: WEBM },
+  ],
+  mobile: [
+    { src: "/tools/hero/hero-mobile.webm", type: WEBM },
+    { src: "/tools/hero/hero-mobile.mp4", type: MP4 },
+  ],
+  mobileSlow: [
+    { src: "/tools/hero/hero-mobile-xs.webm", type: WEBM },
+    { src: "/tools/hero/hero-mobile-xs.mp4", type: MP4 },
+  ],
+};
+
+function HeroVideo() {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [sources, setSources] = useState<VideoSource[] | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
+      .connection;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || conn?.saveData) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) {
+      setSources(HERO_VIDEO.desktop);
+    } else {
+      setSources(/(^|-)(2g|3g)$/.test(conn?.effectiveType ?? "") ? HERO_VIDEO.mobileSlow : HERO_VIDEO.mobile);
+    }
+  }, []);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || !sources) return;
+    v.muted = true; // iOS autoplays only muted video; React does not always set the attribute
+    v.play().catch(() => {}); // autoplay refused: the photo simply stays
+  }, [sources]);
+
+  if (!sources) return null;
+  return (
+    <video
+      ref={ref}
+      aria-hidden="true"
+      tabIndex={-1}
+      muted
+      loop
+      playsInline
+      autoPlay
+      preload="auto"
+      disablePictureInPicture
+      onPlaying={() => setPlaying(true)}
+      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+        playing ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      {sources.map((s) => (
+        <source key={s.src} src={s.src} type={s.type} />
+      ))}
+    </video>
+  );
+}
+

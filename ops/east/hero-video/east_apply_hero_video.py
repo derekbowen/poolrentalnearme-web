@@ -1,24 +1,29 @@
-"""EAST step: add the background video to the winter homepage hero.
+"""EAST: homepage hero video, one self-contained deploy (Derek, 2026-10-15: "Put the video on EAST").
 
-Run with ops/runners/east_runx.py. Smallest diff: inserts the HeroVideo
-component (fetched from this public repo at a PINNED commit, sha256-checked)
-above WinterHero and one <HeroVideo /> line after the hero's </picture>.
-Nothing else in the page changes; the SSR image stays as the first paint.
+Run with ops/runners/east_runx.py. From this public repo at a PINNED commit it
+fetches the component, its imports and the six video files (all hash-checked),
+puts the videos in src/assets/hero/ (Vite emits them hashed under /fw-assets/),
+and patches src/components/home-page-winter.tsx at three exact anchors: the
+imports after the paradise-hero-mobile import, the component above WinterHero,
+and <HeroVideo /> after the hero's </picture>. Nothing else changes.
 
-DRY=True (default): read-only. Checks every anchor, prints the diff, memory
-and pm2 state. DRY=False: backup, patch, build, restart, verify; on any build
-or verify failure it restores the backup, rebuilds and restarts.
+DRY=True (default): read-only; checks anchors, prints the diff, memory, pm2.
+DRY=False: backup, patch, build, require HTTP 206 on a byte-range request for
+the built video (Safari will not play without it), restart, verify. Any
+failure restores the backup, removes the videos, rebuilds and restarts.
 """
 import difflib, hashlib, os, pwd, re, shlex, shutil, subprocess, sys, time, urllib.request
 
 DRY = True
-SHA = "354112dcca509a486560c2b66529d9f378f4f630"
-SNIP_SHA256 = "15817e218ae3c301ae877aba02a6cd1210cf03d1b23bd5f6f54d2e25496251f3"
+SHA = "REPLACE_WITH_COMMIT_SHA"
+SUMS = {}  # repo path -> sha256, filled at pin time
 APP = "/home/ubuntu/fresh-web"
 SRC = APP + "/src/components/home-page-winter.tsx"
-SNIP_URL = ("https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/"
-            "ops/east/hero-video/HeroVideo.tsx.snippet" % SHA)
-SITE = "https://www.poolrentalnearme.com/"
+ASSETS = APP + "/src/assets/hero"
+RAW = "https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/ops/east/hero-video/" % SHA
+SITE = "https://www.poolrentalnearme.com"
+IMP_ANCHOR = 'import heroMobile from "@/assets/paradise-hero-mobile.webp";\n'
+FN = "function WinterHero() {\n"
 
 
 def sh(cmd, timeout=900):
@@ -30,41 +35,49 @@ def as_ubuntu(cmd, timeout=900):
     return sh("sudo -u ubuntu PM2_HOME=/home/ubuntu/.pm2 bash -lc %s" % shlex.quote(cmd), timeout)
 
 
-if "REPLACE" in SHA or "REPLACE" in SNIP_SHA256:
-    sys.exit("refusing: SHA/SNIP_SHA256 not filled in")
-snippet = urllib.request.urlopen(SNIP_URL, timeout=60).read()
-if hashlib.sha256(snippet).hexdigest() != SNIP_SHA256:
-    sys.exit("ABORT: snippet sha256 mismatch")
-snippet = snippet.decode()
+def fetch(path):
+    data = urllib.request.urlopen(RAW + path, timeout=120).read()
+    if hashlib.sha256(data).hexdigest() != SUMS.get(path):
+        sys.exit("ABORT: sha256 mismatch on %s; nothing changed" % path)
+    return data
+
+
+if "REPLACE" in SHA or len(SUMS) != 8:
+    sys.exit("refusing: SHA/SUMS not filled in")
+snippet = fetch("HeroVideo.tsx.snippet").decode()
+imports = fetch("HeroVideo.imports.snippet").decode()
+videos = {p.split("/")[-1]: fetch(p) for p in SUMS if p.startswith("files/")}
+print("fetched + verified:", ", ".join("%s %dKB" % (k, len(v) // 1024) for k, v in videos.items()))
 
 s = open(SRC).read()
 print("src sha256", hashlib.sha256(s.encode()).hexdigest()[:16], "bytes", len(s))
-fn = "function WinterHero() {\n"
-problems = []
+bad = []
 if "HeroVideo" in s:
-    problems.append("HeroVideo already present")
-first = s.splitlines()[0] if s else ""
-if not all(h in first for h in ("useEffect", "useRef", "useState")):
-    problems.append("import line lacks useEffect/useRef/useState: %r" % first)
-if s.count(fn) != 1:
-    problems.append("WinterHero anchor count %d" % s.count(fn))
-start = s.find(fn)
-nxt = s.find("\nfunction ", start + len(fn))
-body = s[start:nxt if nxt > 0 else len(s)]
-pics = [m.start() for m in re.finditer(r"\n([ \t]*)</picture>\n", body)]
-if len(pics) != 1:
-    problems.append("</picture> inside WinterHero: %d (need 1)" % len(pics))
-if problems:
-    sys.exit("ABORT, nothing changed: " + "; ".join(problems))
+    bad.append("HeroVideo already present")
+if not all(h in s.splitlines()[0] for h in ("useEffect", "useRef", "useState")):
+    bad.append("first import lacks useEffect/useRef/useState")
+for a in (IMP_ANCHOR, FN):
+    if s.count(a) != 1:
+        bad.append("anchor %r count %d" % (a.strip(), s.count(a)))
+if os.path.exists(ASSETS):
+    bad.append(ASSETS + " already exists")
+if not bad:
+    start = s.find(FN)
+    nxt = s.find("\nfunction ", start + len(FN))
+    body = s[start:nxt if nxt > 0 else len(s)]
+    pics = list(re.finditer(r"\n([ \t]*)</picture>\n", body))
+    if len(pics) != 1:
+        bad.append("</picture> inside WinterHero: %d" % len(pics))
+if bad:
+    sys.exit("ABORT, nothing changed: " + "; ".join(bad))
 
-m = re.search(r"\n([ \t]*)</picture>\n", body)
-indent = m.group(1)
-new_body = body[:m.end()] + indent + "<HeroVideo />\n" + body[m.end():]
-new = s[:start] + snippet + new_body + s[start + len(body):]
-diff = "".join(difflib.unified_diff(s.splitlines(True), new.splitlines(True), "a/" + SRC, "b/" + SRC, n=2))
-print(diff[:6000])
-print(sh("free -m")[1])
-print(as_ubuntu("pm2 jlist | python3 -c \"import json,sys;[print(p['name'],p['pm2_env']['status'],p['pm2_env'].get('restart_time')) for p in json.load(sys.stdin)]\"")[1])
+m = pics[0]
+body2 = body[:m.end()] + m.group(1) + "<HeroVideo />\n" + body[m.end():]
+new = s[:start] + snippet + body2 + s[start + len(body):]
+new = new.replace(IMP_ANCHOR, IMP_ANCHOR + imports, 1)
+print("".join(difflib.unified_diff(s.splitlines(True), new.splitlines(True), "a", "b", n=1))[:5000])
+print(sh("free -m; df -h %s | tail -1" % APP)[1])
+print(as_ubuntu("pm2 jlist | python3 -c \"import json,sys;[print(p['name'],p['pm2_env']['status']) for p in json.load(sys.stdin)]\"")[1])
 if DRY:
     sys.exit("DRY RUN: anchors OK, nothing changed")
 
@@ -74,45 +87,55 @@ shutil.copy2(SRC, bak)
 u = pwd.getpwnam("ubuntu")
 
 
-def write(path, text):
-    open(path, "w").write(text)
+def put(path, data, mode="w"):
+    with open(path, mode) as f:
+        f.write(data)
     os.chown(path, u.pw_uid, u.pw_gid)
 
 
-def build_restart():
+def build():
     rc, out = as_ubuntu("cd %s && NODE_OPTIONS=--max-old-space-size=1536 npm run build" % APP)
-    print("build rc", rc, "\n", out[-1500:])
-    if rc != 0:
-        return False
-    rc, out = as_ubuntu("pm2 restart fresh-web")
-    print("restart rc", rc)
+    print("build rc", rc, out[-1200:])
+    return rc == 0
+
+
+def restart():
+    rc, _ = as_ubuntu("pm2 restart fresh-web")
     time.sleep(8)
     return rc == 0
 
 
-def verify():
-    rc, html = sh("curl -s -m 25 '%s?hv=%s'" % (SITE, ts))
-    if "Swim all winter." not in html:
-        print("verify: H1 missing")
+def range_ok():
+    rc, f = sh("find %s/dist -name 'hero-desktop-*.mp4' | head -1" % APP)
+    name = os.path.basename(f.strip())
+    if not name:
+        print("built video not found in dist")
         return False
-    bundles = sorted(set(re.findall(r'/fw-assets/[A-Za-z0-9_.-]+\.js', html)))
-    for b in bundles:
-        rc, js = sh("curl -s -m 25 https://www.poolrentalnearme.com%s" % b)
-        if "/tools/hero/hero-desktop.mp4" in js:
-            print("verify: video wired in", b)
-            return True
-    # component may sit in a lazily imported chunk; search the build output on disk too
-    rc, out = sh("grep -rl '/tools/hero/hero-desktop.mp4' %s/dist 2>/dev/null | head -3" % APP)
-    print("verify: on-disk chunks:", out.strip() or "none")
-    return bool(out.strip())
+    rc, out = sh("curl -s -o /dev/null -m 30 -r 0-1023 -w '%%{http_code} %%{content_type}' %s/fw-assets/%s" % (SITE, name))
+    print("range check", name, "->", out)
+    return out.startswith("206") and "video/mp4" in out
 
 
-write(SRC, new)
-if build_restart() and verify():
+def home_ok():
+    rc, html = sh("curl -s -m 25 '%s/?hv=%s'" % (SITE, ts))
+    return "Swim all winter." in html
+
+
+os.makedirs(ASSETS)
+os.chown(ASSETS, u.pw_uid, u.pw_gid)
+for name, data in videos.items():
+    put(os.path.join(ASSETS, name), data, "wb")
+put(SRC, new)
+ok = build()
+if ok and not range_ok():
+    ok = restart() and range_ok()   # the old process may not serve new dist files yet
+if ok:
+    ok = restart() and home_ok() and range_ok()
+if ok:
     print("DONE. backup:", bak)
     sys.exit(0)
 print("FAILED -> rolling back to", bak)
-write(SRC, open(bak).read())
-ok = build_restart()
-print("rollback build/restart ok:", ok, "| homepage H1 present:", "Swim all winter." in sh("curl -s -m 25 " + SITE)[1])
+put(SRC, open(bak).read())
+shutil.rmtree(ASSETS, ignore_errors=True)
+print("rollback build ok:", build(), "| restart ok:", restart(), "| homepage ok:", home_ok())
 sys.exit(1)

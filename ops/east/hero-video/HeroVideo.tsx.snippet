@@ -5,7 +5,8 @@
  * listing photos (no people, no AI imagery); 18.5 s seamless loop. Client-only:
  * the SSR <picture> stays the first paint (LCP) and the video fades in once it
  * is actually playing. Skipped for prefers-reduced-motion and Save-Data.
- * Files are static on WEST (/var/www/prnm-tools/hero/, served at /tools/hero/).
+ * The files live in src/assets/hero/ and ship in this app's own build
+ * (hashed under /fw-assets/), so the whole change is one EAST deploy.
  */
 type VideoSource = { src: string; type: string };
 // Exact codec strings let a browser skip a file it cannot decode (e.g. Chromium
@@ -14,16 +15,16 @@ const MP4 = 'video/mp4; codecs="avc1.640028"';
 const WEBM = 'video/webm; codecs="vp9"';
 const HERO_VIDEO: Record<"desktop" | "mobile" | "mobileSlow", VideoSource[]> = {
   desktop: [
-    { src: "/tools/hero/hero-desktop.mp4", type: MP4 },
-    { src: "/tools/hero/hero-desktop.webm", type: WEBM },
+    { src: heroDesktopMp4, type: MP4 },
+    { src: heroDesktopWebm, type: WEBM },
   ],
   mobile: [
-    { src: "/tools/hero/hero-mobile.webm", type: WEBM },
-    { src: "/tools/hero/hero-mobile.mp4", type: MP4 },
+    { src: heroMobileWebm, type: WEBM },
+    { src: heroMobileMp4, type: MP4 },
   ],
   mobileSlow: [
-    { src: "/tools/hero/hero-mobile-xs.webm", type: WEBM },
-    { src: "/tools/hero/hero-mobile-xs.mp4", type: MP4 },
+    { src: heroMobileXsWebm, type: WEBM },
+    { src: heroMobileXsMp4, type: MP4 },
   ],
 };
 

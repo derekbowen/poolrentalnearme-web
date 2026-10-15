@@ -1,4 +1,4 @@
-"""Render a looping hero video from PRNM listing photos (v2).
+"""Render a looping hero video from PRNM listing photos (v3).
 
 Usage: python3 render.py <desktop|mobile> <ffmpeg output args...>
 
@@ -17,28 +17,31 @@ from PIL import Image, ImageCms, ImageOps, ImageStat
 FPS = 30
 
 # (image id, start scale, end scale, start center, end center); scale 1.0 = largest crop
+# v3 (2026-10-14 second review): 095/161/042 dropped (hoses in the water, soft source);
+# five shots at ~4 s each with ~4-5% zoom.
 DESKTOP = [
-    ('042', 0.94, 0.88, (0.44, 0.55), (0.52, 0.56)),
-    ('124', 0.96, 0.89, (0.42, 0.50), (0.46, 0.54)),
-    ('161', 0.95, 0.88, (0.58, 0.52), (0.52, 0.55)),
-    ('160', 1.00, 0.92, (0.50, 0.66), (0.52, 0.68)),
-    ('095', 0.94, 0.87, (0.50, 0.55), (0.46, 0.58)),
-    ('191', 0.94, 0.88, (0.52, 0.52), (0.56, 0.56)),
+    ('006', 0.97, 0.92, (0.50, 0.55), (0.53, 0.58)),
+    ('124', 0.98, 0.93, (0.44, 0.56), (0.47, 0.58)),
+    ('160', 1.00, 0.95, (0.50, 0.70), (0.52, 0.71)),
+    ('080', 0.97, 0.92, (0.50, 0.50), (0.48, 0.48)),
+    ('191', 0.97, 0.92, (0.52, 0.52), (0.55, 0.55)),
 ]
 MOBILE = [
-    ('042', 1.00, 0.93, (0.42, 0.55), (0.46, 0.56)),
-    ('124', 1.00, 0.93, (0.38, 0.52), (0.42, 0.54)),
-    ('161', 1.00, 0.93, (0.62, 0.55), (0.58, 0.56)),
-    ('160', 1.00, 0.93, (0.56, 0.60), (0.54, 0.62)),
-    ('095', 1.00, 0.93, (0.40, 0.58), (0.44, 0.60)),
-    ('191', 1.00, 0.93, (0.48, 0.55), (0.52, 0.57)),
+    ('006', 1.00, 0.95, (0.48, 0.55), (0.52, 0.57)),
+    ('124', 1.00, 0.95, (0.42, 0.55), (0.45, 0.56)),
+    ('160', 1.00, 0.95, (0.56, 0.60), (0.54, 0.62)),
+    ('080', 1.00, 0.95, (0.45, 0.50), (0.48, 0.50)),
+    ('191', 1.00, 0.95, (0.62, 0.55), (0.65, 0.57)),
 ]
 PRESETS = {
-    'desktop': dict(size=(1920, 1080), shots=DESKTOP, clip=3.5, fade=0.5),
-    'mobile': dict(size=(720, 1280), shots=MOBILE, clip=3.5, fade=0.5),
+    'desktop': dict(size=(1920, 1080), shots=DESKTOP, clip=4.2, fade=0.5),
+    'mobile': dict(size=(720, 1280), shots=MOBILE, clip=4.2, fade=0.5),
 }
-DIP = 0.12       # brightness dip at the middle of each dissolve
-LOOP_DIP = 0.30  # deeper dip for night -> day at the loop point
+DIP = 0.03       # brightness dip at the middle of each dissolve
+LOOP_DIP = 0.15  # gentler dip for night -> day at the loop point
+# Start (and therefore loop) 2 s into the first shot, mid-pan, so the loop point is
+# not at the end of a dissolve where encoders starve the last frames.
+OFFSET = 2.0
 SRGB = ImageCms.createProfile('sRGB')
 
 
@@ -90,8 +93,9 @@ def frame_of(shot, img, size, u, clip):
     b = crop_box(img, aspect, s1, c1)
     p = max(0.0, min(1.0, u / clip))   # ... then move at constant speed between them
     x, y, w, h = (a[i] + (b[i] - a[i]) * p for i in range(4))
-    return img.transform(size, Image.Transform.EXTENT, (x, y, x + w, y + h),
-                         resample=Image.Resampling.BICUBIC)
+    # resize() with a float box keeps sub-pixel positioning and, unlike
+    # transform(EXTENT), antialiases the 0.8-0.9x downscale (less shimmer).
+    return img.resize(size, Image.Resampling.LANCZOS, box=(x, y, x + w, y + h))
 
 
 def smooth(a):
@@ -114,8 +118,8 @@ def main():
          '-color_range', 'tv'] + ff_args,
         stdin=subprocess.PIPE)
     for k in range(frames):
-        # Start at t=fade so the first frame equals the frame right after the loop point.
-        t = fade + k / FPS
+        # Start past the first dissolve; frames wrap round so the loop stays seamless.
+        t = fade + OFFSET + k / FPS
         i = int(t // step)
         u = t - i * step
         cur = frame_of(shots[i % n], imgs[i % n], size, u, clip)

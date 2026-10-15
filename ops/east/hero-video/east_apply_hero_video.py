@@ -15,8 +15,17 @@ failure restores the backup, removes the videos, rebuilds and restarts.
 import difflib, hashlib, os, pwd, re, shlex, shutil, subprocess, sys, time, urllib.request
 
 DRY = True
-SHA = "REPLACE_WITH_COMMIT_SHA"
-SUMS = {}  # repo path -> sha256, filled at pin time
+SHA = "90f641d05b71fff4d844ccfd15278210b400d294"
+SUMS = {  # repo path -> sha256 at SHA
+    "HeroVideo.tsx.snippet": "24aba6c690239e5aacb1ef15d91641f650a4c944f3c47ca1d8b64989cd069144",
+    "HeroVideo.imports.snippet": "454c8b19aece9ca09d33a3fc172dfd4ce3e4c376b9f97e7e7ba59e016d67c50e",
+    "files/hero-desktop.mp4": "4075aee7122ca9858f07a71bbf7690709d9ad5991002d86dae9c7e77dee9b8e8",
+    "files/hero-desktop.webm": "234da3e5d5d615cc63531ab04b45e4d4bbd8a7fe96b651ee3b23deeca107d482",
+    "files/hero-mobile.mp4": "8ac00819f673a2fc8ac647b14277414c2641bcafe8bb5e24b8e3802f88c00883",
+    "files/hero-mobile.webm": "aa9bc36b10e5004f79b5fbd3f3c37efa43e6967f6e7b8d49a6dc15eafc075a24",
+    "files/hero-mobile-xs.mp4": "d08569787cb4c961022061b7f5daa5ef60f0658d7f46f586fc7b1e0c6f32796f",
+    "files/hero-mobile-xs.webm": "911a4bb21ad0dc5fe5511fd1b7822a92330c4c08b53a5b75ef0097e07d2b9b5c",
+}
 APP = "/home/ubuntu/fresh-web"
 SRC = APP + "/src/components/home-page-winter.tsx"
 ASSETS = APP + "/src/assets/hero"

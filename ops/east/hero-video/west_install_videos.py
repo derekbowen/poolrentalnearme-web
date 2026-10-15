@@ -11,11 +11,16 @@ reports; DRY=False installs (atomic rename per file, previous copies kept as
 import hashlib, os, shutil, subprocess, sys, time, urllib.request
 
 DRY = True
-SHA = "REPLACE_WITH_COMMIT_SHA"
+SHA = "354112dcca509a486560c2b66529d9f378f4f630"
 BASE = "https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/ops/east/hero-video/files/" % SHA
 DEST = "/var/www/prnm-tools/hero"
 FILES = {  # name: md5  (filled from `md5sum ops/east/hero-video/files/*`)
-    "REPLACE": "REPLACE",
+    "hero-desktop.mp4": "b39cfffda6742e55cce959f50e71475b",
+    "hero-desktop.webm": "73c76ba471a69c7755392ad0c792839a",
+    "hero-mobile.webm": "e5db4d60d921af48e7c2cf1b58c3302a",
+    "hero-mobile.mp4": "47925d083ac16fb60f5e9f5de53e7010",
+    "hero-mobile-xs.webm": "6f41509ff33443a1f4f32b39afce9cac",
+    "hero-mobile-xs.mp4": "dcb2e5f016b83cb51f6eea408fd2abed",
 }
 
 if "REPLACE" in SHA or "REPLACE" in FILES:

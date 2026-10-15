@@ -55,7 +55,7 @@ The benchmark is Swimply's hero: desktop 1920×1080, 18 s, 3.7 MB; mobile 360×6
 
 ## Ship order (needs `PRNM_AWS_*` in the environment)
 
-1. Commit and push these files. Note the commit SHA, the md5s of `files/*` and the sha256 of `HeroVideo.tsx.snippet`.
+1. Done 2026-10-15: both scripts are pinned to commit `354112dc` (files + snippet), with the md5s and sha256 filled in.
 2. **WEST.** Fill `SHA` and `FILES` in `west_install_videos.py`, then run `python3 ops/runners/ssm_runx.py ops/east/hero-video/west_install_videos.py`.
    1. Run it once with `DRY=True`: it downloads and md5-verifies the files without installing anything.
    2. Run it again with `DRY=False`: it installs atomically, then checks 200 + `video/*` + range 206 through local nginx.

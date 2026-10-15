@@ -12,8 +12,8 @@ or verify failure it restores the backup, rebuilds and restarts.
 import difflib, hashlib, os, pwd, re, shlex, shutil, subprocess, sys, time, urllib.request
 
 DRY = True
-SHA = "REPLACE_WITH_COMMIT_SHA"
-SNIP_SHA256 = "REPLACE_WITH_SNIPPET_SHA256"
+SHA = "354112dcca509a486560c2b66529d9f378f4f630"
+SNIP_SHA256 = "15817e218ae3c301ae877aba02a6cd1210cf03d1b23bd5f6f54d2e25496251f3"
 APP = "/home/ubuntu/fresh-web"
 SRC = APP + "/src/components/home-page-winter.tsx"
 SNIP_URL = ("https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/"

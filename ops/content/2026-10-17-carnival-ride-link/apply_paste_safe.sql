@@ -1,0 +1,42 @@
+with s(sec) as (select convert_from(decode('
+IyMjIFBsYW5uaW5nIGEgTGFyZ2VyIENlbGVicmF0aW9uIFdpdGggU2V2ZXJhbCBLaW5kcyBvZiBF
+bnRlcnRhaW5tZW50CgpNaWxlc3RvbmUgYmlydGhkYXlzLCBmYW1pbHkgcmV1bmlvbnMsIGdyYWR1
+YXRpb24gcGFydGllcyBhbmQgY29tcGFueSBwaWNuaWNzIG9mdGVuIGNhbGwgZm9yIG1vcmUgdGhh
+biBvbmUga2luZCBvZiBlbnRlcnRhaW5tZW50LiBBIGxpdHRsZSBleHRyYSBwbGFubmluZyBrZWVw
+cyBlYWNoIHBpZWNlIGluIHRoZSByaWdodCBwbGFjZS4KCiogICAqKllvdXIgUG9vbCBhcyB0aGUg
+VmVudWU6KiogQSBwcml2YXRlIHBvb2wgcmVudGFsIGdpdmVzIHlvdXIgZ3JvdXAgYSBwbGFjZSB0
+byBzd2ltIGFuZCBnYXRoZXIgd2l0aG91dCBzaGFyaW5nIHRoZSBzcGFjZSB3aXRoIHRoZSBwdWJs
+aWMuIEJlZm9yZSBhZGRpbmcgYW55dGhpbmcgZWxzZSwgbWVzc2FnZSB0aGUgaG9zdCB0byBjb25m
+aXJtIHRoZSBndWVzdCBsaW1pdCwgcGFya2luZywgYW5kIHdoZXRoZXIgb3V0c2lkZSB2ZW5kb3Jz
+IG9yIGVxdWlwbWVudCBhcmUgYWxsb3dlZC4KKiAgICoqTWF0Y2ggQXR0cmFjdGlvbnMgdG8gdGhl
+IFNwYWNlOioqIFRoZSBsYXduIGdhbWVzIGFuZCBwaG90byB3YWxsIGFib3ZlIGZpdCBtb3N0IGJh
+Y2t5YXJkIHBvb2xzLiBDYXJuaXZhbCByaWRlcyBuZWVkIG9wZW4sIGZpcm0gYW5kIHJlYXNvbmFi
+bHkgbGV2ZWwgZ3JvdW5kLCBjbGVhcmFuY2UgYXJvdW5kIGFuZCBhYm92ZSBlYWNoIHJpZGUsIHRy
+dWNrIGFjY2VzcyBmb3IgZGVsaXZlcnkgYW5kIG9mdGVuIGEgcG93ZXIgc3VwcGx5LCBzbyB0aGV5
+IGFyZSBub3Qgc29tZXRoaW5nIHRvIGJyaW5nIHRvIGEgdHlwaWNhbCBiYWNreWFyZCBwb29sIHJl
+bnRhbC4gVGhleSBzdWl0IHBhcmtzLCBmYWlyZ3JvdW5kcywgc2Nob29sIGdyb3VuZHMgb3IgZGVk
+aWNhdGVkIGV2ZW50IHNwYWNlcy4KKiAgICoqQm9vayBSaWRlcyBTZXBhcmF0ZWx5OioqIEZvciBh
+IHN1aXRhYmx5IHNpemVkIGV2ZW50IGF0IG9uZSBvZiB0aG9zZSB2ZW51ZXMsIFtDYXJuaXZhbCBS
+aWRlIFJlbnRhbF0oaHR0cHM6Ly9jYXJuaXZhbHJpZGVyZW50YWwudXMvKSBpcyBhIGRpcmVjdG9y
+eSB0aGF0IGNvbm5lY3RzIGV2ZW50IG9yZ2FuaXplcnMgd2l0aCBjYXJuaXZhbCByaWRlIG9wZXJh
+dG9ycy4gQ29uZmlybSBhdmFpbGFiaWxpdHksIHNldHVwIGFuZCB0ZWFyZG93biB0aW1lcywgYW5k
+IGFueSBwZXJtaXRzIHdpdGggdGhlIG9wZXJhdG9yIGFuZCB0aGUgdmVudWUgYmVmb3JlIHlvdSBh
+bm5vdW5jZSByaWRlcyB0byBndWVzdHMuCiogICAqKk9uZSBTaGFyZWQgU2NoZWR1bGU6KiogSWYg
+eW91ciBjZWxlYnJhdGlvbiBzcGFucyBtb3JlIHRoYW4gb25lIHBsYWNlLCBzdWNoIGFzIHJpZGVz
+IGF0IGEgcGFyayBvbiBTYXR1cmRheSBhbmQgYSBzbWFsbGVyIGZhbWlseSBzd2ltIGF0IGEgcmVu
+dGFsIHBvb2wgb24gU3VuZGF5IGFmdGVybm9vbiwgZ2l2ZSBndWVzdHMgYSBzaW5nbGUgdGltZWxp
+bmUgd2l0aCBlYWNoIGFkZHJlc3MgYW5kIHN0YXJ0IHRpbWUsIGFuZCBrZWVwIHRoZSBwb29sIGd1
+ZXN0IGxpc3Qgd2l0aGluIHRoZSBsaXN0aW5nJ3MgbGltaXQu
+', 'base64'), 'UTF8')),
+u as (
+  update public.blog_posts b
+  set content = replace(b.content, E'\n\n## Frequently Asked Questions (FAQ)\n', E'\n\n' || s.sec || E'\n\n## Frequently Asked Questions (FAQ)\n')
+  from s
+  where b.id = '4896391d-5f21-457f-bedb-2c9b5a4b7f5f'
+    and md5(b.content) = '9f550652a68aa3f808f7f294da60e70b'
+    and md5(replace(b.content, E'\n\n## Frequently Asked Questions (FAQ)\n', E'\n\n' || s.sec || E'\n\n## Frequently Asked Questions (FAQ)\n')) = 'be8daa2489fbb57d13fdac8755d098c1'
+  returning b.id
+)
+select (select count(*) from u) as rows_updated,
+       (select md5(sec) from s) as section_md5,
+       (select md5(content) from public.blog_posts where id = '4896391d-5f21-457f-bedb-2c9b5a4b7f5f') as article_md5_before;

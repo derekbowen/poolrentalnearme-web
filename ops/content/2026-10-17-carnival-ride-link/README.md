@@ -1,4 +1,10 @@
-# Editorial link to Carnival Ride Rental (2026-10-17) — prepared, not yet applied
+# Editorial link to Carnival Ride Rental (2026-10-17) — APPLIED
+
+**Applied** 2026-10-17 15:39:27 UTC by Derek in the Supabase SQL editor with `apply_paste_safe.sql`.
+- Row md5 is now `be8daa24…`, identical to `after.md`.
+- `verify.py` passed: canonical, H2s and JSON-LD unchanged; the new H3 and exactly one
+  `<a href="https://carnivalriderental.us/">Carnival Ride Rental</a>` present.
+- `Article.dateModified` is now `2026-10-17T15:39:27.465Z`.
 
 **Article:** https://www.poolrentalnearme.com/p/how-to-host-a-pool-party
 (Supabase `qbzpjsiahqgyoazjurqy`, table `blog_posts`, id `4896391d-5f21-457f-bedb-2c9b5a4b7f5f`, markdown in `content`).
@@ -28,4 +34,4 @@
    - The page is DB-driven SSR on EAST, so no build or deploy is needed. Cloudflare revalidates it (`cf-cache-status: EXPIRED`).
 3. Undo with `rollback.sql`. It is guarded the same way in reverse and restores `before.md` byte for byte.
 
-**Why it is not applied yet:** the Supabase connector in the Claude session ran reads, and a zero-row update, instantly. Both attempts at the real update timed out at 60 s with no change and nothing left running or locked. That looks like a write confirmation that was never answered.
+**Why it was applied by hand:** the Supabase connector in the Claude session ran reads, and a zero-row update, instantly. Both attempts at the real update timed out at 60 s with no change and nothing left running or locked. That looks like a write confirmation that was never answered.

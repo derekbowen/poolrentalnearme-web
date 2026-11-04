@@ -1,6 +1,6 @@
 # Remove Intercom (2026-11-04)
 
-**Update, 2026-11-04:** Derek cancelled Intercom. The data export and the steps below were not confirmed beforehand. Open items: the Messenger account-deletion request (conversation 215476434168732, open since 2026-10-16), plus the DNS, Zapier, Make and Claude-connector cleanups.
+**Update, 2026-11-04:** Derek cancelled Intercom. The subscription ends **2026-11-18**; the workspace and its data stay reachable until then. The data export and the steps below were not confirmed beforehand. Open items: the Messenger account-deletion request (conversation 215476434168732, open since 2026-10-16), plus the DNS, Zapier, Make and Claude-connector cleanups.
 
 Derek: "REMOVE INTERCOM FROM MY ENTIRE SYSTEM." The map of every touchpoint is in
 `docs/INTERCOM_DEPENDENCY_AUDIT.md`.

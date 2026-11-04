@@ -50,3 +50,24 @@ Workspace "PRNM CORP", app id `nuuc4281`. Operator returned 403, so the findings
 6. Release the SMS/WhatsApp numbers.
 7. Delete the workspace (Settings → Workspace → General; not possible during an annual contract; data is gone within 14 days).
 8. Remove the DNS CNAME, the Zapier connection, the Make scenarios/token and the Claude connector.
+
+## Deployed 2026-11-04
+
+**WEST: release c207-no-intercom, flipped 07:36:03Z.**
+- The 5 build-tree files matched the repo's pre-change versions by md5. They were replaced with the commit 41947bf versions (sha256-pinned). The two extension folders were moved to `/home/ubuntu/backup-c207/`. `package.json` was not shipped.
+- Build: memory-capped, 138 build-stage tests pass.
+- Gate passed: every carried-forward check plus the new c207 block (no Intercom in the bundle, /login, the CSP or the landing page; the Text Derek card renders).
+- Live now: c207 on :4000. Rollback is `c206-ceo-cal-health` on :3000.
+- Scripts: `ops/west/c207/patch_c207.py`; on the box, `build/gate/flip-c207.sh` (generated from c206).
+
+**EAST: live 07:36Z.**
+- EAST had drifted from the fresh-web repo. On the box, `__root.tsx` lazy-loaded the widget on every non-admin page, and `home-page.tsx` booted it again with the hardcoded `nuuc4281`. Both were removed at exact anchors, gated on md5, by `ops/east/remove-intercom/east_remove_intercom.py`.
+- The first attempt OOMed at a 1536 MB node heap. The automatic rollback restored the source, and the live site stayed 200 throughout. The retry at 4096 MB passed.
+- Backup: `/home/ubuntu/backup-east-remove-intercom-20261104T073643Z`.
+- `stamp-build` noted 3 more uncommitted files on the box (`listing-sync.server.ts`, `sharetribe.server.ts`, `lib/listing-slug.ts`). They were already in the previous build (no source newer than the last dist), so nothing new shipped.
+- Left on EAST, inert without Intercom: `hooks/intercom.ts` and `hooks/intercom-sync.ts`, `intercom-sync.server.ts`, `lib/intercom.server.ts`, the email-queue pause, the `site-layout.tsx` hide-launcher effect, and the unused `intercom-widget.tsx` file.
+- The fresh-web repo branch `claude/remove-intercom` does not match EAST and should not be deployed as is.
+
+**Live check after both deploys:** `/`, two `/p/` guides, `/login` and `/s` all return 200, with 0 Intercom references in the HTML or any referenced JS. The CSP has no Intercom.
+
+**AWS:** deployed with a key on IAM user `clsasude` (AdministratorAccess). The secret was pasted into chat, so the key must be deleted.

@@ -104,7 +104,7 @@ for p, s in out.items():
 
 
 def build():
-    rc, o = as_ubuntu("cd %s && NODE_OPTIONS=--max-old-space-size=4096 npm run build" % APP)
+    rc, o = as_ubuntu("cd %s && NODE_OPTIONS=--max-old-space-size=3072 npm run build" % APP)
     print("build rc", rc, o[-600:])
     return rc == 0
 

@@ -76,3 +76,9 @@ Workspace "PRNM CORP", app id `nuuc4281`. Operator returned 403, so the findings
 - To restore admin: attach AdministratorAccess to `clsasude` in the IAM console.
 - AWS bill review (read-only): about $165/mo. prod t3.medium ≈ $50, **unused test t3.medium `poolrentalnearme-test` (i-0c5a4f9c653c3bc82, idle since June, test.poolrentalnearme.com returns 401) ≈ $44**, EAST t3.large ≈ $67, snapshots ≈ $3.5. Sharetribe email templates in `ext/transaction-processes/*` fall back to test.poolrentalnearme.com for the privacy/terms links; fix separately.
 - **2026-11-04: test server `poolrentalnearme-test` (i-0c5a4f9c653c3bc82) STOPPED** on Derek's go. It was stopped, not terminated, and the 30 GB volume and Elastic IP 13.56.89.89 are kept. Restart it from EC2 → Instances → Start. The live site checked 200 afterwards. Saves about $37/mo in instance hours. The disk and IP still cost about $6.60/mo until the server is terminated and the IP released.
+- **2026-11-04 08:00Z: EAST resized t3.large → t3.medium** (Derek's go; clicks via Derek's Chrome agent, since the scoped key cannot do this).
+  - Before: `pm2 save` was refreshed, with the old dump backed up as `dump.pm2.bak-20261104`.
+  - After: fresh-web is online via the pm2 boot unit; the 4 Chatwoot containers, nginx and docker are all up. `/` and `/p/*` return 200. Memory is 1.46 GB used of 3.8 GB, with 2 GB swap.
+  - Saves about $31/mo.
+  - **Builds on EAST now need care:** use `NODE_OPTIONS=--max-old-space-size=3072` with the 2 GB swap (it OOMed at 1536 MB; 4096 MB no longer fits in RAM).
+  - Bill estimate is now about $97/mo: prod ≈ $50, EAST ≈ $36, the stopped test server's disk + IP ≈ $6.60, snapshots ≈ $3.5.

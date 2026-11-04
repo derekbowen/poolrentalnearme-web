@@ -68,9 +68,6 @@ const defaultDirectives = {
     '*.sentry.io',
     '*.stripe.com',
 
-    // Intercom
-    '*.intercom.io',
-    'wss://*.intercom.io',
     'connect.facebook.net',
   ],
   fontSrc: [self, data, 'assets-sharetribecom.sharetribe.com', 'fonts.gstatic.com'],
@@ -132,9 +129,6 @@ const defaultDirectives = {
     // Plausible analytics
     'plausible.io',
 
-    // Intercom
-    '*.intercomcdn.com',
-    '*.intercom.io',
     'connect.facebook.net',
   ],
   styleSrc: [self, unsafeInline, 'fonts.googleapis.com', 'api.mapbox.com'],

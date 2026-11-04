@@ -54,12 +54,4 @@
   :global(body) {
     padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   }
-  /* Push the Intercom chat launcher above the bottom nav. Intercom sets an inline
-     bottom, so !important is required to win; env() adapts to the iOS home bar. */
-  :global(.intercom-lightweight-app-launcher),
-  :global(.intercom-launcher-frame),
-  :global(.intercom-launcher),
-  :global(.intercom-namespace .intercom-app > div:last-child) {
-    bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
-  }
 }

@@ -4,8 +4,6 @@ import { clearCurrentUser, fetchCurrentUser } from './user.duck';
 import { createUserWithIdp } from '../util/api';
 import { apiSendOTP, apiVerifyOTP } from '../extensions/phone-number-verification/api';
 import { getSuperLoginAsUser } from '../util/cookie';
-import signInIntercom from '../extensions/intercom/mod/intercom/signIn';
-import signOutIntercom from '../extensions/intercom/mod/intercom/signOut';
 
 const authenticated = authInfo => authInfo?.isAnonymous === false;
 const loggedInAs = authInfo => authInfo?.isLoggedInAs === true;
@@ -197,12 +195,6 @@ export const authInfo = () => async (dispatch, getState, sdk) => {
   dispatch(authInfoRequest());
   try {
     const info = await sdk.authInfo();
-    const { currentUser } = getState().user;
-    if (currentUser) {
-      signInIntercom(currentUser);
-    } else {
-      signOutIntercom();
-    }
     return dispatch(authInfoSuccess(info));
   } catch (e) {
     log.error(e, 'auth-info-failed');

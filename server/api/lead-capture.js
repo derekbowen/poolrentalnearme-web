@@ -8,7 +8,7 @@
  * CRM, data warehouse, or mailing list.
  *
  * Storage is intentionally file-based so this works out of the box with no
- * extra infrastructure. Swap `writeLead` for a DB / Intercom / Supabase call
+ * extra infrastructure. Swap `writeLead` for a DB / Supabase call
  * when ready — the shape of the record is stable.
  */
 const fs = require('fs');

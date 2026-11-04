@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import css from './SectionLoveFooter.module.css';
 
 // PRNM birthday redesign (c132): the love closer rendered after the Console-managed
@@ -22,18 +22,8 @@ const SMS_HREF =
   'sms:+18556178207?&body=' +
   encodeURIComponent('Hi Derek! I’m looking at Pool Rental Near Me and I have a question.');
 
-const INTERCOM_APP_ID = 'nuuc4281'; // VITE_INTERCOM_APP_ID from .env; app ids are public client-side
-
 const SectionLoveFooter = props => {
   const { sectionId } = props;
-  useEffect(() => {
-    if (typeof window === 'undefined' || window.Intercom) return;
-    window.intercomSettings = { api_base: 'https://api-iam.intercom.io', app_id: INTERCOM_APP_ID };
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://widget.intercom.io/widget/' + INTERCOM_APP_ID;
-    document.head.appendChild(s);
-  }, []);
   const onSmartApp = e => {
     if (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)) {
       e.preventDefault();

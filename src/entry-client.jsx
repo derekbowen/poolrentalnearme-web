@@ -20,9 +20,6 @@ import { ClientApp } from './app';
 import routeConfiguration from './routing/routeConfiguration';
 import { mergeConfig } from './util/configHelpers';
 import { RootRoute } from './routing/AppRouter';
-import initIntercom from './extensions/intercom/mod/intercom/init';
-
-initIntercom();
 
 const moveStylesFn = () => {
   const allRootStyleSheets = document.querySelectorAll('link[rel="stylesheet"]');

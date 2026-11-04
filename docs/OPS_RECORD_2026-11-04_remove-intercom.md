@@ -70,4 +70,8 @@ Workspace "PRNM CORP", app id `nuuc4281`. Operator returned 403, so the findings
 
 **Live check after both deploys:** `/`, two `/p/` guides, `/login` and `/s` all return 200, with 0 Intercom references in the HTML or any referenced JS. The CSP has no Intercom.
 
-**AWS:** deployed with a key on IAM user `clsasude` (AdministratorAccess). The secret was pasted into chat, so the key must be deleted.
+**AWS:** deployed with key …2Y5B on IAM user `clsasude`. The secret was pasted into chat. IAM user `claude-deploy` no longer exists, so this is the only deploy identity, and `clsasude` has no console login.
+- Instead of deleting the key, its rights were cut on 2026-11-04. AdministratorAccess, Billing and AWSBillingConductorFullAccess were detached. The only policy now attached is the customer-managed `prnm-deploy-only` (`ops/aws/prnm-deploy-policy.json`). It allows ssm:SendCommand on the 3 PRNM instances only, SSM result reads, read-only ec2:Describe*, CloudWatch metrics and ce:Get*, and stop/start of the test instance only.
+- Verified with the policy simulator before applying, and live after: WEST and EAST SendCommand are allowed; iam:ListUsers is denied, as are RunInstances and TerminateInstances.
+- To restore admin: attach AdministratorAccess to `clsasude` in the IAM console.
+- AWS bill review (read-only): about $165/mo. prod t3.medium ≈ $50, **unused test t3.medium `poolrentalnearme-test` (i-0c5a4f9c653c3bc82, idle since June, test.poolrentalnearme.com returns 401) ≈ $44**, EAST t3.large ≈ $67, snapshots ≈ $3.5. Sharetribe email templates in `ext/transaction-processes/*` fall back to test.poolrentalnearme.com for the privacy/terms links; fix separately.

@@ -12,6 +12,11 @@
 //     '+'). While it's 'off', every new host is pinned to Derek and the
 //     pointer does not advance — flipping the config on later cannot move
 //     anyone already assigned.
+//   - "Text us" bubble: a NEW conversation whose first text starts with one of
+//     the site bubble's prefilled openers (see isBubbleOpener) is assigned to
+//     'both' and forwards to Derek AND Brandon (Brandon only while his number
+//     is configured). It does not consume or advance the round-robin pointer.
+//     An existing assignment always wins over the opener.
 //   - Fail-safe: ANY error here resolves to Derek. A reply is never dropped
 //     or bounced because routing state was unreachable.
 const DEREK = process.env.CAMPAIGN_FORWARD_TO || '+19092728096';
@@ -22,6 +27,26 @@ const CONFIG_TTL_MS = 30 * 1000; // brandon-number hot swap takes effect within 
 const ASSIGN_TTL_MS = 60 * 1000; // routectl reassign takes effect within this
 
 const enc = encodeURIComponent;
+
+// ---- "Text us" bubble openers ---------------------------------------------
+// The fixed start of each prefill built by buildPrefill() in
+// src/components/TextUsBubble/textUsContent.js, lowercased, apostrophe
+// normalised, and cut before anything the visitor (or Twilio's trim) can
+// change: the swimmer/host forms continue with a topic label, and a message
+// sent unedited arrives with its trailing space trimmed.
+const BUBBLE_OPENERS = [
+  "hi! i'm a swimmer on pool rental near me. question about",
+  "hi! i'm a host on pool rental near me. question about",
+  'hi! i have a question about pool rental near me:',
+];
+
+// Pure. True when `text` starts with a bubble opener: case-insensitive,
+// straight or curly apostrophe, leading whitespace ignored.
+const isBubbleOpener = (text) => {
+  if (typeof text !== 'string') return false;
+  const t = text.replace(/^\s+/, '').replace(/[\u2018\u2019]/g, "'").toLowerCase();
+  return BUBBLE_OPENERS.some((p) => t.startsWith(p));
+};
 
 const rest = async (path, { method = 'GET', body, prefer } = {}) => {
   const headers = {
@@ -66,7 +91,12 @@ const getAssignment = async phone => {
     `sms_reply_ctx?kind=eq.route_assign&phone=eq.${enc(phone)}&order=created_at.desc&select=tx_id&limit=1`
   );
   const rows = await r.json();
-  const assignee = rows[0]?.tx_id === 'brandon' ? 'brandon' : rows[0] ? 'derek' : null;
+  // 'brandon' and 'both' read back as themselves; any other stored value is
+  // Derek's (as before); no row means unassigned.
+  const tx = rows[0]?.tx_id;
+  let assignee = null;
+  if (tx === 'brandon' || tx === 'both') assignee = tx;
+  else if (rows[0]) assignee = 'derek';
   if (assignee) assignCache.set(phone, { at: Date.now(), assignee });
   return assignee;
 };
@@ -121,7 +151,11 @@ const DEREK_TARGET = () => ({ assignee: 'derek', to: DEREK, label: 'DEREK' });
 // can't each claim a different assignee.
 const inflight = new Map();
 
-const resolveTarget = async from => {
+// `firstText` is the body of the message being routed. It only matters when
+// `from` has no assignment yet (a new conversation): a bubble opener is then
+// assigned to 'both'. For 'both' the result carries `targets` (every number
+// to forward to, Derek first) and `to` (Derek) for callers that read one.
+const resolveTarget = async (from, firstText) => {
   if (!from || !SUPABASE_URL || !SUPABASE_KEY) return DEREK_TARGET();
   if (inflight.has(from)) {
     try {
@@ -132,6 +166,11 @@ const resolveTarget = async from => {
   }
   const work = (async () => {
     let assignee = await getAssignment(from);
+    if (!assignee && isBubbleOpener(firstText)) {
+      // Round-robin pointer deliberately untouched.
+      assignee = 'both';
+      await saveAssignment(from, 'both', 'auto-bubble');
+    }
     if (!assignee) {
       const cfg = await getConfig();
       if (!brandonNumber(cfg)) {
@@ -142,6 +181,12 @@ const resolveTarget = async from => {
         await saveAssignment(from, assignee, 'auto-rr');
         await advancePointer(assignee);
       }
+    }
+    if (assignee === 'both') {
+      const bn = brandonNumber(await getConfig());
+      // Brandon's number switched off: Derek alone (never drop), assignment kept.
+      const targets = bn && bn !== DEREK ? [DEREK, bn] : [DEREK];
+      return { assignee: 'both', to: DEREK, targets, label: 'BOTH' };
     }
     if (assignee === 'brandon') {
       const bn = brandonNumber(await getConfig());
@@ -162,4 +207,12 @@ const resolveTarget = async from => {
   }
 };
 
-module.exports = { resolveTarget, getConfig, getAssignment, saveAssignment, logRoute, rest };
+module.exports = {
+  resolveTarget,
+  isBubbleOpener,
+  getConfig,
+  getAssignment,
+  saveAssignment,
+  logRoute,
+  rest,
+};

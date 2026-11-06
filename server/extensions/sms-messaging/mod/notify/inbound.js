@@ -63,8 +63,29 @@ const verifyTwilioSignature = (req, res, next) => {
   return next();
 };
 
+// Every number a routing result forwards to: `targets` when routing returned
+// several (a 'both' thread from the site's "Text us" bubble), else `to`.
+// Deduplicated, so a misconfigured duplicate number never gets a message twice.
+const targetNumbers = (target) => {
+  const many = Array.isArray(target?.targets) && target.targets.length > 0;
+  const list = many ? target.targets : [target?.to];
+  const out = [...new Set(list.filter((n) => typeof n === 'string' && n))];
+  return out.length ? out : [FORWARD_TO];
+};
+
+// Send the same forward to each number. One failed send never blocks the rest.
+const sendToEach = (numbers, msg) =>
+  Promise.all(
+    numbers.map((phoneNumber) =>
+      twsend({ ...msg, phoneNumber }).catch((e) => {
+        console.error('[sms-inbound] forward error', e.message);
+      })
+    )
+  );
+
 // Forward a genuine (non-command) reply to the host's assigned queue owner
-// (Derek or Brandon) + log it. Never throws; routing falls back to Derek.
+// (Derek or Brandon, or both for a "Text us" bubble thread) + log it. Never
+// throws; routing falls back to Derek.
 // mediaUrls: Twilio-hosted MMS media from the sender — forwarded as real MMS so
 // a photo-only message (empty Body) is never dropped again (Rosaria sent 8 pool
 // photos on 2026-07-28 and they sat unseen for 19 days).
@@ -82,13 +103,13 @@ const forwardReply = async (from, raw, mediaUrls = []) => {
       fc = { count: 0, windowStart: now, notified: false };
       fwd.set(from, fc);
     }
-    fc.count++;
+    fc.count++; // once per inbound message, however many people it forwards to
     const vip = isVip(from);
     const name = vip ? plainName(from) : contactName(from);
     let target = { assignee: 'derek', to: FORWARD_TO, label: 'DEREK' };
     if (!vip) {
       try {
-        target = await routing.resolveTarget(from);
+        target = await routing.resolveTarget(from, raw);
       } catch (e) {
         /* resolveTarget never throws, but if it ever did: Derek */
       }
@@ -102,14 +123,15 @@ const forwardReply = async (from, raw, mediaUrls = []) => {
       });
     } else if (fc.count <= FLOOD_MAX) {
       const note = mediaUrls.length ? ` [${mediaUrls.length} photo${mediaUrls.length > 1 ? 's' : ''} attached]` : '';
-      await twsend({
-        phoneNumber: target.to,
+      await sendToEach(targetNumbers(target), {
         body: `PRNM reply [${target.label}] — ${name} ${from}:${note} ${raw.slice(0, 400)}`,
         mediaUrls,
       });
     } else if (!fc.notified) {
       fc.notified = true;
-      await twsend({ phoneNumber: target.to, body: `PRNM reply [${target.label}] — …more from ${name} ${from} (further replies this window suppressed)` });
+      await sendToEach(targetNumbers(target), {
+        body: `PRNM reply [${target.label}] — …more from ${name} ${from} (further replies this window suppressed)`,
+      });
     }
   } catch (e) {
     console.error('[sms-inbound] forward error', e.message);
@@ -137,7 +159,10 @@ const handler = async (req, res) => {
       return res.send(twiml('You are unsubscribed from Pool Rental Near Me texts. Reply START to resubscribe.'));
     }
     // 2) Reply-to-accept: "1"/"2" always, "YES" only if a decline is armed.
-    if (from) {
+    //    Never for a "Text us" bubble opener: that is a question typed after a
+    //    prefilled line, and a lone digit in it ("for 2 people", "1 hour")
+    //    must not accept or decline a booking, nor swallow the message.
+    if (from && !routing.isBubbleOpener(raw)) {
       const token = digit === '1' || digit === '2' ? digit : word === 'YES' ? 'YES' : null;
       if (token) {
         const reply = await handleReply(from, token);

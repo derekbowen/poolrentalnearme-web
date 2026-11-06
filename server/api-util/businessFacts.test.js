@@ -22,6 +22,7 @@ const SURFACES = [
   'src/translations/en.json',
   'src/containers/TermsOfServicePage/terms-2026-1.js',
   'src/containers/LandingPage/PremiumLandingPage.jsx',
+  'src/components/TextUsBubble/textUsContent.js',
   'server/extensions/sms-messaging/mod/notify/messages.js',
   'server/extensions/sms-messaging/mod/notify/welcome.js',
   'server/extensions/sms-messaging/mod/notify/betablast.js',
@@ -37,6 +38,74 @@ describe('approved business facts', () => {
     expect(tos).toMatch(/Renter Service Fee:\*\* Fifteen percent \(15%\)/);
     expect(hostFee).toBe(0);
     expect(renterFee).toBe(15);
+  });
+});
+
+describe('the one approved phone number (businessFacts.textUsLine)', () => {
+  // Derek approved ONE number for ONE widget on 2026-11-05: the "Text us"
+  // bubble's text line. Everything else under notApproved stays unapproved,
+  // including every other phone number in copy.
+  const block = name => {
+    const m = facts.match(new RegExp(`\\b${name}: Object\\.freeze\\(([\\s\\S]*?)\\n  \\}?\\]?\\),\\n`));
+    return m ? m[1] : '';
+  };
+  const strings = s => (s.match(/'[^']*'/g) || []).map(q => q.slice(1, -1));
+
+  it('leaves every notApproved entry in place, including "any support phone number"', () => {
+    expect(strings(block('notApproved'))).toEqual([
+      'typical host earnings per month or per year (any figure)',
+      'payout speed ("24 hours", "instant")',
+      'a platform-wide free-cancellation window (policies are per listing)',
+      '"24/7 support line" and any support phone number',
+      'city / host / customer / course counts',
+      'a starting price per hour ("Starting at $25/hour")',
+    ]);
+  });
+
+  it('records the line, its single surface, who approved it and when', () => {
+    const line = block('textUsLine');
+    // Parts, never the joined number (the bubble joins them at tap time).
+    expect(line).toMatch(/e164Parts: Object\.freeze\(\['\+1', '855', '617', '82', '07'\]\)/);
+    expect(line).toMatch(/approvedFor: 'src\/components\/TextUsBubble\/ \("Text us" help bubble\), text only'/);
+    expect(line).toMatch(/approvedBy: 'Derek Bowen'/);
+    expect(line).toMatch(/approvedOn: '2026-11-05'/);
+  });
+
+  it('is the only carve-out, and it narrows the support-phone entry to that line', () => {
+    const ex = block('approvedExceptions');
+    expect((ex.match(/notApproved:/g) || []).length).toBe(1);
+    expect(ex).toContain(`notApproved: '"24/7 support line" and any support phone number'`);
+    expect(ex).toContain(`allows: 'textUsLine, shown only by the "Text us" help bubble, as a number to text'`);
+    expect(ex).toMatch(/approvedBy: 'Derek Bowen',\s+approvedOn: '2026-11-05'/);
+  });
+
+  it('is read only by the bubble, and written out on no copy surface', () => {
+    // Only the bubble's content module may use the approved line.
+    const users = [];
+    const walk = dir => {
+      for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+        const p = `${dir}/${e.name}`;
+        if (e.isDirectory()) walk(p);
+        else if (/\.(js|jsx)$/.test(e.name) && !/\.test\.js$/.test(e.name) && read(p).includes('textUsLine')) {
+          users.push(p);
+        }
+      }
+    };
+    walk('src');
+    walk('server');
+    expect(users.sort()).toEqual([
+      'src/components/TextUsBubble/textUsContent.js',
+      'src/config/businessFacts.js',
+    ]);
+    // No surface spells the line out (the bubble builds it from the parts).
+    const digits = ['855', '617', '8207'];
+    const spelled = new RegExp(
+      [digits.join(''), digits.join('-'), `\\(${digits[0]}\\) ${digits[1]}-${digits[2]}`, digits.slice(1).join('-')].join('|')
+    );
+    for (const { p, t } of text) {
+      const m = t.match(spelled);
+      expect(m ? `${p}: "${m[0]}"` : null).toBeNull();
+    }
   });
 });
 

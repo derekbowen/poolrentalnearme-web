@@ -105,6 +105,14 @@ jobs:
       - name: API error surfacing
         run: bun test src/util/apiErrorDetails.test.js src/util/apiErrorTranslations.test.js
 
+      # "Text us" bubble: the exact SMS prefills the inbound webhook routes on
+      # (checked against server isBubbleOpener), human-only topics carry no
+      # canned answer, the text line never ships as one string, no text entry
+      # or network calls, and every hidden route name is a real route. The
+      # server half (routing.test.js, inbound.test.js) runs in the jest step.
+      - name: Text us bubble
+        run: bun test src/components/TextUsBubble/textUsContent.test.js
+
       # Proof that the production image builds with FROZEN resolution. This is
       # the step that would have caught the old binary lockfile: bun 1.2.4 could
       # not parse it, so every production build silently re-resolved. Build only

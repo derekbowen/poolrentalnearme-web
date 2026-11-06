@@ -3,10 +3,15 @@
 //
 //   docker exec poolrentalnearme-production node server/extensions/sms-messaging/mod/notify/routectl.js status
 //   docker exec poolrentalnearme-production node server/extensions/sms-messaging/mod/notify/routectl.js assign +15551234567 brandon
+//   docker exec poolrentalnearme-production node server/extensions/sms-messaging/mod/notify/routectl.js assign +15551234567 both
 //   docker exec poolrentalnearme-production node server/extensions/sms-messaging/mod/notify/routectl.js brandon +15559876543
 //   docker exec poolrentalnearme-production node server/extensions/sms-messaging/mod/notify/routectl.js brandon off
 //
 // Changes take effect on the live webhook within ~60s (its in-process caches).
+//
+// Assignees: derek | brandon | both. 'both' is what routing.js stores for a
+// conversation started from the site's "Text us" bubble: each reply forwards
+// to Derek AND Brandon (Brandon only while his number is configured).
 const fs = require('fs');
 const path = require('path');
 const { rest, logRoute } = require('./routing');
@@ -21,9 +26,22 @@ try {
   CONTACTS = {};
 }
 
+const ASSIGNEES = ['derek', 'brandon', 'both'];
+
 const die = msg => {
   console.error(msg);
   process.exit(1);
+};
+
+// The one-line totals under `status`. Every assignee is listed, even at 0.
+const totalsLine = counts =>
+  `totals: ${ASSIGNEES.map(a => `${a.toUpperCase()} ${counts[a] || 0}`).join(' · ')}`;
+
+// null when the arguments are valid, else the message to die with.
+const assignError = (phone, who) => {
+  if (!/^\+\d{10,15}$/.test(phone || '')) return `bad phone: ${phone} (want E.164, e.g. +15551234567)`;
+  if (!ASSIGNEES.includes(who)) return `bad assignee: ${who} (want ${ASSIGNEES.join('|')})`;
+  return null;
 };
 
 const status = async () => {
@@ -36,18 +54,18 @@ const status = async () => {
   const rows = await (
     await rest('sms_reply_ctx?kind=eq.route_assign&select=phone,tx_id,when_label,created_at&order=created_at.asc&limit=1000')
   ).json();
-  const counts = { derek: 0, brandon: 0 };
+  const counts = { derek: 0, brandon: 0, both: 0 };
   console.log(`assignments (${rows.length}):`);
   for (const r of rows) {
     counts[r.tx_id] = (counts[r.tx_id] || 0) + 1;
     console.log(`  ${r.phone}  -> ${r.tx_id.toUpperCase().padEnd(7)} (${r.when_label || '?'}, ${r.created_at.slice(0, 16)})  ${CONTACTS[r.phone] || ''}`);
   }
-  console.log(`totals: DEREK ${counts.derek || 0} · BRANDON ${counts.brandon || 0}`);
+  console.log(totalsLine(counts));
 };
 
 const assign = async (phone, who) => {
-  if (!/^\+\d{10,15}$/.test(phone)) die(`bad phone: ${phone} (want E.164, e.g. +15551234567)`);
-  if (who !== 'derek' && who !== 'brandon') die(`bad assignee: ${who} (want derek|brandon)`);
+  const bad = assignError(phone, who);
+  if (bad) die(bad);
   await rest(`sms_reply_ctx?kind=eq.route_assign&phone=eq.${enc(phone)}`, {
     method: 'DELETE',
     prefer: 'return=minimal',
@@ -80,10 +98,15 @@ const setBrandon = async value => {
   console.log(v === 'off' ? 'Brandon OFF — all new conversations -> DEREK (existing assignments kept, live ~30s)' : `Brandon number set: ${v} — round-robin ACTIVE (live ~30s)`);
 };
 
-(async () => {
-  const [cmd, a, b] = process.argv.slice(2);
-  if (cmd === 'status') return status();
-  if (cmd === 'assign') return assign(a, b);
-  if (cmd === 'brandon') return setBrandon(a);
-  die('usage: routectl.js status | assign <phone> <derek|brandon> | brandon <+1XXXXXXXXXX|off>');
-})().catch(e => die(`error: ${e.message}`));
+// Run as a CLI only (`node routectl.js ...`); requiring it (tests) runs nothing.
+if (require.main === module) {
+  (async () => {
+    const [cmd, a, b] = process.argv.slice(2);
+    if (cmd === 'status') return status();
+    if (cmd === 'assign') return assign(a, b);
+    if (cmd === 'brandon') return setBrandon(a);
+    die(`usage: routectl.js status | assign <phone> <${ASSIGNEES.join('|')}> | brandon <+1XXXXXXXXXX|off>`);
+  })().catch(e => die(`error: ${e.message}`));
+}
+
+module.exports = { ASSIGNEES, assignError, totalsLine, status, assign };

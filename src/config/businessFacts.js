@@ -48,6 +48,7 @@ const BUSINESS_FACTS = Object.freeze({
   /**
    * Explicitly unapproved. These were live in copy on 2026-09-01 with no
    * source. Keeping the list here is the audit trail for removing them.
+   * The only carve-out from any entry is listed in `approvedExceptions`.
    */
   notApproved: Object.freeze([
     'typical host earnings per month or per year (any figure)',
@@ -56,6 +57,41 @@ const BUSINESS_FACTS = Object.freeze({
     '"24/7 support line" and any support phone number',
     'city / host / customer / course counts',
     'a starting price per hour ("Starting at $25/hour")',
+  ]),
+
+  /**
+   * The ONE phone number approved for customer-facing copy, and only where
+   * `approvedFor` says. Derek Bowen approved it on 2026-11-05 for the "Text us"
+   * help bubble: a visitor taps "Text us" and either their SMS app opens
+   * addressed to this line or the number is shown with Copy and "Email us".
+   *
+   * It is approved as that widget's TEXT line only. It is not approved as a
+   * "24/7 support line", as a number to call, or on any other surface; every
+   * other phone number in copy remains unapproved (notApproved above).
+   *
+   * Stored in pieces so the number never appears as one string in page HTML
+   * or in the client bundle; src/components/TextUsBubble/textUsContent.js joins
+   * them only when a visitor taps "Text us".
+   */
+  textUsLine: Object.freeze({
+    e164Parts: Object.freeze(['+1', '855', '617', '82', '07']),
+    approvedFor: 'src/components/TextUsBubble/ ("Text us" help bubble), text only',
+    approvedBy: 'Derek Bowen',
+    approvedOn: '2026-11-05',
+  }),
+
+  /**
+   * Narrow, dated carve-outs from `notApproved`. Each names the entry it
+   * narrows, exactly what is allowed, who approved it and when. An entry here
+   * never widens beyond its `allows` text.
+   */
+  approvedExceptions: Object.freeze([
+    Object.freeze({
+      notApproved: '"24/7 support line" and any support phone number',
+      allows: 'textUsLine, shown only by the "Text us" help bubble, as a number to text',
+      approvedBy: 'Derek Bowen',
+      approvedOn: '2026-11-05',
+    }),
   ]),
 });
 

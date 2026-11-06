@@ -158,12 +158,16 @@ async function postWebhook(url, payload, { secret = null, headers = {}, delivery
 const ACCOUNT_ID = 7;
 const INBOX_ID = 3;
 
+/** Each test conversation is its own visitor unless `contactId` says otherwise (flood caps count per contact). */
+const contactFor = (convId, contactId) => (contactId == null ? 50000 + Number(convId) : contactId);
+
 function incoming(
   convId,
   msgId,
   content,
-  { status = 'pending', attrs = {}, attachments = [] } = {}
+  { status = 'pending', attrs = {}, attachments = [], contactId = null } = {}
 ) {
+  const cid = contactFor(convId, contactId);
   return {
     event: 'message_created',
     id: msgId,
@@ -172,7 +176,7 @@ function incoming(
     content_attributes: {},
     message_type: 'incoming',
     private: false,
-    sender: { id: 55, name: 'Visitor', email: null, phone_number: null, identifier: null },
+    sender: { id: cid, name: 'Visitor', email: null, phone_number: null, identifier: null },
     account: { id: ACCOUNT_ID, name: 'Pool Rental Near Me' },
     inbox: { id: INBOX_ID, name: 'Website' },
     attachments,
@@ -182,12 +186,14 @@ function incoming(
       status,
       custom_attributes: attrs,
       labels: [],
-      meta: {},
+      meta: { sender: { id: cid, name: 'Visitor' } },
+      contact_inbox: { contact_id: cid },
     },
   };
 }
 
-function buttonClick(convId, msgId, value, title, { status = 'pending' } = {}) {
+function buttonClick(convId, msgId, value, title, { status = 'pending', contactId = null } = {}) {
+  const cid = contactFor(convId, contactId);
   return {
     event: 'message_updated',
     id: msgId,
@@ -205,8 +211,23 @@ function buttonClick(convId, msgId, value, title, { status = 'pending' } = {}) {
       status,
       custom_attributes: {},
       labels: [],
-      meta: {},
+      meta: { sender: { id: cid, name: 'Visitor' } },
+      contact_inbox: { contact_id: cid },
     },
+  };
+}
+
+function resolved(convId, { contactId = null } = {}) {
+  const cid = contactFor(convId, contactId);
+  return {
+    event: 'conversation_resolved',
+    id: convId,
+    inbox_id: INBOX_ID,
+    status: 'resolved',
+    account: { id: ACCOUNT_ID, name: 'Pool Rental Near Me' },
+    inbox: { id: INBOX_ID, name: 'Website' },
+    meta: { sender: { id: cid, name: 'Visitor' } },
+    contact_inbox: { contact_id: cid },
   };
 }
 
@@ -232,6 +253,7 @@ module.exports = {
   sign,
   incoming,
   buttonClick,
+  resolved,
   agentReply,
   tmpDir,
   ACCOUNT_ID,

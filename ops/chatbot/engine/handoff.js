@@ -52,4 +52,44 @@ async function runHandoff({ client, convId, attributes, labels, note, urgent, do
   return { ok: true, done: progress };
 }
 
-module.exports = { runHandoff };
+/**
+ * Over a flood cap (D3): record the handoff without alerting anyone.
+ *
+ *   1. POST custom_attributes
+ *   2. GET + POST labels      (+ handoff-capped / handoff-overflow)
+ *   3. POST private note      only when `note` is given, and it carries no @mention
+ *   4. POST toggle_priority   urgent topics only (no push in 4.16.2)
+ *
+ * Never toggle_status: opening the conversation is Chatwoot's bot handoff,
+ * which pushes conversation_creation to every inbox member. It stays pending.
+ */
+async function runCappedHandoff({ client, convId, attributes, labels, note, urgent, done = {} }) {
+  const progress = { ...done };
+  const fail = (step, r) => ({ ok: false, step, status: r ? r.status : 0, done: progress });
+  if (note && /mention:\/\//i.test(note)) throw new Error('a capped handoff note must not @mention anyone');
+
+  const a = await client.setCustomAttributes(convId, attributes);
+  if (!a.ok) return fail('custom_attributes', a);
+  progress.attributes = true;
+
+  const g = await client.getLabels(convId);
+  if (!g.ok) return fail('labels_get', g);
+  const l = await client.setLabels(convId, uniq([...(g.labels || []), ...labels]));
+  if (!l.ok) return fail('labels_set', l);
+  progress.labels = true;
+
+  if (note && !progress.cappedNote) {
+    const n = await client.sendNote(convId, note);
+    if (!n.ok) return fail('note', n);
+    progress.cappedNote = true;
+  }
+
+  if (urgent) {
+    const p = await client.togglePriority(convId, 'urgent');
+    if (!p.ok) return fail('priority', p);
+    progress.priority = true;
+  }
+  return { ok: true, done: progress };
+}
+
+module.exports = { runHandoff, runCappedHandoff };

@@ -9,6 +9,7 @@
  *    executor calls after every Chatwoot call succeeded.
  *  - Nothing promises how fast Derek or Brandon will reply.
  *  - Reply options are chat or email only. No texting, no phone.
+ *  - One question per message.
  */
 
 const SUPPORT_EMAIL = 'support@poolrentalnearme.com';
@@ -19,6 +20,8 @@ const COPY = {
     "Hey, glad you're here. Quick heads-up: I'm an automated assistant, not a person. What can I help you with?",
   labelLine: "Hey, glad you're here. Quick heads-up: I'm an automated assistant, not a person.",
   labelLineAfter: "(Quick heads-up: I'm an automated assistant, not a person.)",
+  // first message from an upset customer: same label, no cheerful greeting
+  labelLineCalm: "Quick heads-up: I'm an automated assistant, not a person.",
   roleSwimmer: 'Okay, cool. What can I help you with?',
   roleHost: 'Nice. What can I help you with?',
   askRole: "Yeah, I've got you. Are you booking a swim or hosting?",
@@ -27,9 +30,10 @@ const COPY = {
     { title: 'Hosting a pool', value: 'role:host' },
   ],
   disambiguate: "Just so I don't guess, which one's closest?",
+  confirmOne: "Just so I don't guess, is this what you mean?",
   somethingElse: 'Something else',
-  firstMiss:
-    "Hmm, I don't want to guess on that one. Can you say it another way? Or want to talk to the founder?",
+  // one question per message; "Talk to the founder" is the button, not a second question
+  firstMiss: "Hmm, I don't want to guess on that one. Can you say it another way?",
   founderButton: { title: 'Talk to the founder', value: 'founder' },
   rephrase: 'No worries. Can you tell me a bit more, in your own words?',
   twoStrikes: "Good question. I don't want to guess on that, so I'll bring in Derek and Brandon.",
@@ -38,6 +42,8 @@ const COPY = {
   noRefButton: { title: "I don't have it", value: 'ref:none' },
   askBookingRefYesNo: "What's the booking reference? If there isn't one yet, just say so.",
   askReplyMethod: 'Want them to reply here in chat, or by email?',
+  addedAskReply: "Got it, I'll add that. Want them to reply here in chat, or by email?",
+  noTexts: 'Sorry, from here they can only reply in chat or by email. Which works for you?',
   replyButtons: [
     { title: 'Here in chat', value: 'reply:chat' },
     { title: 'By email', value: 'reply:email' },
@@ -50,10 +56,28 @@ const COPY = {
   passwordWarning: "Heads-up: please don't share your password here. We'll never ask for it.",
   thanks: 'Anytime. Anything else I can help with?',
   ok: 'Cool. Anything else I can help with?',
+  okCalm: 'Okay. Anything else I can help with?',
   noThanks: "All good. I'm here if you need anything else.",
   bye: 'Take care!',
   attachmentOnly: 'I can only read text here. What can I help with?',
   helloAgain: 'Hey! What can I help you with?',
+  // flood caps (D3): only ever said after the label calls succeeded, and only what is true
+  cappedAlready: "I've already flagged this for Derek and Brandon. They'll see everything here.",
+  cappedAlreadyUrgent:
+    "I've already flagged this for Derek and Brandon, and marked it urgent. They'll see everything here.",
+  cappedLogged: "I've logged this for Derek and Brandon. It may take a bit longer than usual.",
+  cappedLoggedUrgent:
+    "I've logged this for Derek and Brandon and marked it urgent. It may take a bit longer than usual for them to see it.",
+  // a message that might be an emergency, which the assistant could not place: ask before anything else
+  safetyCheck: `${LINE_911} Is someone hurt or in danger right now?`,
+  safetyButtons: [
+    { title: 'Yes, someone needs help', value: 'safety:yes' },
+    { title: "No, it's something else", value: 'safety:no' },
+  ],
+  // said only after the label and priority calls succeeded
+  markedUrgent: "I've marked this urgent for Derek and Brandon.",
+  // a button from an older message that no longer fits what we're doing
+  staleTap: 'Can you tell me in your own words?',
 };
 
 /** Shown only after every Chatwoot call of the handoff returned 2xx. */
@@ -88,6 +112,8 @@ const PLAYFUL_OPENERS = [
   [/^Sorry, that's a bummer\.\s*/, 'Sorry about that. '],
   [/^Sure thing\.\s*/, ''],
   [/^Good call checking\.\s*/, ''],
+  [/^Yeah, I've got you\.\s*/, ''],
+  [/^Got it\.\s*/, ''],
 ];
 function calm(text) {
   let s = text;

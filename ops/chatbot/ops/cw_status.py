@@ -3,16 +3,25 @@
 python3 ops/runners/east_runx.py ops/chatbot/ops/cw_status.py
 Changes nothing. Never prints a secret: secret env vars are shown only as set/unset,
 pm2 output is parsed and reduced to a few fields, the bot .env shows key names only,
-and no message content is read from the database.
+and no message content is printed (one count matches Chatwoot's own bot-error activity text).
 """
-import json, os, shlex, subprocess
+import base64, hashlib, json, os, shlex, subprocess
 
 HOST = "chat.poolrentalnearme.com"
 B = "/home/ubuntu/chatbot"
+ALERT_GB = 2.0  # DISK ALERT below this much free space on / (Postgres, uploads, logs and fresh-web share it)
+EXPECT_SRI = "sha384-NMOiMrdTUxTmFY1l+sFGdJGBULpsENmHiq+1biXcN6oREUhlYB9ij9AFbm5/I3Xr"  # v4.19.1-ce sdk.js
 SHOW = ("FRONTEND_URL", "ENABLE_ACCOUNT_SIGNUP", "FORCE_SSL", "ENABLE_PUSH_RELAY_SERVER", "DISABLE_TELEMETRY",
-        "CW_EDITION", "ACTIVE_STORAGE_SERVICE")
+        "CW_EDITION", "ACTIVE_STORAGE_SERVICE", "RATE_LIMIT_WIDGET_CONVERSATIONS", "RATE_LIMIT_WIDGET_MESSAGES",
+        "RATE_LIMIT_WIDGET_LOAD")
+AR = ("ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY", "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+      "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT")  # 2FA exists only with all three (values never printed)
 SECRET = ("SAFE_FETCH_ALLOW_PRIVATE_NETWORK", "CAPTAIN_OPEN_AI_API_KEY", "FIREBASE_PROJECT_ID", "FIREBASE_CREDENTIALS",
-          "SMTP_ADDRESS", "SMTP_PASSWORD")
+          "SMTP_ADDRESS", "SMTP_PASSWORD", "OPENSEARCH_URL", "ENABLE_SIDEKIQ_CLOUDWATCH")
+LBL = ("select g.name, count(*) filter (where t.created_at > now() - interval '1 day'), count(*) filter (where "
+       "t.created_at > now() - interval '7 days'), count(*) from taggings t join tags g on g.id=t.tag_id where "
+       "t.taggable_type='Conversation' and t.context='labels' and g.name in ('handoff','urgent','handoff-capped',"
+       "'handoff-overflow') group by 1 order by 1")
 
 
 def sh(c, t=60):
@@ -29,6 +38,12 @@ def code(a):
     return sh("curl -s -o /dev/null -w '%%{http_code}' -m 10 %s" % a)
 
 
+def sri(c):  # D1: sha384 SRI of the bytes a command prints, with their size
+    r = subprocess.run(c, shell=True, capture_output=True, timeout=60, executable="/bin/bash")
+    b = r.stdout if r.returncode == 0 else b""
+    return ("sha384-" + base64.b64encode(hashlib.sha384(b).digest()).decode(), len(b)) if len(b) > 1000 else (None, len(b))
+
+
 print("== containers")
 print(sh("docker ps -a --filter name=chatwoot --format '{{.Names}} | {{.Image}} | {{.Status}}'"))
 print("api:", sh("curl -s -m 10 -H 'X-Forwarded-Proto: https' http://127.0.0.1:3009/api"))
@@ -36,18 +51,26 @@ print("== rails env (non-secret values; others set/unset only)")
 have = dict(x.split("=", 1) for x in sh("docker exec chatwoot-rails-1 env").splitlines() if "=" in x)
 print(" | ".join("%s=%s" % (k, have.get(k, "(unset)")) for k in SHOW))
 print(" | ".join("%s %s" % (k, "set" if have.get(k) else "unset/empty") for k in SECRET))
+ks = [have.get(k, "") for k in AR]
+print("2FA available (%d of 3 encryption keys set): %s | key fingerprint %s (cw_harden.py printed it; match the off-box "
+      "backup)" % (sum(map(bool, ks)), all(ks), hashlib.sha256("".join(ks).encode()).hexdigest()[:12] if all(ks) else "-"))
 print("sidekiq resolves %s ->" % HOST, sh("docker exec chatwoot-sidekiq-1 getent hosts " + HOST) or "(nothing)")
 print("onboarding key:", sh("docker exec chatwoot-redis-1 redis-cli EXISTS alfred:CHATWOOT_INSTALLATION_ONBOARDING"),
       "| /installation/onboarding:", code("-H 'X-Forwarded-Proto: https' http://127.0.0.1:3009/installation/onboarding"),
       "(302 = closed)")
-sql("signup row", "select serialized_value::text from installation_configs where name='ENABLE_ACCOUNT_SIGNUP'")
+sql("installation config rows (they win over env): signup, attachment limit MB",
+    "select name, replace(serialized_value #>> '{}', E'\\n', ' ') from installation_configs where name in "
+    "('ENABLE_ACCOUNT_SIGNUP', 'MAXIMUM_FILE_UPLOAD_SIZE') order by 1")
+sql("schema_migrations max", "select max(version) from schema_migrations")
 sql("accounts", "select id, name from accounts")
-sql("users (id | name | email | type | role 1=admin)",
-    "select u.id, u.name, u.email, coalesce(u.type,'User'), au.role from users u left join account_users au on au.user_id=u.id")
-sql("website inbox (id | name | auto-assign | email-collect | feature_flags | reply_time | continuity | token)",
-    "select i.id, i.name, i.enable_auto_assignment, i.enable_email_collect, w.feature_flags, w.reply_time, "
-    "w.continuity_via_email, w.website_token from inboxes i join channel_web_widgets w on i.channel_type="
-    "'Channel::WebWidget' and w.id=i.channel_id")
+sql("users (id | name | email | type | role 1=admin | reset token outstanding | 2FA on)",
+    "select u.id, u.name, u.email, coalesce(u.type,'User'), au.role, u.reset_password_token is not null, "
+    "u.otp_required_for_login from users u left join account_users au on au.user_id=u.id")
+sql("website inbox (id | name | auto-assign | email-collect | flags | attachments | end_conversation | reply_time | "
+    "continuity | token)",
+    "select i.id, i.name, i.enable_auto_assignment, i.enable_email_collect, w.feature_flags, (w.feature_flags & 1) > 0, "
+    "(w.feature_flags & 4) > 0, w.reply_time, w.continuity_via_email, w.website_token from inboxes i join "
+    "channel_web_widgets w on i.channel_type='Channel::WebWidget' and w.id=i.channel_id")
 sql("inbox members (inbox | user)", "select inbox_id, user_id from inbox_members order by 1, 2")
 sql("agent bots (id | name | outgoing_url | inbox | status 0=active)",
     "select b.id, b.name, b.outgoing_url, abi.inbox_id, abi.status from agent_bots b "
@@ -55,13 +78,17 @@ sql("agent bots (id | name | outgoing_url | inbox | status 0=active)",
 sql("notification flags (user | email_flags | push_flags)", "select user_id, email_flags, push_flags from notification_settings")
 sql("devices registered for push (user | type 1=browser 2=app | n)",
     "select user_id, subscription_type, count(*) from notification_subscriptions group by 1, 2 order by 1, 2")
+sql("contacts (total | new 24 h | new 7 d | contact_inboxes): every widget load without a cw_conversation cookie makes one",
+    "select count(*), count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at "
+    "> now() - interval '7 days'), (select count(*) from contact_inboxes) from contacts")
 print("== conversations and handoffs")
 sql("conversations by status (0 open, 1 resolved, 2 pending/bot, 3 snoozed)",
     "select status, count(*) from conversations group by 1 order by 1")
-sql("handoffs = conversations labelled 'handoff': last 24 h | last 7 d | all",
-    "select count(*) filter (where c.created_at > now() - interval '1 day'), count(*) filter (where c.created_at > "
-    "now() - interval '7 days'), count(*) from conversations c join taggings t on t.taggable_type='Conversation' "
-    "and t.taggable_id=c.id and t.context='labels' join tags g on g.id=t.tag_id and g.name='handoff'")
+sql("labels applied (label | 24 h | 7 d | all): handoff = founders alerted; capped/overflow = D3 limit hit, no alert", LBL)
+sql("bot-failure opens (24 h | 7 d): webhook failed, Chatwoot opened the chat and sent NO push; check the bot",
+    "select count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at > now() - "
+    "interval '7 days') from messages where message_type=2 and content='Conversation was marked open by system due to "
+    "an error with the agent bot.'")
 sql("last 5 handoffs (conv # | created | priority 3=urgent | assignee | status)",
     "select c.display_id, c.created_at, c.priority, c.assignee_id, c.status from conversations c join taggings t on "
     "t.taggable_type='Conversation' and t.taggable_id=c.id and t.context='labels' join tags g on g.id=t.tag_id and "
@@ -77,7 +104,7 @@ try:
             e = p.get("pm2_env", {})
             print("pm2 chatbot:", e.get("status"), "| restarts", e.get("restart_time"), "| mem MB",
                   int((p.get("monit") or {}).get("memory", 0) / 2**20), "| script", e.get("pm_exec_path"))
-except ValueError:
+except (ValueError, IndexError):
     print("pm2 jlist unreadable")
 print("healthz:", code("http://127.0.0.1:3120/healthz"), "| listening:", sh("ss -ltnH 'sport = :3120'") or "nothing")
 print("current ->", os.path.realpath(B + "/current") if os.path.islink(B + "/current") else "(none)")
@@ -89,9 +116,28 @@ print("data files (name | bytes | lines):", sh("cd %s/data 2>/dev/null && for f 
                                                "echo \"$f $(stat -c %%s $f) $(wc -l < $f)\"; done" % B) or "(none)")
 print("== nginx / tls")
 print(sh("ls -la /etc/nginx/sites-enabled/; nginx -t 2>&1 | tail -1"))
+print("DNS %s (proxied = Cloudflare addresses only, cw_nginx.py):" % HOST,
+      sorted({x.split()[0] for x in sh("getent ahosts " + HOST).splitlines() if x.strip()}) or "none")
 print("cert:", sh("openssl x509 -enddate -noout -in /etc/letsencrypt/live/%s/fullchain.pem 2>&1" % HOST))
 print("public https://%s/api:" % HOST, code("https://%s/api" % HOST), "| sdk.js:", code("https://%s/packs/js/sdk.js" % HOST))
+print("== D1 sdk.js SRI (VITE_CHATWOOT_SDK_SRI must equal the container's; v4.19.1-ce is %s)" % EXPECT_SRI)
+box = sri("docker exec chatwoot-rails-1 cat /app/public/packs/js/sdk.js")
+served = sri("curl -s -m 10 -H 'X-Forwarded-Proto: https' http://127.0.0.1:3009/packs/js/sdk.js")
+pub = sri("curl -s -m 10 'https://%s/packs/js/sdk.js'" % HOST)
+show = lambda x: "same" if x == box else ("%s (%d bytes)" % x if x[0] else "unreachable")  # noqa: E731
+print("container file: %s (%d bytes)\nserved on :3009: %s | public: %s (a public copy that differs = stale edge "
+      "cache: purge it)" % (box[0], box[1], show(served), show(pub)))
+acao = [x.strip() for x in sh("curl -s -o /dev/null -D - -m 10 -H 'Origin: https://www.poolrentalnearme.com' "
+                              "https://%s/packs/js/sdk.js" % HOST).lower().splitlines() if x.startswith("access-control-allow-origin")]
+print("public sdk.js Access-Control-Allow-Origin (need exactly one '*'):", acao or "none")
 print("== capacity")
 print(sh("free -m | sed -n 1,3p; df -h / | tail -1; uptime"))
+vfs = os.statvfs("/")
+gb = vfs.f_bavail * vfs.f_frsize / 2**30
+print(("DISK ALERT: %.1f GB free on / (alert under %.1f GB): find what grew below" if gb < ALERT_GB else
+       "disk OK: %.1f GB free on / (alert under %.1f GB)") % (gb, ALERT_GB))
+print("MB used:", sh("du -sm /var/lib/docker/volumes/chatwoot_cw_storage/_data /var/lib/docker/volumes/chatwoot_cw_pg/_data "
+                     "/home/ubuntu/.pm2/logs /var/log/nginx %s/data /home/ubuntu/chatwoot-backups 2>/dev/null | tr '\\n' ' '" % B))
+print(sh("docker system df --format '{{.Type}} {{.Size}} (reclaimable {{.Reclaimable}})' | tr '\\n' ';'"))
 print(sh("docker stats --no-stream --format '{{.Name}} {{.MemUsage}} {{.CPUPerc}}'"))
 print("== backups:", sh("ls -1 /home/ubuntu/chatwoot-backups 2>&1 | tail -5"))

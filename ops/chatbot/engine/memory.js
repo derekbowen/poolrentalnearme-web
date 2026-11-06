@@ -5,6 +5,9 @@
  * (prnm_*), so a lost file can be rebuilt from the webhook payload.
  *
  * Pass `file: null` for an in-memory store (tests).
+ *
+ * `meta` holds small records that are not conversations (the handoff flood
+ * ledger): they are saved with the file but never pruned as conversations.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -16,6 +19,7 @@ class MemoryStore {
     this.max = maxConversations;
     this.debounceMs = debounceMs;
     this.map = new Map();
+    this.meta = new Map();
     this.timer = null;
     if (file) this.load();
   }
@@ -25,6 +29,7 @@ class MemoryStore {
       const raw = fs.readFileSync(this.file, 'utf8');
       const data = JSON.parse(raw);
       for (const [k, v] of Object.entries(data.conversations || {})) this.map.set(k, v);
+      for (const [k, v] of Object.entries(data.meta || {})) this.meta.set(k, v);
     } catch (err) {
       if (err.code !== 'ENOENT') {
         // keep a copy of an unreadable file instead of overwriting it
@@ -50,6 +55,16 @@ class MemoryStore {
 
   delete(key) {
     this.map.delete(key);
+    this.schedule();
+  }
+
+  getMeta(key) {
+    const v = this.meta.get(key);
+    return v ? JSON.parse(JSON.stringify(v)) : null;
+  }
+
+  setMeta(key, value) {
+    this.meta.set(key, JSON.parse(JSON.stringify(value)));
     this.schedule();
   }
 
@@ -84,6 +99,7 @@ class MemoryStore {
       version: 1,
       savedAt: new Date().toISOString(),
       conversations: Object.fromEntries(this.map),
+      meta: Object.fromEntries(this.meta),
     });
     fs.writeFileSync(tmp, body, { mode: 0o600 });
     fs.renameSync(tmp, this.file);

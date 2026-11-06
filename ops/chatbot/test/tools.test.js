@@ -104,7 +104,7 @@ test('server refuses to start without the webhook secret or Chatwoot settings (a
     /CHATWOOT_DEREK_USER_ID/
   );
   const ok = build({ ...env, CHATWOOT_WEBHOOK_SECRET: 's' });
-  assert.equal(ok.config.port, 3021);
+  assert.equal(ok.config.port, 3120);
   assert.equal(ok.config.host, '127.0.0.1');
   assert.doesNotMatch(JSON.stringify(ok.config), /super-secret-token-value/);
   assert.doesNotMatch(JSON.stringify(ok.bot.client), /super-secret-token-value/);

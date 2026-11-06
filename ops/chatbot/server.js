@@ -6,7 +6,7 @@
  *   POST /webhook   (and POST /)  Chatwoot agent-bot events
  *   GET  /healthz                 {"ok":true,...}  (no secrets)
  *
- * Binds to 127.0.0.1:${PORT:-3021}. Requests must carry Chatwoot's signature
+ * Binds to 127.0.0.1:${PORT:-3120}. Requests must carry Chatwoot's signature
  * (X-Chatwoot-Signature = sha256 HMAC of "<timestamp>.<body>" with the bot
  * secret). Unsigned requests are accepted only when explicitly allowed for
  * local testing AND they come straight from loopback (not through a proxy).
@@ -22,9 +22,13 @@
  *   CHATWOOT_PUBLIC_URL          https://chat.poolrentalnearme.com (links in the handoff note)
  *   CHATWOOT_FORWARDED_PROTO     https (default) | "" to omit
  *   SITE_URL                     https://www.poolrentalnearme.com
- *   PORT / HOST                  3021 / 127.0.0.1
+ *   PORT / HOST                  3120 / 127.0.0.1 (one default, the one ops/ and nginx use)
  *   BOT_DATA_DIR                 ./data  (state.json + events.jsonl, mode 600)
  *   BOT_ALLOW_UNSIGNED_LOOPBACK  "true" only for local testing
+ *
+ * Rejected (401) requests are logged at most once a minute, with a count of
+ * the ones in between, so anyone POSTing junk at the public path cannot grow
+ * the pm2 log without bound.
  */
 const http = require('node:http');
 const crypto = require('node:crypto');
@@ -36,9 +40,12 @@ const { ChatwootClient } = require('./engine/chatwoot');
 const { MemoryStore } = require('./engine/memory');
 const { Tracker } = require('./engine/tracking');
 const { Bot } = require('./engine/bot');
+const { sampler } = require('./engine/logsample');
 
 const MAX_BODY = 1024 * 1024;
 const SIGNATURE_TOLERANCE_SEC = 300;
+const DEFAULT_PORT = 3120;
+const REJECT_LOG_EVERY_MS = 60 * 1000;
 
 function isLoopback(addr) {
   return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
@@ -82,8 +89,11 @@ function createServer({
   allowUnsignedLoopback = false,
   logger = console,
   health = {},
+  rejectLogEveryMs = REJECT_LOG_EVERY_MS,
+  now = () => Date.now(),
 }) {
   const deliveries = new Seen();
+  const logRejected = sampler(rejectLogEveryMs, now);
   let inflight = 0;
   const reply = (res, code, obj) => {
     const body = JSON.stringify(obj);
@@ -128,7 +138,8 @@ function createServer({
           !req.headers['x-real-ip'];
       }
       if (!trusted) {
-        logger.warn(
+        logRejected(
+          (m) => logger.warn(m),
           `rejected webhook: ${secret ? 'bad or missing signature' : 'unsigned request not allowed'}`
         );
         return reply(res, 401, { error: 'unauthorized' });
@@ -166,6 +177,19 @@ function requireEnv(env, name) {
   const v = env[name];
   if (!v) throw new Error(`missing env ${name}`);
   return v;
+}
+
+/** Optional overrides for the D3 caps (defaults in engine/flood.js); bad values are ignored. */
+function floodLimitsFrom(env) {
+  const out = {};
+  const pos = (v) => (/^\d+$/.test(String(v || '')) && Number(v) > 0 ? Number(v) : null);
+  const map = {
+    BOT_CAP_PER_CONVERSATION: 'perConversation',
+    BOT_CAP_PER_CONTACT: 'perContact',
+    BOT_CAP_GLOBAL_PER_HOUR: 'globalPerHour',
+  };
+  for (const [k, field] of Object.entries(map)) if (pos(env[k])) out[field] = pos(env[k]);
+  return out;
 }
 
 function build(env = process.env) {
@@ -218,6 +242,7 @@ function build(env = process.env) {
     agents,
     publicUrl: env.CHATWOOT_PUBLIC_URL || 'https://chat.poolrentalnearme.com',
     logger,
+    floodLimits: floodLimitsFrom(env),
   });
   const server = createServer({
     bot,
@@ -232,7 +257,7 @@ function build(env = process.env) {
     store,
     logger,
     config: {
-      port: Number(env.PORT || 3021),
+      port: Number(env.PORT || DEFAULT_PORT),
       host: env.HOST || '127.0.0.1',
       signed: !!secret,
       inbox: env.CHATWOOT_INBOX_ID || 'any',
@@ -268,4 +293,4 @@ if (require.main === module) {
   process.on('SIGINT', stop);
 }
 
-module.exports = { createServer, verifySignature, build, isLoopback };
+module.exports = { createServer, verifySignature, build, isLoopback, sampler, DEFAULT_PORT };

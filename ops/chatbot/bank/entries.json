@@ -1375,25 +1375,13 @@
       "backed out",
       "cancelled booking"
     ],
-    "mode": "auto",
-    "answer": "Sorry, that's a bummer. If it shows Canceled in your Inbox, any charge is refunded automatically. If it says Declined, you weren't charged and any hold releases. If the host only said it in a message, I can bring in Derek and Brandon.",
+    "mode": "handoff",
+    "answer": "Sorry, that's a bummer. If it says Declined in your Inbox, you weren't charged and any hold releases. I don't want to guess on refunds, so I'll bring in Derek and Brandon to look at yours. What's your booking reference?",
     "link": "/inbox/orders",
     "clarify_prompt": "",
     "clarify_options": [],
     "urgency": "normal",
     "sources": [
-      {
-        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:64",
-        "quote": "was cancelled. Any charge is refunded automatically."
-      },
-      {
-        "ref": "ext/transaction-processes/default-booking/process.edn:198",
-        "quote": "{:name :transition/cancel,"
-      },
-      {
-        "ref": "ext/transaction-processes/default-booking/process.edn:201",
-        "quote": "[{:name :action/calculate-full-refund}"
-      },
       {
         "ref": "src/translations/en.json:462",
         "quote": "\"InboxPage.default-booking.canceled.status\": \"Canceled\""
@@ -1407,7 +1395,7 @@
         "quote": "Your card was only authorized, not charged — the hold releases automatically (your bank may show it pending a few days)."
       }
     ],
-    "gap": "Based on the repo process.edn (cancel is an operator transition with calculate-full-refund) and the live GUEST_CANCELLED SMS copy. Added the Declined case, because a host who \"cancels\" a pending request actually declines it. Derek should confirm that a cancellation PRNM processes is always a full refund, and how long refunds take to reach the bank (only hold-release timing is documented)."
+    "gap": "Reduced after review: the answer states no refund outcome. The earlier line 'If it shows Canceled in your Inbox, any charge is refunded automatically' came from process.edn (calculate-full-refund) and the live SMS copy, not from Derek's approved content, and the Cancellation and Refund Policy is unpublished. The bot keeps only the sourced Declined facts (the status label and the SMS hold-release line) and hands the refund part to Derek and Brandon. Derek can restore a refund line once he confirms it."
   },
   {
     "id": "cancel-weather",
@@ -2134,7 +2122,7 @@
       "will the owner be home",
       "is the host present during the swim",
       "self checkin?",
-      "will someone let us in",
+      "will someone be home to let us in",
       "is anyone home at the pool",
       "is the host around during my booking"
     ],
@@ -2185,7 +2173,7 @@
       "the gate code doesnt work",
       "host not responding and my booking started",
       "we're here but the address is wrong",
-      "cnt get in help"
+      "cnt get in the gate help"
     ],
     "keywords": [
       "locked out",
@@ -2585,7 +2573,7 @@
       "phishing email pretending to be pool rental near me",
       "this host seems like a scammer",
       "suspicious link in a message",
-      "is this legit or a scamm"
+      "this message looks like a scamm"
     ],
     "keywords": [
       "scam",
@@ -2595,7 +2583,6 @@
       "fraud",
       "phishing",
       "suspicious",
-      "legit",
       "impersonating"
     ],
     "mode": "handoff",
@@ -2614,7 +2601,7 @@
         "quote": "Hosts may not request, and Guests may not offer, payment by cash, Venmo, Zelle, Cash App, check, wire, or any other method outside the platform"
       }
     ],
-    "gap": "Replaces dispute-refund-charge, which duplicated 'I was charged the wrong amount (or charged twice).' Its chargeback and refund wordings ('i want to file a chargeback', 'dispute a payment', 'refund pls') should move into that entry or into 'Will I get a refund if I cancel?'. No published PRNM statement on phishing or impersonation was found, so the bot gives no facts. 'Hold off on sending any money or your password' is a caution, not a policy. HS §7.1 (contact PRNM before your bank) stays out under the disputes rule."
+    "gap": "Replaces dispute-refund-charge, which duplicated 'I was charged the wrong amount (or charged twice).' Its chargeback and refund wordings ('i want to file a chargeback', 'dispute a payment', 'refund pls') should move into that entry or into 'Will I get a refund if I cancel?'. No published PRNM statement on phishing or impersonation was found, so the bot gives no facts. 'Hold off on sending any money or your password' is a caution, not a policy. HS §7.1 (contact PRNM before your bank) stays out under the disputes rule. 'Is this site legit?' is a trust question, not a scam report: it goes to a normal handoff (routes.json builtin trust-question), so the old 'is this legit or a scamm' variant was replaced."
   },
   {
     "id": "dispute-guest-breaking-rules",
@@ -2628,7 +2615,7 @@
       "too many ppl at my pool rn",
       "guest is being disrespectful",
       "guest brought a dog even tho i said no pets",
-      "problem with my guest during the booking"
+      "having a problem with my guest"
     ],
     "keywords": [
       "guest",
@@ -4030,7 +4017,7 @@
       "havent received my payout",
       "where is my money",
       "payout late",
-      "money not in my bank",
+      "payout hasnt hit my bank yet",
       "my payout failed",
       "still waiting on payment",
       "never got payed"
@@ -4659,7 +4646,7 @@
       "deactivate my profile",
       "erase my info",
       "delete acount",
-      "i want off this site"
+      "delete me off this site"
     ],
     "keywords": [
       "delete",

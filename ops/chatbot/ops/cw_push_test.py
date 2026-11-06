@@ -5,6 +5,11 @@ DRY=True (default): lists Derek's and Brandon's registered devices (1 = browser 
 app) and their push flags; sends nothing. DRY=False: sends Chatwoot's own test push (the same service as
 Super Admin > Push diagnostics) to every registered device of both, and prints each device's result.
 Free: browser push goes straight to the browser vendor; the official app goes through Chatwoot's relay.
+D5 (cw_setup.rb): a handoff pushes each founder twice, creation (body = the customer's FIRST message, 10 words, not
+redacted by the bot: a card number typed there goes out) and the @mention. Participating-conversation pushes are off,
+so later messages push no one until a founder assigns the chat to himself; then each one pushes him (10 words,
+unredacted). To silence a troll: block the contact. A bot that is down produces NO push: Chatwoot opens the chat
+silently (cw_status.py "bot-failure opens").
 """
 import json, subprocess, sys
 

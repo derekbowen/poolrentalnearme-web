@@ -6,11 +6,41 @@
  * The assistant speaks only when ALL hold:
  *   event = message_created, message_type = incoming, private = false,
  *   conversation.status = pending, the inbox is ours, and no person has taken over.
+ * One exception: after a handoff (sent or flood-capped) and before any person
+ * replies, danger in a new message gets the 911 line once and an urgent label,
+ * priority and plain note (flag_urgent), never a new @mention or reopen.
  * Button taps arrive as message_updated on our own input_select message.
  * A human agent's public reply marks the conversation human-owned (and opens it).
+ *
+ * Handoffs that would reach the founders' phones are capped (flood.js, D3):
+ * beyond a cap the conversation is labelled and kept pending, with no @mention
+ * and no open toggle, and the customer is told only what is true.
  */
-const { runHandoff } = require('./handoff');
-const { findBookingRef } = require('./safety');
+const { runHandoff, runCappedHandoff } = require('./handoff');
+const { findBookingRef, MAX_INPUT_CHARS, MAX_STORED_CHARS } = require('./safety');
+const { FloodLedger } = require('./flood');
+const { sampler } = require('./logsample');
+
+/** The contact behind a conversation (Chatwoot contact id), from the webhook payload. */
+function contactIdOf(p) {
+  const conv = (p && p.conversation) || {};
+  const sender = conv.meta && conv.meta.sender;
+  if (sender && sender.id != null && (!sender.type || sender.type === 'contact')) return String(sender.id);
+  if (conv.contact_inbox && conv.contact_inbox.contact_id != null)
+    return String(conv.contact_inbox.contact_id);
+  if (conv.contact_id != null) return String(conv.contact_id);
+  const s = p && p.sender;
+  if (
+    p &&
+    p.event === 'message_created' &&
+    messageType(p.message_type) === 'incoming' &&
+    s &&
+    s.id != null &&
+    (!s.type || s.type === 'contact')
+  )
+    return String(s.id);
+  return null;
+}
 
 const MESSAGE_TYPES = { 0: 'incoming', 1: 'outgoing', 2: 'activity', 3: 'template' };
 function messageType(v) {
@@ -54,6 +84,7 @@ class Bot {
     publicUrl = '',
     logger = null,
     now = () => Date.now(),
+    floodLimits = {},
   }) {
     this.engine = engine;
     this.client = client;
@@ -68,6 +99,12 @@ class Bot {
     this.queues = new Map();
     this.seenMessages = new Lru();
     this.seenSelections = new Lru();
+    this.flood = new FloodLedger({ store, limits: floodLimits });
+    this.logCapped = sampler(60 * 1000, now);
+  }
+
+  contactKey(state) {
+    return state && state.contactId ? `${this.accountId}:contact:${state.contactId}` : null;
   }
 
   key(convId) {
@@ -104,9 +141,8 @@ class Bot {
     if (st) return st;
     const attrs = (conv && conv.custom_attributes) || {};
     const fresh = this.engine.hydrate(convId, attrs, this.now());
-    fresh.mirrored = Object.fromEntries(
-      Object.entries(attrs).filter(([k]) => k.startsWith('prnm_'))
-    );
+    // what we would have written ourselves (validated), never the raw visitor-settable attributes
+    fresh.mirrored = this.engine.mirrorAttributes(fresh);
     return fresh;
   }
 
@@ -149,9 +185,21 @@ class Bot {
     if (p.id != null && this.seenMessages.seen(`m:${p.id}`)) return { ignored: 'duplicate' };
     return this.enqueue(convId, async () => {
       let st = this.loadState(convId, conv);
+      if (!st.contactId) st.contactId = contactIdOf(p);
       if (conv.status !== 'pending') {
+        const waiting =
+          !st.humanOwned && st.handoff && (st.handoff.status === 'sent' || st.handoff.status === 'capped');
+        if (waiting) {
+          // Handed off, nobody has replied yet: the engine stays quiet except for the 911 line on danger
+          // (once), an urgent label/priority and a plain note. No new @mention, no reopen (D3).
+          return this.runTurn(convId, conv, st, {
+            kind: 'text',
+            text: typeof p.content === 'string' ? p.content.slice(0, MAX_INPUT_CHARS + 64) : '',
+            messageId: p.id,
+          });
+        }
         // A person owns it (or it is resolved/snoozed). Stay silent; only note a booking ref they add.
-        const ref = findBookingRef(p.content || '');
+        const ref = findBookingRef(String(p.content || '').slice(0, MAX_INPUT_CHARS));
         if (ref && !st.bookingRef && st.handoff && st.handoff.status === 'sent') {
           st.bookingRef = ref;
           await this.mirror(convId, conv, st);
@@ -161,7 +209,8 @@ class Bot {
       }
       const input = {
         kind: 'text',
-        text: typeof p.content === 'string' ? p.content : '',
+        // the engine reads only the first MAX_INPUT_CHARS (D4); never hand it the whole 150k
+        text: typeof p.content === 'string' ? p.content.slice(0, MAX_INPUT_CHARS + 64) : '',
         messageId: p.id,
         attachments: Array.isArray(p.attachments) && p.attachments.length > 0,
       };
@@ -182,11 +231,13 @@ class Bot {
     const choice = submitted[0] || {};
     return this.enqueue(convId, async () => {
       const st = this.loadState(convId, conv);
+      if (!st.contactId) st.contactId = contactIdOf(p);
       if (conv.status !== 'pending') return { silent: conv.status || 'unknown' };
+      // visitor-controlled: the engine only accepts a value it offered, with its own title
       return this.runTurn(convId, conv, st, {
         kind: 'button',
-        value: String(choice.value || ''),
-        title: String(choice.title || ''),
+        value: String(choice.value || '').slice(0, 200),
+        title: String(choice.title || '').slice(0, MAX_STORED_CHARS),
         messageId: p.id,
       });
     });
@@ -257,18 +308,61 @@ class Bot {
         ...this.baseAttributes(conv, state),
         ...this.engine.mirrorAttributes(state),
       };
-      const result = await runHandoff({
-        client: this.client,
-        convId,
-        attributes,
-        labels: this.engine.labelsFor(state),
-        note: this.engine.buildNote(state, {
-          agents: this.agents,
-          conversationUrl: this.conversationUrl(convId),
-        }),
-        urgent: state.handoff && state.handoff.urgency === 'high',
-        done: (state.handoff && state.handoff.done) || {},
-      });
+      const done = (state.handoff && state.handoff.done) || {};
+      const urgent = !!(state.handoff && state.handoff.urgency === 'high');
+      // a retry of a handoff whose @mention note already went out is the same alert, not a new one
+      const fresh = !done.note;
+      const keys = { conv: this.key(convId), contact: this.contactKey(state), now: this.now() };
+      // check and take the slot in one synchronous step (D3): concurrent conversations can't all slip under a cap
+      const slot = fresh ? this.flood.reserve(keys) : null;
+      const capped = slot && slot.capped ? slot.capped : null;
+      let result;
+      if (capped) {
+        result = await runCappedHandoff({
+          client: this.client,
+          convId,
+          attributes,
+          labels: [
+            ...this.engine.labelsFor(state),
+            capped === 'global' ? 'handoff-overflow' : 'handoff-capped',
+          ],
+          // the founders' note for this same open thread is already there: add nothing. A new thread
+          // (after a resolve or a hand-back) gets its own note, without an @mention.
+          note:
+            capped === 'conversation' && state.alertThread
+              ? null
+              : this.engine.buildNote(state, {
+                  agents: [],
+                  conversationUrl: this.conversationUrl(convId),
+                  capped,
+                }),
+          urgent,
+          done,
+        });
+        result.capped = capped;
+        if (!result.ok) result.capped = null;
+        events.push({ type: 'handoff_capped', cap: capped, ok: result.ok });
+        this.logCapped(
+          (m) => this.logger.warn(m),
+          `conversation ${convId}: handoff over the ${capped} cap, logged without an alert`
+        );
+      } else {
+        result = await runHandoff({
+          client: this.client,
+          convId,
+          attributes,
+          labels: this.engine.labelsFor(state),
+          note: this.engine.buildNote(state, {
+            agents: this.agents,
+            conversationUrl: this.conversationUrl(convId),
+          }),
+          urgent,
+          done,
+        });
+        // the @mention note reached Chatwoot: that is an alert, whatever happens next (the slot stays taken).
+        // It never got there: nobody was alerted, so the slot goes back.
+        if (slot && slot.token && !(result.done && result.done.note)) this.flood.release(slot.token);
+      }
       if (result.done && result.done.attributes)
         state.mirrored = this.engine.mirrorAttributes(state);
       const after = this.engine.afterEscalation(state, result, { now: this.now() });
@@ -276,6 +370,8 @@ class Bot {
       events.push(...after.events);
       for (const b of after.actions) sent.push(await this.perform(convId, b, events));
     }
+    // a danger flag that didn't go through may be tried again on their next message
+    if (sent.some((x) => x.type === 'flag_urgent' && !x.ok)) state.dangerAt = null;
     if (!escalated) await this.mirror(convId, conv, state, events);
     this.store.set(this.key(convId), state);
     this.tracker.log(this.key(convId), events);
@@ -293,12 +389,42 @@ class Bot {
     if (a.type === 'say') r = await this.client.sendText(convId, a.content);
     else if (a.type === 'select') r = await this.client.sendSelect(convId, a.content, a.items);
     else if (a.type === 'note') r = await this.client.sendNote(convId, a.content);
+    else if (a.type === 'flag_urgent') return this.flagUrgent(convId, a, events);
     else return { type: a.type, ok: true };
     if (!r.ok) {
       events.push({ type: 'send_failed', kind: a.type, status: r.status });
       this.logger.warn(`send ${a.type} to conversation ${convId} failed (status ${r.status})`);
     }
     return { type: a.type, ok: r.ok };
+  }
+
+  /**
+   * Danger reported while the handoff waits for a person: labels + urgent priority + a plain
+   * note (no @mention: no new push, D3). okText is said only when every call succeeded.
+   */
+  async flagUrgent(convId, a, events) {
+    const fail = (step, r) => {
+      events.push({ type: 'api_error', step, status: r ? r.status : 0 });
+      this.logger.warn(`flag urgent on conversation ${convId} failed at ${step} (status ${r ? r.status : 0})`);
+      return { type: a.type, ok: false };
+    };
+    if (a.note && /mention:\/\//i.test(a.note)) return fail('note_mention', null);
+    const g = await this.client.getLabels(convId);
+    if (!g.ok) return fail('labels_get', g);
+    const l = await this.client.setLabels(convId, [...new Set([...(g.labels || []), ...(a.labels || [])])]);
+    if (!l.ok) return fail('labels_set', l);
+    const pr = await this.client.togglePriority(convId, 'urgent');
+    if (!pr.ok) return fail('priority', pr);
+    if (a.note) {
+      const n = await this.client.sendNote(convId, a.note);
+      if (!n.ok) return fail('note', n);
+    }
+    events.push({ type: 'flagged_urgent' });
+    if (a.okText) {
+      const t = await this.client.sendText(convId, a.okText);
+      if (!t.ok) return fail('send_text', t);
+    }
+    return { type: a.type, ok: true };
   }
 
   /** Mirror prnm_* facts into Chatwoot custom attributes when they changed. */
@@ -314,4 +440,4 @@ class Bot {
   }
 }
 
-module.exports = { Bot, messageType };
+module.exports = { Bot, messageType, contactIdOf };

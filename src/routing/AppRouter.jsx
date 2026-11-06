@@ -61,8 +61,10 @@ export const RootRoute = () => {
       {navigation.state === 'loading' && <TopbarLoadingIndicator />}
       <Outlet />
       <ScrollRestoration />
-      {/* Chatwoot widget (bottom-left), client-only; a no-op without
-          VITE_CHATWOOT_WEBSITE_TOKEN. Hidden on checkout/payout pages. */}
+      {/* Chat launcher (bottom-left), client-only; renders nothing unless both
+          VITE_CHATWOOT_WEBSITE_TOKEN and VITE_CHATWOOT_SDK_SRI are set. Chatwoot's
+          sdk.js loads only on click (or for a returning chatter). Not rendered on
+          checkout/payment/payout pages. See ChatwootWidget/chatwootLoader.js. */}
       <ChatwootWidget />
     </>
   );

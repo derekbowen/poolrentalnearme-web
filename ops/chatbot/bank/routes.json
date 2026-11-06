@@ -192,6 +192,21 @@
       "category": "arrival and access",
       "urgency": "normal",
       "answer": "Good question. There's no set rule I can point to for that, so I don't want to guess. I'll bring in Derek and Brandon."
+    },
+    "trust-question": {
+      "category": "safety, disputes, and human help",
+      "urgency": "normal",
+      "answer": "Fair question. I'd rather a person answer that one, so I'll bring in Derek and Brandon, the founders."
+    },
+    "theft-report": {
+      "category": "safety, disputes, and human help",
+      "urgency": "high",
+      "answer": "Sorry, that's not okay. I'll flag this to Derek and Brandon as urgent so a person can help. What's the booking reference, if you have one?"
+    },
+    "complaint": {
+      "category": "safety, disputes, and human help",
+      "urgency": "normal",
+      "answer": "Understood. I'll bring in Derek and Brandon so a person can look at this."
     }
   }
 }

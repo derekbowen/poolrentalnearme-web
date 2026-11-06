@@ -14,9 +14,13 @@
  */
 const { surfaceTokens, createSpeller, canonicalTokens, STOPWORDS } = require('./normalize');
 const { tokenSimilarity, maxEdits, damerau } = require('./fuzzy');
-const { SYNONYMS, SLANG, CONTEXT_WORDS, COMMON } = require('./lexicon');
+const { SYNONYMS, SLANG, CONTEXT_WORDS, COMMON, REAL_WORDS } = require('./lexicon');
 const { canonStem } = require('./normalize');
 const CONTEXT = new Set([...CONTEXT_WORDS].map((w) => canonStem(w)));
+// canonical forms of everyday words the bank doesn't use: matched exactly, never fuzzed ("scar" ≠ "scam")
+const REAL_STEMS = new Set([...REAL_WORDS].map((w) => canonStem(w)));
+// a lone token this generic is never enough to answer, even when it equals a bank phrasing's only token
+const GENERIC_SINGLE = new Set(['someon', 'anyon', 'somebody', 'anybody', 'not', 'sit', 'help', 'question', 'problem', 'issu', 'thing', 'stuff']);
 
 const THRESHOLDS = Object.freeze({
   CONFIDENT: 0.6, // top score needed to answer without asking
@@ -24,6 +28,10 @@ const THRESHOLDS = Object.freeze({
   COVERAGE: 0.75, // ...and the entry must explain this share of the query's weight
   CLARIFY: 0.4, // below this: unmatched
 });
+// A real question has far fewer content words; past this, fuzzy scoring only burns CPU (D4).
+const MAX_QUERY_TOKENS = 32;
+// No word in the bank is this long: such a token is compared exactly, never fuzzily.
+const MAX_FUZZY_TOKEN = 30;
 
 const HOST_CATEGORIES = new Set([
   'creating a host listing',
@@ -161,6 +169,13 @@ class Matcher {
     this.df = df;
     for (const [t, n] of df) this.idf.set(t, Math.log(1 + N / n));
     this.unknownWeight = Math.log(1 + N) * 0.6;
+    // canonical vocabulary by first letter: fuzzy matches always share the first letter (fuzzy.js)
+    this.vocabByFirst = new Map();
+    for (const t of this.canonVocab) {
+      if (!this.vocabByFirst.has(t[0])) this.vocabByFirst.set(t[0], []);
+      this.vocabByFirst.get(t[0]).push(t);
+    }
+    this._nearCache = new Map();
     this.docsByEntry = new Map();
     for (const d of this.docs) {
       if (!this.docsByEntry.has(d.entryId)) this.docsByEntry.set(d.entryId, []);
@@ -189,17 +204,38 @@ class Matcher {
   }
 
   /**
+   * For a token the bank does not know: every bank token it is a near-typo of,
+   * with the similarity. Computed once per token (same tokenSimilarity as sim()),
+   * so scoring loops do plain map lookups.
+   */
+  near(tok) {
+    let m = this._nearCache.get(tok);
+    if (m) return m;
+    m = new Map();
+    if (tok.length <= MAX_FUZZY_TOKEN && !this.canonVocab.has(tok) && !REAL_STEMS.has(tok)) {
+      for (const t of this.vocabByFirst.get(tok[0]) || []) {
+        const v = this.sim(tok, t);
+        if (v > 0) m.set(t, v);
+      }
+    }
+    if (this._nearCache.size > 20000) this._nearCache.clear();
+    this._nearCache.set(tok, m);
+    return m;
+  }
+
+  /**
    * Best similarity of `tok` against a token list. Fuzzy matching only applies
    * to tokens the bank does not know: a real, known word ("safe", "bank") is
    * never stretched into a neighbour ("save", "back").
    */
   bestSim(tok, list) {
-    const fuzzy = !this.canonVocab.has(tok);
+    const fuzzy = !this.canonVocab.has(tok) && !REAL_STEMS.has(tok) && tok.length <= MAX_FUZZY_TOKEN;
+    const near = fuzzy ? this.near(tok) : null;
     let best = 0;
     for (const t of list) {
       if (t === tok) return 1;
-      if (!fuzzy || this.canonVocab.has(tok)) continue;
-      const s = this.sim(tok, t);
+      if (!near) continue;
+      const s = near.get(t) || 0;
       if (s > best) best = s;
     }
     return best;
@@ -220,7 +256,12 @@ class Matcher {
       td += w;
       let best = 0;
       for (const x of q) {
-        const v = x === t ? 1 : this.canonVocab.has(x) ? 0 : this.sim(x, t);
+        const v =
+          x === t
+            ? 1
+            : this.canonVocab.has(x) || x.length > MAX_FUZZY_TOKEN
+              ? 0
+              : this.near(x).get(t) || 0;
         if (v > best) best = v;
         if (best === 1) break;
       }
@@ -239,7 +280,7 @@ class Matcher {
    * @returns {{ tokens: string[], ranked: Array<{id, score, raw, doc}>, exact: string[] }}
    */
   rank(text, ctx = {}) {
-    const q = uniq(this.canon(text));
+    const q = uniq(this.canon(text)).slice(0, MAX_QUERY_TOKENS);
     if (!q.length) return { tokens: q, ranked: [], exact: [] };
     const key = [...q].sort().join(' ');
     const exactIds = this.exact.has(key) ? [...this.exact.get(key)] : [];
@@ -260,7 +301,13 @@ class Matcher {
       for (const k of this.kw.get(e.id)) {
         if (
           k.every((t) =>
-            q.some((x) => x === t || (!this.canonVocab.has(x) && this.sim(x, t) >= 0.85))
+            q.some(
+              (x) =>
+                x === t ||
+                (!this.canonVocab.has(x) &&
+                  x.length <= MAX_FUZZY_TOKEN &&
+                  (this.near(x).get(t) || 0) >= 0.85)
+            )
           )
         )
           kwHits++;
@@ -307,7 +354,9 @@ class Matcher {
       });
       if (sameRole.length) exactIds = sameRole;
     }
-    if (exactIds.length === 1) {
+    // "someone" alone equals "will someone let us in" once stopwords go: not enough to answer
+    const genericOnly = tokens.length === 1 && GENERIC_SINGLE.has(tokens[0]);
+    if (exactIds.length === 1 && !genericOnly) {
       const hit = ranked.find((r) => r.id === exactIds[0]);
       return { ...base, status: 'confident', top: hit, needsRole: false };
     }
@@ -333,7 +382,7 @@ class Matcher {
       };
     }
     // one informative word is never enough to answer outright (unless it is an exact variant)
-    const enoughWords = tokens.length > 1 || (this.df.get(tokens[0]) || 0) <= 2;
+    const enoughWords = tokens.length > 1 || ((this.df.get(tokens[0]) || 0) <= 2 && !genericOnly);
     if (
       top.score >= THRESHOLDS.CONFIDENT &&
       margin >= THRESHOLDS.MARGIN &&
@@ -355,6 +404,7 @@ class Matcher {
 module.exports = {
   Matcher,
   THRESHOLDS,
+  MAX_QUERY_TOKENS,
   roleOfCategory,
   HOST_CATEGORIES,
   SWIMMER_CATEGORIES,

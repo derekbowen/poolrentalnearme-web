@@ -36,6 +36,11 @@ function show(actions) {
       a.items.forEach((it, i) => console.log(`     [${i + 1}] ${it.title}`));
     }
     if (a.type === 'note') console.log(`  (private note) ${a.content}`);
+    if (a.type === 'flag_urgent') {
+      console.log(`  (labels ${a.labels.join(', ')}; priority urgent; no @mention)`);
+      console.log(`  (private note) ${a.note}`);
+      if (a.okText) console.log(`bot: ${a.okText}`);
+    }
     if (a.type === 'escalate') {
       console.log('  --- handoff note (private, @mentions both) ---');
       console.log(

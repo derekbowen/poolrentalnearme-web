@@ -9,8 +9,11 @@ Flow: commit the bot -> `manifest HEAD` -> commit + push the manifest -> `pin HE
 commit) -> run bot_deploy.py DRY, then DRY=False with Derek's GO.
 
 The manifest lists every file under ops/chatbot/ in git at <rev> except ops/ (deploy tooling),
-data/ (runtime logs live in /home/ubuntu/chatbot/data on the box) and bank/drafts/ (drafts are
-never published), as `<sha256>  <path relative to ops/chatbot/>`, sorted.
+data/ (runtime logs live in /home/ubuntu/chatbot/data on the box), bank/drafts/ (drafts are
+never published) and dotfiles such as .env.example and .gitignore (repo-only; the box's real
+.env is /home/ubuntu/chatbot/.env, written by cw_setup.py), as
+`<sha256>  <path relative to ops/chatbot/>`, sorted. shipped() is the one rule; the bot_deploy
+harness uses it too.
 """
 import hashlib, os, re, subprocess, sys
 
@@ -18,6 +21,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 MANIFEST = "ops/chatbot/ops/bot_manifest.sha256"
 SKIP = ("ops/", "data/", "bank/drafts/")
+
+
+def shipped(rel):
+    """True if bot_deploy.py installs `rel` (a path relative to ops/chatbot/)."""
+    return not rel.startswith(SKIP) and not any(part.startswith(".") for part in rel.split("/"))
 
 
 def git(*a, binary=False):
@@ -32,7 +40,7 @@ def build(rev):
     lines = []
     for p in sorted(paths):
         rel = p[len("ops/chatbot/"):]
-        if rel.startswith(SKIP):
+        if not shipped(rel):
             continue
         if not re.match(r"[A-Za-z0-9_][A-Za-z0-9_./-]*$", rel) or ".." in rel:
             sys.exit("path not allowed by bot_deploy.py: %r" % rel)

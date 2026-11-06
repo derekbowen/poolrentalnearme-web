@@ -72,6 +72,10 @@ const SLANG = {
   tysm: 'thanks',
   ppl: 'people',
   peeps: 'people',
+  homies: 'friends',
+  homie: 'friend',
+  fam: 'family',
+  da: 'the',
   ppls: 'people',
   msg: 'message',
   msgs: 'message',
@@ -352,7 +356,7 @@ const STOPWORDS = new Set(
     'what which our ours we us they them their theirs he she him her his hers whats thats theres hows lets ' +
     'please hi hey hello thanks thank ok okay yes sure also too very really even then than want need like ' +
     'know tell help guys anyone anything something thing things way out off over again ever all each ' +
-    'let make sure well oh um uh hmm lol ' +
+    'let make sure well oh um uh hmm lol fr bruh bro lowkey ngl ' +
     // feelings and filler carry no topic: "THIS IS RIDICULOUS the host cancelled" is about a cancellation
     'ridiculous unacceptable terrible awful horrible seriously honestly literally basically actually ' +
     'wtf omg ugh lmao smh idk tbh btw fyi asap urgent urgently quickly'
@@ -383,6 +387,68 @@ const COMMON = new Set(
   ).split(/\s+/)
 );
 
+/*
+ * Everyday English words the bank does not use. They are real words, so the
+ * speller never rewrites them and the matcher never fuzzes them into a
+ * neighbour: "scared" is not "started" or "scam", "lost" is not "list",
+ * "driving" is not "diving", "police" is not "policy" (round-2 review).
+ * Built from a probe of ~1,000 common words against the bank vocabulary.
+ */
+const REAL_WORDS = new Set(
+  (
+    'above across action afraid afternoon against agree almost also always angry answered anybody anyway ' +
+    'apart apartment asleep aunt awesome baby bake ball base basically bath beach bear beautiful bedroom ' +
+    'begin believe belt bench beside best better between bike bill bird birthday black blame blanket ' +
+    'blind blood blow blue boat body boil bold bone books bored boss both bother bottle bottom bowl boys ' +
+    'brain brake bread break breakfast bride bridge bright brook brother brown budget build bump bunny ' +
+    'burn busy butter cable cafe cake calm camel camera camp candle care careful carpet carry case catch ' +
+    'cause ceiling center chain chairs chance cheap checked cheer cheese chest chicken child chill ' +
+    'choice church city class clean cleaned clear client climb clock closed clothes cloud clouds club ' +
+    'coast coat coffee coin colder collect color comfort comment computer control cook cooks corner ' +
+    'correct costs couch could couple course crash crazy cream cross crowd crowded curry cute damp dance ' +
+    'dark daughter dead dear decide deck deer degree delay deliver dentist desk detail dice diet dime ' +
+    'dinner dirt dish doctor dogs door draw dream dress drill drive driver driving drone drunk dump dust ' +
+    'duty earlier earth east easy edge eight empty enjoy enough ever exam example except excited exit ' +
+    'expensive face fact fail fair fall false farm fate father favorite fear feet field fight figure ' +
+    'film finger fire fish fist five flat flee float floats floor flower fold follow food fool foot ' +
+    'force forest forget fork forty forward found four fresh frill front fruit fund funny future gain ' +
+    'game games garden gated ghost gift girl girls gist giving glad glide goal goat gold grade grain ' +
+    'grand grass gray great grills ground grow guard hair half hall hallow hand hang happen happy hard ' +
+    'hate hater hazy hear heard heart heavy held hell hello helped hence high hill hire hobby hole ' +
+    'honest hood hook hope horse hose hospital hotel huge hungry hunt hurry husband idea image inch ' +
+    'invoice invoices iron island item jacket join joke juice jumps kept keys kick kill king kiss ' +
+    'kitchen knee knife lady lake land language large later laugh lawn lazy lead learn left lend lest ' +
+    'letter level library life light lights lime line lines listen little living loan local lock locker ' +
+    'logs lonely long lose lost lounge lounger love luck lucky lump lunch machine magic mail main major ' +
+    'male mall market marry mate matter maybe meal meaning means meant meat medal member memory metal ' +
+    'mice middle might mild mile milk mime mine miss mist mistake model moment monkey month mood moon ' +
+    'morning mother motor mountain mouse mouth moved movie mule must nail names narrow nature neck ' +
+    'neighbor nervous nest nets news night nights nine noisy nook noon noone normal north nose note ' +
+    'nurse ocean office often onion opened orange ours oven pack pain paint pair pale panel paper parts ' +
+    'past path peace pearl peek peer pencil pens pepper perfect phones piano picture piece pile pillow ' +
+    'pine pink pipe pizza plane plant plate played plunge pocket pole police polite poll poor post ' +
+    'posted potato pour powers press pretty preview pricey pride print prize problems promise prone ' +
+    'proud pump punch queen quest quick quiet quit quite rabbit race radio rail rare rated read reason ' +
+    'receipt receipts relax relied rely renew repeat reviews rice rich ride ring rise river road rock ' +
+    'role roles roll rolls roof root rope rose rough round rude ruler sacred salad sale salt sand sane ' +
+    'sappy saved scar scare scared scarf scary school score screen season seat second secret seek seer ' +
+    'sell sense serve shade shadow shady shake shallow shape sharp sheep shelf ship shirt shoe shop shot ' +
+    'shout shower showers shut sick sight silly silver simple sing sink sister skim skin skirt sleep ' +
+    'slice slim slow small smart smell smile smoke snack snacks snake sneaker snow soap sock soft soil ' +
+    'sold soldier somebody song soup sour south speed spell spend spoke spoon sport spot spring square ' +
+    'stack stacks stage stamp stand star stare stared stars station stayed stays steal stomach stone ' +
+    'stopped store stored stories story strange stroke strong student study stupid sugar suite summer ' +
+    'sunny supper surprise swam sweet swum table tail tall tame taste taxi teach team tear teeth tent ' +
+    'test thick thin third thirsty thirty those three throw ticket tiger tight tired tissue toast ' +
+    'together told tone tongue tool tooth tour towel tower town toys track trade train travel tree trim ' +
+    'trip trouble truck true trust twice uncle understand upset useful usual valley vegetable very vest ' +
+    'village visit voice vowel waiter wake walk wall wash watch waters wave ways weak wedding weeks ' +
+    'welcome west wheel white whose wide wife wild wind window wing wire wired wise wish woman wonder ' +
+    'wood wool word world worried worry yard yellow young'
+  ).split(/\s+/)
+);
+for (const w of REAL_WORDS) COMMON.add(w);
+
 // Incidental detail words (when, how many): they should not make an otherwise clear question look unexplained.
 const CONTEXT_WORDS = new Set(
   (
@@ -392,4 +458,4 @@ const CONTEXT_WORDS = new Set(
   ).split(' ')
 );
 
-module.exports = { PHRASES, SLANG, SYNONYMS, STOPWORDS, COMMON, CONTEXT_WORDS };
+module.exports = { PHRASES, SLANG, SYNONYMS, STOPWORDS, COMMON, REAL_WORDS, CONTEXT_WORDS };

@@ -94,6 +94,17 @@ function surfaceTokens(text) {
  * (including deliberate typo variants). A token found in either is left
  * alone, so a real word like "safe" is never "corrected" into "save".
  */
+/**
+ * Edits the speller may make. Stricter than the matcher's fuzzy limit: rewriting a
+ * word is riskier than scoring it, and a 6-letter real word is often 2 edits from a
+ * bank word ("scared" → "started", "invoice" → "invite"). Two edits only for long words.
+ */
+function spellEdits(len) {
+  if (len <= 3) return 0;
+  if (len <= 7) return 1;
+  return Math.min(2, maxEdits(len));
+}
+
 function createSpeller(cleanVocab, knownVocab, freq = new Map(), typoMap = new Map()) {
   const cache = new Map();
   const byLen = new Map();
@@ -102,7 +113,7 @@ function createSpeller(cleanVocab, knownVocab, freq = new Map(), typoMap = new M
     byLen.get(w.length).push(w);
   }
   function best(token, pool) {
-    const limit = maxEdits(token.length);
+    const limit = spellEdits(token.length);
     if (limit === 0) return null;
     let bestW = null;
     let bestD = limit + 1;
@@ -134,8 +145,11 @@ function createSpeller(cleanVocab, knownVocab, freq = new Map(), typoMap = new M
     if (cache.has(token)) return cache.get(token);
     if (typoMap.has(token)) return typoMap.get(token);
     let out = token;
+    // bounded: every junk token a visitor sends would otherwise stay in memory for good
+    if (cache.size >= 20000) cache.clear();
     if (
       token.length > 3 &&
+      token.length <= 30 &&
       !/\d/.test(token) &&
       !STOPWORDS.has(token) &&
       !COMMON.has(token) &&

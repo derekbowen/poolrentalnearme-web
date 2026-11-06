@@ -1,10 +1,14 @@
 """EAST: install/upgrade the PRNM chatbot as pm2 "chatbot" on 127.0.0.1:3120 (ops/chatbot/ops/README.md).
-Pinned manifest + per-file sha256, tests on the box, atomic current/ swap, health checks, rollback.
-DRY=True: fetch, verify and run the tests in a temp dir only.
+Pinned manifest + per-file sha256, tests on the box, atomic current/ swap, health checks, rollback, and a
+logrotate entry for its pm2 logs. DRY=True: fetch, verify, test (and check the logrotate entry) in a temp dir.
+Budget: <= ~120 s before the swap is normal; the swap never starts later than 320 s before the runner's limit,
+and start + health + rollback after it are bounded to ~280 s.
 """
 import hashlib, hmac, json, os, pwd, re, shlex, shutil, subprocess, sys, tempfile, time, urllib.request
 
+T0 = time.time()
 DRY = True
+RUNNER_TIMEOUT = 900  # SSM executionTimeout east_runx.py uses for this script
 SHA = "REPLACE_WITH_COMMIT"           # commit holding ops/chatbot; fill both with pin_bot.py
 MANIFEST_SUM = "REPLACE_WITH_SHA256"  # sha256 of ops/chatbot/ops/bot_manifest.sha256 at SHA
 RAW = "https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/ops/chatbot/" % SHA
@@ -14,23 +18,39 @@ PORT = "3120"
 NEED = ("CHATWOOT_BOT_TOKEN", "CHATWOOT_WEBHOOK_SECRET", "CHATWOOT_ACCOUNT_ID", "CHATWOOT_DEREK_USER_ID",
         "CHATWOOT_BRANDON_USER_ID")
 PM2 = 'env -i HOME=/home/ubuntu PATH="$PATH" PM2_HOME=/home/ubuntu/.pm2 pm2 '  # no secrets reach dump.pm2
+LR = "/etc/logrotate.d/prnm-chatbot"
+ROT = ("/home/ubuntu/.pm2/logs/chatbot-*.log {\n su ubuntu ubuntu\n size 20M\n rotate 3\n compress\n missingok\n"
+       " notifempty\n copytruncate\n}\n")  # su: the pm2 log dir is group-writable; copytruncate: pm2 keeps its fd
+SWAP_BY = T0 + int(os.environ.get("PRNM_RUNNER_TIMEOUT", 560)) - 320
 
 
-def sh(c, t=300):
-    r = subprocess.run(c, shell=True, capture_output=True, text=True, timeout=t, executable="/bin/bash")
+def sh(c, t=60):  # a timeout is a failed step (rc 124), never an exception that skips the rollback
+    try:
+        r = subprocess.run(c, shell=True, capture_output=True, text=True, timeout=t, executable="/bin/bash")
+    except subprocess.TimeoutExpired:
+        return 124, "timed out after %d s" % t
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
-def ub(c, t=300):  # cd: pm2 must not inherit an unreadable cwd
+def ub(c, t=30):  # cd: pm2 must not inherit an unreadable cwd
     return sh("cd /home/ubuntu && sudo -u ubuntu bash -lc " + shlex.quote(c), t)
 
 
 def get(p):
-    return urllib.request.urlopen(RAW + p, timeout=60).read()
+    return urllib.request.urlopen(RAW + p, timeout=30).read()
 
 
 def curl(a):
     return sh("curl -s -o /dev/null -w '%%{http_code}' -m 5 %s" % a)[1]
+
+
+def rotate(p):  # rule 4: no new timer; the box's existing daily logrotate.timer reads /etc/logrotate.d
+    with open(p, "w") as f:
+        f.write(ROT)
+    os.chmod(p, 0o644)
+    rc, o = sh("logrotate -d " + p)
+    print("logrotate %s: chatbot-*.log over 20M rotated by the existing daily logrotate.timer, 3 gz kept, "
+          "copytruncate | logrotate -d rc %d, %d error lines" % (p, rc, o.count("error:")))
 
 
 if "REPLACE" in SHA + MANIFEST_SUM:
@@ -60,6 +80,8 @@ if os.path.exists(ENVF):
 miss = [k for k in NEED if not env.get(k)]
 if miss or env.get("HOST") != "127.0.0.1" or env.get("PORT") != PORT:
     bad.append("%s: missing %s or HOST:PORT not 127.0.0.1:%s" % (ENVF, miss, PORT))
+if SWAP_BY - time.time() < 300:
+    bad.append("runner budget too short: run through ops/runners/east_runx.py (RUNNER_TIMEOUT)")
 nv = ub("node -v")[1]  # --env-file needs >= 20.6 (EAST: v20.20.2)
 cur = os.path.realpath(B + "/current") if os.path.islink(B + "/current") else None
 print("%d files %s | %s | %r | node %s | current %s | :%s %s" % (
@@ -75,7 +97,7 @@ def stage(d):
 
 
 def tests(d):  # no .env: tests need no secrets
-    rc, o = ub('cd %s && env -i HOME=/home/ubuntu PATH="$PATH" NODE_ENV=test %s' % (d, test), 280)
+    rc, o = ub('cd %s && env -i HOME=/home/ubuntu PATH="$PATH" NODE_ENV=test %s' % (d, test), 120)
     print("tests rc", rc, o[-1200:])
     return rc == 0
 
@@ -88,6 +110,7 @@ if DRY:
     try:
         stage(tmp)
         ok = tests(tmp)
+        rotate(tmp + "/logrotate.conf")  # root-owned 644, like the real entry
     finally:
         shutil.rmtree(tmp)
     sys.exit("DRY RUN: tests %s; nothing changed" % ("passed" if ok else "FAILED"))
@@ -95,9 +118,12 @@ if DRY:
 REL = "%s/releases/%s-%s" % (B, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()), SHA[:12])
 os.makedirs(REL)
 stage(REL)
-if not tests(REL):
+passed = tests(REL)
+if passed:
+    rotate(LR)  # before the time check, so the swap still starts by SWAP_BY
+if not passed or time.time() > SWAP_BY:
     shutil.rmtree(REL)
-    sys.exit("ABORT: tests failed on the box; release removed")
+    sys.exit("ABORT: tests failed on the box (or out of runner time); release removed, current unchanged")
 shutil.rmtree(REL + "/data", ignore_errors=True)
 os.symlink(B + "/data", REL + "/data")  # logs and drafts outlive releases
 
@@ -106,7 +132,7 @@ def point(t):
     sh("ln -sfn {0} {1}/cur.tmp && chown -h ubuntu:ubuntu {1}/cur.tmp && mv -T {1}/cur.tmp {1}/current".format(t, B))
 
 
-def start():
+def start():  # <= ~66 s
     ub(PM2 + "delete chatbot")
     rc, o = ub(PM2 + "start %s/current/%s --name chatbot --cwd %s/current --node-args=--env-file=%s "
                "--max-memory-restart 200M --time && %ssave" % (B, entry, B, ENVF, PM2))
@@ -115,7 +141,15 @@ def start():
     time.sleep(6)
 
 
-def healthy():
+def healthy():  # <= ~75 s; any error counts as unhealthy (-> rollback), never a crash after the swap
+    try:
+        return check()
+    except Exception as e:  # noqa: BLE001
+        print("health check error:", type(e).__name__, str(e)[:120])
+        return False
+
+
+def check():
     lis = sh("ss -ltnH 'sport = :%s'" % PORT)[1].split()[3:4]
     body, ts = '{"event":"prnm_deploy_check"}', str(int(time.time()))
     sig = hmac.new(env["CHATWOOT_WEBHOOK_SECRET"].encode(), (ts + "." + body).encode(), "sha256").hexdigest()
@@ -135,7 +169,7 @@ def healthy():
         # Chatwoot's own path: sidekiq -> public IP (extra_hosts) -> nginx -> bot; unsigned must be refused
         rb = ("require 'net/http'; puts Net::HTTP.post(URI('https://chat.poolrentalnearme.com/prnm-bot/webhook'), "
               "'{}', 'Content-Type' => 'application/json').code")
-        via = sh("docker exec chatwoot-sidekiq-1 ruby -e " + shlex.quote(rb), 60)[1][-3:]
+        via = sh("docker exec chatwoot-sidekiq-1 ruby -e " + shlex.quote(rb), 30)[1][-3:]
         print("sidekiq->nginx->bot unsigned:", via)
         ok = via in ("401", "403")
     return ok

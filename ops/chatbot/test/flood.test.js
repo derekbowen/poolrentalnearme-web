@@ -1,0 +1,390 @@
+'use strict';
+/**
+ * D3 handoff flood caps, end to end: real webhook server + Bot + ChatwootClient
+ * against the mock Chatwoot. Also: forged button values, the sampled 401 log
+ * line, and a 150,000-character message through the webhook.
+ */
+const test = require('node:test');
+const { before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { createServer, sampler } = require('../server');
+const { Bot } = require('../engine/bot');
+const { ChatwootClient } = require('../engine/chatwoot');
+const { MemoryStore } = require('../engine/memory');
+const { Tracker } = require('../engine/tracking');
+const { FloodLedger, DEFAULT_LIMITS } = require('../engine/flood');
+const { COPY, LINE_911 } = require('../engine/copy');
+const H = require('./helpers');
+
+const TOKEN = 'test-bot-token';
+const SECRET = 'test-webhook-secret';
+const AGENTS = [
+  { id: 11, name: 'Derek Bowen' },
+  { id: 12, name: 'Brandon Elias' },
+];
+const silent = { info() {}, warn() {}, error() {} };
+
+let mock;
+const servers = [];
+
+async function startBot({ floodLimits = {}, now } = {}) {
+  const { engine } = H.loadEngine();
+  const bot = new Bot({
+    engine,
+    client: new ChatwootClient({ baseUrl: mock.url, token: TOKEN, accountId: H.ACCOUNT_ID }),
+    store: new MemoryStore({ file: null }),
+    tracker: new Tracker({ file: null }),
+    accountId: H.ACCOUNT_ID,
+    inboxId: H.INBOX_ID,
+    agents: AGENTS,
+    publicUrl: 'https://chat.poolrentalnearme.com',
+    logger: silent,
+    floodLimits,
+    ...(now ? { now } : {}),
+  });
+  const server = createServer({ bot, secret: SECRET, logger: silent });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  servers.push(server);
+  const url = `http://127.0.0.1:${server.address().port}/webhook`;
+  const send = async (payload) => {
+    const r = await H.postWebhook(url, payload, { secret: SECRET });
+    await server.drain();
+    return r;
+  };
+  return { bot, server, url, send };
+}
+
+before(async () => {
+  mock = await H.startMockChatwoot({ token: TOKEN, existingLabels: [] });
+});
+after(async () => {
+  for (const s of servers) await new Promise((r) => s.close(r));
+  await mock.close();
+});
+
+const base = (conv) => `/api/v1/accounts/${H.ACCOUNT_ID}/conversations/${conv}`;
+const forConv = (conv, calls = mock.calls) => calls.filter((c) => c.path.startsWith(`${base(conv)}/`));
+const mentionNotes = (calls) =>
+  calls.filter((c) => c.body && c.body.private === true && /mention:\/\/user\//.test(c.body.content || ''));
+const plainNotes = (calls) =>
+  calls.filter(
+    (c) =>
+      c.body &&
+      c.body.private === true &&
+      /^PRNM handoff/.test(c.body.content || '') &&
+      !/mention:\/\//.test(c.body.content || '')
+  );
+const toggles = (calls) => calls.filter((c) => /toggle_status$/.test(c.path));
+const publicTexts = (calls) =>
+  calls.filter((c) => c.method === 'POST' && /\/messages$/.test(c.path) && c.body && c.body.private === false).map((c) => c.body.content);
+const labelSets = (calls) => calls.filter((c) => c.method === 'POST' && /\/labels$/.test(c.path)).map((c) => c.body.labels);
+let msgId = 70000;
+
+test('resolve → reopen loop: one alert per conversation per 24 h; each later thread is logged in a plain note, never "already flagged"', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const conv = 301;
+  const perCycle = [];
+  for (let cycle = 1; cycle <= 3; cycle++) {
+    const mark = mock.calls.length;
+    await send(H.incoming(conv, ++msgId, 'someone is hurt at the pool'));
+    await send(H.resolved(conv)); // visitor (or anyone) ends the chat, then writes again
+    perCycle.push(forConv(conv, mock.calls.slice(mark)));
+  }
+  const all = forConv(conv);
+  assert.equal(mentionNotes(all).length, 1, 'exactly one @mention note');
+  assert.equal(toggles(all).length, 1, 'opened (bot handoff push) exactly once');
+  for (const calls of perCycle.slice(1)) {
+    const texts = publicTexts(calls);
+    assert.ok(texts[0].startsWith(LINE_911), 'the 911 line still leads');
+    // after a resolve this is a NEW thread: the founders were never told about it, so never "already flagged"
+    assert.ok(texts.includes(COPY.cappedLoggedUrgent));
+    assert.ok(!texts.includes(COPY.cappedAlready) && !texts.includes(COPY.cappedAlreadyUrgent));
+    assert.ok(!texts.some((t) => /I've sent/.test(t)), 'never claims a new alert was sent');
+    assert.ok(labelSets(calls).some((l) => l.includes('handoff-capped') && l.includes('urgent')));
+    assert.ok(calls.some((c) => /toggle_priority$/.test(c.path)), 'marked urgent (no push in 4.16.2)');
+    assert.equal(toggles(calls).length, 0);
+    assert.equal(mentionNotes(calls).length, 0, 'no @mention');
+    assert.equal(plainNotes(calls).length, 1, 'the new thread is written down in a plain note');
+    assert.match(plainNotes(calls)[0].body.content, /logged, no alert/);
+  }
+});
+
+test('per contact: two alerts per 24 h; the third conversation is logged without an alert', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const contactId = 9901;
+  for (const conv of [311, 312, 313]) {
+    await send(H.incoming(conv, ++msgId, 'talk to a person', { contactId }));
+    await send(H.incoming(conv, ++msgId, 'question about my listing photos', { contactId }));
+    const sel = forConv(conv).filter((c) => c.body && c.body.content_type === 'input_select').pop();
+    assert.ok(sel.body.content_attributes.items.some((i) => i.value === 'reply:chat'));
+    await send(H.buttonClick(conv, ++msgId, 'reply:chat', 'Here in chat', { contactId }));
+  }
+  assert.equal(mentionNotes(forConv(311)).length, 1);
+  assert.equal(mentionNotes(forConv(312)).length, 1);
+  const third = forConv(313);
+  assert.equal(mentionNotes(third).length, 0);
+  assert.equal(toggles(third).length, 0, 'kept pending');
+  assert.equal(plainNotes(third).length, 1, 'a summary note with no @mention');
+  assert.match(plainNotes(third)[0].body.content, /logged, no alert/);
+  assert.ok(labelSets(third).some((l) => l.includes('handoff-capped')));
+  assert.equal(publicTexts(third).pop(), COPY.cappedLogged);
+});
+
+test('global ceiling: beyond N alerts per rolling hour → handoff-overflow, no @mention, not opened; clears after the hour', async () => {
+  mock.reset();
+  let clock = Date.now();
+  const { send } = await startBot({ floodLimits: { globalPerHour: 2 }, now: () => clock });
+  for (const conv of [321, 322, 323]) await send(H.incoming(conv, ++msgId, 'someone is drowning'));
+  assert.equal(mentionNotes(forConv(321)).length, 1);
+  assert.equal(mentionNotes(forConv(322)).length, 1);
+  const third = forConv(323);
+  assert.equal(mentionNotes(third).length, 0);
+  assert.equal(toggles(third).length, 0);
+  assert.ok(labelSets(third).some((l) => l.includes('handoff-overflow')));
+  assert.ok(third.some((c) => /toggle_priority$/.test(c.path)), 'still marked urgent for triage (no push)');
+  const texts = publicTexts(third);
+  assert.ok(texts[0].startsWith(LINE_911));
+  assert.equal(texts.pop(), COPY.cappedLoggedUrgent);
+  // the capped conversation stays quiet afterwards; danger gets the 911 line once, an urgent label,
+  // priority and a plain note (no @mention, no reopen: D3)
+  mock.reset();
+  await send(H.incoming(323, ++msgId, 'hello?'));
+  assert.deepEqual(forConv(323), []);
+  await send(H.incoming(323, ++msgId, 'he is not breathing'));
+  const after = forConv(323);
+  assert.deepEqual(publicTexts(after), [LINE_911, COPY.markedUrgent]);
+  assert.equal(toggles(after).length, 0);
+  assert.equal(mentionNotes(after).length, 0);
+  assert.ok(after.some((c) => /toggle_priority$/.test(c.path)));
+  assert.ok(labelSets(after).some((l) => l.includes('urgent') && l.includes('handoff-overflow')));
+  assert.ok(after.some((c) => c.body && c.body.private && /^PRNM update \(URGENT, no new alert\)/.test(c.body.content)));
+  // said once, not on every message
+  mock.reset();
+  await send(H.incoming(323, ++msgId, 'please hurry he is still not breathing'));
+  assert.deepEqual(publicTexts(forConv(323)), []);
+  // an hour later a new conversation alerts again
+  clock += DEFAULT_LIMITS.globalWindowMs + 1000;
+  mock.reset();
+  await send(H.incoming(324, ++msgId, 'someone is drowning'));
+  assert.equal(mentionNotes(forConv(324)).length, 1);
+});
+
+test('a retried handoff whose @mention note already went out is not capped (same alert)', async () => {
+  mock.reset();
+  const { send } = await startBot({ floodLimits: { globalPerHour: 1 } });
+  const conv = 331;
+  await send(H.incoming(conv, ++msgId, 'can i talk to a person about my listing photos'));
+  mock.fail.push({ match: /toggle_status$/, status: 500, times: 1 });
+  await send(H.buttonClick(conv, ++msgId, 'reply:chat', 'Here in chat'));
+  await send(H.incoming(conv, ++msgId, 'hello? still there?'));
+  const calls = forConv(conv);
+  assert.equal(mentionNotes(calls).length, 1);
+  assert.equal(toggles(calls).length, 2, 'failed toggle, then the retry');
+  assert.match(publicTexts(calls).pop(), /^Cool\. I've sent Derek and Brandon/);
+});
+
+test('the flood ledger survives a restart (store file) and a resolve', () => {
+  const file = path.join(H.tmpDir(), 'state.json');
+  const store = new MemoryStore({ file });
+  const ledger = new FloodLedger({ store });
+  const now = Date.now();
+  ledger.record({ conv: '7:1', contact: '7:contact:5', now });
+  store.flush();
+  const again = new FloodLedger({ store: new MemoryStore({ file }) });
+  assert.equal(again.check({ conv: '7:1', contact: '7:contact:5', now: now + 1000 }), 'conversation');
+  assert.equal(again.check({ conv: '7:2', contact: '7:contact:5', now: now + 1000 }), null);
+  again.record({ conv: '7:2', contact: '7:contact:5', now: now + 2000 });
+  assert.equal(again.check({ conv: '7:3', contact: '7:contact:5', now: now + 3000 }), 'contact');
+  // 24 h after the first alert it has expired: one left for this contact, none for conversation 7:1
+  assert.equal(again.check({ conv: '7:1', contact: '7:contact:5', now: now + DEFAULT_LIMITS.windowMs + 1 }), null);
+  // conversation_resolved never touches the ledger (it lives in store meta, not conversation state)
+  const { engine } = H.loadEngine();
+  const st = engine.returnedToBot(engine.humanTookOver(null));
+  assert.equal(st.flood, undefined);
+});
+
+test('forged button values over the webhook do nothing', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const conv = 341;
+  await send(H.incoming(conv, ++msgId, 'hi'));
+  mock.reset();
+  await send(H.buttonClick(conv, ++msgId, 'entry:safety-injury', 'x'.repeat(10000)));
+  await send(H.buttonClick(conv, ++msgId, 'route:account-02:-1', 'x'));
+  assert.deepEqual(forConv(conv), []);
+});
+
+test('a 150,000-character message: answered quickly, nothing long reaches Chatwoot', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const conv = 351;
+  const huge = `talk to a person about my pool ${'blah '.repeat(30000)}`.slice(0, 150000);
+  const t0 = Date.now();
+  const r = await send(H.incoming(conv, ++msgId, huge));
+  assert.equal(r.status, 200);
+  assert.ok(Date.now() - t0 < 2000);
+  for (const c of forConv(conv)) assert.ok(JSON.stringify(c.body || {}).length < 6000);
+});
+
+test('401s are logged at most once a minute, with a count of the rest', async () => {
+  let clock = 0;
+  const warns = [];
+  const { engine } = H.loadEngine();
+  const bot = new Bot({
+    engine,
+    client: new ChatwootClient({ baseUrl: mock.url, token: TOKEN, accountId: H.ACCOUNT_ID }),
+    store: new MemoryStore({ file: null }),
+    tracker: new Tracker({ file: null }),
+    accountId: H.ACCOUNT_ID,
+    agents: AGENTS,
+  });
+  const server = createServer({
+    bot,
+    secret: SECRET,
+    logger: { info() {}, warn: (m) => warns.push(m), error() {} },
+    now: () => clock,
+  });
+  await new Promise((res) => server.listen(0, '127.0.0.1', res));
+  servers.push(server);
+  const url = `http://127.0.0.1:${server.address().port}/webhook`;
+  for (let i = 0; i < 5; i++) assert.equal((await H.postWebhook(url, { junk: i })).status, 401);
+  assert.equal(warns.length, 1);
+  clock += 61 * 1000;
+  assert.equal((await H.postWebhook(url, { junk: 9 })).status, 401);
+  assert.equal(warns.length, 2);
+  assert.match(warns[1], /\+4 more since the last line/);
+  // the sampler itself
+  let t = 0;
+  const lines = [];
+  const log = sampler(1000, () => t);
+  log((m) => lines.push(m), 'a');
+  log((m) => lines.push(m), 'a');
+  t = 1000;
+  log((m) => lines.push(m), 'a');
+  assert.deepEqual(lines, ['a', 'a (+1 more since the last line)']);
+});
+
+// ------------------------------------------------------------------ round-2 review (fix2, round 2)
+/** An in-process Chatwoot client whose every call takes `delay` ms, like real HTTP (verify2/security/race.js). */
+function slowClient(delay, counts) {
+  const ok = (extra = {}) => new Promise((r) => setTimeout(() => r({ ok: true, status: 200, ...extra }), delay));
+  return {
+    sendText: () => ok(),
+    sendSelect: () => ok(),
+    sendNote: (c, t) => {
+      if (/mention:\/\/user\//.test(t)) counts.mentions++;
+      return ok();
+    },
+    setCustomAttributes: () => ok(),
+    getLabels: () => ok({ labels: [] }),
+    setLabels: () => ok(),
+    togglePriority: () => ok(),
+    toggleStatus: () => {
+      counts.opens++;
+      return ok();
+    },
+  };
+}
+function burstBot(counts, delay = 20) {
+  const { engine } = H.loadEngine();
+  return new Bot({
+    engine,
+    client: slowClient(delay, counts),
+    store: new MemoryStore({ file: null }),
+    tracker: new Tracker({ file: null }),
+    accountId: 1,
+    inboxId: 5,
+    agents: AGENTS,
+    publicUrl: 'https://chat.poolrentalnearme.com',
+    logger: silent,
+  });
+}
+const burstMsg = (conv, contact, content) => ({
+  account: { id: 1 },
+  inbox: { id: 5 },
+  event: 'message_created',
+  id: conv,
+  message_type: 'incoming',
+  private: false,
+  content,
+  conversation: { id: conv, status: 'pending', custom_attributes: {}, meta: { sender: { id: contact, type: 'contact' } } },
+});
+
+test('D3 under concurrency: 30 conversations escalating at once → exactly 10 @mentions and 10 opens (global ceiling)', async () => {
+  const counts = { mentions: 0, opens: 0 };
+  const bot = burstBot(counts);
+  await Promise.all(
+    Array.from({ length: 30 }, (_, i) => bot.handleEvent(burstMsg(i + 1, 1000 + i, 'someone is hurt at the pool')))
+  );
+  await bot.idle();
+  assert.equal(counts.mentions, DEFAULT_LIMITS.globalPerHour);
+  assert.equal(counts.opens, DEFAULT_LIMITS.globalPerHour);
+});
+
+test('D3 under concurrency: 5 conversations of one contact at once → exactly 2 @mentions and 2 opens', async () => {
+  const counts = { mentions: 0, opens: 0 };
+  const bot = burstBot(counts);
+  await Promise.all(Array.from({ length: 5 }, (_, i) => bot.handleEvent(burstMsg(i + 1, 500, 'someone is hurt at the pool'))));
+  await bot.idle();
+  assert.equal(counts.mentions, DEFAULT_LIMITS.perContact);
+  assert.equal(counts.opens, DEFAULT_LIMITS.perContact);
+});
+
+test('D3 reservation: a handoff that fails before its @mention note gives the slot back', () => {
+  const ledger = new FloodLedger({ limits: { globalPerHour: 1 } });
+  const now = Date.now();
+  const a = ledger.reserve({ conv: 'a', contact: 'x', now });
+  assert.ok(a.token);
+  assert.equal(ledger.reserve({ conv: 'b', contact: 'y', now }).capped, 'global');
+  ledger.release(a.token);
+  assert.ok(ledger.reserve({ conv: 'b', contact: 'y', now: now + 1 }).token);
+});
+
+test('open conversation after a sent handoff: danger gets the 911 line once, urgent label + priority, no new @mention, no reopen', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const conv = 361;
+  await send(H.incoming(conv, ++msgId, 'talk to a person'));
+  await send(H.incoming(conv, ++msgId, 'question about my listing photos'));
+  await send(H.buttonClick(conv, ++msgId, 'reply:chat', 'Here in chat'));
+  assert.equal(mentionNotes(forConv(conv)).length, 1);
+  assert.equal(toggles(forConv(conv)).length, 1);
+  // Chatwoot now reports the conversation as open; nobody has replied yet
+  mock.reset();
+  await send(H.incoming(conv, ++msgId, 'hello?', { status: 'open' }));
+  assert.deepEqual(forConv(conv), [], 'otherwise quiet while they wait');
+  await send(H.incoming(conv, ++msgId, 'omg my son is choking', { status: 'open' }));
+  const calls = forConv(conv);
+  assert.deepEqual(publicTexts(calls), [LINE_911, COPY.markedUrgent]);
+  assert.ok(calls.some((c) => /toggle_priority$/.test(c.path) && c.body.priority === 'urgent'));
+  assert.ok(labelSets(calls).some((l) => l.includes('urgent')));
+  assert.equal(mentionNotes(calls).length, 0);
+  assert.equal(toggles(calls).length, 0);
+  // once a person replies, the assistant stays silent even about danger (a person is handling it)
+  await send(H.agentReply(conv, ++msgId, 'Derek here, calling 911 with you now', { status: 'open' }));
+  mock.reset();
+  await send(H.incoming(conv, ++msgId, 'he is still choking', { status: 'open' }));
+  assert.deepEqual(publicTexts(forConv(conv)), []);
+});
+
+test('capped conversation: a booking ref typed later reaches the custom attributes', async () => {
+  mock.reset();
+  const { send } = await startBot();
+  const contactId = 9911;
+  const ref = '7a1c2e3f-aaaa-bbbb-cccc-1234567890ab';
+  for (const conv of [371, 372, 373]) {
+    await send(H.incoming(conv, ++msgId, 'talk to a person', { contactId }));
+    await send(H.incoming(conv, ++msgId, 'payout question', { contactId }));
+    await send(H.buttonClick(conv, ++msgId, 'ref:none', "I don't have it", { contactId }));
+    await send(H.buttonClick(conv, ++msgId, 'reply:chat', 'Here in chat', { contactId }));
+  }
+  assert.equal(mentionNotes(forConv(373)).length, 0, 'the third is contact-capped');
+  mock.reset();
+  await send(H.incoming(373, ++msgId, `actually my ref is ${ref}`, { contactId }));
+  const attrs = forConv(373).filter((c) => /custom_attributes$/.test(c.path));
+  assert.ok(attrs.some((c) => c.body.custom_attributes.prnm_booking_ref === ref));
+  assert.deepEqual(publicTexts(forConv(373)), []);
+});

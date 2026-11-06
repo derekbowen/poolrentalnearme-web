@@ -10,6 +10,8 @@
  *   { type: 'select', content, items }          public message with buttons (free typing still works)
  *   { type: 'note', content }                   private note (customers never see it)
  *   { type: 'escalate' }                        run the Chatwoot handoff (handoff.js), then call afterEscalation()
+ *   { type: 'flag_urgent', labels, note, okText }  no new alert: add labels, set urgent priority, post a
+ *                                               plain note (no @mention); say okText only if all succeeded
  *
  * Events (for tracking.js): answered, clarify, unmatched, handoff, escalated,
  * escalation_failed, card_warning, password_warning, role_set, cancelled_handoff.
@@ -20,6 +22,20 @@ const { correctedText, clean } = require('./normalize');
 const { COPY, LINE_911, handoffConfirmed, handoffFailed, calm } = require('./copy');
 
 const SAFETY_VOCAB = [
+  'fainted',
+  'collapsed',
+  'unresponsive',
+  'sprained',
+  'allergic',
+  'breathing',
+  'choking',
+  'stolen',
+  'liable',
+  'scratched',
+  'stained',
+  'clogged',
+  'electrocuted',
+  'harassing',
   'drowning',
   'drowned',
   'injured',
@@ -61,6 +77,15 @@ const SAFETY_VOCAB = [
   'hospital',
   'medical',
   'guarantee',
+  // round-2 review: typos of these must still reach the safety checks ("consussion")
+  'concussion',
+  'wheezing',
+  'struggling',
+  'stabbed',
+  'weapon',
+  'creepy',
+  'unresponsive',
+  'breathe',
 ];
 
 const SAFETY_TARGETS = new Set(SAFETY_VOCAB);
@@ -96,6 +121,13 @@ const CATEGORY_SLUG = {
 
 const MAX_HISTORY = 12;
 const MAX_ESCALATION_TRIES = 5;
+const MAX_EXTRA = 10; // "They also said" lines kept per handoff
+const MAX_OFFERED = 12; // button values remembered from the last select
+const MAX_OFFERED_LOG = 30; // button values remembered across earlier selects
+const DANGER_REPEAT_MS = 10 * 60 * 1000; // the 911 line while waiting for a person: at most once per 10 minutes
+// taps whose meaning depends on the question on screen right now; from an older message they need words
+const CONTEXT_VALUES = /^(?:other|yes:|no:|ref:none|reply:|safety:)/;
+const cap = (t) => (t == null ? t : safety.capText(t, safety.MAX_STORED_CHARS));
 
 function newState(convId = null, now = Date.now()) {
   return {
@@ -120,6 +152,16 @@ function newState(convId = null, now = Date.now()) {
     lastQuestion: null,
     handoff: null,
     humanOwned: false,
+    upsetSeen: false,
+    // values (and our own titles) of the buttons in the last select we sent
+    offered: [],
+    // every button we offered recently (bounded): an older but genuine tap is still answered, a forged one never
+    offeredLog: [],
+    // the founders were alerted (@mention note) for the thread that is open now; cleared on resolve / back to the bot
+    alertThread: false,
+    // when the 911 line was last said while waiting for a person (said once, not on every message)
+    dangerAt: null,
+    replyNoTextSaid: false,
     history: [],
     createdAt: now,
     updatedAt: now,
@@ -154,7 +196,20 @@ function explicitRole(text) {
 }
 
 const GREETING_ONLY =
-  /^(hi|hey|hello|hiya|howdy|yo|sup|heya|hola|good (morning|afternoon|evening)|whats up|wassup|hey there|hi there|hello there|greetings|help|hi help|hey help|start|menu|\?+)$/;
+  /^(hi|hey|hello|hiya|howdy|yo|sup|heya|hola|bonjour|bonsoir|hallo|salut|ciao|ola|oi|hej|buongiorno|buenas|buenos dias|bom dia|guten tag|good (morning|afternoon|evening)|whats up|wassup|hey there|hi there|hello there|greetings|help|hi help|hey help|start|menu|\?+)$/;
+// "can someone help me?", "is anyone there?": no question yet, so offer the starters (with the founder button)
+const HELP_ONLY =
+  /^(?:hi |hey |hello |yo )?(?:(?:can|could|will|would) )?(?:some ?one|some ?body|any ?one|any ?body|you|u) (?:please |pls |plz )?help(?: me| us)?(?: please| pls| plz| out| here| quick)?$|^(?:hi |hey |hello )?(?:i )?(?:need|want) (?:some )?help(?: please| pls| plz| here)?$|^(?:hi |hey |hello+ )?(?:is )?(?:any ?one|any ?body|someone|somebody) (?:there|here|around|on|online|available|awake|home)$|^hello+ any ?one$|^(?:help me|help us)(?: please| pls| plz)?$/;
+// "i'm a host" on its own: set the role and offer that role's starters, don't guess a question
+const BARE_ROLE =
+  /^(?:(?:hi|hey|hello|yo|hiya|so|ok|okay|hola) )?(?:i am|im|i m) (?:a |an |the )?(?:(host|pool host|pool owner|homeowner with a pool|hosting)|(guest|swimmer|renter|customer|booking a swim))(?: here| too| btw| on here| now| lol)?$/;
+function bareRole(s) {
+  const m = s.match(BARE_ROLE);
+  if (!m) return null;
+  return m[1] ? 'host' : 'swimmer';
+}
+// buttons that only ever say "who I am" or "get me a person": safe to accept from an older message
+const STANDING_VALUES = new Set(['founder', 'role:swimmer', 'role:host']);
 const THANKS =
   /^(thanks|thank you|thank u|thx|ty|tysm|cheers|appreciate it|much appreciated|thanks so much|thank you so much|awesome thanks|great thanks|perfect thanks|cool thanks|ok thanks|okay thanks|got it thanks)\b/;
 const BYE = /^(bye|goodbye|good bye|see ya|see you|later|cya|have a good (one|day|night)|peace)\b/;
@@ -224,7 +279,7 @@ class Engine {
   }
 
   format(entry, st, text = entry.answer) {
-    let s = st.mood === 'upset' ? calm(text) : text;
+    let s = this.isCalm(st) ? calm(text) : text;
     if (entry.link) s += `\n\n${this.abs(entry.link)}`;
     return s;
   }
@@ -265,17 +320,24 @@ class Engine {
     const m = this.matcher.match(text, { role: st.role, topic: null });
     if (!m.top || m.top.score < THRESHOLDS.CLARIFY) return null;
     const e = this.byId.get(m.top.id);
-    return { id: e.id, category: e.category, score: round(m.top.score) };
+    return {
+      id: e.id,
+      category: e.category,
+      score: round(m.top.score),
+      confident: m.status === 'confident' && m.top.id === e.id,
+    };
   }
 
   /** Fill in category / booking-ref relevance for a handoff whose question we only just learned. */
   enrichHandoff(st, h) {
     const near = this.closest(h.question, st);
     if (!near) return;
-    h.closest = near;
+    h.closest = { id: near.id, score: near.score };
+    // a weak guess ("payout question" ≈ "can I message the host" at 0.6) names no topic and asks for no booking ref
+    const strong = near.confident && near.score >= THRESHOLDS.CONFIDENT;
+    if (!strong) return;
     if (!h.category || h.category === 'safety, disputes, and human help')
       h.category = near.category;
-    const strong = near.score >= THRESHOLDS.CONFIDENT;
     if (
       strong &&
       !h.bookingRefAsked &&
@@ -297,13 +359,21 @@ class Engine {
    */
   handle(prevState, input, ctx = {}) {
     const st = prevState ? clone(prevState) : newState(null, ctx.now || Date.now());
+    if (!Array.isArray(st.offered)) st.offered = null; // state from before offered buttons were tracked
+    if (!Array.isArray(st.offeredLog)) st.offeredLog = [];
     st.updatedAt = ctx.now || Date.now();
     const turn = new Turn();
     // A person owns the conversation now: the assistant stays silent.
-    if (st.humanOwned || (st.handoff && st.handoff.status === 'sent')) return turn.result(st);
+    if (st.humanOwned) return turn.result(st);
+    // Handed off (alert sent) or logged without an alert (flood cap): stay quiet while they wait,
+    // except to keep what they add and to answer danger with the 911 line.
+    if (st.handoff && (st.handoff.status === 'sent' || st.handoff.status === 'capped')) {
+      if (input.kind === 'text') this.whileWaiting(st, input, turn);
+      return turn.result(st);
+    }
 
     if (input.kind === 'button') {
-      st.mood = 'neutral';
+      st.mood = st.upsetSeen ? 'upset' : 'neutral';
       this.onButton(st, input, turn);
     } else {
       this.onText(st, input, turn);
@@ -312,13 +382,139 @@ class Engine {
     return turn.result(st);
   }
 
+  /**
+   * A message while the handoff waits for a person (alert sent, or logged under a flood cap).
+   * No new @mention and no reopen (D3). What they add is kept; danger gets the 911 line
+   * once and the conversation is marked urgent (label + priority + a plain note).
+   */
+  whileWaiting(st, input, turn) {
+    const sens = safety.prepareInput(input.text);
+    const t = sens.text;
+    if (!t) return;
+    const h = st.handoff;
+    this.pushHistory(st, 'customer', t);
+    // keep a booking ref or email they add now (mirrored into Chatwoot attributes by the executor)
+    const ref = safety.findBookingRef(t);
+    if (ref && !st.bookingRef) st.bookingRef = cap(ref);
+    const email = safety.findEmail(t);
+    if (email && !st.email) st.email = cap(email);
+    if (sens.cards || sens.cvv) {
+      turn.say(COPY.cardWarning);
+      turn.log('card_warning', { waiting: h.status });
+    }
+    if (!safety.dangerSignal(t)) return;
+    this.addDetail(h, t);
+    const now = st.updatedAt;
+    if (st.dangerAt && now - st.dangerAt < DANGER_REPEAT_MS) return;
+    st.dangerAt = now;
+    h.urgency = 'high';
+    h.lead911 = true;
+    turn.actions.unshift({ type: 'say', content: LINE_911 });
+    turn.flagUrgent({
+      labels: h.status === 'capped' ? ['handoff', 'urgent', h.capped === 'global' ? 'handoff-overflow' : 'handoff-capped'] : ['handoff', 'urgent'],
+      note: this.dangerNote(st, t),
+      okText: COPY.markedUrgent,
+    });
+    turn.log('danger_while_waiting', { status: h.status });
+  }
+
+  /** Plain private note (no @mention, so no new push: D3) about danger reported while waiting. */
+  dangerNote(st, text) {
+    const h = st.handoff || {};
+    const lines = [
+      `PRNM update (URGENT, no new alert): the customer reported possible danger ${h.status === 'capped' ? 'after the alert limit was reached' : 'after the handoff'}.`,
+      'Message:',
+      quoteNote(safety.redactForLog(text, 500)),
+    ];
+    if (st.bookingRef) lines.push(`Booking ref: ${defang(st.bookingRef)}`);
+    return lines.join('\n');
+  }
+
+  /** Calm, direct voice: an upset customer stays "upset" for the rest of the conversation. */
+  isCalm(st) {
+    return st.mood === 'upset' || st.mood === 'urgent' || !!st.upsetSeen;
+  }
+
+  /**
+   * The offered item for a tapped value: { value, title, stale } or null when we never offered it (forged).
+   * `stale` = genuine, but from an older message than the last one with buttons.
+   */
+  offeredItem(st, value) {
+    const list = Array.isArray(st.offered) ? st.offered : [];
+    const hit = list.find((i) => i.value === value);
+    if (hit) return { ...hit, stale: false };
+    const old = (st.offeredLog || []).find((i) => i.value === value);
+    if (old) return { ...old, stale: true };
+    if (STANDING_VALUES.has(value) && (st.offered === null || (st.offeredEver || []).includes(value))) {
+      const g = ((this.routes.starters || {}).greeting || []).find((b) => b.value === value);
+      return { value, title: g ? g.title : value, stale: true };
+    }
+    return null;
+  }
+
+  /** Does a context-dependent tap (other / yes: / no: / ref: / reply: / safety:) still fit what is on screen? */
+  tapFits(st, v) {
+    const a = st.awaiting || {};
+    const collecting = st.handoff && st.handoff.status === 'collecting';
+    if (v === 'other') return a.kind === 'disambiguate' || a.kind === 'guard';
+    if (v.startsWith('yes:') || v.startsWith('no:'))
+      return a.kind === 'followup' && a.entryId === v.slice(v.indexOf(':') + 1);
+    if (v === 'ref:none') return collecting && a.kind === 'slot' && /^booking_ref/.test(a.slot || '');
+    if (v.startsWith('reply:')) return collecting && a.kind === 'slot' && a.slot === 'reply_method';
+    if (v.startsWith('safety:')) return a.kind === 'safety-check';
+    return true;
+  }
+
+  addDetail(h, text) {
+    const t = cap(text);
+    if (!t) return;
+    if (!h.question || h.question === '(not given)') h.question = t;
+    else if (!h.extra.includes(t)) {
+      h.extra.push(t);
+      if (h.extra.length > MAX_EXTRA) h.extra.splice(0, h.extra.length - MAX_EXTRA);
+    }
+  }
+
+  /** Rule 8 is decided by what the customer actually wrote, on every handoff path. */
+  customerRule8(st, h) {
+    const texts = [
+      h.question,
+      h.context,
+      ...(h.extra || []),
+      ...(st.misses || []),
+      st.lastQuestion,
+      ...(st.history || []).filter((x) => x.from === 'customer').map((x) => x.text),
+    ].filter(Boolean);
+    return texts.some((t) => safety.rule8Text(t));
+  }
+
+  /** Same canonical words as before: a re-asked question, not a pick. */
+  sameQuestion(a, b) {
+    const x = new Set(this.matcher.canon(a));
+    const y = new Set(this.matcher.canon(b));
+    if (!x.size || !y.size) return false;
+    const both = [...x].filter((t) => y.has(t)).length;
+    return both / Math.max(x.size, y.size) >= 0.8;
+  }
+
+  /** How closely typed text copies an option title (shared words over the longer of the two). */
+  titleOverlap(text, title) {
+    const x = new Set(this.matcher.canon(text));
+    const y = new Set(this.matcher.canon(title));
+    if (!x.size || !y.size) return 0;
+    const both = [...x].filter((t) => y.has(t)).length;
+    return both / Math.max(x.size, y.size);
+  }
+
   onText(st, input, turn) {
-    const raw = String(input.text || '').trim();
+    // D4: only the first MAX_INPUT_CHARS are ever processed (redacted first, over a slightly longer window)
+    const sens = safety.prepareInput(input.text);
+    const raw = sens.text;
     if (!raw) {
       if (input.attachments) turn.say(COPY.attachmentOnly);
       return;
     }
-    const sens = safety.scanSensitive(raw);
+    if (sens.truncated) turn.log('truncated', { chars: sens.originalLength });
     const text = sens.text;
     if (sens.cards || sens.cvv) {
       turn.say(COPY.cardWarning);
@@ -336,12 +532,13 @@ class Engine {
     }
     this.pushHistory(st, 'customer', text);
     st.mood = safety.mood(raw);
+    if (st.mood === 'upset') st.upsetSeen = true;
 
     // Remember what they already told us.
     const ref = safety.findBookingRef(text);
     if (ref) st.bookingRef = ref;
     const email = safety.findEmail(text);
-    if (email) st.email = email;
+    if (email) st.email = cap(email);
     const role = explicitRole(text);
     if (role && role !== st.role) {
       st.role = role;
@@ -351,9 +548,8 @@ class Engine {
     // Only the redacted remainder is left?
     if (sens.found && !clean(text.replace(/\[[a-z ]+ removed\]/g, ''))) return;
 
-    const guard = safety.detectGuards(
-      text,
-      correctedText(text, this.matcher.speller, SAFETY_TARGETS)
+    const guard = safety.detectGuards(text, (part) =>
+      correctedText(part, this.matcher.speller, SAFETY_TARGETS)
     );
     const retrying = st.handoff && st.handoff.status === 'failed';
     if (guard && guard.kind === 'urgent' && !(retrying && st.handoff.urgency === 'high'))
@@ -361,7 +557,7 @@ class Engine {
 
     // A previous handoff failed: try again with whatever they just added.
     if (retrying) {
-      st.handoff.extra.push(text);
+      this.addDetail(st.handoff, text);
       return this.escalate(st, turn);
     }
 
@@ -381,7 +577,7 @@ class Engine {
       });
     }
     if (guard && guard.kind === 'clarify') {
-      st.awaiting = { kind: 'guard', routes: guard.routes, text };
+      st.awaiting = { kind: 'guard', routes: guard.routes, text: cap(text) };
       turn.select(
         guard.prompt,
         guard.routes.map((r, i) => ({ title: guard.titles[i], value: `entry:${r}` }))
@@ -389,19 +585,33 @@ class Engine {
       turn.log('clarify', { kind: 'guard', candidates: guard.routes.map((id) => ({ id })) });
       return;
     }
-    const plain = text
+    const plain = safety
+      .stripRefs(text)
       .replace(/\[[a-z ]+ removed\]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
     if (st.awaiting && this.onTypedReply(st, plain, turn)) return;
     if (this.smallTalk(st, plain, turn)) return;
-    st.lastQuestion = text;
+    st.lastQuestion = cap(text);
     return this.answerOrClarify(st, plain, turn);
   }
 
   onButton(st, input, turn) {
-    const v = String(input.value || '');
+    const v = String(input.value || '').slice(0, 200);
+    // the widget lets a visitor submit any value/title: accept only what we offered, with our own title
+    const item = this.offeredItem(st, v);
+    if (!item) {
+      turn.log('button_rejected', { value: safety.redactForLog(v, 60) });
+      return;
+    }
+    if (item.stale) {
+      turn.log('stale_tap', { value: safety.redactForLog(v, 60) });
+      // an older yes/no or "something else" means nothing now: ask for words instead of going quiet
+      if (CONTEXT_VALUES.test(v) && !this.tapFits(st, v)) return turn.say(COPY.staleTap);
+    }
+    const offeredTitle = cap(safety.scanSensitive(String(item.title || '')).text);
     const awaiting = st.awaiting;
+    if (v === 'safety:yes' || v === 'safety:no') return this.safetyAnswer(st, v === 'safety:yes', turn);
     if (v.startsWith('role:')) {
       const role = v.slice(5) === 'host' ? 'host' : 'swimmer';
       st.role = role;
@@ -419,9 +629,9 @@ class Engine {
       const e = this.byId.get(v.slice(6));
       if (!e) return;
       if (st.handoff && st.handoff.status === 'collecting') st.handoff = null;
-      const title = input.title || e.question;
-      // keep their own words when the tap answers our clarifying question
-      const text = awaiting && awaiting.text ? `${awaiting.text} → ${title}` : title;
+      const title = offeredTitle || e.question;
+      // keep their own words when the tap answers our clarifying question (not when it is from an older message)
+      const text = cap(awaiting && awaiting.text && !item.stale ? `${awaiting.text} → ${title}` : title);
       return this.answerEntry(st, e, turn, { via: 'button', score: 1, text });
     }
     if (v === 'other') {
@@ -430,7 +640,9 @@ class Engine {
     }
     if (v.startsWith('route:')) {
       const parts = v.split(':');
-      return this.followClarifyRoute(st, parts[1], Number(parts[2]), turn);
+      const idx = Number(parts[2]);
+      if (!Number.isInteger(idx) || idx < 0) return;
+      return this.followClarifyRoute(st, parts[1], idx, turn);
     }
     if (v.startsWith('yes:') || v.startsWith('no:')) {
       return this.followup(
@@ -453,18 +665,25 @@ class Engine {
   }
 
   // ------------------------------------------------------------------ matching
-  answerOrClarify(st, text, turn) {
+  answerOrClarify(st, text, turn, { safetyChecked = false } = {}) {
     const m = this.matcher.match(text, { role: st.role, topic: st.topic });
     if (m.status === 'confident') {
-      return this.answerEntry(st, this.byId.get(m.top.id), turn, {
+      const top = this.byId.get(m.top.id);
+      // An urgent entry (911 line, founders paged) only through a safety guard, never from a
+      // look-alike question ("is the pool safe for kids?" ≈ "the pool is unsafe"): ask first.
+      if (top.urgency === 'high' && top.mode === 'handoff') return this.confirmEntry(st, top, text, turn, m);
+      return this.answerEntry(st, top, turn, {
         via: 'match',
         score: m.top.score,
         text,
       });
     }
+    // Not sure what they mean, and it reads like someone may be hurt or in danger: ask that first,
+    // with the 911 line, instead of offering unrelated answers.
+    if (!safetyChecked && safety.softDanger(text)) return this.safetyCheck(st, text, turn);
     if (m.status === 'ambiguous') {
       if (m.needsRole) {
-        st.awaiting = { kind: 'role', text };
+        st.awaiting = { kind: 'role', text: cap(text) };
         turn.select(COPY.askRole, COPY.roleButtons);
         turn.log('clarify', {
           kind: 'role',
@@ -475,8 +694,9 @@ class Engine {
       if (st.clarifiedOnce) return this.miss(st, text, turn, m);
       st.clarifiedOnce = true;
       const opts = m.candidates.slice(0, 3);
-      st.awaiting = { kind: 'disambiguate', options: opts.map((o) => o.id), text };
-      turn.select(COPY.disambiguate, [
+      st.awaiting = { kind: 'disambiguate', options: opts.map((o) => o.id), text: cap(text) };
+      // one candidate: a yes/no ("is this what you mean?"), not a one-item menu
+      turn.select(opts.length === 1 ? COPY.confirmOne : COPY.disambiguate, [
         ...opts.map((o) => ({ title: this.byId.get(o.id).question, value: `entry:${o.id}` })),
         { title: COPY.somethingElse, value: 'other' },
       ]);
@@ -493,6 +713,7 @@ class Engine {
   miss(st, text, turn, m, { fromClarify = false } = {}) {
     st.attempts += 1;
     if (text) st.misses.push(safety.redactForLog(text, 300));
+    if (st.misses.length > 4) st.misses.splice(0, st.misses.length - 4);
     st.awaiting = null;
     turn.log('unmatched', {
       text: safety.redactForLog(text),
@@ -510,7 +731,53 @@ class Engine {
       });
     }
     if (fromClarify) return turn.say(COPY.rephrase);
+    // one question per message: "say it another way?", with the founder as a button, not a second question
     turn.select(COPY.firstMiss, [COPY.founderButton]);
+  }
+
+  /** "Is this what you mean?" for an urgent entry the matcher reached without a safety guard. */
+  confirmEntry(st, entry, text, turn, m) {
+    if (st.clarifiedOnce) return this.miss(st, text, turn, m);
+    st.clarifiedOnce = true;
+    st.awaiting = { kind: 'disambiguate', options: [entry.id], text: cap(text) };
+    // a statement that matched a 911 entry ("my kid got hurt ...") still hears the 911 line first;
+    // a question ("is the pool safe for kids?") does not
+    const lead = entry.answer.startsWith(LINE_911) && !safety.isQuestion(text);
+    turn.select(lead ? `${LINE_911} ${COPY.confirmOne}` : COPY.confirmOne, [
+      { title: entry.question, value: `entry:${entry.id}` },
+      { title: COPY.somethingElse, value: 'other' },
+    ]);
+    turn.log('clarify', {
+      kind: 'confirm_urgent',
+      text: safety.redactForLog(text),
+      candidates: [{ id: entry.id, score: round(m.top.score) }],
+    });
+  }
+
+  /** "If anyone is hurt or in danger, call 911 first. Is someone hurt or in danger right now?" */
+  safetyCheck(st, text, turn) {
+    st.awaiting = { kind: 'safety-check', text: cap(text) };
+    turn.select(COPY.safetyCheck, COPY.safetyButtons);
+    turn.log('clarify', { kind: 'safety_check', text: safety.redactForLog(text) });
+  }
+
+  safetyAnswer(st, yes, turn, extra = null) {
+    const a = st.awaiting && st.awaiting.kind === 'safety-check' ? st.awaiting : { text: '' };
+    st.awaiting = null;
+    turn.log('safety_check_answer', { yes });
+    if (yes) {
+      this.startUrgent(
+        st,
+        { id: 'distress', route: 'safety-injury', topics: ['possible emergency'], lead911: true, after911: true },
+        a.text || 'Customer said someone is hurt or in danger.',
+        turn
+      );
+      // the note is built from the final state, so what they just added still reaches it
+      if (extra) this.addDetail(st.handoff, extra);
+      return;
+    }
+    if (!a.text) return turn.say(COPY.rephrase);
+    return this.answerOrClarify(st, a.text, turn, { safetyChecked: true });
   }
 
   answerEntry(st, entry, turn, meta = {}) {
@@ -553,7 +820,7 @@ class Engine {
     if ((this.routes.clarify_first || []).includes(entry.id)) content = entry.clarify_prompt;
     else if (entry.answer.includes(entry.clarify_prompt)) content = entry.answer;
     else content = `${entry.answer} ${entry.clarify_prompt}`;
-    if (st.mood === 'upset') content = calm(content);
+    if (this.isCalm(st)) content = calm(content);
     st.awaiting = { kind: 'clarify-entry', entryId: entry.id };
     turn.select(content, items);
   }
@@ -573,7 +840,8 @@ class Engine {
     if (route.say) {
       st.awaiting = null;
       st.attempts = 0;
-      return turn.say(route.link ? `${route.say}\n\n${this.abs(route.link)}` : route.say);
+      const say = this.isCalm(st) ? calm(route.say) : route.say;
+      return turn.say(route.link ? `${say}\n\n${this.abs(route.link)}` : say);
     }
     if (route.handoff) {
       const h = route.handoff;
@@ -620,7 +888,7 @@ class Engine {
     st.awaiting = null;
     if (answer === 'no') return turn.say(COPY.noThanks);
     const route = this.followupRoute(entry);
-    if (!route) return turn.say(COPY.ok);
+    if (!route) return turn.say(this.isCalm(st) ? COPY.okCalm : COPY.ok);
     if (route.entry)
       return this.answerEntry(st, this.byId.get(route.entry), turn, { via: 'followup', score: 1 });
     return this.startHandoff(st, turn, {
@@ -637,6 +905,22 @@ class Engine {
   onTypedReply(st, text, turn) {
     const a = st.awaiting;
     const s = clean(text);
+    if (a.kind === 'safety-check') {
+      const whole = safety.yesNo(text);
+      const lead = whole || safety.yesNo(text, { prefix: true });
+      // "yes" / "yes he's still in the water": urgent, with whatever they added
+      if (lead === 'yes') {
+        this.safetyAnswer(st, true, turn, whole ? null : text);
+        return true;
+      }
+      if (whole === 'no') {
+        this.safetyAnswer(st, false, turn);
+        return true;
+      }
+      // "no, it's about my booking": their new words are the question now
+      st.awaiting = null;
+      return false;
+    }
     if (a.kind === 'role') {
       let role = explicitRole(text);
       if (!role && /\b(swim|swimming|swimmer|book|booking|guest|renter|renting)\b/.test(s))
@@ -671,14 +955,24 @@ class Engine {
         this.miss(st, a.text, turn, null, { fromClarify: true });
         return true;
       }
-      // typed one of the option titles?
-      const pick = this.pickOption(
-        text,
-        opts.map((id) => this.byId.get(id).question)
-      );
+      // the same question again is not a pick: run it fresh (it counts towards the two misses)
+      if (a.text && this.sameQuestion(text, a.text)) {
+        st.awaiting = null;
+        return false;
+      }
+      // typed one of the option titles? Only a near-copy, or a pick the matcher would also choose.
+      const titles = opts.map((id) => this.byId.get(id).question);
+      const pick = this.pickOption(text, titles);
       if (pick >= 0) {
-        this.answerEntry(st, this.byId.get(opts[pick]), turn, { via: 'clarify', score: 1, text });
-        return true;
+        const nearCopy = this.titleOverlap(text, titles[pick]) >= 0.8;
+        const fresh = nearCopy ? null : this.matcher.match(text, { role: st.role, topic: st.topic });
+        if (
+          nearCopy ||
+          (fresh.top && fresh.top.id === opts[pick] && fresh.top.score >= THRESHOLDS.CLARIFY)
+        ) {
+          this.answerEntry(st, this.byId.get(opts[pick]), turn, { via: 'clarify', score: 1, text });
+          return true;
+        }
       }
       if (a.kind === 'guard') {
         if (/\b(account|login|password|app|site|email)\b/.test(s)) {
@@ -736,7 +1030,7 @@ class Engine {
   smallTalk(st, text, turn) {
     const s = clean(text);
     if (!s) return false;
-    if (GREETING_ONLY.test(s)) {
+    if (GREETING_ONLY.test(s) || HELP_ONLY.test(s)) {
       if (!st.greeted) {
         turn.select(COPY.greeting, (this.routes.starters || {}).greeting || []);
         st.greeted = true;
@@ -746,6 +1040,19 @@ class Engine {
           : (this.routes.starters || {}).greeting;
         turn.select(COPY.helloAgain, starters || []);
       }
+      return true;
+    }
+    const bare = bareRole(s);
+    if (bare) {
+      if (st.role !== bare) {
+        st.role = bare;
+        turn.log('role_set', { role: bare, via: 'text' });
+      }
+      st.awaiting = null;
+      turn.select(
+        bare === 'host' ? COPY.roleHost : COPY.roleSwimmer,
+        (this.routes.starters || {})[bare] || []
+      );
       return true;
     }
     const words = s.split(' ').length;
@@ -761,13 +1068,13 @@ class Engine {
     }
     if (ACK.test(s)) {
       st.awaiting = null;
-      turn.say(COPY.ok);
+      turn.say(this.isCalm(st) ? COPY.okCalm : COPY.ok);
       return true;
     }
     const yn = safety.yesNo(text);
     if (yn && words <= 3) {
       st.awaiting = null;
-      turn.say(yn === 'no' ? COPY.noThanks : COPY.ok);
+      turn.say(yn === 'no' ? COPY.noThanks : this.isCalm(st) ? COPY.okCalm : COPY.ok);
       return true;
     }
     return false;
@@ -784,9 +1091,10 @@ class Engine {
       title: o.title || null,
       topics: o.topics || [],
       rule8: !!o.rule8,
-      question: o.question || null,
+      lead911: !!o.lead911,
+      question: cap(o.question) || null,
       questionPrompt: o.questionPrompt || null,
-      context: o.context || null,
+      context: cap(o.context) || null,
       needBookingRef: !!o.needBookingRef,
       bookingRefAsked: false,
       extra: [],
@@ -806,23 +1114,27 @@ class Engine {
     st.handoff = this.baseHandoff(st, {
       reason: 'founder_request',
       entryId: entry.id,
-      category: entry.category,
+      // no topic label from "talk to a person" itself: the topic comes only from a confident match of their question
+      category: null,
       title: 'Customer asked for the founders',
       question: question || (previous && previous.question) || null,
       needBookingRef: mentionsBooking(question),
     });
-    if (!st.handoff.question && st.misses.length) st.handoff.question = st.misses.join(' / ');
+    // the question we were still clarifying is what they want help with: don't make them repeat it
+    if (!st.handoff.question && st.awaiting && st.awaiting.text && st.awaiting.kind !== 'slot')
+      st.handoff.question = cap(st.awaiting.text);
+    if (!st.handoff.question && st.misses.length) st.handoff.question = cap(st.misses.join(' / '));
     if (st.handoff.question) this.enrichHandoff(st, st.handoff);
     if (!st.handoff.question) {
       st.awaiting = { kind: 'slot', slot: 'question' };
-      turn.say(st.mood === 'upset' ? calm(entry.answer) : entry.answer);
+      turn.say(this.isCalm(st) ? calm(entry.answer) : entry.answer);
       return;
     }
     const ack = entry.answer.replace(
       /\s*What's it about, so they don't have to ask you again\?\s*$/,
       ''
     );
-    turn.say(st.mood === 'upset' ? calm(ack) : ack);
+    turn.say(this.isCalm(st) ? calm(ack) : ack);
     return this.nextSlot(st, turn);
   }
 
@@ -845,7 +1157,8 @@ class Engine {
         /booking reference|specific booking|booking you already have/i.test(entry.answer) ||
         BOOKING_CATEGORIES.has(entry.category),
     });
-    const content = urgent || st.mood === 'upset' ? calm(answer) : answer;
+    const content = urgent || this.isCalm(st) ? calm(answer) : answer;
+    st.handoff.lead911 = content.startsWith(LINE_911);
     if (urgent) {
       turn.say(content);
       return this.escalate(st, turn);
@@ -875,7 +1188,7 @@ class Engine {
       const entry = this.byId.get(route);
       turn.log('answered', { entry: entry.id, score: 1, mode: entry.mode, via: 'guard' });
       if (!st.entryIds.includes(entry.id)) st.entryIds.push(entry.id);
-      st.lastQuestion = text;
+      st.lastQuestion = cap(text);
       return this.startEntryHandoff(st, entry, turn, { ...meta, text });
     }
     const id = route.slice(8);
@@ -895,7 +1208,7 @@ class Engine {
       needBookingRef:
         /booking reference|booking you already have/i.test(b.answer) || mentionsBooking(text),
     });
-    const content = urgent || st.mood === 'upset' ? calm(answer) : answer;
+    const content = urgent || this.isCalm(st) ? calm(answer) : answer;
     if (urgent) {
       turn.say(content);
       return this.escalate(st, turn);
@@ -941,10 +1254,13 @@ class Engine {
       if (!st.entryIds.includes(entry.id)) st.entryIds.push(entry.id);
     }
     turn.log('answered', { entry: entryId, score: 1, mode: 'handoff', via: 'urgent' });
-    st.lastQuestion = text;
-    const injury = (guard.topics || []).some((t) => ['injury', 'unsafe', 'harassment'].includes(t));
+    st.lastQuestion = cap(text);
+    // the rule that answers decides the 911 lead: a hypothetical liability question gets none
     let content = calm(this.stripKnownAsks(answer, st));
-    if (injury && !content.startsWith(LINE_911)) content = `${LINE_911} ${content}`;
+    if (guard.lead911 && !content.startsWith(LINE_911)) content = `${LINE_911} ${content}`;
+    const lead911 = content.startsWith(LINE_911);
+    // they just saw the 911 line in our "is someone hurt?" question: don't say it twice in a row
+    if (guard.after911 && lead911) content = content.slice(LINE_911.length).trim();
     // the 911 line is the first thing they see, even ahead of a card-number warning
     if (content.startsWith(LINE_911)) turn.actions.unshift({ type: 'say', content });
     else turn.say(content);
@@ -956,9 +1272,13 @@ class Engine {
       title,
       topics: guard.topics || [],
       rule8: !!guard.rule8 || RULE8_ENTRIES.has(entryId),
+      lead911,
       question: text,
     });
-    if (previous) st.handoff.extra.push(...[previous.question, ...previous.extra].filter(Boolean));
+    if (previous) {
+      for (const x of [previous.question, ...previous.extra])
+        if (x && x !== '(not given)') this.addDetail(st.handoff, x);
+    }
     st.mood = 'urgent';
     return this.escalate(st, turn);
   }
@@ -1026,15 +1346,14 @@ class Engine {
           // they just want a person: don't keep asking
           h.question = h.question || '(not given)';
         } else {
-          if (h.question) h.extra.push(text);
-          else h.question = text;
+          this.addDetail(h, text);
           if (!h.needBookingRef && !h.bookingRefAsked) h.needBookingRef = mentionsBooking(text);
           this.enrichHandoff(st, h);
         }
         break;
       }
       case 'detail': {
-        h.extra.push(text);
+        this.addDetail(h, text);
         if (!st.bookingRef && h.bookingRefAsked) st.bookingRefDeclined = true;
         break;
       }
@@ -1047,6 +1366,11 @@ class Engine {
           h.bookingRefAsked = true;
           return turn.select(COPY.askBookingRef, [COPY.noRefButton]);
         }
+        // "yeah" to "what's your booking reference?": they have one, so ask for it once more
+        if (slot === 'booking_ref' && yn === 'yes' && !h.refReasked) {
+          h.refReasked = true;
+          return turn.select(COPY.askBookingRefYesNo, [COPY.noRefButton]);
+        }
         if (
           human ||
           yn === 'no' ||
@@ -1055,32 +1379,61 @@ class Engine {
           /^(where|what|how)\b/.test(s)
         ) {
           st.bookingRefDeclined = true;
-          if (!human && !yn && !safety.declinesBookingRef(text)) h.extra.push(text);
+          if (!human && !yn && !safety.declinesBookingRef(text)) this.addDetail(h, text);
         } else if (slot === 'booking_ref_yesno') {
-          h.extra.push(text);
+          this.addDetail(h, text);
           st.bookingRefDeclined = true;
         } else {
-          st.bookingRef = text.length > 120 ? `${text.slice(0, 119)}…` : text;
+          // only something that looks like a reference ("PRNM-4421", a booking link), never "joe at gmail"
+          const ref = safety.findRefToken(text);
+          if (ref) st.bookingRef = cap(ref);
+          else {
+            if (safety.questionRemains(text) && !yn) this.addDetail(h, text);
+            st.bookingRefDeclined = true;
+          }
         }
         break;
       }
       case 'reply_method': {
         const email = safety.findEmail(text);
-        if (email) {
-          st.replyMethod = 'email';
-          st.email = email;
-        } else if (/\b(email|mail|inbox|gmail|outlook)\b/.test(s)) st.replyMethod = 'email';
-        else if (
-          /\b(chat|here|this|in here|in chat|messages?|this chat|right here|either|whatever|any|doesnt matter)\b/.test(
+        const short = s.split(' ').length <= 5;
+        const textOrCall =
+          /\b(text|texts|texting|txt|sms|call|calls|calling|phone|cell|ring me|whatsapp)\b/.test(s) ||
+          /\d{3}\D{0,2}\d{3}\D?\d{4}/.test(text);
+        const wantsEmail =
+          /\b(by email|via email|over email|email me|send me an email|email is (better|fine|good|best)|email would be (better|fine|good|best))\b/.test(
             s
           ) ||
-          human
-        )
-          st.replyMethod = 'chat';
-        else if (st.replyTries >= 1) st.replyMethod = 'chat';
-        else {
+          (short && /\b(email|mail|inbox|gmail|outlook)\b/.test(s));
+        // a short answer ("chat is fine", "here") or a clear phrase; a long sentence is part of their question
+        const wantsChat =
+          human ||
+          /\b(in chat|this chat|right here|here in chat|in here|reply here|either is fine|either works|either way|doesnt matter|whatever works|chat is fine|here is fine)\b/.test(
+            s
+          ) ||
+          (short && /\b(chat|here|either|whatever|messages?|any|this)\b/.test(s));
+        if (email) {
+          st.replyMethod = 'email';
+          st.email = cap(email);
+        } else if (wantsEmail) st.replyMethod = 'email';
+        else if (textOrCall && !st.replyNoTextSaid) {
+          // say once that texts and calls aren't an option here, then offer the two that are
+          st.replyNoTextSaid = true;
           st.replyTries += 1;
-          return turn.select(COPY.askReplyMethod, COPY.replyButtons);
+          return turn.select(COPY.noTexts, COPY.replyButtons);
+        } else if (wantsChat && !textOrCall) st.replyMethod = 'chat';
+        else {
+          // not an answer: anything with substance is part of their question, never dropped
+          const substantive = !textOrCall && safety.questionRemains(text) && !safety.yesNo(text);
+          if (substantive) this.addDetail(h, text);
+          if (st.replyTries >= 1) st.replyMethod = 'chat';
+          else {
+            st.replyTries += 1;
+            return turn.select(
+              substantive ? COPY.addedAskReply : COPY.askReplyMethod,
+              COPY.replyButtons
+            );
+          }
         }
         break;
       }
@@ -1106,8 +1459,10 @@ class Engine {
   escalate(st, turn) {
     const h = st.handoff;
     if (h.tries >= MAX_ESCALATION_TRIES) {
-      return turn.say(handoffFailed({ injury: false }));
+      return turn.say(handoffFailed({ injury: !!h.lead911 }));
     }
+    // rule 8 comes from what the customer wrote, whichever path led here (founder, two misses, guard, entry)
+    if (!h.rule8 && this.customerRule8(st, h)) h.rule8 = true;
     h.status = 'sending';
     st.awaiting = null;
     turn.log('handoff', {
@@ -1134,6 +1489,31 @@ class Engine {
     const turn = new Turn();
     const h = st.handoff;
     if (!h) return turn.result(st);
+    if (result.ok && result.capped) {
+      // flood cap (D3): logged and labelled, no @mention, not opened. Say only what is true.
+      h.status = 'capped';
+      h.capped = result.capped;
+      h.cappedAt = st.updatedAt;
+      h.done = { ...(h.done || {}), ...(result.done || {}) };
+      st.awaiting = null;
+      const urgent = h.urgency === 'high';
+      // "already flagged" only when the founders were alerted about this same open thread;
+      // after a resolve or a hand-back it is a new thread, logged in a fresh note without an alert
+      const already = result.capped === 'conversation' && st.alertThread;
+      turn.say(
+        already
+          ? urgent
+            ? COPY.cappedAlreadyUrgent
+            : COPY.cappedAlready
+          : urgent
+            ? COPY.cappedLoggedUrgent
+            : COPY.cappedLogged
+      );
+      turn.log('escalation_capped', { cap: result.capped, urgency: h.urgency, entry: h.entryId, same_thread: !!already });
+      return turn.result(st);
+    }
+    // the @mention note went out (a full success always includes it): this thread has been alerted
+    if (result.ok || (result.done && result.done.note)) st.alertThread = true;
     if (result.ok) {
       h.status = 'sent';
       h.sentAt = st.updatedAt;
@@ -1143,7 +1523,7 @@ class Engine {
           replyMethod: st.replyMethod,
           email: st.email,
           urgent: h.urgency === 'high',
-          calm: st.mood === 'upset',
+          calm: this.isCalm(st),
         })
       );
       turn.log('escalated', {
@@ -1157,8 +1537,7 @@ class Engine {
       h.tries += 1;
       h.done = { ...(h.done || {}), ...(result.done || {}) };
       h.failedStep = result.step || 'unknown';
-      const injury = (h.topics || []).some((t) => ['injury', 'unsafe', 'harassment'].includes(t));
-      turn.say(handoffFailed({ injury }));
+      turn.say(handoffFailed({ injury: !!h.lead911 }));
       turn.log('escalation_failed', {
         step: result.step || 'unknown',
         status: result.status || null,
@@ -1186,6 +1565,9 @@ class Engine {
     st.attempts = 0;
     st.clarifiedOnce = false;
     st.misses = [];
+    // a new thread: "already flagged" no longer applies, and the 911 line may be said again
+    st.alertThread = false;
+    st.dangerAt = null;
     st.updatedAt = ctx.now || Date.now();
     return st;
   }
@@ -1197,7 +1579,9 @@ class Engine {
       if (firstPublic >= 0) {
         const a = turn.actions[firstPublic];
         const isGreeting = a.content === COPY.greeting;
-        if (!isGreeting) {
+        // "am I talking to a bot?" is answered by the label itself: don't say it twice
+        const isIdentity = turn.events.some((e) => e.type === 'answered' && e.entry === 'human-are-you-a-bot');
+        if (!isGreeting && !isIdentity) {
           const urgent =
             st.handoff &&
             st.handoff.urgency === 'high' &&
@@ -1205,6 +1589,12 @@ class Engine {
           if (urgent) {
             const esc = turn.actions.findIndex((x) => x.type === 'escalate');
             turn.actions.splice(esc, 0, { type: 'say', content: COPY.labelLineAfter });
+          } else if (a.content.startsWith(LINE_911)) {
+            // the 911 line stays the first thing they read
+            turn.actions.splice(firstPublic + 1, 0, { type: 'say', content: COPY.labelLineAfter });
+          } else if (this.isCalm(st)) {
+            // no cheerful "glad you're here" to an angry first message
+            turn.actions.splice(firstPublic, 0, { type: 'say', content: COPY.labelLineCalm });
           } else {
             turn.actions.splice(firstPublic, 0, { type: 'say', content: COPY.labelLine });
           }
@@ -1214,6 +1604,24 @@ class Engine {
     }
     for (const a of turn.actions) {
       if (a.type === 'say' || a.type === 'select') this.pushHistory(st, 'bot', a.content);
+    }
+    const selects = turn.actions.filter((a) => a.type === 'select');
+    if (selects.length) {
+      const items = selects[selects.length - 1].items.slice(0, MAX_OFFERED);
+      st.offered = items.map((i) => ({ value: String(i.value), title: cap(String(i.title)) }));
+      const ever = new Set(st.offeredEver || []);
+      for (const i of items) if (STANDING_VALUES.has(i.value)) ever.add(i.value);
+      st.offeredEver = [...ever];
+      // every select we sent (newest last, one entry per value): older genuine taps are still ours
+      const log = (st.offeredLog || []).filter((o) => !st.offered.some((n) => n.value === o.value));
+      for (const sel of selects)
+        for (const i of sel.items.slice(0, MAX_OFFERED)) {
+          const value = String(i.value);
+          const k = log.findIndex((o) => o.value === value);
+          if (k >= 0) log.splice(k, 1);
+          log.push({ value, title: cap(String(i.title)) });
+        }
+      st.offeredLog = log.slice(-MAX_OFFERED_LOG);
     }
   }
 
@@ -1238,17 +1646,36 @@ class Engine {
     const st = newState(convId, now);
     if (!attrs || typeof attrs !== 'object') return st;
     const any = Object.keys(attrs).some((k) => k.startsWith('prnm_'));
+    // a brand-new conversation has offered nothing yet: a "founder" tap before any button is forged
     if (!any) return st;
+    st.offered = null; // state lost mid-conversation: we can't know which buttons were on screen
+    /*
+     * A visitor can set conversation custom attributes through the widget, so
+     * nothing here is trusted: each value is checked against what the engine
+     * itself would have written, and anything else is dropped.
+     */
     st.greeted = true;
     if (attrs.prnm_role === 'host' || attrs.prnm_role === 'swimmer') st.role = attrs.prnm_role;
-    if (typeof attrs.prnm_topic === 'string') st.topic = attrs.prnm_topic;
-    if (attrs.prnm_booking_ref) st.bookingRef = String(attrs.prnm_booking_ref);
-    if (attrs.prnm_reply_method === 'chat' || attrs.prnm_reply_method === 'email')
-      st.replyMethod = attrs.prnm_reply_method;
-    if (attrs.prnm_reply_email) st.email = String(attrs.prnm_reply_email);
-    if (Number.isFinite(Number(attrs.prnm_attempts)))
-      st.attempts = Number(attrs.prnm_attempts) || 0;
-    if (attrs.prnm_entry_ids) st.entryIds = String(attrs.prnm_entry_ids).split(',').filter(Boolean);
+    if (typeof attrs.prnm_topic === 'string' && Object.prototype.hasOwnProperty.call(CATEGORY_SLUG, attrs.prnm_topic))
+      st.topic = attrs.prnm_topic;
+    if (attrs.prnm_booking_ref) {
+      // the engine only ever stores a bare reference token: anything else was not written by us
+      const v = String(attrs.prnm_booking_ref).trim();
+      const ref = v.length <= 40 && /^[A-Za-z0-9][A-Za-z0-9-]{3,39}$/.test(v) ? safety.findRefToken(v) : null;
+      if (ref === v || (ref && ref === v.toLowerCase())) st.bookingRef = ref;
+    }
+    // prnm_reply_method / prnm_reply_email are ignored: an email reply goes only to an address the customer typed to us
+    const attempts = Number(attrs.prnm_attempts);
+    if (Number.isFinite(attempts)) st.attempts = attempts >= 1 ? 1 : 0;
+    if (attrs.prnm_entry_ids)
+      st.entryIds = [
+        ...new Set(
+          String(attrs.prnm_entry_ids)
+            .slice(0, 2000)
+            .split(',')
+            .filter((id) => this.byId.has(id))
+        ),
+      ].slice(0, 20);
     return st;
   }
 
@@ -1266,25 +1693,22 @@ class Engine {
    * The ONE private note per handoff. First line becomes the push-notification
    * body, so it carries no customer text.
    */
-  buildNote(st, { agents = [], conversationUrl = '' } = {}) {
+  buildNote(st, { agents = [], conversationUrl = '', capped = null } = {}) {
     const h = st.handoff || {};
     const urgent = h.urgency === 'high';
-    const quote = (t) =>
-      String(t || '')
-        .replace(/mention:\/\//gi, 'mention:/ /')
-        .split('\n')
-        .map((l) => `> ${l}`)
-        .join('\n');
+    // every customer-derived field goes through defang(): only our own agents line may @mention
+    const quote = (t) => quoteNote(t || '');
     const mention = (a) => `[@${a.name}](mention://user/${a.id}/${encodeURIComponent(a.name)})`;
-    const topic = h.title || (h.category ? h.category : 'customer question');
+    const topic = defang(h.title || (h.category ? h.category : 'customer question'));
     const lines = [];
-    lines.push(`PRNM handoff${urgent ? ' (URGENT)' : ''}: ${topic}`);
-    lines.push(agents.map(mention).join(' '));
+    lines.push(`PRNM handoff${urgent ? ' (URGENT)' : ''}${capped ? ' (logged, no alert)' : ''}: ${topic}`);
+    if (agents.length) lines.push(agents.map(mention).join(' '));
+    if (capped) lines.push(CAP_TEXT[capped] || CAP_TEXT.global);
     lines.push("Either of you: assign it to yourself before replying, so you don't both answer.");
     lines.push('');
     lines.push('Customer question:');
     lines.push(quote(h.question || '(not given)'));
-    if (h.context) lines.push(`Context: ${h.context}`);
+    if (h.context) lines.push(`Context: ${defang(h.context)}`);
     if (h.extra && h.extra.length) {
       lines.push('They also said:');
       for (const x of h.extra.slice(-5)) lines.push(quote(safety.redactForLog(x, 500)));
@@ -1298,12 +1722,12 @@ class Engine {
     );
     lines.push(`Urgency: ${urgent ? 'HIGH' : 'normal'}`);
     lines.push(
-      `Booking ref: ${st.bookingRef ? st.bookingRef : st.bookingRefDeclined ? 'customer does not have it' : 'not provided'}`
+      `Booking ref: ${st.bookingRef ? defang(st.bookingRef) : st.bookingRefDeclined ? 'customer does not have it' : 'not provided'}`
     );
     lines.push(
       `Reply method: ${
         st.replyMethod === 'email' && st.email
-          ? `email to ${st.email} (reply from support@)`
+          ? `email to ${defang(st.email)} (reply from support@)`
           : st.replyMethod === 'chat'
             ? 'here in chat'
             : urgent
@@ -1326,6 +1750,26 @@ class Engine {
     return lines.join('\n');
   }
 }
+
+/** Break any Chatwoot mention link in customer text (only the agents line of a note may @mention). */
+function defang(t) {
+  return String(t == null ? '' : t).replace(/mention:\/\//gi, 'mention:/ /');
+}
+function quoteNote(t) {
+  return defang(t)
+    .split('\n')
+    .map((l) => `> ${l}`)
+    .join('\n');
+}
+
+const CAP_TEXT = {
+  conversation:
+    'Not sent as an alert: this conversation already reached its alert limit for the last 24 hours. It stays pending, labelled handoff-capped.',
+  contact:
+    'Not sent as an alert: this visitor already reached the alert limit for the last 24 hours. It stays pending, labelled handoff-capped.',
+  global:
+    'Not sent as an alert: the hourly ceiling of handoff alerts was reached. It stays pending, labelled handoff-overflow.',
+};
 
 const REASON_TEXT = {
   founder_request: 'customer asked for a person / the founders',
@@ -1360,6 +1804,10 @@ class Turn {
   }
   escalate() {
     this.actions.push({ type: 'escalate' });
+  }
+  /** Mark the conversation urgent without a new alert: labels + priority + a plain note, then okText. */
+  flagUrgent({ labels, note, okText }) {
+    this.actions.push({ type: 'flag_urgent', labels, note, okText });
   }
   log(type, data) {
     this.events.push({ type, ...data });

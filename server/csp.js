@@ -68,11 +68,13 @@ const defaultDirectives = {
     '*.sentry.io',
     '*.stripe.com',
 
-    // Chatwoot widget (self-hosted on EAST; src/components/ChatwootWidget). The SDK
-    // itself makes no requests from this page; listed so a future SDK change that
-    // does is not blocked.
-    'chat.poolrentalnearme.com',
-    'wss://chat.poolrentalnearme.com',
+    // Chatwoot widget (self-hosted on EAST; src/components/ChatwootWidget). In this
+    // page, sdk.js (4.16.2) makes one request itself: on the first click or key press
+    // after the widget loads it fetch()es /audio/widget/ding.mp3, the new-message
+    // sound (shared/helpers/AudioNotificationHelper.js getAlertAudio). The chat's
+    // API calls and websocket run inside the iframe, under Chatwoot's own origin,
+    // so no wss: entry is needed here.
+    'https://chat.poolrentalnearme.com',
 
     'connect.facebook.net',
   ],
@@ -85,7 +87,7 @@ const defaultDirectives = {
     'https://bid.g.doubleclick.net',
     'https://td.doubleclick.net',
     // Chatwoot widget iframe (/widget?website_token=...)
-    'chat.poolrentalnearme.com',
+    'https://chat.poolrentalnearme.com',
   ],
   imgSrc: [
     self,
@@ -122,9 +124,6 @@ const defaultDirectives = {
     // Stripe
     '*.stripe.com',
     'www.facebook.com',
-
-    // Chatwoot widget launcher/avatars
-    'chat.poolrentalnearme.com',
   ],
   scriptSrc: [
     self,
@@ -141,7 +140,8 @@ const defaultDirectives = {
     'plausible.io',
 
     // Chatwoot widget SDK (/packs/js/sdk.js), inserted by src/components/ChatwootWidget
-    'chat.poolrentalnearme.com',
+    // only after a click (or for a returning chatter), with integrity (SRI).
+    'https://chat.poolrentalnearme.com',
 
     'connect.facebook.net',
   ],

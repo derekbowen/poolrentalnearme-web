@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, ScrollRestoration, useNavigation } from 'react-router-dom';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
+import ChatwootWidget from '../components/ChatwootWidget/ChatwootWidget';
 import ModalMissingInformation from '../components/ModalMissingInformation/ModalMissingInformation';
 import TopbarLoadingIndicator from '../components/TopbarLoadingIndicator/TopbarLoadingIndicator';
 import { manageDisableScrolling } from '../ducks/ui.duck';
@@ -60,6 +61,9 @@ export const RootRoute = () => {
       {navigation.state === 'loading' && <TopbarLoadingIndicator />}
       <Outlet />
       <ScrollRestoration />
+      {/* Chatwoot widget (bottom-left), client-only; a no-op without
+          VITE_CHATWOOT_WEBSITE_TOKEN. Hidden on checkout/payout pages. */}
+      <ChatwootWidget />
     </>
   );
 };

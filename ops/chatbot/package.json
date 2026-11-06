@@ -1,0 +1,19 @@
+{
+  "name": "prnm-chatbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scripted (no AI, no paid services) support assistant for the self-hosted Chatwoot widget. Zero npm dependencies.",
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js",
+    "validate": "node tools/validate-bank.js",
+    "metrics": "node tools/metrics.js",
+    "drafts": "node tools/draft-additions.js",
+    "chat": "node tools/chat-cli.js"
+  }
+}

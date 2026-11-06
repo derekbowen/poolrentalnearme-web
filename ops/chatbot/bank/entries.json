@@ -1,0 +1,4827 @@
+[
+  {
+    "id": "booking-how-to-book",
+    "category": "booking",
+    "question": "How do I book a pool?",
+    "variants": [
+      "how 2 book",
+      "how do i reserve a pool",
+      "how does booking work",
+      "wanna rent a pool for a few hours",
+      "how do i make a reservaton",
+      "steps to book a swim",
+      "how do i book a pol",
+      "whats the booking process"
+    ],
+    "keywords": [
+      "book",
+      "booking",
+      "reserve",
+      "reservation",
+      "rent",
+      "swim",
+      "request"
+    ],
+    "mode": "auto",
+    "answer": "Okay, cool, here's how that works. Find a pool, pick your time and hit Request to book. Check \"Things to know\" on the listing first, and message the host if anything's unclear.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:73",
+        "quote": "\"BookingTimeForm.requestToBook\": \"Request to book\""
+      },
+      {
+        "ref": "src/components/OrderPanel/BookingTimeForm/BookingTimeForm.js:373",
+        "quote": "<FormattedMessage id=\"BookingTimeForm.requestToBook\" />"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:520",
+        "quote": "Things to know"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:227",
+        "quote": "💬 Message {hostShort}"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "Find a pool, pick a time and send your booking request."
+      }
+    ],
+    "gap": "\"Book now\" (en.json:680, OrderPanel.js:705) is only the mobile sticky button that opens the booking form. The form's own submit button says \"Request to book\" on every device, INSTANT pools included, so the answer names that button."
+  },
+  {
+    "id": "booking-instant-vs-request",
+    "category": "booking",
+    "question": "Does the host have to accept my booking, or is it instant?",
+    "variants": [
+      "is it instant",
+      "do i get confirmed right away",
+      "instant book?",
+      "what does the INSTANT badge mean",
+      "does host need 2 approve",
+      "is my booking auto confirmed",
+      "request to book vs instant",
+      "do they have to aprove it"
+    ],
+    "keywords": [
+      "accept",
+      "approve",
+      "instant",
+      "confirm",
+      "request",
+      "automatic",
+      "auto-accept"
+    ],
+    "mode": "auto",
+    "answer": "Depends on the pool. Pools with the ⚡ INSTANT badge in search results accept automatically. Everywhere else, your booking goes to the host as a request, and you'll be notified when they accept.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/components/ListingCard/ListingCard.js:315",
+        "quote": "<span className={css.instantBolt} aria-hidden=\"true\">⚡</span> INSTANT"
+      },
+      {
+        "ref": "src/components/ListingCard/ListingCard.js:215",
+        "quote": "const isInstantBooking = !!publicData?.isInstantBooking;"
+      },
+      {
+        "ref": "src/containers/CheckoutPage/CheckoutPage.duck.js:304",
+        "quote": "await autoAcceptTxViaOperator({ txId: order.id?.uuid });"
+      },
+      {
+        "ref": "server/api/accept-tx-via-operator.js:41",
+        "quote": "const isInstantBooking = tx?.listing?.attributes?.publicData?.isInstantBooking;"
+      },
+      {
+        "ref": "src/translations/en.json:332",
+        "quote": "If you wish, we can automatically accept your reservation requests from the price you set."
+      },
+      {
+        "ref": "src/translations/en.json:1180",
+        "quote": "You'll be notified when {providerName} accepts your request."
+      }
+    ],
+    "gap": "The INSTANT badge appears only on listing cards (ListingCard.js:313). The listing page has no instant label, so a guest who opens a listing from a direct link can't tell. A badge on the listing page would fix this."
+  },
+  {
+    "id": "booking-host-no-reply",
+    "category": "booking",
+    "question": "The host hasn't replied to my booking request. What now?",
+    "variants": [
+      "host not responding",
+      "no reply from host",
+      "still waiting on the host",
+      "host ghosted me",
+      "how long do hosts take to respond",
+      "my request is still pending",
+      "host hasnt answerd",
+      "what if the host never accepts"
+    ],
+    "keywords": [
+      "reply",
+      "respond",
+      "waiting",
+      "pending",
+      "expire",
+      "ghosted",
+      "no answer"
+    ],
+    "mode": "auto",
+    "answer": "You're not charged until they accept, and you can message them from your booking page. If they don't reply in time, the request expires and any hold on your card releases automatically. If your swim's soon, I can bring in Derek and Brandon.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "You're not charged until the host accepts. You can message the host from your booking page. If they don't reply in time, the request expires and any hold on your card is released automatically"
+      },
+      {
+        "ref": "src/translations/en.json:1110",
+        "quote": "Your card will only be charged when {name} accepts the booking request."
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:169",
+        "quote": "{:name :transition/expire,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:179",
+        "quote": "[{:name :action/calculate-full-refund}"
+      },
+      {
+        "ref": "src/translations/en.json:465",
+        "quote": "\"InboxPage.default-booking.expired.status\": \"Expired\""
+      }
+    ],
+    "gap": "Expiry timing (the earliest of 6 days after the request, 1 day after booking start, or booking end) comes from the repo copy of process.edn, so the answer leaves it out. Confirm the live Console process matches before quoting any timing."
+  },
+  {
+    "id": "booking-message-host",
+    "category": "booking",
+    "question": "Can I message the host before I book?",
+    "variants": [
+      "how do i contact the host",
+      "can i ask the owner a question",
+      "msg host",
+      "talk to the pool owner first",
+      "how do I reach the host",
+      "send the host a message",
+      "can i chat with host b4 booking",
+      "contact hostt"
+    ],
+    "keywords": [
+      "message",
+      "contact",
+      "host",
+      "owner",
+      "ask",
+      "question",
+      "chat"
+    ],
+    "mode": "auto",
+    "answer": "Yep. On the listing, scroll to the \"Meet\" section with the host's name and tap the Message button. Good move if the listing doesn't answer your question.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:195",
+        "quote": "Meet {hostLabel}"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:227",
+        "quote": "💬 Message {hostShort}"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:221",
+        "quote": "{onContactUser && !isOwnListing && !String(publicData?.transactionProcessAlias || '').startsWith('default-inquiry') ? ("
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "message the host with any questions"
+      }
+    ],
+    "gap": "The heading reads \"Meet {host name}\", not \"Meet the host\", so the answer doesn't quote it as a fixed label. The Message button is hidden on inquiry-only listings (ListingRedesign.js:221)."
+  },
+  {
+    "id": "booking-status",
+    "category": "booking",
+    "question": "Where can I see my booking and whether it's confirmed?",
+    "variants": [
+      "is my booking confirmed",
+      "where are my bookings",
+      "check booking status",
+      "my reservations",
+      "did my booking go thru",
+      "what time is my swim",
+      "where do i find my order",
+      "my bookins"
+    ],
+    "keywords": [
+      "status",
+      "confirmed",
+      "bookings",
+      "reservations",
+      "orders",
+      "inbox",
+      "accepted",
+      "requested"
+    ],
+    "mode": "auto",
+    "answer": "Head to your Inbox. Each booking shows its status, like Requested, Accepted or Expired. When the host accepts, we'll email you a confirmation too.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:490",
+        "quote": "\"InboxPage.ordersTitle\": \"Inbox: As a customer\""
+      },
+      {
+        "ref": "src/translations/en.json:469",
+        "quote": "\"InboxPage.default-booking.preauthorized.status\": \"Requested\""
+      },
+      {
+        "ref": "src/translations/en.json:461",
+        "quote": "\"InboxPage.default-booking.accepted.status\": \"Accepted\""
+      },
+      {
+        "ref": "src/translations/en.json:465",
+        "quote": "\"InboxPage.default-booking.expired.status\": \"Expired\""
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:269",
+        "quote": ":template :booking-accepted-request}"
+      }
+    ],
+    "gap": "Took the variant \"what time is my swim\" from arrive-booking-details, which was dropped as a duplicate. The no-Stripe \"requested\" state has no InboxPage status string in en.json (lines 461-472)."
+  },
+  {
+    "id": "booking-guest-count",
+    "category": "booking",
+    "question": "How many people can I bring?",
+    "variants": [
+      "max guests?",
+      "can i bring friends",
+      "how many ppl are allowed",
+      "guest limit",
+      "is there a cap on guests",
+      "how many guest can come",
+      "can my whole family come",
+      "party size limit"
+    ],
+    "keywords": [
+      "guests",
+      "people",
+      "capacity",
+      "limit",
+      "friends",
+      "party size",
+      "max",
+      "group"
+    ],
+    "mode": "auto",
+    "answer": "Each pool sets its own guest limit, and it's on the listing. Book for everyone who's coming, kids and non-swimmers included, and bring only the people you booked. Extra guests can mean extra charges.",
+    "link": "/host-standards#3-guest-count-and-party-size",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:256",
+        "quote": "Up to ${pd.guestallowed} guests"
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:116",
+        "quote": "The declared count includes every person who will be present at the property during the reserved time — adults, children, and non-swimmers alike."
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §7.1 (live: https://www.poolrentalnearme.com/terms-of-service)",
+        "quote": "Allow only those guests authorized in the Booking;"
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:124",
+        "quote": "the Host may request an additional guest charge for each undeclared attendee, at the per-guest rate stated in the listing."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "booking-min-hours",
+    "category": "booking",
+    "question": "Is there a minimum number of hours I have to book?",
+    "variants": [
+      "min booking time",
+      "can i book just 1 hour",
+      "minimum hours?",
+      "shortest booking",
+      "do i have to book 2 hours",
+      "how long do i have to book for",
+      "minimun rental time",
+      "max hours per booking"
+    ],
+    "keywords": [
+      "minimum",
+      "hours",
+      "length",
+      "duration",
+      "shortest",
+      "one hour",
+      "maximum"
+    ],
+    "mode": "auto",
+    "answer": "It depends on the pool. Some hosts set a minimum or maximum length, and the listing may show it, like \"2-hour minimum.\" If your times don't fit, the booking form tells you the limit.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/api-util/lineItems.js:311",
+        "quote": "throw ruleError(`This pool has a ${minHours}-hour minimum booking.`);"
+      },
+      {
+        "ref": "server/api-util/lineItems.js:314",
+        "quote": "throw ruleError(`This pool allows up to ${maxHours} hours per booking.`);"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:265",
+        "quote": "facts.push({ ic: '⏱️', t: `${minH}-hour minimum`, d: 'Book as long as you like' });"
+      },
+      {
+        "ref": "src/components/OrderPanel/BookingTimeForm/BookingTimeForm.js:354",
+        "quote": "/advance notice|minimum booking|hours per booking|in advance/i.test("
+      }
+    ],
+    "gap": "The quick-facts strip shows hour limits only when the host set availability.minHours (ListingRedesign.js:258-266), and it shows at most 4 facts. The limit may only appear in the booking form."
+  },
+  {
+    "id": "booking-same-day",
+    "category": "booking",
+    "question": "Can I book a pool for today?",
+    "variants": [
+      "same day booking",
+      "last minute swim",
+      "can i book for tonight",
+      "book today?",
+      "how far ahead do i need to book",
+      "short notice booking",
+      "can i book rn",
+      "booking for tomorow"
+    ],
+    "keywords": [
+      "today",
+      "same day",
+      "last minute",
+      "advance notice",
+      "tonight",
+      "short notice",
+      "tomorrow"
+    ],
+    "mode": "auto",
+    "answer": "If the time shows as open, you can request it. Some pools need advance notice, and the booking form will say so and show the earliest date. Unless it's an INSTANT pool, the host still has to accept.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/api-util/lineItems.js:344",
+        "quote": "`This pool requires ${label} advance notice — the earliest available date is ${earliestStr}.`"
+      },
+      {
+        "ref": "src/components/OrderPanel/BookingTimeForm/BookingTimeForm.js:354",
+        "quote": "/advance notice|minimum booking|hours per booking|in advance/i.test("
+      },
+      {
+        "ref": "src/components/ListingCard/ListingCard.js:315",
+        "quote": "<span className={css.instantBolt} aria-hidden=\"true\">⚡</span> INSTANT"
+      },
+      {
+        "ref": "src/translations/en.json:1180",
+        "quote": "You'll be notified when {providerName} accepts your request."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "booking-account-required",
+    "category": "booking",
+    "question": "Do I need an account to book?",
+    "variants": [
+      "do i have to sign up",
+      "can i book as a guest",
+      "book without an account",
+      "need to register?",
+      "how old do you have to be to book",
+      "can my teen book",
+      "sign up to book?",
+      "do i need a acount"
+    ],
+    "keywords": [
+      "account",
+      "sign up",
+      "register",
+      "login",
+      "age",
+      "18",
+      "guest checkout"
+    ],
+    "mode": "auto",
+    "answer": "Yeah, you'll need an account to check out, and you have to be 18 or older to have one. Sign up and you're set.",
+    "link": "/signup",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/routing/routeConfiguration.js:97",
+        "quote": "path: '/l/:slug/:id/checkout',"
+      },
+      {
+        "ref": "src/routing/routeConfiguration.js:102",
+        "quote": "auth: true,"
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §3.1 (live: https://www.poolrentalnearme.com/terms-of-service#3-1-eligibility)",
+        "quote": "Be at least 18 years old;"
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §3.2 (live: https://www.poolrentalnearme.com/terms-of-service#3-2-no-children-under-13)",
+        "quote": "Minors **between ages 13 and 17** may **not** create Accounts"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "booking-custom-offer",
+    "category": "booking",
+    "question": "The host sent me an offer. How do I accept it?",
+    "variants": [
+      "host sent a package deal",
+      "custom offer from host",
+      "how do i accept an offer",
+      "what is a package deal",
+      "got an offer text",
+      "how long is the offer good for",
+      "did my offer expire",
+      "acept offer"
+    ],
+    "keywords": [
+      "offer",
+      "package deal",
+      "custom offer",
+      "accept",
+      "quote",
+      "expire"
+    ],
+    "mode": "auto",
+    "answer": "Nice. Open the offer from your Inbox or the link we sent you, look it over and accept to pay. Offers expire after 3 days if you don't respond, so don't sit on it.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:65",
+        "quote": ";; Offer expires after 3 days if customer hasn't responded"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:70",
+        "quote": "{:fn/period [\"P3D\"]}]},"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:56",
+        "quote": "{:name :action/stripe-create-payment-intent}],"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:255",
+        "quote": ":on :transition/send-offer,"
+      },
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:81",
+        "quote": "sent you a custom offer${c.offerAmount ? ` — ${c.offerAmount}` : ''} for ${clip(c.listing, 35)}. Review & accept: ${orderLink(c.txId)}"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/templates/booking-offer-sent/booking-offer-sent-subject.txt:1",
+        "quote": "sent you a package deal for {listingTitle}"
+      }
+    ],
+    "gap": "Changed \"the link in your text\" to \"the link we sent you\". The offer email (process.edn:254-257) goes to every guest, but the OFFER_RECEIVED text only reaches US numbers (twsend skips non-US). The 3-day expiry comes from the repo process.edn, so confirm the live Console process uses the same expire-offer period."
+  },
+  {
+    "id": "pay-all-in-price",
+    "category": "prices and payments",
+    "question": "Is the price on the listing what I'll actually pay?",
+    "variants": [
+      "is the price all in",
+      "are there hidden fees",
+      "does the price include fees",
+      "final price?",
+      "why is checkout more than the listing",
+      "any extra fees?",
+      "is the hourly price all in",
+      "hiden fees?"
+    ],
+    "keywords": [
+      "price",
+      "total",
+      "all-in",
+      "hidden fees",
+      "extra",
+      "include",
+      "add-ons",
+      "cost"
+    ],
+    "mode": "auto",
+    "answer": "Mostly. The hourly prices on listings and in search already include our 15% guest fee. Some pools add other charges, like paid add-ons or a deposit, and checkout lists every charge and your full total before you pay.",
+    "link": "/terms-of-service#4-2-all-in-pricing-disclosure-california-civil-code-1770-a-29-and-similar-state-",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/components/OrderPanel/OrderPanel.js:158",
+        "quote": "// Display the all-in price (host price + mandatory booking fee) per CA SB 478."
+      },
+      {
+        "ref": "src/components/ListingCard/ListingCard.js:60",
+        "quote": "priceData(priceWithBookingFee(price), config.currency, intl);"
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.2 (live: https://www.poolrentalnearme.com/terms-of-service)",
+        "quote": "PRNM displays the **total price** the Renter will pay"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:18",
+        "quote": "The price shown on listings and in search already includes our 15% guest service fee. Some pools add other charges, like paid add-ons. Checkout lists every charge and your full total before you pay."
+      },
+      {
+        "ref": "server/api-util/lineItems.js:470",
+        "quote": "const refundableDepositLineItemMaybe = getRefundableDepositLineItem(listing);"
+      },
+      {
+        "ref": "src/translations/en.json:358",
+        "quote": "\"EditListingPricingForm.refundableDeposit\": \"Refundable deposit for damage/wear/maintenance (Optional)\""
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/l/gulf-oasis/6abaf08c-023d-4f34-8e87-74ea4a6efac4",
+        "quote": "refundableDeposit\\\":{\\\"amount\\\":30000,\\\"currency\\\":\\\"USD\\\""
+      }
+    ],
+    "gap": "FOR DEREK (money): hosts can set a \"Refundable deposit for damage/wear/maintenance\". It is added to the guest's checkout total (lineItems.js:138-152, :470) but is not in the all-in listing price. 4 of 24 live listings sampled on 2026-11-06 have one ($40-$300; Gulf Oasis is $300). The line is includeFor customer+provider, so it is paid out to the host, and the repo has no way to refund it. ToS §4.2 promises a total that includes any mandatory charge at first display. The bot mentions \"a deposit\" but never says whether it comes back, so any question about getting a deposit back must hand off (damage/refund). Separately, add-on prices on the listing (ListingRedesign.js:470) and in the booking form (AmenitySelectMaybe.jsx:38) are shown without the 15% fee that checkout adds to them (lineItems.js:503). ListingRedesign.js:553 also says \"A 15% booking fee is added at checkout\". ToS §4.2 says taxes are disclosed separately, but no tax line exists, so the answer leaves taxes out."
+  },
+  {
+    "id": "pay-service-fee",
+    "category": "prices and payments",
+    "question": "What's the 15% fee for?",
+    "variants": [
+      "what is the service fee",
+      "why is there a booking fee",
+      "pool rental near me fee?",
+      "what's the 15 percent",
+      "service charge?",
+      "who gets the fee",
+      "do hosts pay a fee too",
+      "booking fee wat for"
+    ],
+    "keywords": [
+      "fee",
+      "service fee",
+      "15%",
+      "booking fee",
+      "commission",
+      "charge",
+      "platform fee"
+    ],
+    "mode": "auto",
+    "answer": "That's our guest service fee, 15% of the booking amount, and it's how we run the platform. Hosts pay 0% and keep 100% of their price. The fee's already in the hourly prices you see.",
+    "link": "/terms-of-service#4-1-fee-structure",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.1 (live: https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure)",
+        "quote": "**Renter Service Fee:** Fifteen percent (15%) of the gross Booking amount, added to the Renter's total at checkout and shown in the all-in price before payment."
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.1 (live: https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure)",
+        "quote": "PRNM does not charge Hosts a service fee on Bookings; Hosts receive one hundred percent (100%) of their listed Booking price."
+      },
+      {
+        "ref": "src/translations/en.json:666",
+        "quote": "The fee helps us run this platform"
+      },
+      {
+        "ref": "src/config/businessFacts.js:23",
+        "quote": "renterServiceFeePercent: 15,"
+      },
+      {
+        "ref": "server/api-util/lineItems.js:503",
+        "quote": "unitPrice: calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]),"
+      }
+    ],
+    "gap": "The 15% applies to the booking plus paid add-ons (lineItems.js:500-505), but add-on prices are shown without it (ListingRedesign.js:470, AmenitySelectMaybe.jsx:38). So the answer says the fee is in the hourly prices, not in every price shown."
+  },
+  {
+    "id": "pay-when-charged",
+    "category": "prices and payments",
+    "question": "When will my card be charged?",
+    "variants": [
+      "when do i pay",
+      "do i pay upfront",
+      "am i charged now",
+      "when does payment go thru",
+      "charged before host accepts?",
+      "do u charge right away",
+      "when do i get chargd",
+      "is it charged at checkout"
+    ],
+    "keywords": [
+      "charge",
+      "pay",
+      "payment",
+      "card",
+      "when",
+      "upfront",
+      "authorize"
+    ],
+    "mode": "auto",
+    "answer": "You're not charged when you send a request, though your card may show a temporary hold. It's charged when the host accepts. INSTANT pools accept automatically, so that happens right at checkout.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:1110",
+        "quote": "Your card will only be charged when {name} accepts the booking request."
+      },
+      {
+        "ref": "src/translations/en.json:78",
+        "quote": "\"BookingTimeForm.youWontBeChargedInfo\": \"You won't be charged yet\""
+      },
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:60",
+        "quote": "Your card is only authorized until they accept."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "You're not charged until the host accepts (your card may show a temporary hold)"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:96",
+        "quote": "{:name :action/stripe-capture-payment-intent}],"
+      },
+      {
+        "ref": "src/containers/CheckoutPage/CheckoutPage.duck.js:304",
+        "quote": "await autoAcceptTxViaOperator({ txId: order.id?.uuid });"
+      }
+    ],
+    "gap": "When the host hasn't connected Stripe and the pool isn't INSTANT, checkout saves the card off-session (CheckoutPageWithPayment.js:283, :352) and charges it on accept-with-payment. No hold appears in that case, which is why the answer says \"may show\"."
+  },
+  {
+    "id": "pay-hold-after-decline",
+    "category": "prices and payments",
+    "question": "My request was declined but I still see a charge on my card.",
+    "variants": [
+      "pending charge after decline",
+      "money still on hold",
+      "why is there a hold on my card",
+      "request expired but still charged",
+      "when do i get my hold back",
+      "authorization not released",
+      "bank still shows pending",
+      "charge didnt drop off"
+    ],
+    "keywords": [
+      "hold",
+      "pending",
+      "authorization",
+      "declined",
+      "expired",
+      "released",
+      "bank",
+      "charge"
+    ],
+    "mode": "auto",
+    "answer": "That's most likely a hold, not a charge. When a request's declined or expires, the hold releases automatically, but your bank may show it pending for a few days. If it's still there after that, I can bring in Derek and Brandon.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:56",
+        "quote": "Your card was only authorized, not charged — the hold releases automatically (your bank may show it pending a few days)."
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:149",
+        "quote": "{:name :transition/decline,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:152",
+        "quote": "[{:name :action/calculate-full-refund}"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "any hold on your card is released automatically (your bank may show it pending a few days)"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "pay-methods",
+    "category": "prices and payments",
+    "question": "What payment methods do you take?",
+    "variants": [
+      "can i pay with paypal",
+      "do you take apple pay",
+      "credit card only?",
+      "is debit card ok",
+      "can i pay with google pay",
+      "payment options",
+      "accepted cards?",
+      "can i use my bank acount"
+    ],
+    "keywords": [
+      "payment method",
+      "card",
+      "credit card",
+      "debit card",
+      "paypal",
+      "apple pay",
+      "pay"
+    ],
+    "mode": "auto",
+    "answer": "It's card only for now: credit or debit, entered at checkout. No PayPal, Apple Pay or bank transfers. Payments run through a PCI-compliant processor, and you can save your card for next time.",
+    "link": "/account/payment-methods",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/CheckoutPage/StripePaymentForm/StripePaymentForm.js:348",
+        "quote": "this.card = elements.create('card', { style: cardStyles });"
+      },
+      {
+        "ref": "src/translations/en.json:1082",
+        "quote": "\"StripePaymentForm.paymentCardDetails\": \"Payment card details\""
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.4 (live: https://www.poolrentalnearme.com/terms-of-service#4-4-payment-method-requirements)",
+        "quote": "A valid credit or debit card must be on file for each Booking."
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.5 (live: https://www.poolrentalnearme.com/terms-of-service#4-5-payment-processing)",
+        "quote": "Payments are processed through PCI-compliant third-party payment processors."
+      },
+      {
+        "ref": "src/translations/en.json:1088",
+        "quote": "\"StripePaymentForm.saveAfterOnetimePayment\": \"Save card details for future orders\""
+      }
+    ],
+    "gap": "\"Card only\" comes from the code. Checkout mounts a single Stripe card element (StripePaymentForm.js:348), and src/ and server/ have no paymentRequest, Apple Pay, Google Pay or PayPal integration. Update this if Derek turns on wallets in Stripe. Replaced the variant \"how do i pay\" because it fuzzy-matched pay-when-charged's \"when do i pay\"."
+  },
+  {
+    "id": "pay-off-platform",
+    "category": "prices and payments",
+    "question": "Can I pay the host directly in cash or Venmo?",
+    "variants": [
+      "pay host cash",
+      "can i venmo the host",
+      "zelle the owner",
+      "pay outside the app",
+      "host asked me to pay on cash app",
+      "pay off platform",
+      "can i pay at the pool",
+      "pay host direct to skip the fee"
+    ],
+    "keywords": [
+      "cash",
+      "venmo",
+      "zelle",
+      "cash app",
+      "off-platform",
+      "pay directly",
+      "outside",
+      "host"
+    ],
+    "mode": "auto",
+    "answer": "Nope. Every payment, extras included, has to go through Pool Rental Near Me. Hosts can't ask for cash, Venmo, Zelle or Cash App, and guests can't offer it. If a host asks you to, I can bring in Derek and Brandon.",
+    "link": "/host-standards#5-payments-must-stay-on-the-platform",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:186",
+        "quote": "All payments related to a booking — base rate, additional guests, additional hours, cleaning, damage — must be processed through Pool Rental Near Me."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:188",
+        "quote": "Hosts may not request, and Guests may not offer, payment by cash, Venmo, Zelle, Cash App, check, wire, or any other method outside the platform"
+      }
+    ],
+    "gap": "Dropped \"takes away your dispute protection and leaves no record\" (HS §5). It's dispute and protection content, and the brief keeps disputes and any \"protected\" claim out of auto answers. This is the guest-side version of the host entry \"Can guests just pay me in cash or Venmo?\", so the matcher must use the remembered role (swimmer or host) to pick between them."
+  },
+  {
+    "id": "pay-promo-codes",
+    "category": "prices and payments",
+    "question": "Do you have promo codes or discounts?",
+    "variants": [
+      "promo code",
+      "discount code?",
+      "any coupons",
+      "where do i enter a code",
+      "any deals",
+      "host gave me a code",
+      "promocode",
+      "first time discount?"
+    ],
+    "keywords": [
+      "promo",
+      "code",
+      "discount",
+      "coupon",
+      "deal",
+      "voucher"
+    ],
+    "mode": "auto",
+    "answer": "Promo codes come from hosts. If one gave you a code, enter it in the promo code box on the booking form before you request, and the discount shows up in your breakdown.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:71",
+        "quote": "\"BookingTimeForm.promoCodeLabel\": \"Promo code (optional)\""
+      },
+      {
+        "ref": "src/translations/en.json:72",
+        "quote": "\"BookingTimeForm.promoCodePlaceholder\": \"Enter a code from the host\""
+      },
+      {
+        "ref": "src/translations/en.json:668",
+        "quote": "\"OrderBreakdown.promoDiscount\": \"Promo discount\""
+      },
+      {
+        "ref": "server/api-util/lineItems.js:473",
+        "quote": "// c150: host promo code. Discount is computed on the base booking subtotal"
+      }
+    ],
+    "gap": "No platform-wide (PRNM-funded) promotions are documented. If Derek runs one, add it here."
+  },
+  {
+    "id": "pay-price-changes",
+    "category": "prices and payments",
+    "question": "Why did the price change when I picked different hours or guests?",
+    "variants": [
+      "price went up",
+      "why is it more on weekends",
+      "price is different on some days",
+      "cheaper for longer bookings?",
+      "is it priced per person",
+      "why did the total change",
+      "price changes with guests",
+      "pirce changed"
+    ],
+    "keywords": [
+      "price change",
+      "rate",
+      "guests",
+      "hours",
+      "tiers",
+      "weekend",
+      "dates",
+      "total"
+    ],
+    "mode": "auto",
+    "answer": "Some hosts price by group size, set different rates on certain dates, or lower the hourly rate for longer swims. Your price breakdown updates as you pick, so you'll see the total before you pay.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/api-util/durationTiers.js:2",
+        "quote": "Duration-tiered hourly rates (e.g. \"Per hour\" $90, \"3+ hours\" $75)."
+      },
+      {
+        "ref": "server/api-util/guestBands.js:2",
+        "quote": "Guest-band enforcement for priced bookings."
+      },
+      {
+        "ref": "src/translations/en.json:805",
+        "quote": "\"PriceVariantPicker.guestCountLabel\": \"How many guests? (up to {maxGuests})\""
+      },
+      {
+        "ref": "server/api-util/lineItems.js:385",
+        "quote": "dateOverride && Number.isInteger(dateOverride.pricePerHour) && dateOverride.pricePerHour >= 0"
+      },
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §4.2 (live: https://www.poolrentalnearme.com/terms-of-service)",
+        "quote": "at the first display of pricing and at every subsequent pricing display"
+      }
+    ],
+    "gap": "Softened \"the total you see is what you'll pay\": deposits and add-ons can change the checkout total (see pay-all-in-price)."
+  },
+  {
+    "id": "pay-payment-failed",
+    "category": "prices and payments",
+    "question": "My payment failed at checkout.",
+    "variants": [
+      "card declined",
+      "payment didnt go through",
+      "checkout error",
+      "cant pay",
+      "payment won't process",
+      "card not working",
+      "payment expired",
+      "payment faild"
+    ],
+    "keywords": [
+      "declined",
+      "failed",
+      "error",
+      "card",
+      "checkout",
+      "payment",
+      "expired",
+      "not working"
+    ],
+    "mode": "auto",
+    "answer": "Ugh, sorry. Double-check your card details or try another card. If checkout sat open over 15 minutes, start again from the listing. If it still won't go through, I can bring in Derek and Brandon.",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:98",
+        "quote": "Payment was not completed in 15 minutes. Please go back to {listingLink} and try again."
+      },
+      {
+        "ref": "src/translations/en.json:1096",
+        "quote": "\"StripePaymentForm.stripe.validation_error.card_declined\": \"The card was declined.\""
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:78",
+        "quote": "{:fn/period [\"PT15M\"]}]},"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "pay-currency",
+    "category": "prices and payments",
+    "question": "What currency will I be charged in?",
+    "variants": [
+      "is the price in usd",
+      "can i pay in pounds",
+      "are prices in aussie dollars",
+      "do you charge in canadian dollars",
+      "what currency is this",
+      "is that $ US or AUD",
+      "currency conversion?",
+      "curency?"
+    ],
+    "keywords": [
+      "currency",
+      "usd",
+      "us dollars",
+      "aud",
+      "cad",
+      "gbp",
+      "pounds",
+      "conversion",
+      "exchange rate"
+    ],
+    "mode": "auto",
+    "answer": "Everything's in US dollars, wherever the pool is. Prices are in USD and your card's charged in USD. If your card uses another currency, check with your bank about conversion fees.",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "CLAUDE.md:110",
+        "quote": "**One marketplace = one currency (USD).**"
+      },
+      {
+        "ref": "CLAUDE.md:148",
+        "quote": "pay in USD. Platform account is US."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/l/private-heated-magnesium-pool-sydney/6ab45111-570f-4f46-a176-be58ebd2a5eb",
+        "quote": "\"priceCurrency\":\"USD\""
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/templates/booking-accepted-request/booking-accepted-request-html.html:59",
+        "quote": "\"Your card has been charged for {amount,number,::.00} {currency}. Here's the booking breakdown.\""
+      }
+    ],
+    "gap": "Replaces pay-wrong-charge, which reworded the bank's \"I want a refund or to dispute a charge.\" (one of its variants was literally \"i want to dispute a charge\"). Move its variants (double charged, charged twice, overcharged, wrong charge on my card, billing mistake) onto that entry so they still reach the high-urgency dispute handoff. FOR DEREK: prices show as a bare \"$\" with no USD label (the Sydney listing shows \"From $63.25 per hour\"), so a guest on .com.au, .ca or .co.uk can read them as local currency. Only the confirmation email prints the currency code."
+  },
+  {
+    "id": "cancel-how",
+    "category": "cancellations and changes",
+    "question": "How do I cancel my booking?",
+    "variants": [
+      "cancel booking",
+      "i need to cancel",
+      "where is the cancel button",
+      "how to cancel a reservation",
+      "cancle my booking",
+      "can't find cancel",
+      "cancel my swim",
+      "wanna cancel"
+    ],
+    "keywords": [
+      "cancel",
+      "cancellation",
+      "cancel button",
+      "call off",
+      "booking",
+      "reservation"
+    ],
+    "mode": "handoff",
+    "answer": "Yeah, I've got you. There's no cancel button on your end, so I'll bring in Derek and Brandon to handle it here. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:198",
+        "quote": "{:name :transition/cancel,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:199",
+        "quote": ":actor :actor.role/operator,"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "To cancel or change a booking, text us your booking details and we'll help."
+      }
+    ],
+    "gap": "Don't mention refunds here. The Cancellation and Refund Policy that ToS §28 and §33 reference isn't published."
+  },
+  {
+    "id": "cancel-refund",
+    "category": "cancellations and changes",
+    "question": "Will I get a refund if I cancel?",
+    "variants": [
+      "do i get my money back if i cancel",
+      "refund policy",
+      "is it refundable",
+      "full refund if i cancel?",
+      "partial refund for cancelling",
+      "how much do i get back if i cancel",
+      "refnd if i cancel",
+      "non refundable?"
+    ],
+    "keywords": [
+      "refund",
+      "money back",
+      "refundable",
+      "cancel",
+      "partial",
+      "full refund"
+    ],
+    "mode": "handoff",
+    "answer": "Good question. I don't want to guess on that, since it depends on the booking. I'll bring in Derek and Brandon to look at yours. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/config/businessFacts.js:55",
+        "quote": "'a platform-wide free-cancellation window (policies are per listing)',"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:514",
+        "quote": "const cancel = typeof publicData?.cancellation_policy === 'string' ? publicData.cancellation_policy.trim() : '';"
+      }
+    ],
+    "gap": "No published refund rules. ToS §28 and §33 reference a \"Cancellation and Refund Policy\" whose URLs 404, so Derek has to define the refund rules before the bot can answer this. Variants now all say \"if I cancel\" so a general \"I want a refund\" goes to the dispute entry instead."
+  },
+  {
+    "id": "cancel-policy",
+    "category": "cancellations and changes",
+    "question": "What's the cancellation policy?",
+    "variants": [
+      "cancellation policy?",
+      "can i cancel for free",
+      "free cancellation?",
+      "cancel policy for this pool",
+      "how late can i cancel",
+      "24 hour cancellation?",
+      "cancelation rules",
+      "whats the cancel policy"
+    ],
+    "keywords": [
+      "cancellation policy",
+      "free cancellation",
+      "cancel",
+      "policy",
+      "terms",
+      "deadline"
+    ],
+    "mode": "auto",
+    "answer": "Some pools list their cancellation terms on the listing, under \"Things to know.\" To cancel or change a booking, just ask here and I'll bring in Derek and Brandon.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:508",
+        "quote": "/** Things to know — real house rules + cancellation policy. */"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:546",
+        "quote": "Cancellation</h3>"
+      },
+      {
+        "ref": "src/config/businessFacts.js:55",
+        "quote": "'a platform-wide free-cancellation window (policies are per listing)',"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "Some pools list their cancellation terms on the listing page, under \\\"Things to know\\\"."
+      }
+    ],
+    "gap": "Removed \"It's set per pool\". Derek approved only \"Some pools list their cancellation terms...\", and ToS §33 names an unpublished PRNM Cancellation and Refund Policy that would govern. Not every listing has cancellation terms: the section only shows when the host filled in cancellation_policy. Whether PRNM honors host-written terms when it cancels is Derek's call."
+  },
+  {
+    "id": "cancel-reschedule",
+    "category": "cancellations and changes",
+    "question": "Can I change the date or time of my booking?",
+    "variants": [
+      "reschedule",
+      "move my booking",
+      "change my time slot",
+      "switch to another day",
+      "can i push my booking back",
+      "rebook for next week",
+      "resceduale",
+      "different time pls"
+    ],
+    "keywords": [
+      "reschedule",
+      "change date",
+      "change time",
+      "move",
+      "switch",
+      "rebook",
+      "modify"
+    ],
+    "mode": "handoff",
+    "answer": "You can't move a booking yourself, but I can bring in Derek and Brandon to see what's possible with the host. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:198",
+        "quote": "{:name :transition/cancel,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:199",
+        "quote": ":actor :actor.role/operator,"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "To cancel or change a booking, text us your booking details and we'll help."
+      }
+    ],
+    "gap": "The booking process has no reschedule transition, so a change is presumably a cancel plus a new booking done by an operator. Price differences and refunds are Derek's call."
+  },
+  {
+    "id": "cancel-change-guests",
+    "category": "cancellations and changes",
+    "question": "Can I add more guests after I've booked?",
+    "variants": [
+      "change number of guests",
+      "add a friend to my booking",
+      "bringing extra people",
+      "update guest count",
+      "more ppl coming",
+      "can i add 2 more guests",
+      "fewer guests now",
+      "change party size"
+    ],
+    "keywords": [
+      "guest count",
+      "add guests",
+      "extra people",
+      "party size",
+      "change",
+      "more guests",
+      "fewer"
+    ],
+    "mode": "handoff",
+    "answer": "Guest count sets the price and what the host agreed to, so changes go through the platform, not a side deal with the host. I'll bring in Derek and Brandon. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:118",
+        "quote": "It determines pricing and capacity limits, and it is what the Host relied on when accepting the booking."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:186",
+        "quote": "All payments related to a booking — base rate, additional guests, additional hours, cleaning, damage — must be processed through Pool Rental Near Me."
+      }
+    ],
+    "gap": "The product has no way to change guest count after booking. How fewer guests affects price or refund is undefined."
+  },
+  {
+    "id": "cancel-extend-time",
+    "category": "cancellations and changes",
+    "question": "Can I add extra time to my booking?",
+    "variants": [
+      "extend my booking",
+      "add an hour",
+      "can we stay longer",
+      "more time at the pool",
+      "can we stay an extra hour",
+      "extend swim time",
+      "add hours",
+      "extnd booking"
+    ],
+    "keywords": [
+      "extend",
+      "extra time",
+      "add hour",
+      "longer",
+      "more time",
+      "overtime"
+    ],
+    "mode": "handoff",
+    "answer": "Extra hours have to be paid through the platform, never cash or Venmo to the host. I'll bring in Derek and Brandon to see what's possible. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:186",
+        "quote": "All payments related to a booking — base rate, additional guests, additional hours, cleaning, damage — must be processed through Pool Rental Near Me."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:188",
+        "quote": "Hosts may not request, and Guests may not offer, payment by cash, Venmo, Zelle, Cash App, check, wire, or any other method outside the platform"
+      }
+    ],
+    "gap": "The product has no way to extend a booking. The note that the additional-charge endpoint isn't working and support handles extra charges is a code comment at host-preparedness-2026-1.js:16. The published HS §3.3 text doesn't say it, as the previous gap claimed."
+  },
+  {
+    "id": "cancel-withdraw-request",
+    "category": "cancellations and changes",
+    "question": "Can I cancel my request before the host accepts?",
+    "variants": [
+      "withdraw my request",
+      "cancel a pending request",
+      "take back my booking request",
+      "i changed my mind before the host accepted",
+      "undo my request",
+      "stop my request",
+      "retract request",
+      "cancel request not booking yet"
+    ],
+    "keywords": [
+      "withdraw",
+      "pending",
+      "request",
+      "undo",
+      "retract",
+      "cancel request",
+      "before accept"
+    ],
+    "mode": "handoff",
+    "answer": "You can't withdraw it yourself, and if the host accepts first, your card gets charged. If they don't, it expires and any hold releases. I'll bring in Derek and Brandon to sort it. What's your booking reference?",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:159",
+        "quote": "{:name :transition/operator-decline,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:96",
+        "quote": "{:name :action/stripe-capture-payment-intent}],"
+      },
+      {
+        "ref": "src/translations/en.json:1110",
+        "quote": "Your card will only be charged when {name} accepts the booking request."
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:169",
+        "quote": "{:name :transition/expire,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:179",
+        "quote": "[{:name :action/calculate-full-refund}"
+      },
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:56",
+        "quote": "the hold releases automatically (your bank may show it pending a few days)."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "To cancel or change a booking, text us your booking details and we'll help."
+      }
+    ],
+    "gap": "This was an auto answer that made waiting sound safe. It now warns that the card is charged if the host accepts, and hands off like cancel-how (Derek: guests ask PRNM in chat to cancel). From the preauthorized and requested states, only provider, operator and timed transitions exist (process.edn:92-185), so a customer can't withdraw. It's time-sensitive, so Derek may want urgency high. Confirm the live Console process matches the repo copy."
+  },
+  {
+    "id": "cancel-host-cancelled",
+    "category": "cancellations and changes",
+    "question": "The host cancelled my booking. Do I get my money back?",
+    "variants": [
+      "host canceled on me",
+      "host backed out",
+      "my booking got cancelled",
+      "booking cancelled by host refund?",
+      "host said they're cancelling",
+      "host canceld",
+      "owner cancelled my swim",
+      "why was my booking cancelled"
+    ],
+    "keywords": [
+      "host cancelled",
+      "canceled",
+      "refund",
+      "money back",
+      "backed out",
+      "cancelled booking"
+    ],
+    "mode": "auto",
+    "answer": "Sorry, that's a bummer. If it shows Canceled in your Inbox, any charge is refunded automatically. If it says Declined, you weren't charged and any hold releases. If the host only said it in a message, I can bring in Derek and Brandon.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:64",
+        "quote": "was cancelled. Any charge is refunded automatically."
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:198",
+        "quote": "{:name :transition/cancel,"
+      },
+      {
+        "ref": "ext/transaction-processes/default-booking/process.edn:201",
+        "quote": "[{:name :action/calculate-full-refund}"
+      },
+      {
+        "ref": "src/translations/en.json:462",
+        "quote": "\"InboxPage.default-booking.canceled.status\": \"Canceled\""
+      },
+      {
+        "ref": "src/translations/en.json:463",
+        "quote": "\"InboxPage.default-booking.declined.status\": \"Declined\""
+      },
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:56",
+        "quote": "Your card was only authorized, not charged — the hold releases automatically (your bank may show it pending a few days)."
+      }
+    ],
+    "gap": "Based on the repo process.edn (cancel is an operator transition with calculate-full-refund) and the live GUEST_CANCELLED SMS copy. Added the Declined case, because a host who \"cancels\" a pending request actually declines it. Derek should confirm that a cancellation PRNM processes is always a full refund, and how long refunds take to reach the bank (only hold-release timing is documented)."
+  },
+  {
+    "id": "cancel-weather",
+    "category": "cancellations and changes",
+    "question": "What happens if it rains on my booking day?",
+    "variants": [
+      "rain cancellation",
+      "bad weather",
+      "storm on my booking day",
+      "thunderstorm, can i cancel?",
+      "it's raining can i reschedule",
+      "weather refund",
+      "too cold to swim",
+      "rain check?"
+    ],
+    "keywords": [
+      "rain",
+      "weather",
+      "storm",
+      "thunder",
+      "cold",
+      "forecast",
+      "rain check"
+    ],
+    "mode": "handoff",
+    "answer": "Good question. There's no set weather rule I can point to, so I don't want to guess. I'll bring in Derek and Brandon to look at your booking. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/TermsOfServicePage/terms-2026-1.js:36 §28 (live: https://www.poolrentalnearme.com/terms-of-service#28-force-majeure)",
+        "quote": "Bookings affected by a Force Majeure Event will be handled per the PRNM Cancellation and Refund Policy."
+      }
+    ],
+    "gap": "Weather handling is undefined, and ToS §28 defers to the unpublished Cancellation and Refund Policy. Lightning or a storm during a swim is a safety topic and should go to the safety handoff."
+  },
+  {
+    "id": "cancel-change-generic",
+    "category": "cancellations and changes",
+    "question": "I need to make a change to my booking.",
+    "variants": [
+      "change my booking",
+      "modify my reservation",
+      "edit my booking",
+      "update my booking",
+      "i need to make a change",
+      "fix my booking",
+      "booking change",
+      "chnage booking"
+    ],
+    "keywords": [
+      "change",
+      "modify",
+      "edit",
+      "update",
+      "booking",
+      "reservation",
+      "fix"
+    ],
+    "mode": "clarify",
+    "answer": "Sure thing. What do you need to change?",
+    "link": "",
+    "clarify_prompt": "What do you need to change?",
+    "clarify_options": [
+      "Cancel it",
+      "Date or time",
+      "Number of guests",
+      "Something else"
+    ],
+    "urgency": "normal",
+    "sources": [],
+    "gap": "Only routes; states no facts. Cancel it goes to cancel-how, Date or time to cancel-reschedule, Number of guests to cancel-change-guests, and Something else to a handoff that asks for the change and the booking reference."
+  },
+  {
+    "id": "rules-house-rules",
+    "category": "pool rules and amenities",
+    "question": "What are the rules at the pool?",
+    "variants": [
+      "what are the house rules",
+      "pool rules?",
+      "any rules i should know about",
+      "wat r the rules",
+      "house rulez",
+      "what am i allowed to do at the pool",
+      "dos and donts at a rental pool",
+      "rules 4 swimming"
+    ],
+    "keywords": [
+      "rules",
+      "house rules",
+      "policy",
+      "allowed",
+      "dos and donts",
+      "things to know",
+      "regulations"
+    ],
+    "mode": "auto",
+    "answer": "Each host sets their own house rules, so check \"Things to know\" on the listing. A few apply at every pool: no diving, no glass, and kids under 16 need an adult watching the whole time.",
+    "link": "/terms-of-service#7-3-prohibited-activities",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:45",
+        "quote": "Each host sets house rules"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-1-general-conduct",
+        "quote": "Comply with the Host's house rules disclosed in the Listing or at check-in;"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:520",
+        "quote": "Things to know"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Diving (regardless of pool depth);"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Glass containers in or near the pool area;"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-2-swimmer-safety-requirements",
+        "quote": "No person under age 16 may swim without continuous adult supervision;"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "rules-alcohol-glass",
+    "category": "pool rules and amenities",
+    "question": "Can I bring alcohol to the pool?",
+    "variants": [
+      "can we drink at the pool",
+      "is alcohol allowed",
+      "BYOB ok?",
+      "can i bring beer",
+      "alchohol allowed?",
+      "can we bring wine",
+      "is drinking allowed poolside",
+      "can i bring a cooler of drinks"
+    ],
+    "keywords": [
+      "alcohol",
+      "drinks",
+      "beer",
+      "wine",
+      "byob",
+      "booze",
+      "glass",
+      "drinking"
+    ],
+    "mode": "auto",
+    "answer": "Only if the listing says alcohol's allowed and it's legal there. Glass is never okay near the pool, so stick to cans or plastic. And no using the pool while impaired.",
+    "link": "/terms-of-service#7-3-prohibited-activities",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Alcohol (unless expressly permitted in the Listing and lawful in the jurisdiction);"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Glass containers in or near the pool area;"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-2-swimmer-safety-requirements",
+        "quote": "Use of the Pool Space while impaired by alcohol, cannabis, prescription medication, or any other intoxicant is strictly prohibited."
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:39",
+        "quote": "no_alcohol: { ok: false, label: 'No alcohol' },"
+      }
+    ],
+    "gap": "Changed \"no swimming while impaired\" to \"no using the pool\": ToS §7.2 bans any use of the Pool Space while impaired, not only swimming."
+  },
+  {
+    "id": "rules-pets",
+    "category": "pool rules and amenities",
+    "question": "Can I bring my dog?",
+    "variants": [
+      "are pets allowed",
+      "is it pet friendly",
+      "can my pup come",
+      "dog friendly pool?",
+      "can my dog swim in the pool",
+      "pets ok?",
+      "do you allow animals",
+      "can i bring my puppy"
+    ],
+    "keywords": [
+      "pet",
+      "pets",
+      "dog",
+      "puppy",
+      "pup",
+      "animal",
+      "pet friendly",
+      "cat"
+    ],
+    "mode": "auto",
+    "answer": "Only if the listing allows pets. Look for \"Pet friendly\" in what's included, or \"No pets\" in the house rules. Not sure? Message the host before you book.",
+    "link": "/terms-of-service#7-3-prohibited-activities",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Pets, unless expressly permitted in the Listing;"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:63",
+        "quote": "pet_friendly: { ic: '🐾', label: 'Pet friendly' },"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:36",
+        "quote": "no_pets: { ok: false, label: 'No pets' },"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "read the listing first and message the host with any questions."
+      }
+    ],
+    "gap": "Service animals: listings can show \"Service animals welcome\" (ListingRedesign.js:268), but PRNM has no service-animal policy. A service-animal question should go to Derek, not get this answer."
+  },
+  {
+    "id": "rules-diving-slides",
+    "category": "pool rules and amenities",
+    "question": "Can we dive or use the diving board?",
+    "variants": [
+      "is diving allowed",
+      "can i jump off the diving board",
+      "can the kids use the slide",
+      "no diving?",
+      "divng board ok",
+      "is the water slide ok to use",
+      "can i flip into the deep end",
+      "diving rules"
+    ],
+    "keywords": [
+      "diving",
+      "dive",
+      "diving board",
+      "slide",
+      "water slide",
+      "jumping platform",
+      "deep end",
+      "flip"
+    ],
+    "mode": "auto",
+    "answer": "No diving at any pool on Pool Rental Near Me, whatever the depth. Diving boards, slides and jumping platforms are off-limits too, even if the pool has one.",
+    "link": "/terms-of-service#7-3-prohibited-activities",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "The following are strictly prohibited at all Pool Spaces:"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Diving (regardless of pool depth);"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Use of diving boards, slides, or jumping platforms;"
+      }
+    ],
+    "gap": "CONFLICT for Derek: listing pages can advertise \"Diving board\" and \"Water slide\" as amenities and highlights (ListingRedesign.js:64, :66, :79 'For the cannonball crowd.', :83 'Instant hit with the kids.'). ToS §7.3 bans using them, and §6.4 says pools must prohibit diving boards. A guest can see a slide on the listing and then hear 'off-limits' here."
+  },
+  {
+    "id": "rules-kids-supervision",
+    "category": "pool rules and amenities",
+    "question": "Can my kids swim without an adult?",
+    "variants": [
+      "do kids need supervision",
+      "can teens swim alone",
+      "age limit for kids?",
+      "can i drop my kids off at the pool",
+      "is it ok for my 14 year old to swim alone",
+      "do children need a parent there",
+      "kids alowed alone?",
+      "minors without parents ok"
+    ],
+    "keywords": [
+      "kids",
+      "children",
+      "minors",
+      "teens",
+      "supervision",
+      "age",
+      "parent",
+      "unaccompanied"
+    ],
+    "mode": "auto",
+    "answer": "Kids under 16 need an adult supervising the whole time they swim, and minors can't use a pool unaccompanied. Check the listing's house rules too, since the host may have more.",
+    "link": "/terms-of-service#7-2-swimmer-safety-requirements",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-2-swimmer-safety-requirements",
+        "quote": "No person under age 16 may swim without continuous adult supervision;"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Unaccompanied minor use; and"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-3-prohibited-activities",
+        "quote": "Any activity prohibited by the Host's house rules, local ordinances, or state law."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-1-general-conduct",
+        "quote": "Ensure all minors and non-swimmers are supervised at all times by a responsible adult;"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "rules-guest-limit",
+    "category": "pool rules and amenities",
+    "question": "Can I bring more people than I booked for?",
+    "variants": [
+      "what if extra friends show up",
+      "can a few more ppl come than i booked",
+      "is there a charge for extra guests",
+      "unexpected guests showed up",
+      "can my cousin tag along",
+      "extra guest fee?",
+      "more people than i put on the booking",
+      "can i bring +3"
+    ],
+    "keywords": [
+      "guests",
+      "extra guests",
+      "capacity",
+      "max",
+      "limit",
+      "people",
+      "friends",
+      "headcount",
+      "party size"
+    ],
+    "mode": "auto",
+    "answer": "Stick to the guests in your booking and the listing's max. If more people show up than you declared, the host can request an extra guest charge, which we review first. Need to add people?",
+    "link": "/host-standards#3-guest-count-and-party-size",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-1-general-conduct",
+        "quote": "Allow only those guests authorized in the Booking;"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-1-general-conduct",
+        "quote": "Not exceed any maximum guest capacity stated in the Listing; and"
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:124",
+        "quote": "If more people are present than were declared at booking, the Host may request an additional guest charge for each undeclared attendee, at the per-guest rate stated in the listing."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:128",
+        "quote": "No additional guest charge is processed without review by Pool Rental Near Me."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "To cancel or change a booking, text us your booking details and we'll help."
+      }
+    ],
+    "gap": "A 'yes' to 'Need to add people?' is a booking change, so send it to cancel-change-guests (handoff); Derek decided guests ask PRNM in chat to change a booking. Rewrote the variants: \"how many people can i bring\", \"max guests?\", \"is there a guest limit\" and \"guest capacity\" duplicated booking-guest-count (\"max guests?\" was in both). This entry now covers only going over the declared count."
+  },
+  {
+    "id": "amenity-heated",
+    "category": "pool rules and amenities",
+    "question": "Is the pool heated?",
+    "variants": [
+      "heated pool?",
+      "is the water warm",
+      "is it heatd",
+      "how warm is the water",
+      "pool heater?",
+      "can i swim in winter, is it heated",
+      "warm water pool",
+      "do you have heated pools"
+    ],
+    "keywords": [
+      "heated",
+      "heater",
+      "warm",
+      "temperature",
+      "water temp",
+      "heat",
+      "winter"
+    ],
+    "mode": "auto",
+    "answer": "Depends on the pool. Heated ones show \"Heated\" under What's included on the listing. Don't see it? Message the host before you book so you know what to expect.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:59",
+        "quote": "heated: { ic: '♨️', label: 'Heated' },"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:351",
+        "quote": "What’s included"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "read the listing first and message the host with any questions."
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:348",
+        "quote": "if (items.length < 3) return null;"
+      }
+    ],
+    "gap": "The bot can't give a water temperature because listings have no temperature field. \"What's included\" only appears when a listing has 3 or more recognized amenities (ListingRedesign.js:348), so a missing label doesn't prove the pool lacks the amenity. That's why the answer tells guests to ask the host."
+  },
+  {
+    "id": "amenity-restroom",
+    "category": "pool rules and amenities",
+    "question": "Is there a bathroom I can use?",
+    "variants": [
+      "restroom available?",
+      "is there a toilet",
+      "where do we change",
+      "changing room?",
+      "bathroom access",
+      "is there a bathrom",
+      "can we use a bathroom inside",
+      "do i need to come already changed"
+    ],
+    "keywords": [
+      "bathroom",
+      "restroom",
+      "toilet",
+      "changing area",
+      "changing room",
+      "change",
+      "facilities"
+    ],
+    "mode": "auto",
+    "answer": "Check What's included on the listing for \"Restroom\" or \"Changing area.\" If a restroom is listed, the host has to have it stocked, working and accessible for your booking.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:54",
+        "quote": "restroom: { ic: '🚻', label: 'Restroom' },"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:58",
+        "quote": "changing_area: { ic: '👙', label: 'Changing area' },"
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:82",
+        "quote": "Restroom facilities described in the listing are stocked, functional, and accessible."
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:348",
+        "quote": "if (items.length < 3) return null;"
+      }
+    ],
+    "gap": "\"What's included\" only appears when a listing has 3 or more recognized amenities (ListingRedesign.js:348), so a missing label doesn't prove the pool lacks the amenity. That's why the answer tells guests to ask the host."
+  },
+  {
+    "id": "rules-music-noise",
+    "category": "pool rules and amenities",
+    "question": "Can I play music or bring a speaker?",
+    "variants": [
+      "is music allowed",
+      "can we bring a bluetooth speaker",
+      "can i bring a dj",
+      "how loud can we be",
+      "noise rules?",
+      "music curfew?",
+      "can we blast music",
+      "speakr ok?"
+    ],
+    "keywords": [
+      "music",
+      "speaker",
+      "dj",
+      "noise",
+      "loud",
+      "sound system",
+      "curfew",
+      "bluetooth"
+    ],
+    "mode": "auto",
+    "answer": "Depends on the host. Check the house rules for things like \"No DJs\" or \"Music until curfew,\" and some pools list a sound system. Either way, keep the noise reasonable.",
+    "link": "/terms-of-service#7-1-general-conduct",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:37",
+        "quote": "no_djs: { ok: false, label: 'No DJs' },"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:42",
+        "quote": "music_curfew: { ok: true, label: 'Music until curfew' },"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:60",
+        "quote": "sound_system: { ic: '🔊', label: 'Sound system' },"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#7-1-general-conduct",
+        "quote": "Not engage in illegal activities, excessive noise, or disturbances;"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "rules-waiver",
+    "category": "pool rules and amenities",
+    "question": "Do I have to sign a waiver?",
+    "variants": [
+      "is there a liability waiver",
+      "waiver form?",
+      "do my guests need to sign anything",
+      "where do i sign the waiver",
+      "do i need to sign a release",
+      "waver for swimming",
+      "does everyone sign a waiver",
+      "liability form for my kids"
+    ],
+    "keywords": [
+      "waiver",
+      "waver",
+      "liability",
+      "release",
+      "sign",
+      "form",
+      "consent"
+    ],
+    "mode": "handoff",
+    "answer": "Good question. Waivers touch on liability, so I don't want to guess on that one. I'll pass it to Derek so you get a straight answer. Is this for a booking you already have?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [],
+    "gap": "ToS §8.1 (and businessFacts.js:33 guestWaiverRequiredPerBooking: true) says every Swimmer must sign the PRNM Liability Waiver before each Booking, but the marketplace has no waiver-signing step. A grep for 'waiver' in src/ finds only the ToS, the insurance config and Host Academy. This is a liability topic, so under rule 8 Derek answers. He needs to say whether a waiver flow exists and what guests should be told. Urgency is left normal because this is a pre-booking question, not an emergency."
+  },
+  {
+    "id": "arrive-address",
+    "category": "arrival and access",
+    "question": "What's the exact address of the pool?",
+    "variants": [
+      "where is the pool located",
+      "when do i get the address",
+      "address?",
+      "why cant i see the address",
+      "how do i get directions",
+      "wheres the pool at",
+      "can i see the address before booking",
+      "the map only shows a circle"
+    ],
+    "keywords": [
+      "address",
+      "location",
+      "where",
+      "map",
+      "directions",
+      "street",
+      "google maps"
+    ],
+    "mode": "auto",
+    "answer": "You'll see the full address on your booking page once the host accepts, with a link to open it in Google Maps. Until then, the listing only shows the general area.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/TransactionPage/TransactionPage.js:493",
+        "quote": "// The location of the booking can be shown if fuzzy location"
+      },
+      {
+        "ref": "src/containers/TransactionPage/TransactionPage.js:496",
+        "quote": "process?.hasPassedState(process?.states?.ACCEPTED, transaction);"
+      },
+      {
+        "ref": "src/translations/en.json:3",
+        "quote": "\"AddressLinkMaybe.viewOnGoogleMaps\": \"View on Google Maps\","
+      },
+      {
+        "ref": "src/config/configMaps.js:54",
+        "quote": "obfuscated randomly around the actual location."
+      },
+      {
+        "ref": "src/containers/ListingPage/SectionMapMaybe.js:37",
+        "quote": "const address = publicLocationLabel(publicData?.location);"
+      }
+    ],
+    "gap": "Replaced the variant \"how do i find the pool\" because it collided with the urgent arrive-cant-get-in variant \"cant find the pool\"."
+  },
+  {
+    "id": "arrive-entry",
+    "category": "arrival and access",
+    "question": "How do I get in when I arrive?",
+    "variants": [
+      "check in instructions?",
+      "whats the gate code",
+      "how do i get into the backyard",
+      "entry instructions",
+      "where do i meet the host",
+      "how does check-in work",
+      "chek in info",
+      "do i knock or go around back"
+    ],
+    "keywords": [
+      "check in",
+      "check-in",
+      "entry",
+      "gate code",
+      "get in",
+      "meeting point",
+      "instructions",
+      "arrival"
+    ],
+    "mode": "auto",
+    "answer": "Look for \"Arrival & meeting point\" under Things to know on the listing, then message the host from your booking page for entry details. Hosts are expected to make sure you can get in without help.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:534",
+        "quote": "Arrival &amp; meeting point"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:520",
+        "quote": "Things to know"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "You can message the host from your booking page."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:83",
+        "quote": "Entry instructions are accurate and the Guest can get in without assistance."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "arrive-parking",
+    "category": "arrival and access",
+    "question": "Is there parking at the pool?",
+    "variants": [
+      "where do i park",
+      "parking available?",
+      "how many cars can we bring",
+      "street parking only?",
+      "can i park in the driveway",
+      "parkin",
+      "is there room for an RV or bus",
+      "do we need to carpool"
+    ],
+    "keywords": [
+      "parking",
+      "park",
+      "cars",
+      "driveway",
+      "street parking",
+      "carpool",
+      "rv",
+      "bus"
+    ],
+    "mode": "auto",
+    "answer": "If the host added parking info, it shows on the listing, like \"Parking for 2 cars\" or \"No on-site parking.\" Don't see it? Ask the host before you go.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:310",
+        "quote": "if (pk === 'no-parking-space') spec.push('🚫 No on-site parking');"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:313",
+        "quote": "else if (cars > 1) spec.push(`🅿️ Parking for ${cars} cars`);"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:311",
+        "quote": "else if (pk === 'rob') spec.push('🅿️ RV / bus parking');"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "read the listing first and message the host with any questions."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "arrive-host-present",
+    "category": "arrival and access",
+    "question": "Will the host be there when I arrive?",
+    "variants": [
+      "is it self check in",
+      "will the host greet us",
+      "will the owner be home",
+      "is the host present during the swim",
+      "self checkin?",
+      "will someone let us in",
+      "is anyone home at the pool",
+      "is the host around during my booking"
+    ],
+    "keywords": [
+      "host",
+      "owner",
+      "present",
+      "home",
+      "self check-in",
+      "check in with host",
+      "someone there"
+    ],
+    "mode": "auto",
+    "answer": "Depends on the listing. Look for \"Self check-in\" or \"Check in with host\" on the listing, or \"Host is present\" in the house rules. Still not sure? Message the host and ask.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:279",
+        "quote": "if (pd.checkingin === 'self') facts.push({ ic: '🔑', t: 'Self check-in', d: 'Let yourself in and enjoy' });"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:280",
+        "quote": "t: 'Check in with host'"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:43",
+        "quote": "host_present: { ok: true, label: 'Host is present' },"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "read the listing first and message the host with any questions."
+      }
+    ],
+    "gap": "Replaced the variant \"do i meet the host\" because it collided with arrive-entry's \"where do i meet the host\". The quick-facts strip shows at most 4 items (ListingRedesign.js:285), so the check-in label can be missing."
+  },
+  {
+    "id": "arrive-cant-get-in",
+    "category": "arrival and access",
+    "question": "I'm at the pool and can't get in. What do I do?",
+    "variants": [
+      "locked out of the pool",
+      "gate is locked and host isnt answering",
+      "cant find the pool",
+      "nobody is here to let us in",
+      "the gate code doesnt work",
+      "host not responding and my booking started",
+      "we're here but the address is wrong",
+      "cnt get in help"
+    ],
+    "keywords": [
+      "locked out",
+      "can't get in",
+      "gate",
+      "code",
+      "not answering",
+      "no one here",
+      "wrong address",
+      "stuck",
+      "arrived"
+    ],
+    "mode": "handoff",
+    "answer": "Ugh, sorry. Keep trying the host from your booking page, and I'll flag this to Derek and Brandon as urgent. What's your booking reference?",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "You can message the host from your booking page."
+      }
+    ],
+    "gap": "No policy is published for a host no-show or failed entry (refund, rebooking or time credit). Derek and Brandon handle each case, and the bot promises nothing about the outcome."
+  },
+  {
+    "id": "arrive-early",
+    "category": "arrival and access",
+    "question": "Can I show up before my booking starts?",
+    "variants": [
+      "can we arrive early",
+      "how early can i get there",
+      "can i come 30 min early to set up",
+      "early arrival ok?",
+      "can we get there before our time",
+      "arrive b4 start time",
+      "set up before my booking starts",
+      "can we show up erly"
+    ],
+    "keywords": [
+      "early",
+      "arrive early",
+      "before start",
+      "set up",
+      "start time",
+      "ahead of time"
+    ],
+    "mode": "auto",
+    "answer": "Plan on your booking start time, since that's when the host has the pool ready. Want to come early? Ask the host from your booking page first. Any extra time has to be paid through the platform.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:663",
+        "quote": "\"OrderBreakdown.bookingStart\": \"Booking start\","
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:79",
+        "quote": "ready for immediate use at the start of the reserved time."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "You can message the host from your booking page."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:186",
+        "quote": "All payments related to a booking — base rate, additional guests, additional hours, cleaning, damage — must be processed through Pool Rental Near Me."
+      }
+    ],
+    "gap": "Replaces arrive-booking-details, which reworded booking-status. Both sent the guest to the Inbox booking page, and variants such as \"my reservations\" and \"where is my reservation\" collided. Move its useful variants (\"booking confirmation?\", \"cant find my booking\") onto booking-status. No early-arrival policy is published, so the bot only points to the host and the rule that payments stay on the platform."
+  },
+  {
+    "id": "arrive-add-calendar",
+    "category": "arrival and access",
+    "question": "Can I add my booking to my calendar?",
+    "variants": [
+      "add to calendar",
+      "how do i put this in google calendar",
+      "ics file?",
+      "save booking to my iphone calendar",
+      "calender invite",
+      "can i get a calendar event",
+      "sync booking to outlook",
+      "add to my cal"
+    ],
+    "keywords": [
+      "calendar",
+      "add to calendar",
+      "ics",
+      "google calendar",
+      "iphone",
+      "outlook",
+      "invite",
+      "event"
+    ],
+    "mode": "auto",
+    "answer": "Usually, yep. Open your booking and tap \"Add to calendar\" if you see it. It downloads a calendar file with a link back to your booking. No button? Your start and end time are on that page.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:2",
+        "quote": "\"AddToCalendarButton.label\": \"Add to calendar\","
+      },
+      {
+        "ref": "src/containers/TransactionPage/AddToCalendarButton.jsx:13",
+        "quote": "magical URL\" modal on iOS - a dead end for most hosts. A plain .ics download"
+      },
+      {
+        "ref": "src/containers/TransactionPage/AddToCalendarButton.jsx:14",
+        "quote": "works everywhere: iOS/macOS open it straight into Calendar, Android/desktop"
+      },
+      {
+        "ref": "src/containers/TransactionPage/AddToCalendarButton.jsx:61",
+        "quote": "`URL:${transactionDetailURL}`,"
+      },
+      {
+        "ref": "src/containers/TransactionPage/TransactionPanel/TransactionPanel.js:255",
+        "quote": "const lastTransitionsToShowCalendar = ["
+      },
+      {
+        "ref": "src/containers/TransactionPage/TransactionPanel/TransactionPanel.js:262",
+        "quote": "listingType === LISTING_TYPE_HOURLY && lastTransitionsToShowCalendar.includes(lastTransition);"
+      },
+      {
+        "ref": "src/translations/en.json:663",
+        "quote": "\"OrderBreakdown.bookingStart\": \"Booking start\","
+      }
+    ],
+    "gap": "The button only shows on hourly-pool listings when the last transition was confirm-payment, accept or operator-accept (TransactionPanel.js:255-262). It does NOT show after accept-with-payment or operator-accept-with-payment (the path for hosts without Stripe), or once the booking moves to a later state. The answer hedges for that reason. TransactionPanel should be fixed."
+  },
+  {
+    "id": "arrive-running-late",
+    "category": "arrival and access",
+    "question": "I'm running late. What should I do?",
+    "variants": [
+      "gonna be late",
+      "running behind for my booking",
+      "late for my pool time",
+      "stuck in traffic",
+      "runnin late",
+      "we'll be 20 min late",
+      "what if im late",
+      "late arrival"
+    ],
+    "keywords": [
+      "late",
+      "running late",
+      "delayed",
+      "traffic",
+      "behind",
+      "arrival time",
+      "heads up"
+    ],
+    "mode": "auto",
+    "answer": "Give the host a heads-up from your booking page so they know when to expect you. Need to move your booking time instead? I can bring in Derek and Brandon.",
+    "link": "/inbox/orders",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:27",
+        "quote": "You can message the host from your booking page."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:36",
+        "quote": "To cancel or change a booking, text us your booking details and we'll help."
+      }
+    ],
+    "gap": "No late-arrival policy is published: nothing says whether the end time moves or whether lost time is refunded. The bot doesn't answer that part."
+  },
+  {
+    "id": "arrive-accessibility",
+    "category": "arrival and access",
+    "question": "Is the pool wheelchair accessible?",
+    "variants": [
+      "ada accessible pool",
+      "is there step free access",
+      "accessible for disabled guests",
+      "wheelchair access?",
+      "pool lift?",
+      "handicap accessible",
+      "accessability options",
+      "can my mom with a walker get to the pool"
+    ],
+    "keywords": [
+      "wheelchair",
+      "accessible",
+      "ada",
+      "disability",
+      "handicap",
+      "step-free",
+      "mobility",
+      "accessibility"
+    ],
+    "mode": "auto",
+    "answer": "Check the listing for \"Wheelchair accessible\" or \"ADA accessible.\" For specifics, like steps or how you get into the water, message the host before you book.",
+    "link": "/s",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:268",
+        "quote": "wheelchair: 'Wheelchair accessible'"
+      },
+      {
+        "ref": "src/containers/ListingPage/ListingRedesign.js:65",
+        "quote": "ada: { ic: '♿', label: 'ADA accessible' },"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:9",
+        "quote": "read the listing first and message the host with any questions."
+      }
+    ],
+    "gap": "PRNM doesn't inspect pools (ToS §5.2), so these labels are the host's own claims and the bot doesn't vouch for them."
+  },
+  {
+    "id": "arrive-not-as-listed",
+    "category": "arrival and access",
+    "question": "I got to the pool and it's not what the listing showed.",
+    "variants": [
+      "pool doesnt look like the photos",
+      "the amenities are missing",
+      "umbrella is broken",
+      "pool is dirty when we arrived",
+      "this isnt what i booked",
+      "listing was misleading",
+      "no bathroom even tho it was listed",
+      "place looks nothing like pics"
+    ],
+    "keywords": [
+      "not as listed",
+      "not as described",
+      "photos",
+      "missing",
+      "broken",
+      "dirty",
+      "misleading",
+      "amenities"
+    ],
+    "mode": "clarify",
+    "answer": "Thanks for telling me. That needs Derek and Brandon, so I'll bring them in. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "Sorry about that. Is anything unsafe, or is it more that something's missing or different?",
+    "clarify_options": [
+      "Something's unsafe",
+      "An amenity is missing or broken",
+      "It doesn't match the photos",
+      "Something else"
+    ],
+    "urgency": "high",
+    "sources": [],
+    "gap": "Routing after the clarify: 'Something's unsafe' goes to safety-unsafe-pool (911 line, high). Every other option goes to handoff with this answer. Left out under the disputes-go-to-handoff rule: HS §2.3 'Your listing is the contract' and the HS §3.3/§7.1 dispute steps. No refund outcome is published for a listing that doesn't match."
+  },
+  {
+    "id": "safety-injury",
+    "category": "safety, disputes, and human help",
+    "question": "Someone got hurt at the pool. What do I do?",
+    "variants": [
+      "there was an accident",
+      "my kid got injured",
+      "someone is drowning",
+      "emergency at the pool",
+      "guest slipped and fell",
+      "someone got hurt at my pool",
+      "injury during booking",
+      "medical emergency hlp"
+    ],
+    "keywords": [
+      "hurt",
+      "injury",
+      "injured",
+      "accident",
+      "emergency",
+      "drowning",
+      "ambulance",
+      "911",
+      "medical",
+      "fell"
+    ],
+    "mode": "handoff",
+    "answer": "If anyone is hurt or in danger, call 911 first. I'll flag this to Derek and Brandon as urgent. What's the booking reference, if you have one?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:54",
+        "quote": "If anyone is hurt or in danger, call 911 first. This one needs a person."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#27-reporting-misconduct",
+        "quote": "Report immediately to local law enforcement (call 911 in an emergency); and"
+      }
+    ],
+    "gap": "ToS §11.5 requires injury and emergency incidents to be reported to support@ within 24 hours. Under rule 8 the bot states no incident or coverage facts. Derek decides whether the handoff should mention the deadline. Rule 8 also covers liability and claims, so Derek answers and Brandon is only notified."
+  },
+  {
+    "id": "safety-damage",
+    "category": "safety, disputes, and human help",
+    "question": "Something got damaged during a booking. How do I report it?",
+    "variants": [
+      "guest broke something at my pool",
+      "i accidentally broke a chair",
+      "guests ruined my patio furniture",
+      "my pool got damaged",
+      "how do i file a damage claim",
+      "someone cracked the tile",
+      "report property damage",
+      "damge to my backyard"
+    ],
+    "keywords": [
+      "damage",
+      "damaged",
+      "broke",
+      "broken",
+      "claim",
+      "repair",
+      "vandalism",
+      "cracked"
+    ],
+    "mode": "handoff",
+    "answer": "If anyone is hurt or in danger, call 911 first. Otherwise, this one needs a person, so I'll bring in Derek and Brandon. What's the booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:108",
+        "quote": "If anyone is hurt or in danger, call 911 first. This one needs a person."
+      }
+    ],
+    "gap": "Left out under rule 8: the HS §6.1 72-hour damage/cleaning claim window, the ToS §7.4 48-hour guest response, and the police-report requirement for vandalism. Urgency is high because the claim window is short. Rule 8 lists damage and claims, so Derek answers and Brandon is only notified. Derek decides whether the handoff should mention the deadline."
+  },
+  {
+    "id": "safety-insurance",
+    "category": "safety, disputes, and human help",
+    "question": "Am I covered by insurance if something happens?",
+    "variants": [
+      "does prnm have insurance",
+      "do i need insurance to host",
+      "is my pool insured when i host",
+      "liability coverage?",
+      "is there a host guarantee",
+      "insurence for hosts",
+      "will my homeowners cover this",
+      "what does your policy cover",
+      "who pays if a guest sues me"
+    ],
+    "keywords": [
+      "insurance",
+      "insured",
+      "insurence",
+      "coverage",
+      "covered",
+      "liability",
+      "protection",
+      "guarantee",
+      "homeowners"
+    ],
+    "mode": "handoff",
+    "answer": "Good question, and I don't want to guess on that. Insurance questions go to Derek, so I'll send him the rundown. Is this about a specific booking?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "CLAUDE.md:32",
+        "quote": "8. **Insurance questions go to Derek. I do not answer them.**"
+      },
+      {
+        "ref": "src/config/businessFacts.js:44",
+        "quote": "approvedStatement: null,"
+      }
+    ],
+    "gap": "Rule 8: Derek answers or refers to the agent. Brandon is notified but shouldn't answer coverage questions. This entry now also covers 'Do I need insurance to list my pool?' (the old host-listing-09, a reworded duplicate). The bot must not quote ToS §6.6 ('PRNM does not request, collect, review, or verify Host insurance'), which is the sentence from the rule-8 incident, or any other part of ToS §11. Urgency is set to high to match the other rule-8 topics."
+  },
+  {
+    "id": "safety-scam-report",
+    "category": "safety, disputes, and human help",
+    "question": "I think a listing or message is a scam.",
+    "variants": [
+      "is this listing a scam",
+      "i think this listing is fake",
+      "got a weird text saying its from you",
+      "someone asked for my password",
+      "phishing email pretending to be pool rental near me",
+      "this host seems like a scammer",
+      "suspicious link in a message",
+      "is this legit or a scamm"
+    ],
+    "keywords": [
+      "scam",
+      "scammer",
+      "scamm",
+      "fake",
+      "fraud",
+      "phishing",
+      "suspicious",
+      "legit",
+      "impersonating"
+    ],
+    "mode": "handoff",
+    "answer": "Good call checking. Hold off on sending any money or your password. I'll bring in Derek and Brandon to look at it. Can you paste the link or tell me what the message said?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#27-reporting-misconduct",
+        "quote": "If you experience or witness conduct that you believe is unlawful or threatens safety, you should:"
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:188 (live https://www.poolrentalnearme.com/host-standards#5-payments-must-stay-on-the-platform)",
+        "quote": "Hosts may not request, and Guests may not offer, payment by cash, Venmo, Zelle, Cash App, check, wire, or any other method outside the platform"
+      }
+    ],
+    "gap": "Replaces dispute-refund-charge, which duplicated 'I was charged the wrong amount (or charged twice).' Its chargeback and refund wordings ('i want to file a chargeback', 'dispute a payment', 'refund pls') should move into that entry or into 'Will I get a refund if I cancel?'. No published PRNM statement on phishing or impersonation was found, so the bot gives no facts. 'Hold off on sending any money or your password' is a caution, not a policy. HS §7.1 (contact PRNM before your bank) stays out under the disputes rule."
+  },
+  {
+    "id": "dispute-guest-breaking-rules",
+    "category": "safety, disputes, and human help",
+    "question": "My guest is breaking the rules or brought extra people. What do I do?",
+    "variants": [
+      "guest brought too many people",
+      "guests wont leave",
+      "renter is breaking my house rules",
+      "the guest is throwing a party i didnt approve",
+      "too many ppl at my pool rn",
+      "guest is being disrespectful",
+      "guest brought a dog even tho i said no pets",
+      "problem with my guest during the booking"
+    ],
+    "keywords": [
+      "guest",
+      "renter",
+      "too many people",
+      "extra guests",
+      "breaking rules",
+      "won't leave",
+      "overstay",
+      "house rules"
+    ],
+    "mode": "handoff",
+    "answer": "If anyone is hurt or in danger, call 911 first. Otherwise, I'll bring in Derek and Brandon on this. What's the booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:108",
+        "quote": "If anyone is hurt or in danger, call 911 first. This one needs a person."
+      }
+    ],
+    "gap": "HS §4.1 tells hosts not to confront, threaten or evict a guest mid-booking, and to contact PRNM instead. Under the disputes-go-to-handoff rule the bot doesn't say this. Derek may approve adding 'Please don't confront them' to this answer. One overstay variant was replaced because it repeated 'guests wont leave'."
+  },
+  {
+    "id": "safety-unsafe-pool",
+    "category": "safety, disputes, and human help",
+    "question": "The pool looks unsafe. What should I do?",
+    "variants": [
+      "the gate doesnt latch",
+      "water looks green and cloudy",
+      "drain cover is broken",
+      "theres no fence around the pool",
+      "something seems dangerous here",
+      "the ladder is loose and wobbly",
+      "broken glass by the pool",
+      "pool not safe for kids"
+    ],
+    "keywords": [
+      "unsafe",
+      "dangerous",
+      "hazard",
+      "gate",
+      "fence",
+      "drain cover",
+      "cloudy",
+      "green water",
+      "safety"
+    ],
+    "mode": "handoff",
+    "answer": "If anyone is hurt or in danger, call 911 first. Safety issues need a person, so I'll bring in Derek and Brandon. What's your booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:54",
+        "quote": "If anyone is hurt or in danger, call 911 first. This one needs a person."
+      }
+    ],
+    "gap": "ToS §6.4 lists the safety standards hosts certify (4-ft barrier with a self-latching gate, lifesaving equipment, water chemistry), but ToS §5.2 says PRNM doesn't inspect pools. The bot gives no safety facts and no 'don't swim' advice. Derek decides whether to add any."
+  },
+  {
+    "id": "safety-harassment",
+    "category": "safety, disputes, and human help",
+    "question": "Someone at my booking harassed me or made me feel unsafe.",
+    "variants": [
+      "the host was creepy",
+      "i was harassed at the pool",
+      "someone threatened me",
+      "i think the host is filming us",
+      "i feel unsafe right now",
+      "guest was aggressive with me",
+      "inappropriate behavior at the pool",
+      "report a host for harassment"
+    ],
+    "keywords": [
+      "harassed",
+      "harassment",
+      "unsafe",
+      "threatened",
+      "creepy",
+      "inappropriate",
+      "aggressive",
+      "filming",
+      "assault"
+    ],
+    "mode": "handoff",
+    "answer": "If anyone is hurt or in danger, call 911 first. I'm sorry that happened. I'll bring in Derek and Brandon so a person handles this. What's the booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "high",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:54",
+        "quote": "If anyone is hurt or in danger, call 911 first. This one needs a person."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#27-reporting-misconduct",
+        "quote": "Report immediately to local law enforcement (call 911 in an emergency); and"
+      }
+    ],
+    "gap": "ToS §27 also asks reporters to send any police case number to support@; the handoff can ask for it later. On filming: listings can show 'Security cameras on site' (ListingRedesign.js:45), but neither the ToS nor /host-standards has a camera-disclosure rule. The generic keyword 'report' was removed so 'report a bug' or 'report damage' can't match here."
+  },
+  {
+    "id": "human-talk-to-person",
+    "category": "safety, disputes, and human help",
+    "question": "Can I talk to a real person?",
+    "variants": [
+      "human please",
+      "talk to the founder",
+      "agent",
+      "speak to someone",
+      "i want a person not a bot",
+      "connect me to support",
+      "can i talk to derek",
+      "let me talk to whoever runs this"
+    ],
+    "keywords": [
+      "human",
+      "person",
+      "agent",
+      "founder",
+      "derek",
+      "brandon",
+      "representative",
+      "talk to"
+    ],
+    "mode": "handoff",
+    "answer": "Sure thing. I'll bring in Derek and Brandon, the founders. What's it about, so they don't have to ask you again?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "CLAUDE.md:3",
+        "quote": "Founder: **Derek Bowen**. Co-founder: **Brandon Elias**."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#17-ai-and-chatbot-disclosure",
+        "quote": "You may request a human agent at any time by replying \"human,\" \"agent,\" or contacting support@poolrentalnearme.com."
+      }
+    ],
+    "gap": "CLAUDE.md names Brandon as co-founder, which supports 'the founders'. The live ToS §12 lists him as Chief Operating Officer, so Derek may prefer 'Derek and Brandon, who run Pool Rental Near Me'. The keyword 'someone' was removed because it would pull 'someone is drowning' or 'someone threatened me' away from the 911 entries."
+  },
+  {
+    "id": "human-are-you-a-bot",
+    "category": "safety, disputes, and human help",
+    "question": "Am I talking to a bot?",
+    "variants": [
+      "are you a real person",
+      "is this ai",
+      "are you chatgpt",
+      "r u a robot",
+      "is this automated",
+      "am i chatting with a human",
+      "who am i talking to",
+      "are you derek"
+    ],
+    "keywords": [
+      "bot",
+      "robot",
+      "ai",
+      "automated",
+      "chatgpt",
+      "are you real",
+      "who am i talking to"
+    ],
+    "mode": "auto",
+    "answer": "I'm an automated assistant, not a person. I can handle the basics, and I can bring in Derek and Brandon whenever you want. What can I help with?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#17-ai-and-chatbot-disclosure",
+        "quote": "When you are interacting with an AI system rather than a human team member, we will identify the interaction as automated."
+      },
+      {
+        "ref": "CLAUDE.md:3",
+        "quote": "Founder: **Derek Bowen**. Co-founder: **Brandon Elias**."
+      }
+    ],
+    "gap": "ToS §17 says support chat may be 'AI-powered', but this assistant is scripted. The answer says 'automated', which is true either way. The keywords 'human', 'real person' and 'who' were removed: under ToS §17, 'human' must route to the handoff, and 'who' matched unrelated questions."
+  },
+  {
+    "id": "human-contact-support",
+    "category": "safety, disputes, and human help",
+    "question": "How do I contact Pool Rental Near Me support?",
+    "variants": [
+      "whats your email",
+      "where do i send a message to you guys",
+      "phone number for support",
+      "can i call you",
+      "how do i reach customer service",
+      "contact info",
+      "do you have live chat",
+      "suport contact"
+    ],
+    "keywords": [
+      "contact",
+      "email",
+      "phone",
+      "call",
+      "support",
+      "customer service",
+      "reach",
+      "live chat"
+    ],
+    "mode": "auto",
+    "answer": "You can reach us right here, and I can bring in Derek and Brandon anytime. Prefer email? Write to support@poolrentalnearme.com.",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#36-contact",
+        "quote": "Email: support@poolrentalnearme.com"
+      },
+      {
+        "ref": "src/config/businessFacts.js:56",
+        "quote": "'\"24/7 support line\" and any support phone number',"
+      }
+    ],
+    "gap": "No phone number is given, because businessFacts.js marks any support phone number as not approved. ToS §16/§36 and /host-standards list (909) 272-8096, while the live footer on every page (including /login and /terms-of-service) shows 888-940-4247 '10am - 5pm PST'. Derek has to pick one before the bot mentions a phone; until then 'can i call you' gets chat or email only."
+  },
+  {
+    "id": "host-listing-01",
+    "category": "creating a host listing",
+    "question": "How do I list my pool?",
+    "variants": [
+      "how do i put my pool on here",
+      "i want to rent out my pool",
+      "become a host",
+      "how do i make a listing",
+      "sign up as a host",
+      "how do i lsit my pool",
+      "get started hosting",
+      "wanna host my backyard pool"
+    ],
+    "keywords": [
+      "list",
+      "listing",
+      "host",
+      "hosting",
+      "rent out",
+      "add pool",
+      "create listing",
+      "get started"
+    ],
+    "mode": "auto",
+    "answer": "Okay, cool, here's how it works. Start on our listing page: pick your space, upload at least 3 photos, check the details we fill in, then set your rates and availability. Listing's free, and you keep 100% of your listed price.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:63 (Derek-approved host-listing)",
+        "quote": "Start on our listing page: choose your space, upload at least 3 photos, check the details we fill in, then set your rates and availability. When you publish, we'll take you straight to setting up how you get paid. Listing is free, and you keep 100% of your listed price."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Great photos = more bookings. Upload at least 3 photos to continue."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "Zero percent (0%). PRNM does not charge Hosts a service fee on Bookings; Hosts receive one hundred percent (100%) of their listed Booking price."
+      },
+      {
+        "ref": "src/translations/en.json:20",
+        "quote": "List your pool free and earn by the hour — 0% host fees. No listing fees."
+      }
+    ],
+    "gap": "The variants were cut from 10 to 8: 'list my pool', 'how 2 list my pool' and 'can i rent my pool out on here' repeated other variants."
+  },
+  {
+    "id": "host-listing-02",
+    "category": "creating a host listing",
+    "question": "How many photos do I need, and what kind?",
+    "variants": [
+      "how many pics do i need",
+      "photo requirements",
+      "what photos should i upload",
+      "can i upload iphone photos",
+      "max photo size",
+      "file too big wont upload",
+      "do i need pictures to list",
+      "can i use stock photos"
+    ],
+    "keywords": [
+      "photos",
+      "pictures",
+      "pics",
+      "images",
+      "upload",
+      "HEIC",
+      "JPG",
+      "file size"
+    ],
+    "mode": "auto",
+    "answer": "You'll need at least 3 to continue, and you can add up to 20. JPG, PNG or iPhone HEIC all work, up to 20MB each. Use photos you own or have rights to, showing the pool as it looks today.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Great photos = more bookings. Upload at least 3 photos to continue."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "JPG, PNG or iPhone (HEIC) · Max 20MB each · Up to 20 photos"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "These are my photos, or I have the rights to use them on Pool Rental Near Me."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:100",
+        "quote": "Photos must reflect the property's current condition. Update photos when the property changes."
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingPhotosPanel/EditListingPhotosForm.js:238",
+        "quote": "iPhone HEIC/HEIF photos are transcoded to JPEG before upload (Sharetribe"
+      }
+    ],
+    "gap": "The old gap is resolved. The Photos tab used after publishing also converts HEIC to JPEG (EditListingPhotosForm.js:238; the live EditListingPage chunk imports the heic module), even though its label still says \".JPG or .PNG. Max. 20 MB\" (src/translations/en.json:297). The 20-photo cap was checked for /wizard/ only."
+  },
+  {
+    "id": "host-listing-03",
+    "category": "creating a host listing",
+    "question": "I'm already on Swimply. Can I import my listing?",
+    "variants": [
+      "import from swimply",
+      "copy my swimply listing",
+      "i have a peerspace listing can i bring it over",
+      "transfer my listing from giggster",
+      "already listed elsewhere",
+      "import my pool from another site",
+      "swimplly import",
+      "move my listing over"
+    ],
+    "keywords": [
+      "import",
+      "Swimply",
+      "Peerspace",
+      "Giggster",
+      "transfer",
+      "copy",
+      "already listed",
+      "link"
+    ],
+    "mode": "auto",
+    "answer": "Yep. On our listing page, paste your Swimply, Peerspace or Giggster link and we'll pull in the details for you to review. You'll still add your exact address yourself.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Already listed elsewhere? Import it in seconds"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Paste your Swimply, Peerspace, or Giggster link and we'll pull in the details for you to review."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "(ue.city||ue.state)&&m({city:ue.city||\"\",state:ue.state||\"\"})"
+      },
+      {
+        "ref": "docs/ops/host-address-bug-2026-09-12.md:32",
+        "quote": "**The importer does not set the address**, by design, and correctly:"
+      }
+    ],
+    "gap": "Now confirmed in the live bundle, not only the ops doc: the import handler fills in city and state but never the street address. Re-check if the importer changes."
+  },
+  {
+    "id": "host-listing-04",
+    "category": "creating a host listing",
+    "question": "I rent my place. Can I still list the pool?",
+    "variants": [
+      "can renters list",
+      "i dont own my house can i host",
+      "do i have to own the home",
+      "can a tenant list a pool",
+      "property manager listing",
+      "who can list a pool",
+      "my landlord owns the pool",
+      "can i list if im renting"
+    ],
+    "keywords": [
+      "rent",
+      "renter",
+      "tenant",
+      "landlord",
+      "owner",
+      "property manager",
+      "permission",
+      "eligible"
+    ],
+    "mode": "auto",
+    "answer": "Yep, if your landlord's given you written permission. Owners, renters with that permission, property managers authorized by the owner, and people with power of attorney can all host. We may ask for documents like a lease or ID.",
+    "link": "/terms-of-service#6-1-host-eligibility",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#6-1-host-eligibility (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "Eligible Hosts include: (a) legal owners of residential property containing a pool; (b) tenants with documented written landlord permission to sublet for short-term pool rental; (c) property managers with documented owner authorization; and (d) authorized representatives with power of attorney. PRNM may require documentation including a current utility bill, property tax statement, lease, management agreement, and government-issued ID."
+      }
+    ],
+    "gap": "'With the owner's okay' became 'authorized by the owner', because §6.1 requires documented authorization. The link now goes to the §6.1 anchor. Apartment, HOA and community pools aren't covered by §6.1, so questions about those should hand off."
+  },
+  {
+    "id": "host-listing-05",
+    "category": "creating a host listing",
+    "question": "It won't let me publish. Something about my address?",
+    "variants": [
+      "address wont save",
+      "my address is not populating",
+      "cant publish listing address",
+      "address not pinned on map",
+      "it says pick your address from the dropdown",
+      "address dropdown not showing",
+      "adress error",
+      "why cant i publish"
+    ],
+    "keywords": [
+      "address",
+      "publish",
+      "dropdown",
+      "map",
+      "pin",
+      "location",
+      "won't save",
+      "error"
+    ],
+    "mode": "auto",
+    "answer": "Start typing your address and pick it from the dropdown so it pins on the map. Publishing needs that pin. If the dropdown won't show up or won't stick, tell me and I'll bring in Derek and Brandon.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Pick your address from the dropdown so it's pinned on the map — required to publish."
+      },
+      {
+        "ref": "docs/ops/host-address-bug-2026-09-12.md:4",
+        "quote": "Several other new hosts are stuck at the same step."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "componentRestrictions:{country:[\"us\",\"ca\",\"gb\",\"au\"]}"
+      }
+    ],
+    "gap": "docs/ops/host-address-bug-2026-09-12.md records an unfixed wizard bug: the dropdown never stays open, so publishing is blocked. The live bundle still re-creates the autocomplete with effect dependency [r]. Autocomplete only accepts US, CA, GB and AU addresses, so hosts in other countries can't publish. Route a second failed attempt to handoff."
+  },
+  {
+    "id": "host-listing-06",
+    "category": "creating a host listing",
+    "question": "How long until my listing goes live? Does it need approval?",
+    "variants": [
+      "when will my pool be live",
+      "is my listing approved",
+      "do you review listings",
+      "how long for approval",
+      "listing pending approval",
+      "when can people book my pool",
+      "is it live yet",
+      "how long b4 its up"
+    ],
+    "keywords": [
+      "live",
+      "approval",
+      "approved",
+      "publish",
+      "pending",
+      "review",
+      "visible",
+      "go live"
+    ],
+    "mode": "auto",
+    "answer": "It goes live as soon as you publish. Guests can book once your payout details are in, and we'll take you straight to that step after you hit publish.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle, listing create payload)",
+        "quote": "authorId:r,state:\"published\""
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "You're in control. Adjust anytime after publishing. When you publish, we'll take you straight to setting up how you get paid."
+      },
+      {
+        "ref": "src/translations/en.json:558",
+        "quote": "🎉 Your pool is LIVE! Guests can now find and book it."
+      },
+      {
+        "ref": "src/translations/en.json:560",
+        "quote": "This listing is not available {processType, select, booking {for booking} other {for purchase}}. You have not added your payout details yet."
+      }
+    ],
+    "gap": "en.json:559 and :600 still have \"pending approval\" strings. Confirm in Sharetribe Console that listing approval is off for listings made through /l/new as well as /wizard/."
+  },
+  {
+    "id": "host-listing-07",
+    "category": "creating a host listing",
+    "question": "How do I edit my listing after it's published?",
+    "variants": [
+      "change my listing",
+      "update my pool description",
+      "edit listing",
+      "change photos on my listing",
+      "fix my listing title",
+      "how do i update my pool info",
+      "edit my pool page",
+      "chnage my listing"
+    ],
+    "keywords": [
+      "edit",
+      "update",
+      "change",
+      "listing",
+      "description",
+      "title",
+      "photos",
+      "Your listings"
+    ],
+    "mode": "auto",
+    "answer": "Anytime. Go to Your listings and tap Edit listing. You'll see tabs for your pool, address, price, calendar and photos. Each tab saves on its own, so hit its save button before you switch.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "You can edit your listing anytime after publishing"
+      },
+      {
+        "ref": "src/translations/en.json:1133",
+        "quote": "\"TopbarDesktop.yourListingsLink\": \"Your listings\""
+      },
+      {
+        "ref": "src/translations/en.json:594",
+        "quote": "\"ManageListingCard.editListing\": \"Edit listing\""
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingWizard.js:68",
+        "quote": "const TABS_BOOKING = [DETAILS, LOCATION, PRICING, AVAILABILITY, PHOTOS];"
+      },
+      {
+        "ref": "src/translations/en.json:393-400",
+        "quote": "\"EditListingWizard.tabLabelAvailability\": \"Calendar\", ... \"EditListingWizard.tabLabelDetails\": \"Your pool\", ... \"EditListingWizard.tabLabelLocation\": \"Address\", \"EditListingWizard.tabLabelPhotos\": \"Photos\", ... \"EditListingWizard.tabLabelPricing\": \"Price\""
+      },
+      {
+        "ref": "src/translations/en.json:383",
+        "quote": "\"EditListingWizard.edit.saveDetails\": \"Save changes\""
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:689",
+        "quote": "{calSaveInProgress ? 'Saving…' : 'Save calendar'}"
+      }
+    ],
+    "gap": "Fixed: the old answer said every tab has a Save changes button. On a published listing the Calendar tab hides that button (EditListingAvailabilityPanel.js:820 renders it only when !isPublished) and uses Save calendar, Block these dates and Save URL instead."
+  },
+  {
+    "id": "host-listing-08",
+    "category": "creating a host listing",
+    "question": "How do I hide or turn off my listing?",
+    "variants": [
+      "pause my listing",
+      "deactivate my pool",
+      "take my listing down",
+      "unlist my pool",
+      "hide my pool",
+      "turn off my listing for now",
+      "stop showing my pool",
+      "how do i close my listin"
+    ],
+    "keywords": [
+      "close",
+      "hide",
+      "pause",
+      "deactivate",
+      "unlist",
+      "turn off",
+      "take down",
+      "reopen"
+    ],
+    "mode": "auto",
+    "answer": "Go to Your listings, open the menu on your pool and tap Close listing. It's hidden from the marketplace until you tap Open listing. Just need a few days off? Block them on your calendar instead.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/ManageListingsPage/ManageListingCard/ManageListingCard.js:512",
+        "quote": "<MenuLabel className={css.menuLabel} isOpenClassName={css.listingMenuIsOpen}>"
+      },
+      {
+        "ref": "src/translations/en.json:587",
+        "quote": "\"ManageListingCard.closeListing\": \"Close listing\""
+      },
+      {
+        "ref": "src/translations/en.json:590",
+        "quote": "This listing is closed and not visible on the marketplace."
+      },
+      {
+        "ref": "src/translations/en.json:598",
+        "quote": "\"ManageListingCard.openListing\": \"Open listing\""
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:565",
+        "quote": "Every day stays open for bookings until you block it."
+      }
+    ],
+    "gap": "Close listing sits inside the card's menu (ManageListingCard.js:512-530), so the answer now says to open the menu. Not checked: what happens to bookings already accepted when a listing is closed. The bot must not say they're cancelled or kept."
+  },
+  {
+    "id": "host-listing-09",
+    "category": "creating a host listing",
+    "question": "Can I list a hot tub, indoor pool or cold plunge?",
+    "variants": [
+      "can i list my hot tub",
+      "do you allow indoor pools",
+      "can i rent out my cold plunge",
+      "what types of pools can i list",
+      "is a heated pool ok to list",
+      "can i list my jacuzzi",
+      "spa rental listing",
+      "hottub listing"
+    ],
+    "keywords": [
+      "hot tub",
+      "hottub",
+      "jacuzzi",
+      "cold plunge",
+      "spa",
+      "indoor pool",
+      "pool type",
+      "kind of pool"
+    ],
+    "mode": "auto",
+    "answer": "Yep. When you choose your space on our listing page, pick Pool, then the kind that fits, like Private, Indoor, Heated, Hot Tub or Cold Plunge Pool.",
+    "link": "/wizard/",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Q1=[{id:\"pool\",label:\"Pool\",icon:\"Waves\"},{id:\"backyards\",label:\"Backyard\",icon:\"Home\"}]"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "{code:\"privatepool\",label:\"Private Pool\"},{code:\"indoorpools\",label:\"Indoor Pool\"},{code:\"heatedpools\",label:\"Heated Pool\"},{code:\"hottubs\",label:\"Hot Tub\"},{code:\"coldplundge\",label:\"Cold Plunge Pool\"}"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "children:[\"What kind? \",s.jsx(\"span\",{className:\"font-normal\",children:\"(pick one)\"})]"
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:63 (Derek-approved host-listing)",
+        "quote": "Start on our listing page: choose your space, upload at least 3 photos"
+      }
+    ],
+    "gap": "New entry. It replaces the old host-listing-09 ('Do I need insurance to list my pool?'), which duplicated safety-insurance. The wizard also offers a 'Backyard' category and a 'Public Pool' type. ToS §6.1 eligibility is written for 'residential property containing a pool', so the bot needs Derek's word before saying yes to a pool-less backyard or a hot-tub-only property. Route those to handoff."
+  },
+  {
+    "id": "host-listing-10",
+    "category": "creating a host listing",
+    "question": "Will guests see my home address on the listing?",
+    "variants": [
+      "is my address public",
+      "can people see where i live",
+      "do guests get my exact address",
+      "is my address hidden",
+      "privacy of my address",
+      "who sees my address",
+      "will strangers see my adress",
+      "when do guests get the address"
+    ],
+    "keywords": [
+      "address",
+      "privacy",
+      "private",
+      "public",
+      "exact address",
+      "location",
+      "hidden",
+      "see"
+    ],
+    "mode": "handoff",
+    "answer": "Good question. I don't want to guess on how your address shows up, so I'll send Derek and Brandon the rundown and they'll get back to you.",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "Exact address is only shared after booking is confirmed"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "geolocation:{lat:c.location.lat,lng:c.location.lng}"
+      },
+      {
+        "ref": "src/config/configMaps.js:56-57",
+        "quote": "This only hides the locations in the UI level, the actual ... coordinates are still accessible in the HTTP requests and the"
+      }
+    ],
+    "gap": "Unresolved, and likely a real privacy gap. The wizard promises the exact address is shared only after booking, and it keeps the street address in privateData. But it saves the exact map pin as the listing's public geolocation, and configMaps.js:56-57 says map fuzzing only happens in the UI. A read-only check of 8 live listing pages found only city-level text in the address field. Derek should confirm what hosts are told. The sources explain why this is a handoff; the bot doesn't state them."
+  },
+  {
+    "id": "host-pricing-01",
+    "category": "host pricing and calendars",
+    "question": "What fees do hosts pay? Is it free to list?",
+    "variants": [
+      "do you take a commission",
+      "how much does prnm take",
+      "is listing free",
+      "host fees",
+      "whats your cut",
+      "do i pay to list",
+      "commision",
+      "do hosts pay anything",
+      "how much do i keep"
+    ],
+    "keywords": [
+      "fee",
+      "fees",
+      "commission",
+      "cut",
+      "free",
+      "cost",
+      "percent",
+      "keep 100%"
+    ],
+    "mode": "auto",
+    "answer": "We charge hosts 0%, so you keep 100% of your listed price, and listing's free. Guests pay a separate 15% service fee, shown in their total before they book. It's our published fee, not a promo.",
+    "link": "/terms-of-service#4-1-fee-structure",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "Zero percent (0%). PRNM does not charge Hosts a service fee on Bookings; Hosts receive one hundred percent (100%) of their listed Booking price."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "Fifteen percent (15%) of the gross Booking amount, added to the Renter's total at checkout and shown in the all-in price before payment."
+      },
+      {
+        "ref": "src/translations/en.json:20",
+        "quote": "List your pool free and earn by the hour — 0% host fees. No listing fees."
+      },
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:281",
+        "quote": "This is the published fee, not a promotion with an end date."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:72 (Derek-approved host-fees)",
+        "quote": "We charge hosts 0%, so you keep 100% of your listed price. Guests pay a separate 15% service fee, shown in their total before they book. It's our published fee, not a promo."
+      }
+    ],
+    "gap": "Known conflict: /p/faq and /p/how-it-works still claim a host commission. This entry follows ToS §4.1 only. The link now goes to the §4.1 anchor."
+  },
+  {
+    "id": "host-pricing-02",
+    "category": "host pricing and calendars",
+    "question": "How do I change my hourly price?",
+    "variants": [
+      "change my rate",
+      "update price",
+      "raise my price",
+      "lower my hourly rate",
+      "edit pricing",
+      "how do i set my price",
+      "chnage price",
+      "where do i change how much i charge"
+    ],
+    "keywords": [
+      "price",
+      "rate",
+      "hourly",
+      "pricing",
+      "change",
+      "update",
+      "charge",
+      "Price tab"
+    ],
+    "mode": "auto",
+    "answer": "Go to Your listings, tap Edit listing and open the Price tab. Change your price per hour, then hit Save changes. You can change it any time.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:400",
+        "quote": "\"EditListingWizard.tabLabelPricing\": \"Price\""
+      },
+      {
+        "ref": "src/translations/en.json:336",
+        "quote": "\"EditListingPricingForm.pricePerProduct\": \"Price {unitType, select, day {per day} night {per night} hour {per hour} other {}}\""
+      },
+      {
+        "ref": "src/translations/en.json:386",
+        "quote": "\"EditListingWizard.edit.savePricing\": \"Save changes\""
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:72 (Derek-approved host-fees)",
+        "quote": "You set your own price and can change it any time."
+      }
+    ],
+    "gap": "Not checked: whether a price change affects booking requests already sent. The bot must not claim either way."
+  },
+  {
+    "id": "host-pricing-03",
+    "category": "host pricing and calendars",
+    "question": "Can I charge more on weekends or holidays?",
+    "variants": [
+      "weekend pricing",
+      "holiday rates",
+      "different price on certain days",
+      "custom price for a date",
+      "charge more on saturdays",
+      "special date pricing",
+      "set price per day",
+      "wknd rate"
+    ],
+    "keywords": [
+      "weekend",
+      "holiday",
+      "custom price",
+      "date",
+      "per-day",
+      "special rate",
+      "calendar",
+      "bulk"
+    ],
+    "mode": "auto",
+    "answer": "Yep. On the Calendar tab, tap any date and set a custom hourly rate for it. For lots of days at once, use Bulk select dates. Hit Save calendar when you're done.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:673",
+        "quote": "Tap any date to set a custom hourly price, choose a rate, adjust hours, or close it."
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/SwimplyCalendar.js:170",
+        "quote": "{bulkMode ? 'Done selecting' : 'Bulk select dates'}"
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:689",
+        "quote": "{calSaveInProgress ? 'Saving…' : 'Save calendar'}"
+      },
+      {
+        "ref": "server/api-util/lineItems.js:370",
+        "quote": "// override in publicData.availability.dateOverrides, that hourly rate wins."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "host-pricing-04",
+    "category": "host pricing and calendars",
+    "question": "Can I charge extra for things like a BBQ or towels?",
+    "variants": [
+      "add ons",
+      "extras pricing",
+      "charge for grill",
+      "upsell amenities",
+      "paid amenities",
+      "add-on prices",
+      "charge for the hot tub",
+      "extra fees for stuff"
+    ],
+    "keywords": [
+      "add-ons",
+      "extras",
+      "amenities",
+      "upgrades",
+      "BBQ",
+      "grill",
+      "upsell",
+      "charge extra"
+    ],
+    "mode": "auto",
+    "answer": "Yep. In your listing's Price tab, under Upgrades & Enhancement, add each extra with its price, or $0 if it's free. Guests can pick them when they book.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:325",
+        "quote": "\"EditListingPricingForm.amenitiesTitle\": \"Upgrades & Enhancement\""
+      },
+      {
+        "ref": "src/translations/en.json:324",
+        "quote": "along with the rental price for each (enter $0 if amenity is free)"
+      },
+      {
+        "ref": "src/translations/en.json:4",
+        "quote": "\"AmenitySelectField.label\": \"Select add-on amenities (optional)\""
+      },
+      {
+        "ref": "server/api-util/lineItems.js:131",
+        "quote": "includeFor: ['customer', 'provider'],"
+      }
+    ],
+    "gap": "en.json:324 tells hosts to \"List at least five amenities\", but the edit form doesn't enforce a minimum, so the bot doesn't repeat it. The add-ons are free-text name-and-price rows (EditListingPricingForm.jsx:263-306), so 'towels' or 'BBQ' can be added as written."
+  },
+  {
+    "id": "host-pricing-05",
+    "category": "host pricing and calendars",
+    "question": "How do I block days I can't host?",
+    "variants": [
+      "block dates",
+      "im going on vacation",
+      "close my calendar for a week",
+      "mark days unavailable",
+      "only host on weekends",
+      "cant host next saturday",
+      "how do i make days unavailable",
+      "blok dates"
+    ],
+    "keywords": [
+      "block",
+      "unavailable",
+      "vacation",
+      "calendar",
+      "dates",
+      "close days",
+      "weekends only",
+      "availability"
+    ],
+    "mode": "auto",
+    "answer": "Open Your listings, edit your pool and go to the Calendar tab. Every day's open until you block it. Block a date range, or only its weekdays or weekends. With a weekly schedule set, you can block specific hours too.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:565",
+        "quote": "You don’t need to set each day one by one. Every day stays open for bookings until you block it."
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:585-586",
+        "quote": "<option value=\"weekdays\">Weekdays only</option> <option value=\"weekends\">Weekends only</option>"
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:590",
+        "quote": "{rangeInProgress ? 'Working...' : 'Block these dates'}"
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:717",
+        "quote": "Add a blocked time range here — the rest of the day stays bookable."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:90 (Derek-approved host-calendar)",
+        "quote": "Go to Your listings, edit your pool and open the Calendar tab. Every day stays open for bookings until you block it. You can block a whole date range, or only the weekdays or weekends in it. Hourly listings with a weekly schedule can also block specific hours."
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:710",
+        "quote": "{hasAvailabilityPlan && !useFullDays ? ("
+      }
+    ],
+    "gap": "Fixed: restored the qualifier from Derek's approved text. The Block specific hours control only appears for hourly listings that have a weekly schedule (EditListingAvailabilityPanel.js:710). The variant 'block off dates' repeated 'block dates' and was replaced."
+  },
+  {
+    "id": "host-pricing-06",
+    "category": "host pricing and calendars",
+    "question": "How do I set the days and hours my pool is open?",
+    "variants": [
+      "set my hours",
+      "change my schedule",
+      "what times can people book",
+      "set availability",
+      "weekly schedule",
+      "open hours",
+      "only mornings",
+      "set my avalability"
+    ],
+    "keywords": [
+      "schedule",
+      "hours",
+      "availability",
+      "weekly",
+      "open",
+      "times",
+      "days",
+      "default schedule"
+    ],
+    "mode": "auto",
+    "answer": "On the Calendar tab, tap Set default schedule (or Edit default schedule) and choose the days and times people can swim. Then fine-tune single dates on the calendar below it.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:210",
+        "quote": "When is this listing available for booking? Start by setting a default weekly schedule. After that you can adjust the availability for specific dates."
+      },
+      {
+        "ref": "src/translations/en.json:215",
+        "quote": "\"EditListingAvailabilityPanel.setAvailabilityPlan\": \"Set default schedule\""
+      },
+      {
+        "ref": "src/translations/en.json:212",
+        "quote": "\"EditListingAvailabilityPanel.editAvailabilityPlan\": \"Edit default schedule\""
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:673",
+        "quote": "Tap any date to set a custom hourly price, choose a rate, adjust hours, or close it."
+      }
+    ],
+    "gap": "Min/max booking hours and advance notice are set in the wizard and enforced at checkout (server/api-util/lineItems.js:280-345), but the marketplace has no control to edit them after publishing. A host asking to change them needs a handoff."
+  },
+  {
+    "id": "host-pricing-07",
+    "category": "host pricing and calendars",
+    "question": "Can I sync my Swimply calendar so I don't get double-booked?",
+    "variants": [
+      "sync swimply calendar",
+      "import my swimply bookings",
+      "ical sync",
+      "connect my other calendar",
+      "avoid double booking",
+      "calendar feed link",
+      "swimply calender",
+      "block times booked on swimply"
+    ],
+    "keywords": [
+      "sync",
+      "Swimply",
+      "iCal",
+      "calendar",
+      "feed",
+      "double booking",
+      "import",
+      "connect"
+    ],
+    "mode": "auto",
+    "answer": "Yep. On the Calendar tab, paste your Swimply calendar feed link (grab it on swimply.com in a browser, not the app), hit Save URL, then Sync Now. Swimply's feed can run up to 24 hours behind.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:740",
+        "quote": "Paste your Swimply calendar <strong>feed link</strong> to block off times you&apos;re already booked on Swimply. Save the URL first, then click &quot;Sync Now&quot;."
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:745",
+        "quote": "<li>Log in at <strong>swimply.com in a web browser</strong> (it&apos;s not in the Swimply app)</li>"
+      },
+      {
+        "ref": "src/containers/EditListingPage/EditListingWizard/EditListingAvailabilityPanel/EditListingAvailabilityPanel.js:759",
+        "quote": "Note: Swimply updates this feed up to 24 hours behind, so double-check same-day bookings manually."
+      }
+    ],
+    "gap": "Only the Swimply import is offered. The outbound iCal feed (CalendarSyncSection) is behind a feature flag, so the bot doesn't offer syncing out to other calendars. The button label 'Save URL' was confirmed at EditListingAvailabilityPanel.js:777."
+  },
+  {
+    "id": "host-pricing-08",
+    "category": "host pricing and calendars",
+    "question": "How do I turn on instant booking?",
+    "variants": [
+      "instant book",
+      "auto accept bookings",
+      "accept requests automatically",
+      "turn on instant booking",
+      "skip approving each request",
+      "enable instabook",
+      "instant booking setting",
+      "can bookings be automatic"
+    ],
+    "keywords": [
+      "instant booking",
+      "instant book",
+      "auto-accept",
+      "automatic",
+      "requests",
+      "Price tab",
+      "accept",
+      "enable"
+    ],
+    "mode": "auto",
+    "answer": "In your listing's Price tab, switch on instant booking and guest requests get accepted automatically. You'll need your payout details set up first.",
+    "link": "/listings",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:333",
+        "quote": "\"EditListingPricingForm.instantBookingTitle\": \"Do you want to enable instant booking?\""
+      },
+      {
+        "ref": "src/translations/en.json:332",
+        "quote": "If you wish, we can automatically accept your reservation requests from the price you set."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:99 (Derek-approved host-more-bookings)",
+        "quote": "Once your payout details are set up, you can turn on instant booking in your listing's Price tab so requests are accepted automatically."
+      }
+    ],
+    "gap": "The wizard says \"Instant Book listings get 3x more bookings on average\" (live /wizard/ bundle). That's an unsourced statistic (CLAUDE.md rule 1), so it stays out of the bot."
+  },
+  {
+    "id": "host-pricing-09",
+    "category": "host pricing and calendars",
+    "question": "How much should I charge per hour?",
+    "variants": [
+      "what should i charge",
+      "whats a good price",
+      "recommended hourly rate",
+      "how much do other pools charge",
+      "what price should i set",
+      "how much can i make",
+      "pricing advice",
+      "wat should i charge"
+    ],
+    "keywords": [
+      "charge",
+      "price",
+      "how much",
+      "rate",
+      "recommend",
+      "advice",
+      "earn",
+      "make"
+    ],
+    "mode": "clarify",
+    "answer": "Good question. I don't want to guess a number for your pool. You set your own rate and can change it any time.",
+    "link": "/listings",
+    "clarify_prompt": "Want me to bring in Derek and Brandon, or show you where to set it?",
+    "clarify_options": [
+      "Bring in Derek and Brandon",
+      "Show me where to set my price"
+    ],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:72 (Derek-approved host-fees)",
+        "quote": "You set your own price and can change it any time."
+      },
+      {
+        "ref": "src/config/businessFacts.js:53",
+        "quote": "'typical host earnings per month or per year (any figure)',"
+      },
+      {
+        "ref": "src/config/businessFacts.js:58",
+        "quote": "'a starting price per hour (\"Starting at $25/hour\")',"
+      }
+    ],
+    "gap": "There's no approved pricing guidance, and businessFacts.js bans earnings figures and starting prices. Derek could approve a generic line, for example pointing hosts to nearby listings on /s. The wizard pre-fills $45/hr and shows suggested add-on prices; neither is approved for the bot."
+  },
+  {
+    "id": "host-pricing-10",
+    "category": "host pricing and calendars",
+    "question": "Can I offer guests a discount or promo code?",
+    "variants": [
+      "make a promo code",
+      "discount code",
+      "coupon for guests",
+      "offer a deal",
+      "percent off code",
+      "first time guest discount",
+      "promo cod",
+      "how do guests use my code"
+    ],
+    "keywords": [
+      "promo code",
+      "discount",
+      "coupon",
+      "deal",
+      "percent off",
+      "dollars off",
+      "Dashboard",
+      "offer"
+    ],
+    "mode": "auto",
+    "answer": "Yep. On your Dashboard, under Your promo codes, tap Create promo code. Choose percent or dollars off, uses per guest, and an optional expiry or total limit. Guests type it at checkout. It comes out of your payout, and we still take 0%.",
+    "link": "/dashboard",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostDashboardPage/PromoCodesPanel.js:89-92",
+        "quote": "Your promo codes {'🎟️'}</h2> <p className={css.sectionSub}> Give guests a discount they can type at checkout. You choose the amount — it comes out of your payout, and we still take 0%."
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/PromoCodesPanel.js:137",
+        "quote": "onClick={() => setOpen(true)}>Create promo code</button>"
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/PromoCodesPanel.js:153-154",
+        "quote": "<option value=\"percent\">Percent off</option> <option value=\"fixed\">Dollars off</option>"
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/PromoCodesPanel.js:165-172",
+        "quote": "Max redemptions per guest ... Expiration (optional) ... Total redemption limit (optional)"
+      },
+      {
+        "ref": "src/translations/en.json:72",
+        "quote": "\"BookingTimeForm.promoCodePlaceholder\": \"Enter a code from the host\""
+      }
+    ],
+    "gap": "Fixed: the old answer called all limits optional, but 'Max redemptions per guest' is a required field. Only the expiry and the total limit are optional. Added 'Guests type it at checkout' to cover the 'how do guests use my code' variant. The wizard also offers duration discounts (\"e.g. 3+ hours = 10% off\") and group-size tiers; whether duration discounts are actually charged at checkout wasn't checked, so they're left out."
+  },
+  {
+    "id": "payouts-01",
+    "category": "payouts",
+    "question": "How do I set up payouts?",
+    "variants": [
+      "how do i get paid",
+      "add my bank account",
+      "payout setup",
+      "connect stripe",
+      "where do i put my bank info",
+      "set up direct deposit",
+      "add payout details",
+      "link my checking account",
+      "payot setup"
+    ],
+    "keywords": [
+      "payout",
+      "bank",
+      "Stripe",
+      "get paid",
+      "direct deposit",
+      "payout details",
+      "setup",
+      "account"
+    ],
+    "mode": "auto",
+    "answer": "Go to Account settings, then Payout details. Pick individual or company and your country, then get verified with Stripe and add your bank. We'll prompt you right after you publish.",
+    "link": "/account/payments",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:517",
+        "quote": "\"LayoutWrapperAccountSettingsSideNav.paymentsTabTitle\": \"Payout details\""
+      },
+      {
+        "ref": "src/translations/en.json:389",
+        "quote": "{marketplaceName} uses Stripe to process payments. Get verified with Stripe and add your payout details to receive money from transactions. Start by choosing your account type and country."
+      },
+      {
+        "ref": "src/translations/en.json:992-994",
+        "quote": "\"StripeConnectAccountForm.accountTypes.company\": \"Company\", \"StripeConnectAccountForm.accountTypes.individual\": \"Individual\", \"StripeConnectAccountForm.bankAccountLabel\": \"Bank account\""
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:81 (Derek-approved host-payouts)",
+        "quote": "Add your bank under Account settings, then Payout details. We'll prompt you right after you publish, and you'll need it set up to accept bookings."
+      }
+    ],
+    "gap": "The variant 'how do i get my money' was replaced: it repeated 'how do i get paid' and collided with payouts-02 'when will i get my money'."
+  },
+  {
+    "id": "payouts-02",
+    "category": "payouts",
+    "question": "When do I get paid for a booking?",
+    "variants": [
+      "how long do payouts take",
+      "when will i get my money",
+      "when does the payout hit my bank",
+      "payout timing",
+      "how fast do i get paid",
+      "do you pay next day",
+      "when do hosts get paid",
+      "wen do i get paid"
+    ],
+    "keywords": [
+      "when",
+      "payout",
+      "timing",
+      "how long",
+      "paid",
+      "bank",
+      "arrive",
+      "schedule"
+    ],
+    "mode": "auto",
+    "answer": "Once a booking's complete, your money's paid out to your bank automatically. Your Payouts page shows each payout and the date it arrives. Want me to check on a specific one with Derek and Brandon?",
+    "link": "/account/payouts",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:781",
+        "quote": "No payouts yet. Once a booking completes, your money is paid out to your bank automatically — it will show up here."
+      },
+      {
+        "ref": "src/translations/en.json:775",
+        "quote": "\"PayoutDashboardPage.colArrival\": \"Arrives\""
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:81 (Derek-approved host-payouts)",
+        "quote": "Once a booking completes, your money is paid out to your bank automatically. Your Payouts page shows each payout and when it arrives."
+      }
+    ],
+    "gap": "No timeline is given on purpose: businessFacts.js:54 lists payout speed as not approved. The repo's reference process (ext/transaction-processes/default-booking/process.edn:186-190) completes a booking 2 days after it ends, and the Stripe payout schedule varies by account. The live process version wasn't checked. Derek has to approve any timeline."
+  },
+  {
+    "id": "payouts-03",
+    "category": "payouts",
+    "question": "Where can I see how much I've earned?",
+    "variants": [
+      "my earnings",
+      "how much have i made",
+      "see my money",
+      "earnings dashboard",
+      "pending balance",
+      "where is my income shown",
+      "total earned",
+      "payout history"
+    ],
+    "keywords": [
+      "earnings",
+      "earned",
+      "balance",
+      "available",
+      "pending",
+      "history",
+      "Dashboard",
+      "income"
+    ],
+    "mode": "auto",
+    "answer": "Your Dashboard shows what's on the way to your bank and what's available. Tap See every payout for the full list, with amounts, status and arrival dates.",
+    "link": "/dashboard",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostDashboardPage/HostDashboardPage.js:458",
+        "quote": "What your pool earned you {'💰'}"
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/HostDashboardPage.js:487",
+        "quote": "<div className={css.moneyLabel}>On the way to your bank</div>"
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/HostDashboardPage.js:491",
+        "quote": "<div className={css.moneyLabel}>Available</div>"
+      },
+      {
+        "ref": "src/containers/HostDashboardPage/HostDashboardPage.js:495",
+        "quote": "See every payout"
+      },
+      {
+        "ref": "src/translations/en.json:774-776",
+        "quote": "\"PayoutDashboardPage.colAmount\": \"Amount\", \"PayoutDashboardPage.colArrival\": \"Arrives\", \"PayoutDashboardPage.colStatus\": \"Status\""
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "payouts-04",
+    "category": "payouts",
+    "question": "My payout never showed up. Where's my money?",
+    "variants": [
+      "payout missing",
+      "didnt get paid",
+      "havent received my payout",
+      "where is my money",
+      "payout late",
+      "money not in my bank",
+      "my payout failed",
+      "still waiting on payment",
+      "never got payed"
+    ],
+    "keywords": [
+      "missing",
+      "late",
+      "not received",
+      "where is my money",
+      "payout",
+      "failed",
+      "waiting",
+      "didn't get paid"
+    ],
+    "mode": "handoff",
+    "answer": "Got it. I don't want to guess on that, so I'll send Derek and Brandon the rundown. What's the booking reference?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [],
+    "gap": "There's no approved troubleshooting for missing payouts, so this hands off to a person."
+  },
+  {
+    "id": "payouts-05",
+    "category": "payouts",
+    "question": "Stripe says it needs more info before I can get paid. What do I do?",
+    "variants": [
+      "stripe verification",
+      "complete verification to receive payments",
+      "payout account needs more information",
+      "get verified stripe",
+      "stripe asking for id",
+      "verify my payout account",
+      "finish payout setup",
+      "stripe wont verify me"
+    ],
+    "keywords": [
+      "verify",
+      "verification",
+      "Stripe",
+      "more information",
+      "Get verified",
+      "ID",
+      "onboarding",
+      "incomplete"
+    ],
+    "mode": "auto",
+    "answer": "Stripe just needs a bit more info before it can pay you. Go to Payout details, tap Get verified and finish the steps. Once it says your account's up to date, you're set. If you're still stuck, I'll bring in Derek and Brandon.",
+    "link": "/account/payments",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:784",
+        "quote": "Your payout account needs a bit more information before money can be deposited."
+      },
+      {
+        "ref": "src/translations/en.json:1048-1049",
+        "quote": "Stripe needs some more information from you to verify your account. ... Complete verification to receive payments"
+      },
+      {
+        "ref": "src/translations/en.json:1045",
+        "quote": "\"StripeConnectAccountStatusBox.getVerifiedButton\": \"Get verified\""
+      },
+      {
+        "ref": "src/translations/en.json:1050",
+        "quote": "Your Stripe account is up to date!"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "payouts-06",
+    "category": "payouts",
+    "question": "How do I change the bank account my payouts go to?",
+    "variants": [
+      "update bank account",
+      "new bank",
+      "change payout account",
+      "switch my bank",
+      "edit stripe account",
+      "wrong bank account on file",
+      "change where my money goes",
+      "update bank info"
+    ],
+    "keywords": [
+      "change bank",
+      "update",
+      "bank account",
+      "Stripe",
+      "Edit Stripe account",
+      "payout details",
+      "switch",
+      "new bank"
+    ],
+    "mode": "auto",
+    "answer": "Go to Account settings, then Payout details, and tap Edit Stripe account. You'll update your bank details on Stripe's page.",
+    "link": "/account/payments",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:517",
+        "quote": "\"LayoutWrapperAccountSettingsSideNav.paymentsTabTitle\": \"Payout details\""
+      },
+      {
+        "ref": "src/translations/en.json:1044",
+        "quote": "\"StripeConnectAccountStatusBox.editAccountButton\": \"Edit Stripe account\""
+      },
+      {
+        "ref": "src/translations/en.json:994",
+        "quote": "\"StripeConnectAccountForm.bankAccountLabel\": \"Bank account\""
+      },
+      {
+        "ref": "src/containers/StripePayoutPage/StripePayoutPage.js:252",
+        "quote": "'custom_account_update'"
+      },
+      {
+        "ref": "https://www.sharetribe.com/help/en/articles/8857191-how-adding-payout-details-works-with-stripe",
+        "quote": "Providers can also edit their information once it's added by clicking \"Edit Stripe account\" in their Payout details."
+      },
+      {
+        "ref": "https://www.sharetribe.com/help/en/articles/8857191-how-adding-payout-details-works-with-stripe",
+        "quote": "This is where they will add their bank account where to receive money from their transactions."
+      }
+    ],
+    "gap": "The old sources only proved the button exists, not that bank details can be changed there. Stripe-hosted onboarding collects the bank account, and Edit Stripe account reopens it as an account update (StripePayoutPage.js:252; Sharetribe Help). Not checked: whether a payout already in transit still goes to the old account, so the bot doesn't say. Per Sharetribe docs, the payout country can't be changed once the account exists, and a wrong account type (individual/company) needs the operator to disconnect the Stripe account. Those requests should hand off."
+  },
+  {
+    "id": "payouts-07",
+    "category": "payouts",
+    "question": "My listing says I haven't added payout details. Can guests still book?",
+    "variants": [
+      "listing not available for booking",
+      "why cant guests book my pool",
+      "do i need stripe before people can book",
+      "guests say they cant book",
+      "my pool isnt bookable",
+      "payout details warning on my listing",
+      "nobody can book my pool",
+      "it says add payout details"
+    ],
+    "keywords": [
+      "not bookable",
+      "can't book",
+      "payout details",
+      "unavailable",
+      "warning",
+      "add payout details",
+      "listing",
+      "guests"
+    ],
+    "mode": "auto",
+    "answer": "Not yet. Guests can't book until your payout details are added. Set them up under Account settings, then Payout details.",
+    "link": "/account/payments",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:560",
+        "quote": "This listing is not available {processType, select, booking {for booking} other {for purchase}}. You have not added your payout details yet."
+      },
+      {
+        "ref": "src/translations/en.json:539",
+        "quote": "Please add your payout details to start accepting orders."
+      }
+    ],
+    "gap": "Fixed: removed 'you'll be ready to accept bookings', because Stripe may still ask for verification after the details are added (see payouts-05). Replaced near-duplicate variants ('listing unavailable', 'add your payout details warning')."
+  },
+  {
+    "id": "payouts-08",
+    "category": "payouts",
+    "question": "Do I have to pay taxes on my earnings? Will I get a tax form?",
+    "variants": [
+      "do i get a 1099",
+      "tax form for hosting income",
+      "do i pay taxes on pool rental money",
+      "will you send me tax documents",
+      "is my pool income taxable",
+      "1099-k",
+      "do you report my earnings to the irs",
+      "taxs on my earnings"
+    ],
+    "keywords": [
+      "tax",
+      "taxes",
+      "taxs",
+      "1099",
+      "1099-K",
+      "IRS",
+      "tax form",
+      "taxable"
+    ],
+    "mode": "auto",
+    "answer": "Taxes on your booking earnings are yours to handle. We may send you an IRS Form 1099-K if you hit the federal or state thresholds. I can't give tax advice, but I can bring in Derek and Brandon. Want that?",
+    "link": "/terms-of-service#4-7-taxes",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-7-taxes",
+        "quote": "Hosts are responsible for all income tax obligations on Booking earnings."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-7-taxes",
+        "quote": "may issue IRS Form 1099-K to Hosts who meet federal thresholds"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-7-taxes",
+        "quote": "or lower state thresholds"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#6-7-host-tax-and-regulatory-compliance",
+        "quote": "(b) all federal, state, and local taxes on Booking income;"
+      }
+    ],
+    "gap": "New entry. It replaces the old payouts-08 ('Can guests just pay me in cash or Venmo?'), which was the host-side mirror of the guest entry 'Can I pay the host directly in cash or Venmo?', with the same rule and answer. Move its host wordings ('can i take cash', 'guest wants to pay cash', 'can i charge them outside the app') into that entry. ToS §4.7 also gives dollar and transaction thresholds and says PRNM may collect and remit some taxes; both are left out because they change with the law. Not checked: who actually issues the 1099-K (PRNM or Stripe)."
+  },
+  {
+    "id": "payouts-09",
+    "category": "payouts",
+    "question": "Why is my payout less than what the guest paid?",
+    "variants": [
+      "guest paid more than i got",
+      "payout doesnt match total",
+      "where did the rest go",
+      "why is my payout lower",
+      "you took a cut",
+      "booking total vs payout",
+      "payout less then booking",
+      "missing part of my money"
+    ],
+    "keywords": [
+      "less",
+      "lower",
+      "difference",
+      "guest paid",
+      "service fee",
+      "cut",
+      "total",
+      "promo"
+    ],
+    "mode": "auto",
+    "answer": "Guests pay a 15% service fee on top of your price, so their total's higher than your payout. If you offered a promo code, that comes out of your payout too. Something still look off?",
+    "link": "/account/payouts",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#4-1-fee-structure (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "Fifteen percent (15%) of the gross Booking amount, added to the Renter's total at checkout and shown in the all-in price before payment."
+      },
+      {
+        "ref": "server/api-util/lineItems.js:502-505",
+        "quote": "code: 'line-item/customer-commission', unitPrice: calculateTotalFromLineItems([order, ...amenityLineItemsMaybe]), percentage: customerCommission.percentage, includeFor: ['customer'],"
+      },
+      {
+        "ref": "server/api-util/lineItems.js:474-475",
+        "quote": "// (order + paid amenities) and reduces BOTH payin and payout — the host funds // their own promotion."
+      }
+    ],
+    "gap": "Fixed: the old answer listed what a payout is made of ('your price plus paid add-ons, minus any promo code'). That list leaves out the optional refundable deposit, which is added to both the guest total and the host payout (server/api-util/lineItems.js:137-150), and host-requested additional charges (lineItems.js:252). No deposit refund flow was found, so deposit questions should go to Derek."
+  },
+  {
+    "id": "payouts-10",
+    "category": "payouts",
+    "question": "Can I get paid if I'm outside the US?",
+    "variants": [
+      "i live in canada can i host",
+      "uk host payouts",
+      "payouts in australia",
+      "international payouts",
+      "which countries can get paid",
+      "do you pay hosts outside america",
+      "payouts in europe",
+      "non us host"
+    ],
+    "keywords": [
+      "international",
+      "outside US",
+      "country",
+      "Canada",
+      "UK",
+      "Australia",
+      "Stripe",
+      "currency"
+    ],
+    "mode": "auto",
+    "answer": "Yes if you're in the US, Canada, the UK or Australia. Pick your country when you add payout details. Bookings are priced in USD. Somewhere else? I'll bring in Derek and Brandon.",
+    "link": "/account/payments",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:389",
+        "quote": "Start by choosing your account type and country."
+      },
+      {
+        "ref": "src/config/configStripe.js:40",
+        "quote": "code: 'AU',"
+      },
+      {
+        "ref": "src/config/configStripe.js:73",
+        "quote": "code: 'CA',"
+      },
+      {
+        "ref": "src/config/configStripe.js:324",
+        "quote": "code: 'GB',"
+      },
+      {
+        "ref": "src/config/configStripe.js:333",
+        "quote": "code: 'US',"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "componentRestrictions:{country:[\"us\",\"ca\",\"gb\",\"au\"]}"
+      },
+      {
+        "ref": "src/config/configDefault.js:23",
+        "quote": "currency: 'USD',"
+      }
+    ],
+    "gap": "Fixed: the old answer ('if your country's on our payout list, yes') would mislead a host in, say, Germany. Stripe's list has many more countries, but the wizard's address autocomplete only accepts US/CA/GB/AU addresses, so those hosts can't publish. No public source covers local-currency conversion or FX fees (CLAUDE.md says Stripe pays out in local currency). Hosts outside the US get no SMS, because twsend is US-only."
+  },
+  {
+    "id": "account-01",
+    "category": "accounts and technical problems",
+    "question": "I forgot my password.",
+    "variants": [
+      "reset password",
+      "forgot pw",
+      "cant remember my password",
+      "pw reset email",
+      "new password",
+      "password reset link",
+      "forgot passwrod",
+      "how do i reset my pasword"
+    ],
+    "keywords": [
+      "password",
+      "forgot",
+      "reset",
+      "recover",
+      "login",
+      "pw",
+      "link",
+      "pasword"
+    ],
+    "mode": "auto",
+    "answer": "No worries. Go to the reset page, enter the email you signed up with, and we'll email you instructions to set a new one. Never share your password with anyone, including me.",
+    "link": "/recover-password",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:743",
+        "quote": "No worries! Please enter the email address you used to sign up and we'll send you instructions to set a new password."
+      },
+      {
+        "ref": "src/translations/en.json:577-578",
+        "quote": "\"LoginForm.forgotPassword\": \"Reset password\", \"LoginForm.forgotPasswordInfo\": \"Forgot your password? {passwordRecoveryLink}\""
+      },
+      {
+        "ref": "src/translations/en.json:723",
+        "quote": "Forgot your password or don't have one? {resetPasswordLink}"
+      }
+    ],
+    "gap": "Fixed: en.json:743 says the email contains instructions, not a link. Removed the 'change my password' variant and keyword, because changing a password while logged in uses a different screen (/account/change-password)."
+  },
+  {
+    "id": "account-02",
+    "category": "accounts and technical problems",
+    "question": "I can't log in to my account.",
+    "variants": [
+      "cant login",
+      "login not working",
+      "it says my email and password dont match",
+      "locked out",
+      "cant sign in",
+      "log in problem",
+      "wont let me log in",
+      "lgoin issue"
+    ],
+    "keywords": [
+      "log in",
+      "login",
+      "sign in",
+      "locked out",
+      "can't access",
+      "account",
+      "error",
+      "don't match"
+    ],
+    "mode": "clarify",
+    "answer": "Ugh, that's annoying. Let's get you back in.",
+    "link": "/login",
+    "clarify_prompt": "What happens when you try?",
+    "clarify_options": [
+      "I forgot my password",
+      "I signed up with Google, Facebook or Apple",
+      "I see an error message",
+      "Something else"
+    ],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:10",
+        "quote": "The email and password you provided don't match our records. Please double-check and try again."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/login",
+        "quote": "Continue with Google"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/login",
+        "quote": "Continue with Facebook"
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/login",
+        "quote": "Continue with Apple"
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "account-03",
+    "category": "accounts and technical problems",
+    "question": "I never got the email to verify my account.",
+    "variants": [
+      "didnt get verification email",
+      "verify email not received",
+      "resend verification",
+      "no confirmation email",
+      "email link never came",
+      "verification link expired",
+      "where is my verify email",
+      "verifcation email"
+    ],
+    "keywords": [
+      "verify",
+      "verification",
+      "email",
+      "confirm",
+      "resend",
+      "spam",
+      "link",
+      "not received"
+    ],
+    "mode": "auto",
+    "answer": "Check your spam or junk folder first, and add support@poolrentalnearme.com to your contacts. If it still isn't there, resend it from Contact details and click the newest link. If you hit the limit of 5, try again tomorrow.",
+    "link": "/account/contact-details",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:34",
+        "quote": "Don't see it? Check your spam or junk folder, and add support@poolrentalnearme.com to your contacts so it never lands there again."
+      },
+      {
+        "ref": "src/translations/en.json:152",
+        "quote": "\"ContactDetailsForm.resendEmailVerificationText\": \"Resend verification email.\""
+      },
+      {
+        "ref": "src/translations/en.json:406",
+        "quote": "Open the newest email we sent to {email} and click the link in it."
+      },
+      {
+        "ref": "src/translations/en.json:18",
+        "quote": "The maximum of 5 verification emails has been reached. Please try again tomorrow."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "account-04",
+    "category": "accounts and technical problems",
+    "question": "How do I change my email address?",
+    "variants": [
+      "update my email",
+      "new email address",
+      "wrong email on my account",
+      "change email",
+      "typo in my email",
+      "switch my login email",
+      "edit email",
+      "chnage email"
+    ],
+    "keywords": [
+      "email",
+      "change email",
+      "update",
+      "contact details",
+      "new address",
+      "typo",
+      "verify",
+      "account"
+    ],
+    "mode": "auto",
+    "answer": "Go to Account settings, then Contact details, and enter your new email. That page asks for your current password to confirm, then we'll send a link to verify the new address. Don't type your password here.",
+    "link": "/account/contact-details",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:514",
+        "quote": "\"LayoutWrapperAccountSettingsSideNav.contactDetailsTabTitle\": \"Contact details\""
+      },
+      {
+        "ref": "src/translations/en.json:129",
+        "quote": "To change your email address, please enter your current password."
+      },
+      {
+        "ref": "src/translations/en.json:146",
+        "quote": "Check your email inbox to verify {pendingEmail} now."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "account-05",
+    "category": "accounts and technical problems",
+    "question": "How do I update my phone number?",
+    "variants": [
+      "change my phone number",
+      "new phone",
+      "wrong number on my account",
+      "update cell number",
+      "change mobile number",
+      "verify my phone",
+      "phone number change",
+      "updte phone"
+    ],
+    "keywords": [
+      "phone",
+      "number",
+      "mobile",
+      "cell",
+      "change",
+      "update",
+      "contact details",
+      "code"
+    ],
+    "mode": "auto",
+    "answer": "Head to Account settings, then Contact details. Update your number and save. If we text you a 6-digit code, enter it there to confirm.",
+    "link": "/account/contact-details",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:148",
+        "quote": "\"ContactDetailsForm.phoneLabel\": \"Phone number\""
+      },
+      {
+        "ref": "src/translations/en.json:628",
+        "quote": "We've sent a 6-digit code to {phoneNumber}."
+      },
+      {
+        "ref": "src/containers/ContactDetailsPage/ContactDetailsPage.js:111-114",
+        "quote": "const otpDeliverable = phoneNumber && String(phoneNumber).startsWith('+1'); if (phoneNumber !== currentPhoneNumber && otpDeliverable) { dispatch(sendOTP({ email: currentEmail, phoneNumber }));"
+      }
+    ],
+    "gap": "The code only goes to +1 numbers, and the phone field allows US and CA (src/extensions/phone-number-verification/config/configPhoneNumberVerification.js:6). CLAUDE.md says the Twilio sender skips non-US numbers, so a Canadian +1 number may get a code prompt with no text."
+  },
+  {
+    "id": "account-06",
+    "category": "accounts and technical problems",
+    "question": "How do I stop getting text messages?",
+    "variants": [
+      "stop texts",
+      "unsubscribe from sms",
+      "too many texts",
+      "opt out of messages",
+      "turn off text alerts",
+      "how do i get texts again",
+      "stop txting me",
+      "remove me from texts"
+    ],
+    "keywords": [
+      "stop",
+      "texts",
+      "SMS",
+      "unsubscribe",
+      "opt out",
+      "messages",
+      "START",
+      "alerts"
+    ],
+    "mode": "auto",
+    "answer": "Just reply STOP to any of our texts. You'll get one confirmation, then no more texts at all, booking alerts included. To get them back, text START.",
+    "link": "/terms-of-service#16-sms-text-messaging-program",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#16-sms-text-messaging-program (src/containers/TermsOfServicePage/terms-2026-1.js:36, with markdown bold)",
+        "quote": "Reply STOP, QUIT, REVOKE, OPT-OUT, CANCEL, UNSUBSCRIBE, or END to stop messages from PRNM. After you opt out, you will receive a single confirmation message and no further texts; rejoin by texting START or by re-opting in through your Account."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#16-sms-text-messaging-program",
+        "quote": "Message types: Booking confirmations and modifications; reservation reminders;"
+      }
+    ],
+    "gap": "Added the booking-alerts warning that the old gap suggested: ToS §16 says STOP ends all PRNM texts, and its listed message types include booking confirmations and reminders. A host who replies STOP will stop getting booking-request texts."
+  },
+  {
+    "id": "account-07",
+    "category": "accounts and technical problems",
+    "question": "How do I delete my account?",
+    "variants": [
+      "close my account",
+      "delete my data",
+      "remove my account",
+      "cancel my account",
+      "deactivate my profile",
+      "erase my info",
+      "delete acount",
+      "i want off this site"
+    ],
+    "keywords": [
+      "delete",
+      "close account",
+      "remove",
+      "data",
+      "privacy",
+      "deactivate",
+      "cancel account",
+      "erase"
+    ],
+    "mode": "handoff",
+    "answer": "Okay. I can't close accounts from here, so I'll send Derek and Brandon the rundown and they'll take it from there. Want them to reply here in chat or by email?",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:132-135 (Derek-approved other-account-privacy, human_only: true)",
+        "quote": "This one needs a person. Text us and we'll get back to you."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/terms-of-service#23-1-by-you (src/containers/TermsOfServicePage/terms-2026-1.js:36)",
+        "quote": "You may close your Account at any time by emailing support@poolrentalnearme.com."
+      }
+    ],
+    "gap": "Privacy-law deletion requests (ToS §15, CCPA and others) can have response deadlines. Derek and Brandon should confirm the process."
+  },
+  {
+    "id": "account-08",
+    "category": "accounts and technical problems",
+    "question": "The Accept button on my booking request isn't working.",
+    "variants": [
+      "cant accept booking",
+      "accept request not working",
+      "accept button broken",
+      "booking request wont accept",
+      "error when accepting request",
+      "accept doesnt do anything",
+      "accpet button",
+      "cant approve the request"
+    ],
+    "keywords": [
+      "accept",
+      "Accept request",
+      "booking request",
+      "button",
+      "not working",
+      "approve",
+      "verify email",
+      "expires"
+    ],
+    "mode": "auto",
+    "answer": "First, check your email's verified. The Accept button won't work until it is, so look for our link (spam too). Requests expire, so don't wait. If it's still stuck, I'll bring in Derek and Brandon.",
+    "link": "/account/contact-details",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:36",
+        "quote": "⚠️ First: verify your email (we sent you a link — check spam) or the Accept button won't work."
+      },
+      {
+        "ref": "server/extensions/sms-messaging/mod/notify/messages.js:44",
+        "quote": "booking request for ${clip(c.listing, 40)} expires in ~3 hrs. Accept or decline"
+      },
+      {
+        "ref": "src/translations/en.json:1150",
+        "quote": "Booking request expired. You did not reply on time."
+      }
+    ],
+    "gap": ""
+  },
+  {
+    "id": "account-09",
+    "category": "accounts and technical problems",
+    "question": "My listing says 'Outdated listing!' and I can't edit it.",
+    "variants": [
+      "outdated listing error",
+      "cant edit outdated listing",
+      "listing configuration no longer supported",
+      "listing is locked outdated",
+      "outdated listing message",
+      "listing says no longer supported",
+      "outdated lisitng",
+      "listing stuck cant update"
+    ],
+    "keywords": [
+      "Outdated listing",
+      "can't edit",
+      "error",
+      "locked",
+      "configuration",
+      "not supported",
+      "listing",
+      "stuck"
+    ],
+    "mode": "handoff",
+    "answer": "That one has to be fixed on our end, since you can't change it yourself. I'll send Derek and Brandon the rundown so you don't have to explain it again.",
+    "link": "",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/translations/en.json:276",
+        "quote": "\"EditListingDetailsPanel.invalidListingTypeSetTitle\": \"Outdated listing!\""
+      },
+      {
+        "ref": "src/translations/en.json:275",
+        "quote": "This listing has a configuration that is no longer supported by {marketplaceName}, so you can't make changes to it. If you'd like to keep it available, please contact the {marketplaceName} team."
+      },
+      {
+        "ref": "https://www.poolrentalnearme.com/wizard/assets/index-4d5740d4.js (live /wizard/ bundle)",
+        "quote": "{id:\"rentalslots\",label:\"Set Time Slots\",description:\"You pick the windows\",icon:\"CalendarDays\"}"
+      }
+    ],
+    "gap": "CLAUDE.md says this comes from listing types the mobile app doesn't recognise (fixed/request). Only an operator can fix it, by moving the listing back to hourly-pool/hour. A likely new source of these errors: the live wizard offers 'Shared Space' (rentms) and 'Set Time Slots' (rentalslots) listing types but hard-codes unitType \"hour\" in its create payload. CLAUDE.md says rentalslots belongs on 'fixed' and hosts should stay on hourly-pool/hour."
+  },
+  {
+    "id": "account-10",
+    "category": "accounts and technical problems",
+    "question": "Something's not working on the site.",
+    "variants": [
+      "site is broken",
+      "getting an error",
+      "page wont load",
+      "app glitch",
+      "button doesnt work",
+      "something went wrong message",
+      "bug on the website",
+      "its not working",
+      "eror on page"
+    ],
+    "keywords": [
+      "broken",
+      "error",
+      "bug",
+      "glitch",
+      "not working",
+      "won't load",
+      "something went wrong",
+      "problem"
+    ],
+    "mode": "handoff",
+    "answer": "Sorry about that. Tell me what you were trying to do, what happened, and your booking reference if you have one. I'll pass it to Derek and Brandon. If our system broke and cost you money, we make it right.",
+    "link": "/host-standards#8-platform-failures",
+    "clarify_prompt": "",
+    "clarify_options": [],
+    "urgency": "normal",
+    "sources": [
+      {
+        "ref": "src/containers/HostPreparednessPolicyPage/host-preparedness-2026-1.js:255 (live https://www.poolrentalnearme.com/host-standards#8-platform-failures)",
+        "quote": "If a Pool Rental Near Me system, feature, or payment function fails and causes a Host or Guest to lose money, we make it right on our end."
+      },
+      {
+        "ref": "ops/chatbot/bank/sources/derek_approved_content.json:126 (Derek-approved other-not-working)",
+        "quote": "Sorry about that! Text us what you were trying to do, what happened, and your booking reference if you have one. If one of our systems fails and you lose money because of it, we make it right on our end."
+      }
+    ],
+    "gap": "The link now goes to the #8-platform-failures anchor, matching Derek's approved link_href."
+  }
+]

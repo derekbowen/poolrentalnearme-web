@@ -1,0 +1,4 @@
+# runtime state and the tracking log hold customer conversations: never commit
+data/
+*.tmp
+.env

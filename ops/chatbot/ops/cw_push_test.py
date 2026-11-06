@@ -1,0 +1,46 @@
+"""EAST: test Chatwoot app notifications for BOTH founders (ops/chatbot/ops/README.md). No customer is involved.
+
+python3 ops/runners/east_runx.py ops/chatbot/ops/cw_push_test.py
+DRY=True (default): lists Derek's and Brandon's registered devices (1 = browser push, 2 = Chatwoot mobile
+app) and their push flags; sends nothing. DRY=False: sends Chatwoot's own test push (the same service as
+Super Admin > Push diagnostics) to every registered device of both, and prints each device's result.
+Free: browser push goes straight to the browser vendor; the official app goes through Chatwoot's relay.
+"""
+import json, subprocess, sys
+
+DRY = True
+RB = r'''
+dry = ENV['PRNM_DRY'] == '1'
+%w[derek@poolrentalnearme.com brandon@poolrentalnearme.com].each do |e|
+  u = User.find_by(email: e)
+  next puts("PRNM_OUT #{{ email: e, missing: true }.to_json}") unless u
+  subs = u.notification_subscriptions.order(:id)
+  res = dry || subs.empty? ? [] : Notification::PushTestService.new(
+    user: u, subscription_ids: subs.ids, title: 'PRNM chat: test notification',
+    body: 'Test from cw_push_test.py. If you can read this, chat handoffs reach this device.'
+  ).perform
+  puts "PRNM_OUT #{{ email: e, user_id: u.id, devices: subs.map { |s| [s.id, s.subscription_type] },
+                    push_flags: u.notification_settings.first&.selected_push_flags,
+                    results: res.map { |r| r.slice(:id, :type, :device, :status).merge(message: r[:message].to_s[0, 160]) } }.to_json}"
+end
+'''
+r = subprocess.run("docker exec -i -e PRNM_DRY=%d chatwoot-rails-1 bundle exec rails runner -" % DRY, shell=True,
+                   capture_output=True, text=True, input=RB, timeout=300)
+rows = [json.loads(x[9:]) for x in r.stdout.splitlines() if x.startswith("PRNM_OUT ")]
+if r.returncode or len(rows) != 2:
+    sys.exit("FAILED (rc %d): %s" % (r.returncode, (r.stdout + r.stderr)[-1200:]))
+ok = True
+for row in rows:
+    print(json.dumps(row))
+    if row.get("missing") or not row["devices"]:
+        print("  -> %s has no registered device yet: install the Chatwoot app, connect to chat.poolrentalnearme.com, "
+              "log in and allow notifications (or enable browser push in Profile Settings)" % row["email"])
+        ok = False
+    elif not DRY and not all(x["status"] == "success" for x in row["results"]):
+        ok = False
+if DRY:
+    sys.exit("DRY RUN: nothing sent")
+print("both founders' devices accepted the test push" if ok else "NOT OK: see the rows above")
+print("Next, end to end: open the site in a private window, open the chat, type 'can I talk to the founder' -> both "
+      "phones get the mention push; one founder assigns the conversation to himself before replying.")
+sys.exit(0 if ok else 1)

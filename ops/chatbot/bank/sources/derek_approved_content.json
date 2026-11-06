@@ -1,0 +1,149 @@
+{
+ "approved_by": "Derek, 2026-11-05 (\"Approve all\"; guests text to cancel; add 911 line to safety/injury topics; bubble bottom-left, keep #prnm-cta)",
+ "topics": [
+  {
+   "role": "swimmer",
+   "id": "swimmer-booking",
+   "label": "How booking works",
+   "human_only": false,
+   "answer": "Find a pool, pick a time and send your booking request. You're not charged until the host accepts (your card may show a temporary hold), and some pools accept instantly. You'll be notified when it's confirmed. Each host sets house rules, so read the listing first and message the host with any questions.",
+   "link_label": "Find a pool",
+   "link_href": "/s"
+  },
+  {
+   "role": "swimmer",
+   "id": "swimmer-price",
+   "label": "What the price includes",
+   "human_only": false,
+   "answer": "Hosts set their own rates. The price shown on listings and in search already includes our 15% guest service fee. Some pools add other charges, like paid add-ons. Checkout lists every charge and your full total before you pay.",
+   "link_label": "See our fee terms",
+   "link_href": "/terms-of-service#4-1-fee-structure"
+  },
+  {
+   "role": "swimmer",
+   "id": "swimmer-no-reply",
+   "label": "No reply from the host",
+   "human_only": false,
+   "answer": "You're not charged until the host accepts. You can message the host from your booking page. If they don't reply in time, the request expires and any hold on your card is released automatically (your bank may show it pending a few days). If your swim is coming up soon, text us.",
+   "link_label": "See your bookings",
+   "link_href": "/inbox/orders"
+  },
+  {
+   "role": "swimmer",
+   "id": "swimmer-cancel",
+   "label": "Cancelling or changing",
+   "human_only": false,
+   "answer": "Some pools list their cancellation terms on the listing page, under \"Things to know\". To cancel or change a booking, text us your booking details and we'll help.",
+   "link_label": "See your bookings",
+   "link_href": "/inbox/orders"
+  },
+  {
+   "role": "swimmer",
+   "id": "swimmer-rules",
+   "label": "Pool rules",
+   "human_only": false,
+   "answer": "Each host sets house rules, so check \"Things to know\" on the listing and your booking details. At every pool: no diving, no glass, no pets or alcohol unless the listing allows them, under-16s need continuous adult supervision, and bring only the guests you booked.",
+   "link_label": "Rules at every pool",
+   "link_href": "/terms-of-service#7-3-prohibited-activities"
+  },
+  {
+   "role": "swimmer",
+   "id": "swimmer-safety-dispute",
+   "label": "Safety, injury, damage or a refund dispute",
+   "human_only": true,
+   "answer": "If anyone is hurt or in danger, call 911 first. This one needs a person. Text us and we'll get back to you.",
+   "link_label": "",
+   "link_href": ""
+  },
+  {
+   "role": "host",
+   "id": "host-listing",
+   "label": "Listing my pool",
+   "human_only": false,
+   "answer": "Start on our listing page: choose your space, upload at least 3 photos, check the details we fill in, then set your rates and availability. When you publish, we'll take you straight to setting up how you get paid. Listing is free, and you keep 100% of your listed price.",
+   "link_label": "Start your listing",
+   "link_href": "/wizard/"
+  },
+  {
+   "role": "host",
+   "id": "host-fees",
+   "label": "Fees & pricing",
+   "human_only": false,
+   "answer": "You set your own price and can change it any time. You can also offer paid add-ons. We charge hosts 0%, so you keep 100% of your listed price. Guests pay a separate 15% service fee, shown in their total before they book. It's our published fee, not a promo.",
+   "link_label": "See our fee terms",
+   "link_href": "/terms-of-service#4-1-fee-structure"
+  },
+  {
+   "role": "host",
+   "id": "host-payouts",
+   "label": "Getting paid",
+   "human_only": false,
+   "answer": "Add your bank under Account settings, then Payout details. We'll prompt you right after you publish, and you'll need it set up to accept bookings. Once a booking completes, your money is paid out to your bank automatically. Your Payouts page shows each payout and when it arrives.",
+   "link_label": "Your payouts",
+   "link_href": "/account/payouts"
+  },
+  {
+   "role": "host",
+   "id": "host-calendar",
+   "label": "Calendar & availability",
+   "human_only": false,
+   "answer": "Go to Your listings, edit your pool and open the Calendar tab. Every day stays open for bookings until you block it. You can block a whole date range, or only the weekdays or weekends in it. Hourly listings with a weekly schedule can also block specific hours.",
+   "link_label": "Your listings",
+   "link_href": "/listings"
+  },
+  {
+   "role": "host",
+   "id": "host-more-bookings",
+   "label": "Getting more bookings",
+   "human_only": false,
+   "answer": "Use clear photos that show your pool as it is today, and list your amenities and house rules. Reply to messages fast and accept requests before they expire. Once your payout details are set up, you can turn on instant booking in your listing's Price tab so requests are accepted automatically.",
+   "link_label": "Your listings",
+   "link_href": "/listings"
+  },
+  {
+   "role": "host",
+   "id": "host-insurance-damage",
+   "label": "Insurance, damage, injury or a dispute",
+   "human_only": true,
+   "answer": "If anyone is hurt or in danger, call 911 first. This one needs a person. Text us and we'll get back to you.",
+   "link_label": "",
+   "link_href": ""
+  },
+  {
+   "role": "other",
+   "id": "other-partnerships",
+   "label": "Partnerships & press",
+   "human_only": true,
+   "answer": "This one's best with a person. Text us who you are and what you have in mind, and we'll get back to you.",
+   "link_label": "",
+   "link_href": ""
+  },
+  {
+   "role": "other",
+   "id": "other-not-working",
+   "label": "Something isn't working",
+   "human_only": false,
+   "answer": "Sorry about that! Text us what you were trying to do, what happened, and your booking reference if you have one. If one of our systems fails and you lose money because of it, we make it right on our end.",
+   "link_label": "Platform failure policy",
+   "link_href": "/host-standards#8-platform-failures"
+  },
+  {
+   "role": "other",
+   "id": "other-account-privacy",
+   "label": "Delete my account or data",
+   "human_only": true,
+   "answer": "This one needs a person. Text us and we'll get back to you.",
+   "link_label": "",
+   "link_href": ""
+  },
+  {
+   "role": "other",
+   "id": "other-general",
+   "label": "Another question",
+   "human_only": true,
+   "answer": "Text us your question and we'll get back to you.",
+   "link_label": "",
+   "link_href": ""
+  }
+ ]
+}

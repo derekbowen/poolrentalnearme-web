@@ -1,0 +1,197 @@
+{
+  "_readme": "Flow wiring for the scripted assistant. entries.json holds the 100 verified answers; this file only says where buttons and follow-ups lead. 'entry:<id>' must exist in entries.json. 'builtin' replies state no facts: they only hand off. Run `npm test` after any edit.",
+  "starters": {
+    "greeting": [
+      {
+        "title": "Booking a swim",
+        "value": "role:swimmer"
+      },
+      {
+        "title": "Hosting a pool",
+        "value": "role:host"
+      },
+      {
+        "title": "Talk to the founder",
+        "value": "founder"
+      }
+    ],
+    "swimmer": [
+      {
+        "title": "How booking works",
+        "value": "entry:booking-how-to-book"
+      },
+      {
+        "title": "What the price includes",
+        "value": "entry:pay-all-in-price"
+      },
+      {
+        "title": "Cancel or change a booking",
+        "value": "entry:cancel-change-generic"
+      },
+      {
+        "title": "Pool rules",
+        "value": "entry:rules-house-rules"
+      }
+    ],
+    "host": [
+      {
+        "title": "List my pool",
+        "value": "entry:host-listing-01"
+      },
+      {
+        "title": "Fees",
+        "value": "entry:host-pricing-01"
+      },
+      {
+        "title": "Getting paid",
+        "value": "entry:payouts-01"
+      },
+      {
+        "title": "My calendar",
+        "value": "entry:host-pricing-05"
+      }
+    ]
+  },
+  "clarify_routes": {
+    "cancel-change-generic": [
+      {
+        "entry": "cancel-how"
+      },
+      {
+        "entry": "cancel-reschedule"
+      },
+      {
+        "entry": "cancel-change-guests"
+      },
+      {
+        "handoff": {
+          "question_prompt": "No problem. What do you need to change?",
+          "booking_ref": true
+        }
+      }
+    ],
+    "arrive-not-as-listed": [
+      {
+        "entry": "safety-unsafe-pool"
+      },
+      {
+        "handoff": {
+          "use_entry_answer": true
+        }
+      },
+      {
+        "handoff": {
+          "use_entry_answer": true
+        }
+      },
+      {
+        "handoff": {
+          "use_entry_answer": true
+        }
+      }
+    ],
+    "host-pricing-09": [
+      {
+        "handoff": {}
+      },
+      {
+        "entry": "host-pricing-02"
+      }
+    ],
+    "account-02": [
+      {
+        "entry": "account-01"
+      },
+      {
+        "say": "Okay, cool. On the login page, use the same Continue with Google, Facebook or Apple button you signed up with.",
+        "link": "/login",
+        "source": "https://www.poolrentalnearme.com/login shows 'Continue with Google', 'Continue with Facebook', 'Continue with Apple' (account-02 sources)"
+      },
+      {
+        "handoff": {
+          "question_prompt": "Got it. What does the error say?"
+        }
+      },
+      {
+        "handoff": {
+          "question_prompt": "Okay. Tell me what happens when you try, and I'll pass it to Derek and Brandon."
+        }
+      }
+    ]
+  },
+  "clarify_first": ["arrive-not-as-listed"],
+  "followups": {
+    "rules-guest-limit": {
+      "yes": {
+        "entry": "cancel-change-guests"
+      }
+    },
+    "payouts-02": {
+      "yes": {
+        "handoff": {}
+      }
+    },
+    "payouts-08": {
+      "yes": {
+        "handoff": {}
+      }
+    },
+    "payouts-09": {
+      "yes": {
+        "handoff": {}
+      }
+    }
+  },
+  "builtin": {
+    "dispute-charge": {
+      "category": "prices and payments",
+      "urgency": "high",
+      "answer": "Okay. Billing problems need a person, so I'll flag this to Derek and Brandon as urgent. What's the booking reference?"
+    },
+    "refund-question": {
+      "category": "prices and payments",
+      "urgency": "normal",
+      "answer": "Good question. I don't want to guess on refunds, so I'll bring in Derek and Brandon. What's your booking reference?"
+    },
+    "deposit-question": {
+      "category": "prices and payments",
+      "urgency": "normal",
+      "answer": "Good question. I don't want to guess on deposits, so I'll bring in Derek and Brandon. What's your booking reference?"
+    },
+    "service-animal": {
+      "category": "pool rules and amenities",
+      "urgency": "normal",
+      "answer": "Good question. I don't want to guess on service animals, so I'll pass it to Derek and Brandon. Is this for a booking you already have?"
+    },
+    "host-eligibility": {
+      "category": "creating a host listing",
+      "urgency": "normal",
+      "answer": "Good question. I don't want to guess on that kind of space, so I'll bring in Derek and Brandon."
+    },
+    "host-booking-limits": {
+      "category": "host pricing and calendars",
+      "urgency": "normal",
+      "answer": "Got it. That one needs a person, so I'll bring in Derek and Brandon."
+    },
+    "payout-account-change": {
+      "category": "payouts",
+      "urgency": "normal",
+      "answer": "Got it. That one needs a person, so I'll bring in Derek and Brandon."
+    },
+    "closed-listing-bookings": {
+      "category": "creating a host listing",
+      "urgency": "normal",
+      "answer": "Good question. I don't want to guess on what happens to existing bookings, so I'll bring in Derek and Brandon."
+    },
+    "partnership": {
+      "category": "safety, disputes, and human help",
+      "urgency": "normal",
+      "answer": "Love that. This one's best with a person, so I'll bring in Derek and Brandon."
+    },
+    "host-no-show": {
+      "category": "arrival and access",
+      "urgency": "normal",
+      "answer": "Good question. There's no set rule I can point to for that, so I don't want to guess. I'll bring in Derek and Brandon."
+    }
+  }
+}

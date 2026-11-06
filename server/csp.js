@@ -68,6 +68,12 @@ const defaultDirectives = {
     '*.sentry.io',
     '*.stripe.com',
 
+    // Chatwoot widget (self-hosted on EAST; src/components/ChatwootWidget). The SDK
+    // itself makes no requests from this page; listed so a future SDK change that
+    // does is not blocked.
+    'chat.poolrentalnearme.com',
+    'wss://chat.poolrentalnearme.com',
+
     'connect.facebook.net',
   ],
   fontSrc: [self, data, 'assets-sharetribecom.sharetribe.com', 'fonts.gstatic.com'],
@@ -78,6 +84,8 @@ const defaultDirectives = {
     '*.youtube-nocookie.com',
     'https://bid.g.doubleclick.net',
     'https://td.doubleclick.net',
+    // Chatwoot widget iframe (/widget?website_token=...)
+    'chat.poolrentalnearme.com',
   ],
   imgSrc: [
     self,
@@ -114,6 +122,9 @@ const defaultDirectives = {
     // Stripe
     '*.stripe.com',
     'www.facebook.com',
+
+    // Chatwoot widget launcher/avatars
+    'chat.poolrentalnearme.com',
   ],
   scriptSrc: [
     self,
@@ -128,6 +139,9 @@ const defaultDirectives = {
     'js.stripe.com',
     // Plausible analytics
     'plausible.io',
+
+    // Chatwoot widget SDK (/packs/js/sdk.js), inserted by src/components/ChatwootWidget
+    'chat.poolrentalnearme.com',
 
     'connect.facebook.net',
   ],

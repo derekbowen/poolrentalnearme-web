@@ -78,6 +78,13 @@ const COPY = {
   markedUrgent: "I've marked this urgent for Derek and Brandon.",
   // a button from an older message that no longer fits what we're doing
   staleTap: 'Can you tell me in your own words?',
+  // a message in another language: no guessing, the founder is one tap away
+  englishOnly: "Sorry, I can only read English here for now. You can write it in English, or talk to the founder.",
+  // a message with several questions: the first is answered, the others are buttons (no second question mark)
+  alsoAsked: 'You asked about this too:',
+  // said once while the handoff waits for a person, to anything that isn't danger (no new alert)
+  waitingAckSent: 'Got it. Derek and Brandon have this, and anything you add here goes to them.',
+  waitingAckCapped: 'Got it. Anything you add here goes to Derek and Brandon.',
 };
 
 /** Shown only after every Chatwoot call of the handoff returned 2xx. */

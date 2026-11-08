@@ -1,12 +1,7 @@
 """EAST: vhost chat.poolrentalnearme.com -> Chatwoot :3009, /prnm-bot/ -> bot :3120 (ops/chatbot/ops/README.md).
-Refuses unless cw_harden.py and cw_setup.py are done (rails env, 1 account / 2 users, widget flags, signup off,
-onboarding closed, SafeFetch filter on) and the name already routes here: DNS = "proxied" (Cloudflare orange
-cloud, recommended: every address must be in snippets/cloudflare-real-ip.conf) or "dns-only" (EAST's IP alone),
-plus a nonce request seen in this box's access log. The cert is Let's Encrypt HTTP-01 on :80 (Cloudflare passes
-/.well-known/acme-challenge/ to the origin over plain HTTP); it must be publicly trusted, not a Cloudflare Origin
-CA cert, because the webhook hairpin bypasses Cloudflare and SafeFetch verifies TLS.
-DRY=True: read-only. DRY=False: stub :80, certbot certonly --nginx, full vhost, nginx -t, reload, verify;
-protected files are md5-gated and any failure restores them and removes the vhost.
+Refuses until cw_harden.py + cw_setup.py are done and the name routes here (DNS below; a nonce in the access log).
+Cert: Let's Encrypt HTTP-01, publicly trusted (the webhook hairpin skips Cloudflare and SafeFetch checks TLS).
+DRY=False: stub :80, certbot, vhost, reload, verify; a failure restores the md5-gated files, removes the vhost.
 """
 import hashlib, ipaddress, os, re, shutil, subprocess, sys, time
 
@@ -33,15 +28,14 @@ P80 = """server {
     location / { return 301 https://$host$request_uri; }
 }
 """ % HOST
-FULL = HDR + """# Client IP comes from snippets/cloudflare-real-ip.conf (http level); XFF is overwritten with it
-# so Rack::Attack throttles per visitor, not per Cloudflare edge.
+FULL = HDR + """# $remote_addr = the visitor (snippets/cloudflare-real-ip.conf); XFF is set to it, so Rack::Attack is per visitor.
 map $http_upgrade $prnm_cw_connection { default upgrade; '' close; }
-# Per visitor (real IP). prnm_wamp: widget calls that each make Chatwoot post one agent-bot webhook and that
-# Rack::Attack only limits at 3000/min/IP (events, labels, message updates, custom attributes); prnm_widget: all.
+# Per visitor. wamp: widget calls that each post an agent-bot webhook (Rack::Attack: 3000/min/IP); widget: all
+# widget API; wload: /widget loads (Rack::Attack skips any with a cw_conversation, even junk that makes a contact).
 limit_req_zone $binary_remote_addr zone=prnm_wamp:2m rate=1r/s;
 limit_req_zone $binary_remote_addr zone=prnm_widget:2m rate=10r/s;
-# Every webhook comes by the hairpin from EAST's own IP, so all chats share this bucket: a ceiling for a runaway,
-# far above what the throttled visitor calls can drive (a 429 here makes Chatwoot open the chat silently).
+limit_req_zone $binary_remote_addr zone=prnm_wload:2m rate=10r/m;
+# Every webhook comes by the hairpin from EAST's IP: one shared bucket, a runaway ceiling only.
 limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;
 """ + P80 + """server {
     listen 443 ssl;
@@ -50,8 +44,8 @@ limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;
     ssl_certificate_key /etc/letsencrypt/live/%(h)s/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-    client_max_body_size 10m;  # dashboard paths need a login; Chatwoot caps every attachment at 1 MB (cw_setup.rb)
-    # No location sets its own proxy headers, so all of them inherit these.
+    client_max_body_size 10m;  # dashboard: needs a login; attachments are capped at 1 MB (cw_setup.rb)
+    # No location sets its own proxy headers: all inherit these.
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $prnm_cw_connection;
@@ -63,9 +57,10 @@ limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
     limit_req_status 429;
-    # Not public: super admin (its sign-in has no 2FA), sidekiq monitoring, installation onboarding.
+    # super admin sign-in has no 2FA
     location ~ ^/(super_admin|monitoring|installation)(/|$) { return 404; }
-    # Agent-bot webhooks: the hairpin and local checks only (the bot also verifies the HMAC signature).
+    # Hairpin + local only; the bot checks the HMAC. Bot down/hung -> 500: Chatwoot retries only 429/500 (3 tries,
+    # 3 s apart) and silently opens the chat on a 502. 3 s < Chatwoot's 5 s timeout; the bot acks before working.
     location /prnm-bot/ {
         allow %(ip)s;
         allow 127.0.0.1;
@@ -73,42 +68,50 @@ limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;
         limit_except POST { deny all; }
         limit_req zone=prnm_bot burst=600 nodelay;
         client_max_body_size 1m;
-        proxy_read_timeout 10s;
+        proxy_connect_timeout 2s;
+        proxy_read_timeout 3s;
+        error_page 502 503 504 =500 @prnm_bot_down;
         proxy_pass http://127.0.0.1:3120/;
     }
-    # Anonymous visitors send no files (Chatwoot takes them even with the widget attachments flag off). Prefix
-    # matches: Rails also routes .json and a trailing slash; nginx matches the decoded URI (%%2E, %%2F, //, ./).
+    location @prnm_bot_down { return 500; }
+    # No visitor files. Prefix: Rails also routes .json and a slash; nginx matches the decoded URI.
     location ^~ /api/v1/widget/direct_uploads { return 403; }
     location ^~ /rails/active_storage/direct_uploads { return 403; }
-    location ~ ^/api/v1/widget/(events|labels|messages/[^/]+|conversations/(set|destroy)_custom_attributes)(\\.|/|$) {
-        limit_req zone=prnm_wamp burst=10 nodelay;
+    # GET only (PRNM never calls setUser/setCustomAttributes/setLabel; no pre-chat): a write sets a contact's
+    # avatar_url (stored, up to 15 MB), a label (urgent, handoff) or chat attributes. First matching regex wins.
+    location ~ ^/api/v1/widget/(contact|labels|conversations/(set|destroy)_custom_attributes)(\\.|/|$) {
+        limit_except GET { deny all; }
         limit_req zone=prnm_widget burst=40 nodelay;
-        client_max_body_size 64k;
         proxy_pass http://127.0.0.1:3009;
     }
-    location /api/v1/widget/ {
+    location ~ ^/api/v1/widget/(events|messages/[^/]+)(\\.|/|$) {
+        limit_req zone=prnm_wamp burst=10 nodelay;
         limit_req zone=prnm_widget burst=40 nodelay;
-        client_max_body_size 1m;
+        client_max_body_size 16k;
+        proxy_pass http://127.0.0.1:3009;
+    }
+    location /api/v1/widget/ {  # 16k: the bot reads 1,500 chars; Chatwoot would store 150k
+        limit_req zone=prnm_widget burst=40 nodelay;
+        client_max_body_size 16k;
         if ($http_content_type ~* "^multipart/") { return 403; }
         proxy_pass http://127.0.0.1:3009;
     }
-    # GET only: a PUT to disk/<token> stores a direct upload's bytes, and direct uploads are off
-    # (DIRECT_UPLOADS_ENABLED false), so nothing legitimate writes here.
-    location ^~ /rails/active_storage/ {
+    location ~ ^/widget(\\.|/|$) {
+        limit_req zone=prnm_wload burst=10 nodelay;
+        proxy_pass http://127.0.0.1:3009;
+    }
+    location ^~ /rails/active_storage/ {  # a PUT to disk/<token> stores bytes; direct uploads are off
         limit_except GET { deny all; }
         client_max_body_size 1m;
         proxy_pass http://127.0.0.1:3009;
     }
-    # D1: loaded with integrity= and crossorigin=anonymous. Exactly one ACAO on every response, so a copy that
-    # Cloudflare cached from a request without Origin still passes the CORS check.
+    # D1 (integrity + crossorigin): exactly one ACAO, also on a copy Cloudflare cached without Origin.
     location = /packs/js/sdk.js {
         proxy_hide_header Access-Control-Allow-Origin;
         add_header Access-Control-Allow-Origin "*" always;
         proxy_pass http://127.0.0.1:3009;
     }
-    location / {
-        proxy_pass http://127.0.0.1:3009;
-    }
+    location / { proxy_pass http://127.0.0.1:3009; }
 }
 """ % {"h": HOST, "ip": EAST_IP}
 LOC = "--resolve %s:443:127.0.0.1 https://%s" % (HOST, HOST)
@@ -235,13 +238,19 @@ def reload_ok():
     return rc == 0
 
 
+def many(n, a):  # status codes of n requests in a row from here
+    return sh("for i in $(seq %d); do curl -s -o /dev/null -m 5 -w '%%{http_code} ' %s; done" % (n, a))[1].split()
+
+
 def verify():
     ch = [p for p, m in KEEP.items() if md5(p) != m]
     if ch:
         return print("protected files changed:", ch)
     api = sh("curl -s -m 12 %s/api" % LOC)[1]
-    big = "head -c 1100000 /dev/zero | curl -s -o /dev/null -m 12 -w '%%{http_code}' -X %s --data-binary @- " + LOC + "%s"
+    big = "head -c %d /dev/zero | curl -s -o /dev/null -m 12 -w '%%{http_code}' -X %s --data-binary @- " + LOC + "%s"
     hp = "hairpin-" + os.urandom(6).hex()
+    W = LOC + "/api/v1/widget/"
+    bot = bool(sh("ss -ltnH 'sport = :3120'")[1])  # up: the bot's own codes pass; down: 500, which Chatwoot retries
     c = {"super_admin": code(LOC + "/super_admin"), "onboarding": code(LOC + "/installation/onboarding"),
          "http": code("-H 'Host: %s' http://127.0.0.1/" % HOST), "bot GET": code(LOC + "/prnm-bot/healthz"),
          "bot POST from lan": code("-X POST --resolve %s:443:%s https://%s/prnm-bot/webhook" % (HOST, lan, HOST)),
@@ -251,28 +260,33 @@ def verify():
          "upload variants": " ".join(code("--path-as-is -X POST %s%s" % (LOC, p)) for p in UPV),
          "storage PUT": code("-X PUT -d x %s/rails/active_storage/disk/x" % LOC),
          "widget multipart": code("-F a=b %s/api/v1/widget/messages" % LOC),
-         "widget 1.1MB": sh(big % ("POST", "/api/v1/widget/messages"))[1][-3:],
-         "storage 1.1MB": sh(big % ("PUT", "/rails/active_storage/disk/x/y"))[1][-3:],
-         "events x15": sh("for i in $(seq 15); do curl -s -o /dev/null -m 5 -w '%%{http_code} ' -X POST "
-                          "%s/api/v1/widget/events.json; done" % LOC)[1].split(),
+         "widget 20KB": sh(big % (20000, "POST", "/api/v1/widget/messages"))[1][-3:],
+         "storage 1.1MB": sh(big % (1100000, "PUT", "/rails/active_storage/disk/x/y"))[1][-3:],
+         "widget writes": " ".join(code("-X %s %s%s" % (m, W, p)) for m, p in (("PATCH", "contact"), ("POST", "labels"),
+                                                                                ("POST", "conversations/set_custom_attributes"))),
+         "contact GET": code(W + "contact"), "events x15": many(15, "-X POST %sevents.json" % W),
+         "loads x15": many(15, LOC + "'/widget?website_token=prnm-verify&cw_conversation=x'"),  # bad token: no contact
          "cable": code(CABLE + LOC + "/cable")}
     src = [x.split()[0] for x in logged(hp)]
     acao = [x.strip() for x in sh("curl -s -o /dev/null -D - -m 12 -H 'Origin: https://www.poolrentalnearme.com' %s"
                                   "/packs/js/sdk.js" % LOC)[1].lower().splitlines() if x.startswith("access-control-allow-origin")]
     now = others()
-    print("api:", api[:80], "|", c, "| hairpin source logged:", src, "| sdk.js ACAO:", acao, "| other sites", base, "->",
-          now, "|", sh("openssl x509 -enddate -noout -in " + CERT)[1])
+    print("api:", api[:80], "|", c, "| bot listening:", bot, "| hairpin source logged:", src, "| sdk.js ACAO:", acao,
+          "| other sites", base, "->", now, "|", sh("openssl x509 -enddate -noout -in " + CERT)[1])
+    b = (c["bot POST local"], c["bot POST hairpin"])
     edge = sh("curl -s -o /dev/null -D - -m 12 https://%s/api" % HOST)[1].lower()
     ecab = code(CABLE + "https://%s/cable" % HOST)
     eok = edge.startswith("http/") and edge.split()[1] == "200" and ecab == "101" and ("cf-ray:" in edge) == (DNS == "proxied")
     print("edge (info): api %s | cf-ray %s | cable %s%s" % (edge.split()[1:2], "cf-ray:" in edge, ecab, "" if eok else
           "  WARN: check Cloudflare (SSL Full (strict), Security Level for chat. essentially off, WebSockets on)"))
     return ('"version":"%s"' % VERSION in api and c["super_admin"] == c["onboarding"] == "404" and c["http"] == "301"
-            and c["bot GET"] == c["bot POST from lan"] == "403" and c["bot POST local"] not in ("403", "000")
-            and c["bot POST hairpin"] not in ("403", "000") and src == [EAST_IP]
+            and c["bot GET"] == c["bot POST from lan"] == "403" and src == [EAST_IP]
+            and (all(x not in ("403", "000") and not x.startswith("5") for x in b) if bot else b == ("500", "500"))
             and c["widget upload"] == c["widget multipart"] == c["storage PUT"] == "403"
-            and c["upload variants"] == " ".join(["403"] * len(UPV)) and c["widget 1.1MB"] == c["storage 1.1MB"] == "413"
-            and "429" in c["events x15"] and "429" not in c["events x15"][:10] and c["cable"] == "101" and acao == ["access-control-allow-origin: *"] and now == base)
+            and c["upload variants"] == " ".join(["403"] * len(UPV)) and c["widget 20KB"] == c["storage 1.1MB"] == "413"
+            and c["widget writes"] == "403 403 403" and c["contact GET"] == "404" and all(
+                "429" in c[k] and "429" not in c[k][:10] for k in ("events x15", "loads x15"))
+            and c["cable"] == "101" and acao == ["access-control-allow-origin: *"] and now == base)
 
 
 ok = True

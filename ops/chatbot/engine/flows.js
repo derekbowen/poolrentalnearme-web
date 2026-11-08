@@ -10,6 +10,8 @@
  *   { type: 'select', content, items }          public message with buttons (free typing still works)
  *   { type: 'note', content }                   private note (customers never see it)
  *   { type: 'escalate' }                        run the Chatwoot handoff (handoff.js), then call afterEscalation()
+ *   { type: 'escalate', deferred: true }        retry a handoff logged over a ceiling: the executor sends it only
+ *                                               if a flood slot is free now, else does nothing at all
  *   { type: 'flag_urgent', labels, note, okText }  no new alert: add labels, set urgent priority, post a
  *                                               plain note (no @mention); say okText only if all succeeded
  *
@@ -86,6 +88,13 @@ const SAFETY_VOCAB = [
   'creepy',
   'unresponsive',
   'breathe',
+  // round-3 review: "heart atack", "chemicles", "swalowed", "grabed"
+  'attack',
+  'chemicals',
+  'swallowed',
+  'foaming',
+  'poisoned',
+  'grabbed',
 ];
 
 const SAFETY_TARGETS = new Set(SAFETY_VOCAB);
@@ -119,9 +128,32 @@ const CATEGORY_SLUG = {
   'accounts and technical problems': 'account',
 };
 
+// host-side answers that only fit a host: with no host words and no known role, ask "booking or hosting?" first
+const HOST_CONTEXT_ENTRIES = new Set(['host-pricing-04', 'host-pricing-09', 'host-pricing-01', 'host-listing-06', 'host-listing-08']);
+const HOST_WORDS =
+  /\b(?:host|hosts|hosting|my pool|my listing|my listings|list|listing|listed|guests|my guests|payout|payouts|charge (?:my|guests)|per hour i|should i charge|i charge|my calendar|my backyard)\b/;
+// an entry that needs one of its own words to be offered or answered (a shared "stop" is not "stop text
+// messages", "contact you" is not "contact the host", "delete my listing" is not "delete my account")
+const ENTRY_GATES = {
+  'account-06': /\b(?:te?xt\w*|txt\w*|sms|messag\w*|notif\w*|alerts?|reminders?|unsubscrib\w*|opt out|optout|stop (?:sending|texting|messaging)|spam\w*)\b/,
+  'host-pricing-04': /\b(?:extra|extras|add on|addon|add ons|addons|charg\w*|fee|fees|pric\w*|cost\w*|paid|amenit\w*|upsell\w*|upgrade\w*)\b/,
+  'booking-custom-offer': /\b(?:offer|offers|custom|special price|quote|deal|accept)\b/,
+  'booking-message-host': /\b(?:host\w*|owner\w*|them|they|him|her|listing|before i book|b4)\b/,
+  'arrive-address': /\b(?:pool|address|addy|directions|map|maps|booking|host|listing|place|house|street|gps|location|located at|zip|get there|wheres the|where is the|where s the|where is it|wheres it|where s it)\b/,
+  'account-07': (s) => /\b(?:account|acount|acc|profile|data|info|information|me|myself|login|user)\b/.test(s) || !/\b(?:listing|listings|pool)\b/.test(s),
+  'account-10': /\b(?:broke|broken|error\w*|eror\w*|bug\w*|glitch\w*|not working|isnt working|wont|doesnt|didnt|cant|cannot|issue\w*|problem\w*|crash\w*|fail\w*|stuck|load\w*|wrong|freez\w*|blank)\b/,
+  'account-08': /\b(?:accept\w*|accpet\w*|approv\w*|aprov\w*|button)\b/,
+  'host-listing-06': /\b(?:listing\w*|listin|live|approv\w*|publish\w*|pool|visible|review\w*|up|pending|people book)\b/,
+  'booking-same-day': (s) => !/\b(?:cancel\w*|refund\w*|reschedul\w*|move|change|extend|late)\b/.test(s),
+  'pay-off-platform': /\b(?:cash|venmo|zelle|paypal|cashapp|cash app|directly|direct|off|outside|apple pay|check|at the pool|in person|when i get there|when we arrive)\b/,
+};
+const passesGate = (id, s) => {
+  const g = ENTRY_GATES[id];
+  return !g || (typeof g === 'function' ? g(s) : g.test(s));
+};
 const MAX_HISTORY = 12;
 const MAX_ESCALATION_TRIES = 5;
-const MAX_EXTRA = 10; // "They also said" lines kept per handoff
+const MAX_EXTRA = 5; // "They also said" lines kept per handoff (the note shows these five)
 const MAX_OFFERED = 12; // button values remembered from the last select
 const MAX_OFFERED_LOG = 30; // button values remembered across earlier selects
 const DANGER_REPEAT_MS = 10 * 60 * 1000; // the 911 line while waiting for a person: at most once per 10 minutes
@@ -168,6 +200,28 @@ function newState(convId = null, now = Date.now()) {
   };
 }
 
+// a few very common words of the languages visitors most often write in, none of them English words
+const FOREIGN_WORDS = new Set(
+  (
+    // (no word that is also English: "favor", "die", "pour", "hay", "con", "ma" ...)
+    'hola necesito ayuda quiero reservar piscina gracias como puedo donde cuanto cuesta una los las que ' +
+    'tengo esta buenos dias alquilar usted ustedes hijo hija niños ninos para pero tambien mañana manana ' +
+    'bonjour je voudrais reserver une piscine merci sil vous plait comment avec des les bonsoir louer ' +
+    'nous avez pouvez enfant enfants demain ' +
+    'hallo ich habe mochte möchte ein eine schwimmbad danke bitte wie kann und der das mit mein guten morgen frage ' +
+    'ola preciso ajuda obrigado obrigada voce você quero alugar amanha'
+  ).split(' ')
+);
+function notEnglish(text) {
+  const raw = String(text || '');
+  // letters, but none of them Latin (Cyrillic, Chinese, Arabic, ...)
+  if (/\p{L}/u.test(raw) && !clean(raw).replace(/[0-9 ]/g, '')) return true;
+  const toks = clean(raw).split(' ').filter(Boolean);
+  if (toks.length < 2) return false;
+  const foreign = toks.filter((t) => FOREIGN_WORDS.has(t)).length;
+  return foreign >= 2 && foreign / toks.length >= 0.5;
+}
+
 function clone(o) {
   return JSON.parse(JSON.stringify(o));
 }
@@ -196,7 +250,7 @@ function explicitRole(text) {
 }
 
 const GREETING_ONLY =
-  /^(hi|hey|hello|hiya|howdy|yo|sup|heya|hola|bonjour|bonsoir|hallo|salut|ciao|ola|oi|hej|buongiorno|buenas|buenos dias|bom dia|guten tag|good (morning|afternoon|evening)|whats up|wassup|hey there|hi there|hello there|greetings|help|hi help|hey help|start|menu|\?+)$/;
+  /^(hi|hey|hello|hiya|howdy|yo|sup|heya|hola|bonjour|bonsoir|hallo|salut|ciao|ola|oi|hej|buongiorno|buenas|buenos dias|bom dia|guten tag|good (morning|afternoon|evening)|whats up|wassup|hey there|hi there|hello there|greetings|(?:hi |hey |pls |please |plz |someone |somebody )?help+(?: help+| me| us| pls| please| plz)*|start|menu|\?+)$/;
 // "can someone help me?", "is anyone there?": no question yet, so offer the starters (with the founder button)
 const HELP_ONLY =
   /^(?:hi |hey |hello |yo )?(?:(?:can|could|will|would) )?(?:some ?one|some ?body|any ?one|any ?body|you|u) (?:please |pls |plz )?help(?: me| us)?(?: please| pls| plz| out| here| quick)?$|^(?:hi |hey |hello )?(?:i )?(?:need|want) (?:some )?help(?: please| pls| plz| here)?$|^(?:hi |hey |hello+ )?(?:is )?(?:any ?one|any ?body|someone|somebody) (?:there|here|around|on|online|available|awake|home)$|^hello+ any ?one$|^(?:help me|help us)(?: please| pls| plz)?$/;
@@ -272,6 +326,11 @@ class Engine {
   }
 
   // ------------------------------------------------------------------ helpers
+  /** The spell-corrector the safety checks use: typos of alarming words only ("drowing" → "drowning"). */
+  safetyFix() {
+    return (part) => correctedText(part, this.matcher.speller, SAFETY_TARGETS);
+  }
+
   abs(link) {
     if (!link) return '';
     if (/^https?:\/\//.test(link)) return link;
@@ -347,7 +406,7 @@ class Engine {
   }
 
   pushHistory(st, from, text) {
-    st.history.push({ from, text: safety.redactForLog(text, 400) });
+    st.history.push({ from, text: safety.redactForLog(text, 300) });
     if (st.history.length > MAX_HISTORY) st.history.splice(0, st.history.length - MAX_HISTORY);
   }
 
@@ -369,6 +428,10 @@ class Engine {
     // except to keep what they add and to answer danger with the 911 line.
     if (st.handoff && (st.handoff.status === 'sent' || st.handoff.status === 'capped')) {
       if (input.kind === 'text') this.whileWaiting(st, input, turn);
+      // logged over the hourly or per-visitor ceiling: not final. Ask the executor to try the alert
+      // again; it sends nothing unless a slot is free now (D3).
+      if (this.deferred(st)) turn.actions.push({ type: 'escalate', deferred: true });
+      if (turn.actions.length) this.finish(st, turn);
       return turn.result(st);
     }
 
@@ -400,9 +463,29 @@ class Engine {
     if (email && !st.email) st.email = cap(email);
     if (sens.cards || sens.cvv) {
       turn.say(COPY.cardWarning);
+      turn.note(
+        `Possible card details in customer message${input.messageId ? ` #${input.messageId}` : ''}. The assistant did not repeat them. Please delete that message.`
+      );
       turn.log('card_warning', { waiting: h.status });
     }
-    if (!safety.dangerSignal(t)) return;
+    if (sens.passwords) {
+      turn.say(COPY.passwordWarning);
+      turn.note(
+        `A customer message${input.messageId ? ` (#${input.messageId})` : ''} looked like it contained a password. The assistant did not repeat it. Please delete that message.`
+      );
+      turn.log('password_warning', { waiting: h.status });
+    }
+    // the same checks as a fresh message: typos ("he is drowing"), soft shapes and a bare "HELP"
+    if (!safety.dangerSignal(t, this.safetyFix())) {
+      // anything else (a "yes" to the booking-ref question, "hello??", "real person pls"): keep it
+      // for the founders and say once that they will see it here
+      if (safety.questionRemains(t)) this.addDetail(h, t);
+      if (!st.waitAckSaid && !sens.cards && !sens.cvv && !sens.passwords) {
+        st.waitAckSaid = true;
+        turn.say(h.status === 'capped' ? COPY.waitingAckCapped : COPY.waitingAckSent);
+      }
+      return;
+    }
     this.addDetail(h, t);
     const now = st.updatedAt;
     if (st.dangerAt && now - st.dangerAt < DANGER_REPEAT_MS) return;
@@ -416,6 +499,12 @@ class Engine {
       okText: COPY.markedUrgent,
     });
     turn.log('danger_while_waiting', { status: h.status });
+  }
+
+  /** A handoff logged over the hourly or per-visitor ceiling may still alert once a slot frees up (D3). */
+  deferred(st) {
+    const h = st.handoff;
+    return !!(h && h.status === 'capped' && (h.capped === 'global' || h.capped === 'contact') && !st.humanOwned);
   }
 
   /** Plain private note (no @mention, so no new push: D3) about danger reported while waiting. */
@@ -548,9 +637,13 @@ class Engine {
     // Only the redacted remainder is left?
     if (sens.found && !clean(text.replace(/\[[a-z ]+ removed\]/g, ''))) return;
 
-    const guard = safety.detectGuards(text, (part) =>
-      correctedText(part, this.matcher.speller, SAFETY_TARGETS)
-    );
+    const fix = this.safetyFix();
+    const guard = safety.detectGuards(text, fix);
+    // a complaint, dispute, scam or theft report, or an accusation: calm, direct voice from here on
+    if (guard && guard.upset) {
+      st.upsetSeen = true;
+      if (st.mood !== 'urgent') st.mood = 'upset';
+    }
     const retrying = st.handoff && st.handoff.status === 'failed';
     if (guard && guard.kind === 'urgent' && !(retrying && st.handoff.urgency === 'high'))
       return this.startUrgent(st, guard, text, turn);
@@ -559,6 +652,13 @@ class Engine {
     if (retrying) {
       this.addDetail(st.handoff, text);
       return this.escalate(st, turn);
+    }
+
+    // "HELP!!!", "pls help", "she's not responding" and nothing else: one question, 911 line first.
+    // Asked again while that question is on screen, it is a yes.
+    if (guard && guard.kind === 'check') {
+      if (st.awaiting && st.awaiting.kind === 'safety-check') return this.safetyAnswer(st, true, turn, text);
+      return this.safetyCheck(st, text, turn);
     }
 
     if (
@@ -593,6 +693,18 @@ class Engine {
     if (st.awaiting && this.onTypedReply(st, plain, turn)) return;
     if (this.smallTalk(st, plain, turn)) return;
     st.lastQuestion = cap(text);
+    // another language: say so plainly instead of guessing an English answer (an emergency in another
+    // language was already caught above, with the 911 line)
+    if (notEnglish(text)) {
+      turn.log('not_english', {});
+      // it counts as a miss: a second one brings in Derek and Brandon with both messages kept
+      if (st.attempts >= 1) return this.miss(st, plain, turn, null);
+      st.attempts += 1;
+      st.misses.push(safety.redactForLog(plain, 300));
+      if (st.misses.length > 4) st.misses.splice(0, st.misses.length - 4);
+      st.awaiting = null;
+      return turn.select(COPY.englishOnly, [COPY.founderButton]);
+    }
     return this.answerOrClarify(st, plain, turn);
   }
 
@@ -665,22 +777,36 @@ class Engine {
   }
 
   // ------------------------------------------------------------------ matching
-  answerOrClarify(st, text, turn, { safetyChecked = false } = {}) {
-    const m = this.matcher.match(text, { role: st.role, topic: st.topic });
+  answerOrClarify(st, text, turn, { safetyChecked = false, whole = null } = {}) {
+    const m = this.gate(this.matcher.match(text, { role: st.role, topic: st.topic }), text, st);
     if (m.status === 'confident') {
       const top = this.byId.get(m.top.id);
       // An urgent entry (911 line, founders paged) only through a safety guard, never from a
       // look-alike question ("is the pool safe for kids?" ≈ "the pool is unsafe"): ask first.
       if (top.urgency === 'high' && top.mode === 'handoff') return this.confirmEntry(st, top, text, turn, m);
-      return this.answerEntry(st, top, turn, {
+      // a host-side answer to a question with no host words and no known role: ask who they are first
+      if (!st.role && HOST_CONTEXT_ENTRIES.has(top.id) && !HOST_WORDS.test(clean(text))) {
+        st.awaiting = { kind: 'role', text: cap(text) };
+        turn.select(COPY.askRole, COPY.roleButtons);
+        turn.log('clarify', { kind: 'role', candidates: [{ id: top.id, score: round(m.top.score) }] });
+        return;
+      }
+      this.answerEntry(st, top, turn, {
         via: 'match',
         score: m.top.score,
-        text,
+        text: whole || text,
       });
+      // "can I import my Swimply listing and also sync the calendar?": offer the other question too
+      if (!whole && top.mode === 'auto') this.offerOtherParts(st, text, top.id, turn);
+      return;
     }
-    // Not sure what they mean, and it reads like someone may be hurt or in danger: ask that first,
-    // with the 911 line, instead of offering unrelated answers.
-    if (!safetyChecked && safety.softDanger(text)) return this.safetyCheck(st, text, turn);
+    // Not sure what they mean, and it reads like someone may be hurt or in danger (or it is about a
+    // person and not a booking question): ask that first, with the 911 line, instead of offering
+    // unrelated answers. A false positive costs one question.
+    if (!safetyChecked && (safety.softDanger(text) || safety.personConcern(text)))
+      return this.safetyCheck(st, text, turn);
+    // several questions in one message: answer the first part we are sure about
+    if (!whole && this.answerParts(st, text, turn)) return;
     if (m.status === 'ambiguous') {
       if (m.needsRole) {
         st.awaiting = { kind: 'role', text: cap(text) };
@@ -707,7 +833,92 @@ class Engine {
       });
       return;
     }
+    // a long message with several questions and nothing we are sure about: a person, with all of it kept
+    if (!whole && this.multiPart(text).length >= 2 && text.length >= 120) {
+      st.attempts += 1;
+      turn.log('unmatched', { text: safety.redactForLog(text), best: m.top ? { id: m.top.id, score: round(m.top.score) } : null, attempt: st.attempts, multi_part: true });
+      return this.startHandoff(st, turn, {
+        reason: 'multi_unmatched',
+        question: text,
+        lead: COPY.twoStrikes,
+        needBookingRef: mentionsBooking(text),
+      });
+    }
     return this.miss(st, text, turn, m);
+  }
+
+  /**
+   * Bank answers that need a reason to be offered (a shared word like "stop" is not one):
+   * a candidate whose gate fails is dropped, and a confident hit on it is not confident.
+   */
+  gate(m, text, st) {
+    const s = clean(text);
+    // a guest asking "how much does it cost" is never given host pricing advice
+    const hostOnly = (id) => st && st.role === 'swimmer' && HOST_CONTEXT_ENTRIES.has(id) && !HOST_WORDS.test(s);
+    const ok = (id) => passesGate(id, s) && !hostOnly(id);
+    if (!m.top || ok(m.top.id)) {
+      if (m.candidates) m.candidates = m.candidates.filter((c) => ok(c.id));
+      return m;
+    }
+    const candidates = (m.candidates || []).filter((c) => ok(c.id));
+    const top = candidates[0] || null;
+    if (!top || top.score < THRESHOLDS.CLARIFY) return { ...m, status: 'unmatched', top, candidates, needsRole: false };
+    return { ...m, status: 'ambiguous', top, candidates: candidates.slice(0, 3), needsRole: false };
+  }
+
+  /** "how many people can we bring, can we bring a speaker and also is there parking?" → the separate questions. */
+  multiPart(text) {
+    return String(text || '')
+      .split(
+        /\?+|\s+(?:and also|also|plus|oh and|and another thing)\s+|[.!;]\s+(?=[a-z])|,\s*(?=(?:and )?(?:can|could|do|does|did|is|are|how|what|whats|when|where|will|would|should|any)\b)/i
+      )
+      .map((p) => (p || '').replace(/^\s*(?:and|also|so|ok|okay|hi|hey|hello|but)\b[\s,]*/i, '').trim())
+      .filter((p) => this.matcher.canon(p).length >= 1);
+  }
+
+  /** Answer the first confidently matched part of a multi-question message; offer the others as buttons. */
+  answerParts(st, text, turn) {
+    const parts = this.multiPart(text);
+    if (parts.length < 2) return false;
+    const hits = [];
+    for (const p of parts) {
+      // each part on its own merits: no topic bias from the answer we are about to give
+      const m = this.gate(this.matcher.match(p, { role: st.role, topic: null }), p, st);
+      if (m.status !== 'confident') continue;
+      const e = this.byId.get(m.top.id);
+      if (e.urgency === 'high' || hits.some((h) => h.e.id === e.id)) continue;
+      hits.push({ e, part: p, score: m.top.score });
+    }
+    if (!hits.length) return false;
+    const [first, ...rest] = hits;
+    turn.log('multi_part', { parts: parts.length, answered: hits.map((h) => h.e.id) });
+    // a handoff entry keeps the whole message as the question, so nothing they asked is lost
+    this.answerEntry(st, first.e, turn, { via: 'match', score: first.score, text: first.e.mode === 'auto' ? first.part : text });
+    if (first.e.mode === 'auto' && rest.length) this.offerParts(st, rest, turn);
+    return true;
+  }
+
+  /** The other questions of a message whose best part we just answered. */
+  offerOtherParts(st, text, answeredId, turn) {
+    const parts = this.multiPart(text);
+    if (parts.length < 2) return;
+    const rest = [];
+    for (const p of parts) {
+      const m = this.gate(this.matcher.match(p, { role: st.role, topic: null }), p, st);
+      if (m.status !== 'confident') continue;
+      const e = this.byId.get(m.top.id);
+      if (e.id === answeredId || e.urgency === 'high' || rest.some((h) => h.e.id === e.id)) continue;
+      rest.push({ e, part: p });
+    }
+    if (rest.length) this.offerParts(st, rest, turn);
+  }
+
+  offerParts(st, rest, turn) {
+    // a yes/no follow-up of the first answer stays open: a typed "yes" still works, a tap answers the other part
+    turn.select(
+      COPY.alsoAsked,
+      rest.slice(0, 2).map((h) => ({ title: h.e.question, value: `entry:${h.e.id}` }))
+    );
   }
 
   miss(st, text, turn, m, { fromClarify = false } = {}) {
@@ -776,7 +987,11 @@ class Engine {
       if (extra) this.addDetail(st.handoff, extra);
       return;
     }
+    // a handoff we were collecting details for: carry on where we were
+    if (st.handoff && st.handoff.status === 'collecting') return this.nextSlot(st, turn);
     if (!a.text) return turn.say(COPY.rephrase);
+    // "help" → no: offer the starters, not "say it another way"
+    if (this.smallTalk(st, a.text, turn)) return;
     return this.answerOrClarify(st, a.text, turn, { safetyChecked: true });
   }
 
@@ -1121,9 +1336,17 @@ class Engine {
       needBookingRef: mentionsBooking(question),
     });
     // the question we were still clarifying is what they want help with: don't make them repeat it
-    if (!st.handoff.question && st.awaiting && st.awaiting.text && st.awaiting.kind !== 'slot')
+    // (frustration alone, "your stupid bot is useless", is not a question: then we ask what it's about)
+    if (
+      !st.handoff.question &&
+      st.awaiting &&
+      st.awaiting.text &&
+      st.awaiting.kind !== 'slot' &&
+      safety.questionRemains(st.awaiting.text)
+    )
       st.handoff.question = cap(st.awaiting.text);
-    if (!st.handoff.question && st.misses.length) st.handoff.question = cap(st.misses.join(' / '));
+    const realMisses = st.misses.filter((x) => safety.questionRemains(x));
+    if (!st.handoff.question && realMisses.length) st.handoff.question = cap(realMisses.join(' / '));
     if (st.handoff.question) this.enrichHandoff(st, st.handoff);
     if (!st.handoff.question) {
       st.awaiting = { kind: 'slot', slot: 'question' };
@@ -1264,6 +1487,16 @@ class Engine {
     // the 911 line is the first thing they see, even ahead of a card-number warning
     if (content.startsWith(LINE_911)) turn.actions.unshift({ type: 'say', content });
     else turn.say(content);
+    // a long ramble that ends in an emergency: the note quotes the emergency, the rest is context
+    let question = text;
+    let context = null;
+    if (String(text || '').length > safety.MAX_STORED_CHARS && guard.id) {
+      const ex = safety.triggerExcerpt(text, guard.id, this.safetyFix());
+      if (ex) {
+        question = ex;
+        context = `Start of their message: ${safety.capText(text, 300)}`;
+      }
+    }
     st.handoff = this.baseHandoff(st, {
       reason: 'urgent',
       urgency,
@@ -1273,7 +1506,8 @@ class Engine {
       topics: guard.topics || [],
       rule8: !!guard.rule8 || RULE8_ENTRIES.has(entryId),
       lead911,
-      question: text,
+      question,
+      context,
     });
     if (previous) {
       for (const x of [previous.question, ...previous.extra])
@@ -1547,6 +1781,17 @@ class Engine {
     return turn.result(st);
   }
 
+  /** No customer message: just try the alert of a handoff logged over a ceiling again (executor sweep). */
+  retryDeferred(prevState, ctx = {}) {
+    const st = clone(prevState);
+    const turn = new Turn();
+    if (!this.deferred(st)) return turn.result(st);
+    st.updatedAt = ctx.now || Date.now();
+    turn.actions.push({ type: 'escalate', deferred: true });
+    turn.log('deferred_retry', { cap: st.handoff.capped });
+    return turn.result(st);
+  }
+
   /** Mark that a person replied in Chatwoot. */
   humanTookOver(prevState, ctx = {}) {
     const st = prevState ? clone(prevState) : newState(null, ctx.now || Date.now());
@@ -1568,6 +1813,7 @@ class Engine {
     // a new thread: "already flagged" no longer applies, and the 911 line may be said again
     st.alertThread = false;
     st.dangerAt = null;
+    st.waitAckSaid = false;
     st.updatedAt = ctx.now || Date.now();
     return st;
   }
@@ -1704,6 +1950,11 @@ class Engine {
     lines.push(`PRNM handoff${urgent ? ' (URGENT)' : ''}${capped ? ' (logged, no alert)' : ''}: ${topic}`);
     if (agents.length) lines.push(agents.map(mention).join(' '));
     if (capped) lines.push(CAP_TEXT[capped] || CAP_TEXT.global);
+    // a deferred handoff finally alerting: say it waited, so nobody wonders why it is late
+    else if (h.status === 'capped' && h.capped)
+      lines.push(
+        `Logged earlier without an alert (${h.capped === 'global' ? 'hourly ceiling' : 'per-visitor limit'} reached); sent now that a slot is free.`
+      );
     lines.push("Either of you: assign it to yourself before replying, so you don't both answer.");
     lines.push('');
     lines.push('Customer question:');
@@ -1774,6 +2025,7 @@ const CAP_TEXT = {
 const REASON_TEXT = {
   founder_request: 'customer asked for a person / the founders',
   two_unmatched: "two questions the assistant couldn't match",
+  multi_unmatched: "a long message with several questions the assistant couldn't match",
   handoff_topic: 'topic the assistant must not answer',
   urgent: 'urgent topic',
   customer_asked: 'customer said yes to bringing you in',

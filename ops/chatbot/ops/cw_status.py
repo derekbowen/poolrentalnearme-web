@@ -62,7 +62,8 @@ sql("installation config rows (they win over env): signup, attachment limit MB",
     "select name, replace(serialized_value #>> '{}', E'\\n', ' ') from installation_configs where name in "
     "('ENABLE_ACCOUNT_SIGNUP', 'MAXIMUM_FILE_UPLOAD_SIZE') order by 1")
 sql("schema_migrations max", "select max(version) from schema_migrations")
-sql("accounts", "select id, name from accounts")
+sql("accounts (id | name | enforce 2FA | keep chats with the bot when its webhook fails)",
+    "select id, name, settings->>'enforce_mfa', settings->>'keep_pending_on_bot_failure' from accounts")
 sql("users (id | name | email | type | role 1=admin | reset token outstanding | 2FA on)",
     "select u.id, u.name, u.email, coalesce(u.type,'User'), au.role, u.reset_password_token is not null, "
     "u.otp_required_for_login from users u left join account_users au on au.user_id=u.id")
@@ -78,7 +79,8 @@ sql("agent bots (id | name | outgoing_url | inbox | status 0=active)",
 sql("notification flags (user | email_flags | push_flags)", "select user_id, email_flags, push_flags from notification_settings")
 sql("devices registered for push (user | type 1=browser 2=app | n)",
     "select user_id, subscription_type, count(*) from notification_subscriptions group by 1, 2 order by 1, 2")
-sql("contacts (total | new 24 h | new 7 d | contact_inboxes): every widget load without a cw_conversation cookie makes one",
+sql("contacts (total | new 24 h | new 7 d | contact_inboxes): each /widget load without a valid cw_conversation makes "
+    "one (cw_nginx.py: 10/min per IP)",
     "select count(*), count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at "
     "> now() - interval '7 days'), (select count(*) from contact_inboxes) from contacts")
 print("== conversations and handoffs")
@@ -116,6 +118,10 @@ print("data files (name | bytes | lines):", sh("cd %s/data 2>/dev/null && for f 
                                                "echo \"$f $(stat -c %%s $f) $(wc -l < $f)\"; done" % B) or "(none)")
 print("== nginx / tls")
 print(sh("ls -la /etc/nginx/sites-enabled/; nginx -t 2>&1 | tail -1"))
+vh = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"
+vt = open(vh).read() if os.path.exists(vh) else ""
+print("chat vhost has: load zone %s | widget contact/labels read-only %s | bot down -> 500 %s" % tuple(
+    x in vt for x in ("zone=prnm_wload", "(contact|labels|", "=500 @prnm_bot_down")))
 print("DNS %s (proxied = Cloudflare addresses only, cw_nginx.py):" % HOST,
       sorted({x.split()[0] for x in sh("getent ahosts " + HOST).splitlines() if x.strip()}) or "none")
 print("cert:", sh("openssl x509 -enddate -noout -in /etc/letsencrypt/live/%s/fullchain.pem 2>&1" % HOST))

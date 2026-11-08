@@ -444,7 +444,9 @@ const REAL_WORDS = new Set(
     'trip trouble truck true trust twice uncle understand upset useful usual valley vegetable very vest ' +
     'village visit voice vowel waiter wake walk wall wash watch waters wave ways weak wedding weeks ' +
     'welcome west wheel white whose wide wife wild wind window wing wire wired wise wish woman wonder ' +
-    'wood wool word world worried worry yard yellow young'
+    'wood wool word world worried worry yard yellow young ' +
+    // round 3: real words one letter from a safety word the speller may now correct to ("attach" ≠ "attack")
+    'attach attached attaching messing messed tack'
   ).split(/\s+/)
 );
 for (const w of REAL_WORDS) COMMON.add(w);

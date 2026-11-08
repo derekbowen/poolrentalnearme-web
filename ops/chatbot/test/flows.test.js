@@ -215,9 +215,10 @@ test('urgent injury: 911 line first, escalated in the same turn with urgency hig
   assert.match(engine.buildNote(before, {}), /^PRNM handoff \(URGENT\)/);
   assert.match(lastPublic(transcript[0]).content, /marked it urgent/);
   assert.equal(state.handoff.status, 'sent');
-  // after a successful handoff the assistant stays silent
+  // after a successful handoff: one short "they have it", then silence
   const later = engine.handle(state, { kind: 'text', text: 'hello??' });
-  assert.deepEqual(later.actions, []);
+  assert.deepEqual(later.actions, [{ type: 'say', content: COPY.waitingAckSent }]);
+  assert.deepEqual(engine.handle(later.state, { kind: 'text', text: 'hello???' }).actions, []);
 });
 
 test('urgent topics without injury still escalate immediately (high), no factual answer', () => {
@@ -770,7 +771,9 @@ test('after a capped handoff the assistant stays quiet, except for the 911 line 
     escalation: () => ({ ok: true, capped: 'conversation', done: { attributes: true, labels: true } }),
   });
   assert.equal(state.handoff.status, 'capped');
-  assert.deepEqual(engine.handle(state, { kind: 'text', text: 'hello?' }).actions, []);
+  const hello = engine.handle(state, { kind: 'text', text: 'hello?' });
+  assert.deepEqual(hello.actions, [{ type: 'say', content: COPY.waitingAckCapped }]);
+  assert.deepEqual(engine.handle(hello.state, { kind: 'text', text: 'hello??' }).actions, []);
   const danger = engine.handle(state, { kind: 'text', text: 'my son is not breathing' });
   assert.deepEqual(danger.actions[0], { type: 'say', content: LINE_911 });
   const flag = danger.actions[1];
@@ -911,13 +914,19 @@ test('round 2: while a handoff waits (sent or capped), a booking ref they add is
   for (const escalation of [() => ({ ok: true }), () => ({ ok: true, capped: 'contact', done: {} })]) {
     const { state } = talk(engine, ['talk to a person', 'payout question', { button: 'ref:none' }, { button: 'reply:chat' }], { escalation });
     const r = engine.handle(state, { kind: 'text', text: `actually my ref is ${ref}` });
-    assert.deepEqual(r.actions, []);
+    // one short line; a contact-capped handoff also asks the executor to try the alert again (deferred)
+    const capped = r.state.handoff.status === 'capped';
+    assert.deepEqual(
+      r.actions,
+      [{ type: 'say', content: capped ? COPY.waitingAckCapped : COPY.waitingAckSent }, ...(capped ? [{ type: 'escalate', deferred: true }] : [])]
+    );
     assert.equal(r.state.bookingRef, ref);
     assert.equal(engine.mirrorAttributes(r.state).prnm_booking_ref, ref);
     const d = engine.handle(r.state, { kind: 'text', text: 'omg my son is choking' });
     assert.deepEqual(d.actions[0], { type: 'say', content: LINE_911 });
     assert.equal(d.actions[1].type, 'flag_urgent');
-    assert.ok(!d.actions.some((a) => a.type === 'escalate'), 'no new @mention (D3)');
+    // no new @mention (D3); a capped one is only retried by the executor when a slot is free
+    assert.ok(!d.actions.some((a) => a.type === 'escalate' && !a.deferred), 'no new @mention (D3)');
     assert.equal(d.state.handoff.urgency, 'high');
   }
 });
@@ -947,4 +956,93 @@ test('round 2: "can someone help me" / "is anyone there" offer the starters, nev
     const sel = tr.actions.find((a) => a.type === 'select');
     assert.ok(sel && sel.items.some((i) => i.value === 'founder'), t);
   }
+});
+
+// ------------------------------------------------------------------ round-3 review (fix2, round 3)
+test('round 3: frustration alone is not the founder question; "What\'s it about?" is asked (F04)', () => {
+  const { transcript, state } = talk(engine, ['your stupid bot is useless', 'talk to a human']);
+  assert.equal(state.handoff.status, 'collecting');
+  assert.ok(!state.handoff.question || state.handoff.question === null);
+  assert.match(lastPublic(transcript[1]).content, /What's it about/);
+  // a real question asked before the founder request is carried over (no repeat)
+  const q = talk(engine, ['my payout from saturday never showed up and the host is not answering', 'talk to a human']);
+  assert.ok(q.state.handoff.question && /payout/.test(q.state.handoff.question));
+});
+
+test('round 3: a card number pasted after the handoff: public warning AND a private "please delete" note (I03)', () => {
+  const sent = talk(engine, ['talk to a person', 'question about my listing photos', { button: 'reply:chat' }]).state;
+  const r = engine.handle(sent, { kind: 'text', text: '4242 4242 4242 4242', messageId: 77 });
+  assert.equal(r.actions[0].content, COPY.cardWarning);
+  const note = r.actions.find((a) => a.type === 'note');
+  assert.ok(note && /#77/.test(note.content) && /delete that message/.test(note.content));
+  assert.ok(!JSON.stringify(r).includes('4242 4242'));
+});
+
+test('round 3: a long ramble that ends in an emergency: the note quotes the emergency, not the first 500 chars (A20)', () => {
+  const ramble = 'so we were thinking about maybe doing a pool day for the family this summer and i was reading through the site '.repeat(12);
+  const t = `${ramble} wait my son is not breathing`;
+  const { transcript } = talk(engine, [t]);
+  const before = transcript[0].escalations[0].before;
+  assert.equal(before.handoff.urgency, 'high');
+  assert.match(before.handoff.question, /my son is not breathing/);
+  assert.ok(before.handoff.question.length <= 500);
+  const note = engine.buildNote(before, {});
+  assert.match(note, /> .*my son is not breathing/);
+  assert.match(note, /Context: Start of their message: so we were thinking/);
+});
+
+test('round 3: after an urgent handoff, a "no" to its booking-ref question gets one short line, not silence (K06)', () => {
+  const { state } = talk(engine, ['my son is bleeding']);
+  assert.equal(state.handoff.status, 'sent');
+  const no = engine.handle(state, { kind: 'text', text: 'no' });
+  assert.deepEqual(no.actions, [{ type: 'say', content: COPY.waitingAckSent }]);
+  const again = engine.handle(no.state, { kind: 'text', text: 'real person pls' });
+  assert.deepEqual(again.actions, [], 'said once per thread');
+  // after the conversation goes back to the bot, a new thread may get the line again
+  const back = engine.returnedToBot(again.state);
+  assert.equal(back.waitAckSaid, false);
+});
+
+test('round 3: a message in another language gets a plain "English only" line with the founder button, never a guessed answer', () => {
+  for (const t of ['Hola, necesito ayuda', 'bonjour je voudrais réserver une piscine', 'Привет', '你好']) {
+    const tr = talk(engine, [t]).transcript[0];
+    assert.deepEqual(answered(tr), [], t);
+    const sel = selects(tr).pop();
+    assert.equal(sel.content, COPY.englishOnly, t);
+    assert.deepEqual(sel.items.map((i) => i.value), ['founder']);
+  }
+  // greetings stay greetings
+  assert.equal(selects(talk(engine, ['hola']).transcript[0]).pop().content, COPY.greeting);
+});
+
+test('round 3: a cry for help while details are being collected asks the safety question; "no" resumes the handoff', () => {
+  const r = talk(engine, ['talk to a person', 'HELP!!!', { button: 'safety:no' }]);
+  assert.ok(r.transcript[1].events.some((e) => e.kind === 'safety_check'));
+  assert.equal(r.state.handoff.status, 'collecting');
+  assert.match(lastPublic(r.transcript[2]).content, /What's it about/);
+  // typing the cry again while the question is on screen is a yes
+  const y = talk(engine, ['pls help', 'HELP']);
+  assert.equal(y.state.handoff.urgency, 'high');
+});
+
+test('round 3: the engine asks for a deferred alert only for a handoff logged over the hourly or per-visitor cap', () => {
+  const capped = (cap) =>
+    talk(engine, ['talk to a person', 'question about my listing', { button: 'reply:chat' }], {
+      escalation: () => ({ ok: true, capped: cap, done: { attributes: true, labels: true } }),
+    }).state;
+  for (const cap of ['global', 'contact']) {
+    const st = capped(cap);
+    assert.ok(engine.deferred(st), cap);
+    const r = engine.handle(st, { kind: 'text', text: 'hello?' });
+    assert.ok(r.actions.some((a) => a.type === 'escalate' && a.deferred), cap);
+    assert.deepEqual(engine.retryDeferred(st).actions, [{ type: 'escalate', deferred: true }]);
+  }
+  const conv = capped('conversation');
+  assert.ok(!engine.deferred(conv), 'the per-conversation cap is final (D3)');
+  assert.ok(!engine.handle(conv, { kind: 'text', text: 'hello?' }).actions.some((a) => a.type === 'escalate'));
+  // a deferred retry that succeeds: the normal confirmation, said only after success
+  const st = capped('global');
+  const after = engine.afterEscalation(st, { ok: true, done: { note: true, status: true } });
+  assert.equal(after.state.handoff.status, 'sent');
+  assert.match(after.actions[0].content, /^Cool\. I've sent Derek and Brandon/);
 });

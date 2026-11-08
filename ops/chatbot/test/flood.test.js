@@ -152,7 +152,11 @@ test('global ceiling: beyond N alerts per rolling hour → handoff-overflow, no 
   // priority and a plain note (no @mention, no reopen: D3)
   mock.reset();
   await send(H.incoming(323, ++msgId, 'hello?'));
-  assert.deepEqual(forConv(323), []);
+  // one short line (no alert: the ceiling still holds), then quiet
+  assert.deepEqual(publicTexts(forConv(323)), [COPY.waitingAckCapped]);
+  assert.equal(mentionNotes(forConv(323)).length, 0);
+  assert.equal(toggles(forConv(323)).length, 0);
+  mock.reset();
   await send(H.incoming(323, ++msgId, 'he is not breathing'));
   const after = forConv(323);
   assert.deepEqual(publicTexts(after), [LINE_911, COPY.markedUrgent]);
@@ -355,6 +359,9 @@ test('open conversation after a sent handoff: danger gets the 911 line once, urg
   // Chatwoot now reports the conversation as open; nobody has replied yet
   mock.reset();
   await send(H.incoming(conv, ++msgId, 'hello?', { status: 'open' }));
+  assert.deepEqual(publicTexts(forConv(conv)), [COPY.waitingAckSent], 'one short line, said once');
+  mock.reset();
+  await send(H.incoming(conv, ++msgId, 'hello??', { status: 'open' }));
   assert.deepEqual(forConv(conv), [], 'otherwise quiet while they wait');
   await send(H.incoming(conv, ++msgId, 'omg my son is choking', { status: 'open' }));
   const calls = forConv(conv);
@@ -386,5 +393,112 @@ test('capped conversation: a booking ref typed later reaches the custom attribut
   await send(H.incoming(373, ++msgId, `actually my ref is ${ref}`, { contactId }));
   const attrs = forConv(373).filter((c) => /custom_attributes$/.test(c.path));
   assert.ok(attrs.some((c) => c.body.custom_attributes.prnm_booking_ref === ref));
-  assert.deepEqual(publicTexts(forConv(373)), []);
+  assert.deepEqual(publicTexts(forConv(373)), [COPY.waitingAckCapped]);
+  assert.equal(mentionNotes(forConv(373)).length, 0, 'still contact-capped: no alert');
+});
+
+// ------------------------------------------------------------------ round-3 review (security)
+test('deferred: a handoff logged over the hourly ceiling alerts once the ceiling frees up (next message, or the sweep)', async () => {
+  mock.reset();
+  let clock = Date.now();
+  const { bot, send } = await startBot({ floodLimits: { globalPerHour: 2 }, now: () => clock });
+  for (const conv of [401, 402]) await send(H.incoming(conv, ++msgId, 'someone is hurt at the pool'));
+  // t0: the 11th-style emergency goes over the ceiling: logged, labelled, no @mention, not opened
+  await send(H.incoming(403, ++msgId, 'my kid is drowning'));
+  assert.equal(mentionNotes(forConv(403)).length, 0);
+  assert.equal(toggles(forConv(403)).length, 0);
+  assert.ok(labelSets(forConv(403)).some((l) => l.includes('handoff-overflow')));
+  // still over the ceiling: a founder request in that chat gets a reply, but no alert
+  mock.reset();
+  await send(H.incoming(403, ++msgId, 'can i talk to the founder'));
+  assert.ok(publicTexts(forConv(403)).length >= 1, 'never silence');
+  assert.equal(mentionNotes(forConv(403)).length, 0);
+  assert.equal(toggles(forConv(403)).length, 0);
+  // t0 + 61 min: the next message sends the real alert, exactly once
+  clock += 61 * 60 * 1000;
+  mock.reset();
+  await send(H.incoming(403, ++msgId, 'hello? is anyone going to help me'));
+  const calls = forConv(403);
+  assert.equal(mentionNotes(calls).length, 1, 'exactly one @mention');
+  assert.match(mentionNotes(calls)[0].body.content, /Logged earlier without an alert \(hourly ceiling reached\)/);
+  assert.match(mentionNotes(calls)[0].body.content, /> my kid is drowning/);
+  assert.equal(toggles(calls).length, 1, 'exactly one open');
+  assert.ok(calls.some((c) => /toggle_priority$/.test(c.path)), 'still urgent');
+  const last = labelSets(calls).pop();
+  assert.ok(!last.includes('handoff-overflow') && last.includes('urgent'), last.join(','));
+  assert.match(publicTexts(calls).pop(), /^I've sent Derek and Brandon the rundown and marked it urgent/);
+  // and never again for that thread
+  mock.reset();
+  await send(H.incoming(403, ++msgId, 'hello??'));
+  assert.equal(mentionNotes(forConv(403)).length, 0);
+  assert.equal(toggles(forConv(403)).length, 0);
+
+  // the sweep: the customer writes nothing more, any later webhook (or the timer) sends it.
+  // 403's alert above took one of this hour's two slots, so 404 alerts and 405 + 406 are logged.
+  mock.reset();
+  for (const conv of [404, 405]) await send(H.incoming(conv, ++msgId, 'someone is hurt at the pool'));
+  await send(H.incoming(406, ++msgId, 'my daughter fainted'));
+  assert.equal(mentionNotes(forConv(404)).length, 1);
+  assert.equal(mentionNotes(forConv(405)).length + mentionNotes(forConv(406)).length, 0);
+  assert.deepEqual(bot.deferredList().map((x) => x.convId), ['405', '406']);
+  assert.equal(bot.sweepDeferred(), 0, 'nothing is retried while the ceiling holds');
+  clock += 61 * 60 * 1000;
+  mock.reset();
+  assert.equal(bot.sweepDeferred(), 2);
+  await bot.idle();
+  for (const conv of [405, 406]) {
+    assert.equal(mentionNotes(forConv(conv)).length, 1, `${conv}`);
+    assert.equal(toggles(forConv(conv)).length, 1, `${conv}`);
+    assert.match(publicTexts(forConv(conv)).pop(), /^I've sent Derek and Brandon/);
+  }
+  assert.equal(bot.sweepDeferred(), 0, 'sent: off the list');
+  assert.deepEqual(bot.deferredList(), []);
+});
+
+test('a note that timed out (status 0) keeps its flood slot: a slow Chatwoot cannot push past the caps', async () => {
+  const { engine } = H.loadEngine();
+  let noteCalls = 0;
+  const ok = async () => ({ ok: true, status: 200 });
+  const client = {
+    sendText: ok,
+    sendSelect: ok,
+    // the note may have been created even though the client gave up waiting
+    sendNote: async () => (++noteCalls, { ok: false, status: 0, error: 'timeout' }),
+    setCustomAttributes: ok,
+    getLabels: async () => ({ ok: true, status: 200, labels: [] }),
+    setLabels: ok,
+    togglePriority: ok,
+    toggleStatus: ok,
+    getConversation: async () => ({ ok: true, status: 200, data: { id: 1, status: 'pending', custom_attributes: {} } }),
+  };
+  const bot = new Bot({
+    engine,
+    client,
+    store: new MemoryStore({ file: null }),
+    tracker: new Tracker({ file: null }),
+    accountId: H.ACCOUNT_ID,
+    inboxId: H.INBOX_ID,
+    agents: AGENTS,
+    logger: silent,
+    floodLimits: { globalPerHour: 1 },
+  });
+  await bot.handleEvent(H.incoming(501, ++msgId, 'someone is hurt at the pool'));
+  await bot.idle();
+  assert.equal(noteCalls, 1);
+  assert.equal(bot.flood.check({ conv: `${H.ACCOUNT_ID}:999`, now: Date.now() }), 'global', 'the slot stays taken');
+  // a definite error status from Chatwoot does give the slot back
+  const bot2 = new Bot({
+    engine,
+    client: { ...client, sendNote: async () => ({ ok: false, status: 500 }) },
+    store: new MemoryStore({ file: null }),
+    tracker: new Tracker({ file: null }),
+    accountId: H.ACCOUNT_ID,
+    inboxId: H.INBOX_ID,
+    agents: AGENTS,
+    logger: silent,
+    floodLimits: { globalPerHour: 1 },
+  });
+  await bot2.handleEvent(H.incoming(502, ++msgId, 'someone is hurt at the pool'));
+  await bot2.idle();
+  assert.equal(bot2.flood.check({ conv: `${H.ACCOUNT_ID}:999`, now: Date.now() }), null, 'released');
 });

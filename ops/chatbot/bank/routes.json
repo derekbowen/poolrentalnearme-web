@@ -207,6 +207,11 @@
       "category": "safety, disputes, and human help",
       "urgency": "normal",
       "answer": "Understood. I'll bring in Derek and Brandon so a person can look at this."
+    },
+    "emergency-question": {
+      "category": "safety, disputes, and human help",
+      "urgency": "high",
+      "answer": "I don't want to guess on emergency steps, so I'll flag this to Derek and Brandon as urgent."
     }
   }
 }

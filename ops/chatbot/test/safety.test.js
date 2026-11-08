@@ -381,7 +381,7 @@ test('benign phrasings never trigger an urgent guard (no false 911 / founder pag
   assert.notEqual((guardFn('renter is breaking my house rules') || {}).route, 'safety-damage');
 });
 
-test('905 bank phrasings: no safety guard hijacks a question unless it belongs to a safety/dispute/rule-8 entry', () => {
+test('918 bank phrasings: no safety guard hijacks a question unless it belongs to a safety/dispute/rule-8 entry', () => {
   const allowed = new Set(
     entries
       .filter((e) => e.category === 'safety, disputes, and human help')
@@ -401,7 +401,7 @@ test('905 bank phrasings: no safety guard hijacks a question unless it belongs t
         hijacked.push(`${e.id}: "${t}" -> ${g.id}`);
     }
   }
-  assert.equal(n, 905);
+  assert.equal(n, 918);
   assert.deepEqual(hijacked, []);
 });
 
@@ -652,4 +652,210 @@ test('round 2: a complaint or a threat to report us is a calm founder handoff wi
   assert.equal(state.handoff.status, 'collecting');
   assert.equal(state.handoff.urgency, 'normal');
   assert.ok(!transcript[0].actions.some((a) => a.type === 'say' && /refund|policy|guarantee/i.test(a.content)));
+});
+
+// ------------------------------------------------------------------ round-3 review (fix2, round 3)
+/** Everyday emergency and child-safety phrasings the round-3 probes missed (verify2 adv1/adv3, convos3 A/B). */
+const EMERGENCY_911_R3 = [
+  // poisoning, burns, missing child, dying / dead
+  'my toddler drank pool chemicals',
+  'she ate a chlorine tablet',
+  'my baby swallowed a pool tablet',
+  'the pool water is burning my kids skin',
+  'we cant find our 4 year old and the gate was open',
+  'i think my friend is dead',
+  'hes dying',
+  'theres a body in the pool',
+  'hes foaming at the mouth',
+  'shes shaking and wont stop',
+  'my moms ankle looks broken',
+  // drowning and medical, in slang and typos
+  'yo my lil bro aint movin in the water',
+  'theres a kid floating in the deep end not moving',
+  'my nephew jumped in and he cant swim',
+  'i think hes havin a heart atack',
+  // idiom strips that used to remove real emergencies
+  'my son fell through the pool cover',
+  'my dad is clutching his chest, i think hes about to have a heart attack',
+  // child safety and harassment
+  'the host asked my daughter to sit on his lap',
+  'the host walked into the bathroom while i was changing',
+  'host said hed give us a discount if i sent him pics',
+  'he wouldnt stop touching my hair',
+  'the host asked my 14 year old for her snapchat',
+  'the host told my son to keep it a secret from us',
+  'the host called us the n word',
+  'the host gave my 10 year old his phone number',
+  'the hosts adult son kept trying to get my daughter to come inside with him',
+  "the host kept commenting on my wife's body",
+  "the host's teenage son is peeking over the fence at us",
+  'the host grabbed my daughter',
+  'he grabbed my son by the arm',
+  'the host threw a chair at us',
+  'my ex showed up at the pool and wont leave',
+  'the hosts dog is attacking people',
+  // a tiny non-English fallback: 911 line and a person, no English guess
+  'mi hijo se está ahogando',
+  'au secours mon fils se noie',
+];
+
+test('round 3: plain-word emergencies and child safety → urgent, 911 line first, founders alerted', () => {
+  const bad = [];
+  for (const t of EMERGENCY_911_R3) {
+    const { transcript, state } = H2.talk(engine, [t]);
+    const pub = transcript[0].actions.filter((a) => a.type === 'say' || a.type === 'select');
+    const urgent = state.handoff && state.handoff.urgency === 'high' && transcript[0].actions.some((a) => a.type === 'escalate');
+    if (!urgent) bad.push(`${t}: no urgent handoff (${(transcript[0].events.find((e) => e.type === 'answered' || e.type === 'clarify') || {}).entry || 'none'})`);
+    else if (!pub[0].content.startsWith(LINE_911)) bad.push(`${t}: 911 line not first`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('round 3: a bare cry or a bare "she\'s not responding" asks the safety question (911 line), pages nobody', () => {
+  for (const t of ['she not respondin', 'HELP!!!', 'pls help', 'help', 'HELP']) {
+    const { transcript, state } = H2.talk(engine, [t]);
+    const tr = transcript[0];
+    assert.ok(tr.events.some((e) => e.type === 'clarify' && e.kind === 'safety_check'), t);
+    assert.ok(!tr.actions.some((a) => a.type === 'escalate'), `${t}: no page on a cry alone`);
+    assert.ok(tr.actions.some((a) => a.type === 'select' && a.content.startsWith(LINE_911)), t);
+    assert.ok(!tr.events.some((e) => e.type === 'answered' && e.entry === 'booking-host-no-reply'), t);
+    assert.equal(state.awaiting.kind, 'safety-check');
+  }
+  // "no" to the question after a bare "help": the starters, not "say it another way"
+  const r = H2.talk(engine, ['help', { button: 'safety:no' }]);
+  const sel = r.transcript[1].actions.find((a) => a.type === 'select');
+  assert.ok(sel && sel.items.some((i) => i.value === 'founder'));
+  // "yes": urgent, with the 911 line already shown
+  const y = H2.talk(engine, ['HELP!!!', { button: 'safety:yes' }]);
+  assert.equal(y.state.handoff.urgency, 'high');
+  // a host who hasn't answered is still the "host hasn't replied" answer, never the safety question
+  for (const t of ['the host is not responding to my messages', 'host not responding']) {
+    const tr = H2.talk(engine, [t]).transcript[0];
+    assert.ok(!tr.events.some((e) => e.kind === 'safety_check'), t);
+  }
+});
+
+test('round 3: "what should I do if someone is drowning" leads with 911 and brings in a person, no insurance copy (A06, C04)', () => {
+  for (const t of ['what should i do if someone is drowning', 'what do i do if my kid is choking']) {
+    const g = guardFn(t);
+    assert.equal(g.route, 'builtin:emergency-question', t);
+    assert.equal(g.kind, 'urgent', t);
+    const { transcript } = H2.talk(engine, [t]);
+    const lines = H2.botLines(transcript);
+    assert.ok(lines[0].startsWith(LINE_911), t);
+    assert.ok(!lines.some((l) => /Insurance questions go to Derek|insurance/i.test(l)), t);
+  }
+  // a liability question asked with "if" is still Derek's insurance question, with no 911 line
+  for (const t of ['what if the guests kid drowns in my pool', 'what should i do if someone drowns, am i liable', 'what if a guest drowns, am i responsible']) {
+    const g = guardFn(t);
+    assert.equal(g.route, 'safety-insurance', t);
+    assert.equal(g.lead911, false, t);
+    assert.equal(g.rule8, true, t);
+  }
+});
+
+/** Benign look-alikes from the round-3 review: never urgent, never the 911 line. */
+const BENIGN_FULL_R3 = [
+  'HELP ME FIND A POOL FOR MY KIDS PARTY',
+  "HELP! how do i book a pool for my son's birthday",
+  'I NEED HELP WITH MY BOOKING FOR MY DAUGHTERS POOL PARTY',
+  'can somebody help, my son wants to know if the pool has a slide',
+  'my kids are drowning me in requests for a pool day',
+  'the kids are gonna drown me in questions about this pool lol',
+  'my daughter is choking on how expensive this is lol',
+  'my husband almost passed out when he saw the price',
+  'i almost had a heart attack when i saw how cheap it was',
+  'my son is struggling to decide which pool to book',
+  'my kid is crying because we cant swim today',
+  'the host was really nice to my kids',
+  'someone help me pick a pool for my wife lol',
+  'the booking fell through',
+  'my payout is missing',
+  'i cant find my booking',
+  "my son can't swim, is there a shallow end?",
+  'my kids are dying to swim this weekend',
+  'my phone is dead can i still get in',
+  'can someone help me',
+  'i need help',
+  'is there a grill',
+  'do you have an app',
+];
+
+test('round 3: benign look-alikes (shouted booking questions, idioms, praise) are never urgent and never get the 911 line', () => {
+  const bad = [];
+  for (const t of BENIGN_FULL_R3) {
+    const { transcript, state } = H2.talk(engine, [t]);
+    const pub = H2.botLines(transcript);
+    if (state.handoff && state.handoff.urgency === 'high') bad.push(`${t}: urgent (${state.handoff.entryId})`);
+    if (pub.some((c) => c.includes(LINE_911))) bad.push(`${t}: 911 line`);
+  }
+  assert.deepEqual(bad, []);
+  // "we're at the pool and the host isn't responding" is a lockout, not an injury
+  assert.equal(guardFn('we are at the pool and the host is not responding').route, 'arrive-cant-get-in');
+});
+
+test('round 3: after a handoff was sent, typos, poisoning, a grab and a bare "HELP" still get the 911 line once', () => {
+  const sent = H2.talk(engine, ['talk to a person', 'question about my listing photos', { button: 'reply:chat' }]).state;
+  assert.equal(sent.handoff.status, 'sent');
+  for (const t of ['he is drowing', 'my toddler drank pool chemicals', 'the host just grabbed my daughter', 'HELP']) {
+    const r = engine.handle(sent, { kind: 'text', text: t });
+    assert.deepEqual(r.actions[0], { type: 'say', content: LINE_911 }, t);
+    assert.ok(r.actions.some((a) => a.type === 'flag_urgent'), t);
+    assert.ok(!r.actions.some((a) => a.type === 'escalate'), `${t}: no new alert`);
+  }
+});
+
+test('round 3: accusations and legal threats against us are a calm founder handoff, not a scam/theft/insurance page', () => {
+  const cases = {
+    'you guys are scammers, i want my money back': false,
+    'this is a scam company': false,
+    'you people are thieves': false,
+    'you stole my money': false,
+    'im going to sue you': true,
+    'my lawyer will be in touch': true,
+  };
+  for (const [t, rule8] of Object.entries(cases)) {
+    const g = guardFn(t);
+    assert.equal(g && g.route, 'builtin:complaint', t);
+    assert.equal(g.kind, 'handoff', t);
+    assert.equal(g.rule8, rule8, `${t}: rule 8`);
+    const { transcript, state } = H2.talk(engine, [t]);
+    const lines = H2.botLines(transcript);
+    assert.equal(lines[0], require('../engine/copy').COPY.labelLineCalm, t);
+    assert.ok(!lines.some((l) => /^Cool\b|Hold off on sending|Sorry, that's not okay|Insurance questions/.test(l)), t);
+    assert.equal(state.upsetSeen, true, t);
+    assert.notEqual(state.handoff.urgency, 'high', t);
+  }
+  // a scam message the customer received is still the protective scam report; the host stealing is theft
+  assert.equal(guardFn('the host asked me to pay on zelle, is this a scam').route, 'safety-scam-report');
+  assert.equal(guardFn('the host stole my sunglasses').route, 'builtin:theft-report');
+  // a guest threatening the host with a lawsuit is Derek's liability question
+  assert.equal(guardFn('my guest says she is going to sue me').route, 'safety-insurance');
+});
+
+test('round 3: upset customers get the calm label and no "Cool." anywhere (F05)', () => {
+  const { COPY } = require('../engine/copy');
+  for (const t of ['im so mad', 'frustrated', 'annoyed', 'disappointed', 'upset', 'this ruined my weekend', 'i want to file a complaint', 'im gonna report you to the BBB'])
+    assert.equal(s.mood(t), 'upset', t);
+  for (const t of ['i want to file a complaint', 'im gonna report you to the BBB', 'im so mad, how do i cancel my booking']) {
+    const { transcript } = H2.talk(engine, [t, { button: 'reply:chat' }]);
+    const lines = H2.botLines(transcript);
+    assert.equal(lines[0], COPY.labelLineCalm, t);
+    assert.ok(!lines.some((l) => /^Cool\b|Hey, glad you're here/.test(l)), `${t}: ${lines.join(' / ')}`);
+  }
+});
+
+test('round 3: common dispute phrasings are urgent billing disputes (E02)', () => {
+  for (const t of ['you charged me twice', 'im calling my bank to reverse the charge', 'you guys charged my card two times', 'i got double charged'])
+    assert.equal((guardFn(t) || {}).route, 'builtin:dispute-charge', t);
+  assert.equal(guardFn('i called my bank to update my payout account'), null);
+});
+
+test('round 3: "live agent", "I don\'t want to talk to a robot", "the owner of this site" are requests for a person', () => {
+  for (const t of ['live agent', 'i dont want to talk to a robot', 'i want to talk to the owner of this site', 'no more bots'])
+    assert.ok(s.wantsHuman(t), t);
+  for (const t of ['live agent', 'i dont want to talk to a robot', 'i want to talk to the owner of this site'])
+    assert.equal(s.questionRemains(t), false, t);
+  assert.ok(!s.wantsHuman('can i talk to the pool owner first'));
+  assert.ok(!s.wantsHuman('is this a live agent'));
 });

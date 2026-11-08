@@ -11,7 +11,11 @@
       "how do i make a reservaton",
       "steps to book a swim",
       "how do i book a pol",
-      "whats the booking process"
+      "whats the booking process",
+      "are there pools near me",
+      "what is pool rental near me",
+      "how does this site work",
+      "what is prnm"
     ],
     "keywords": [
       "book",
@@ -64,7 +68,8 @@
       "does host need 2 approve",
       "is my booking auto confirmed",
       "request to book vs instant",
-      "do they have to aprove it"
+      "do they have to aprove it",
+      "what is a booking request"
     ],
     "keywords": [
       "accept",
@@ -121,7 +126,8 @@
       "how long do hosts take to respond",
       "my request is still pending",
       "host hasnt answerd",
-      "what if the host never accepts"
+      "what if the host never accepts",
+      "how long does the host have to accept"
     ],
     "keywords": [
       "reply",
@@ -587,7 +593,7 @@
     "variants": [
       "what is the service fee",
       "why is there a booking fee",
-      "pool rental near me fee?",
+      "what does the fee pay for",
       "what's the 15 percent",
       "service charge?",
       "who gets the fee",
@@ -2818,7 +2824,10 @@
       "how do i reach customer service",
       "contact info",
       "do you have live chat",
-      "suport contact"
+      "suport contact",
+      "how do i contact you",
+      "how do i get in touch with you guys",
+      "where are you guys located"
     ],
     "keywords": [
       "contact",
@@ -3210,7 +3219,9 @@
       "hide my pool",
       "turn off my listing for now",
       "stop showing my pool",
-      "how do i close my listin"
+      "how do i close my listin",
+      "how do i delete my listing",
+      "remove my listing"
     ],
     "keywords": [
       "close",
@@ -4020,7 +4031,9 @@
       "payout hasnt hit my bank yet",
       "my payout failed",
       "still waiting on payment",
-      "never got payed"
+      "never got payed",
+      "my payout hasnt arrived",
+      "its been 2 weeks and my payout still hasnt arrived"
     ],
     "keywords": [
       "missing",

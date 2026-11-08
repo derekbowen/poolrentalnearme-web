@@ -147,9 +147,14 @@ test('founder handoff: exact Chatwoot calls, note @mentions both, "I\'ve sent" o
     assert.equal(x.forwardedProto, 'https');
   }
 
-  // after the handoff the assistant is silent, even if Chatwoot still reports pending
+  // after the handoff the assistant says once that they have it (no new alert), then stays silent,
+  // even if Chatwoot still reports pending
   mock.reset();
   await send(H.incoming(conv, ++msgId, 'thanks, any update?'));
+  assert.deepEqual(publicMessages().map((x) => x.body.content), [COPY.waitingAckSent]);
+  assert.ok(!mock.calls.some((x) => /toggle_status$|\/labels$/.test(x.path) || (x.body && x.body.private)));
+  mock.reset();
+  await send(H.incoming(conv, ++msgId, 'hello??'));
   assert.deepEqual(mock.calls, []);
 });
 
@@ -183,7 +188,8 @@ test('urgent injury: 911 first, priority urgent, toggle open, confirmation — a
   assert.deepEqual(c[7].body, { status: 'open' });
   assert.match(c[8].body.content, /^I've sent Derek and Brandon the rundown and marked it urgent/);
 
-  // the conversation is now open: customer adds their booking link → no reply, only the attribute is filled in
+  // the conversation is now open: customer adds their booking link → one short "they have it" (said once),
+  // and the attribute is filled in; nothing more after that
   mock.reset();
   await send(
     H.incoming(
@@ -193,11 +199,14 @@ test('urgent injury: 911 first, priority urgent, toggle open, confirmation — a
       { status: 'open' }
     )
   );
-  assert.deepEqual(callList(conv), ['POST …/custom_attributes']);
+  assert.deepEqual(callList(conv), ['POST …/messages', 'POST …/custom_attributes']);
+  assert.equal(mock.calls[0].body.content, COPY.waitingAckSent);
   assert.equal(
-    mock.calls[0].body.custom_attributes.prnm_booking_ref,
+    mock.calls[1].body.custom_attributes.prnm_booking_ref,
     '6abaf08c-023d-4f34-8e87-74ea4a6efac4'
   );
+  mock.reset();
+  await send(H.incoming(conv, ++msgId, 'thank you', { status: 'open' }));
   assert.equal(publicMessages().length, 0);
 });
 

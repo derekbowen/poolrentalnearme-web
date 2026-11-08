@@ -7,7 +7,7 @@ const { roleOfCategory } = require('../engine/matcher');
 const { entries, engine } = loadEngine();
 const m = engine.matcher;
 
-test('every question and every variant matches its own entry (905 phrasings)', () => {
+test('every question and every variant matches its own entry (918 phrasings)', () => {
   const misses = [];
   let n = 0;
   for (const e of entries) {
@@ -21,7 +21,7 @@ test('every question and every variant matches its own entry (905 phrasings)', (
         misses.push(`${e.id}: "${text}" -> ${r.status} ${r.top && r.top.id}`);
     }
   }
-  assert.equal(n, 905);
+  assert.equal(n, 918);
   assert.deepEqual(misses, []);
 });
 
@@ -175,4 +175,87 @@ test('known real words are never fuzzed into neighbours ("safe" ≠ "save", "ban
 test('one generic word is not enough to answer outright', () => {
   const r = m.match('work', {});
   assert.notEqual(r.status, 'confident');
+});
+
+// ------------------------------------------------------------------ round-3 review: confident wrong first answers
+const { talk } = require('./helpers');
+const answeredIn = (tr) => tr.events.filter((e) => e.type === 'answered').map((e) => e.entry);
+const offeredIn = (tr) =>
+  tr.actions.filter((a) => a.type === 'select').flatMap((a) => a.items.map((i) => i.value.replace(/^entry:/, '')));
+
+test('round 3: common first questions get the right entry, never the 15% fee or a host answer', () => {
+  const want = {
+    'are there pools near me': 'booking-how-to-book',
+    'what is pool rental near me': 'booking-how-to-book',
+    'what is prnm': 'booking-how-to-book',
+    'how do i contact you': 'human-contact-support',
+    'how do i get in touch with you guys': 'human-contact-support',
+    'how do i delete my listing': 'host-listing-08',
+    'can i remove my listing': 'host-listing-08',
+    'what is a booking request': 'booking-instant-vs-request',
+    'how long does the host have to accept': 'booking-host-no-reply',
+  };
+  for (const [t, id] of Object.entries(want)) {
+    const tr = talk(engine, [t]).transcript[0];
+    assert.deepEqual(answeredIn(tr), [id], t);
+  }
+  // never these answers for these questions
+  const never = {
+    'are there pools near me': 'pay-service-fee',
+    'what is pool rental near me': 'pay-service-fee',
+    'is there a grill': 'host-pricing-04',
+    'how do i contact you': 'booking-message-host',
+    'where are you located': 'arrive-address',
+    'how do i delete my listing': 'account-07',
+    'do you have an app': 'account-10',
+    'what is a booking request': 'account-08',
+    'how long does the host have to accept': 'host-listing-06',
+  };
+  for (const [t, id] of Object.entries(never)) {
+    const tr = talk(engine, [t]).transcript[0];
+    assert.ok(!answeredIn(tr).includes(id), `${t} answered ${id}`);
+  }
+});
+
+test('round 3: "how much does it cost" with no known role asks who they are; a guest never gets host pricing advice', () => {
+  for (const t of ['how much does it cost', 'how much is a pool']) {
+    const r = talk(engine, [t]);
+    const tr = r.transcript[0];
+    assert.deepEqual(answeredIn(tr), [], t);
+    assert.ok(tr.events.some((e) => e.type === 'clarify' && e.kind === 'role'), t);
+    assert.equal(r.state.role, null, `${t}: the role is not guessed as host`);
+    const guest = talk(engine, [t, { button: 'role:swimmer' }]).transcript[1];
+    assert.ok(!answeredIn(guest).some((id) => /^host-pricing-0[49]$/.test(id)), `${t}: host advice to a guest`);
+    assert.ok(!offeredIn(guest).some((id) => /^host-pricing-0[49]$/.test(id)), `${t}: host advice offered to a guest`);
+  }
+  // a host still gets it
+  assert.deepEqual(answeredIn(talk(engine, ['as a host, how much should i charge per hour']).transcript[0]), ['host-pricing-09']);
+});
+
+test('round 3: the SMS opt-out entry is offered only when the message is about texts or notifications (C62)', () => {
+  for (const t of ['he wouldnt stop touching my hair', 'shes shaking and wont stop', 'stop it', 'make it stop']) {
+    const tr = talk(engine, [t]).transcript[0];
+    assert.ok(!offeredIn(tr).includes('account-06') && !answeredIn(tr).includes('account-06'), t);
+  }
+  for (const t of ['how do i stop getting text messages', 'stop txting me', 'too many notifications'])
+    assert.ok(answeredIn(talk(engine, [t]).transcript[0]).includes('account-06') || offeredIn(talk(engine, [t]).transcript[0]).includes('account-06'), t);
+});
+
+test('round 3: a message with several questions answers one and offers the others, or hands off with all of it (C11, C12, D37)', () => {
+  const d37 = talk(engine, ['can i import my swimply listing and also sync the calendar?']).transcript[0];
+  const ids = [...answeredIn(d37), ...offeredIn(d37)];
+  assert.ok(ids.includes('host-listing-03') && ids.includes('host-pricing-07'), ids.join(','));
+  for (const t of [
+    'hi so im thinking of booking a pool for my daughters bday saturday, how many people can we bring, can we bring a speaker and also is there parking? also do i need to pay upfront',
+    'Hey there! So I listed my pool last week and set the price at $50 but i think thats too low, also I want to block off thanksgiving and also when do I get paid?',
+  ]) {
+    const r = talk(engine, [t]);
+    const tr = r.transcript[0];
+    const got = answeredIn(tr).length > 0 || (r.state.handoff && r.state.handoff.question && r.state.handoff.question.length > 60);
+    assert.ok(got, `${t.slice(0, 40)}: neither answered nor handed off with the text`);
+    assert.ok(!tr.events.some((e) => e.type === 'unmatched' && !e.multi_part), `${t.slice(0, 40)}: plain "say it another way"`);
+    // one question per message: the extra buttons carry no question mark
+    const sels = tr.actions.filter((a) => a.type === 'select' && a.content === require('../engine/copy').COPY.alsoAsked);
+    for (const sel of sels) assert.doesNotMatch(sel.content, /\?/);
+  }
 });

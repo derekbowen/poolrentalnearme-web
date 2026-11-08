@@ -14,7 +14,11 @@
  *
  * Handoffs that would reach the founders' phones are capped (flood.js, D3):
  * beyond a cap the conversation is labelled and kept pending, with no @mention
- * and no open toggle, and the customer is told only what is true.
+ * and no open toggle, and the customer is told only what is true. A handoff
+ * logged over the hourly ceiling (or the per-visitor cap) is deferred, not
+ * dropped: it is retried on the visitor's next message and by a sweep on every
+ * webhook (and a 60 s timer in server.js), and sent as a normal alert only when
+ * a slot is free. While any cap holds nothing is sent.
  */
 const { runHandoff, runCappedHandoff } = require('./handoff');
 const { findBookingRef, MAX_INPUT_CHARS, MAX_STORED_CHARS } = require('./safety');
@@ -41,6 +45,9 @@ function contactIdOf(p) {
     return String(s.id);
   return null;
 }
+
+const DEFERRED_KEY = 'deferred';
+const MAX_DEFERRED = 200;
 
 const MESSAGE_TYPES = { 0: 'incoming', 1: 'outgoing', 2: 'activity', 3: 'template' };
 function messageType(v) {
@@ -149,6 +156,8 @@ class Bot {
   // ------------------------------------------------------------------ events
   async handleEvent(p) {
     if (!p || typeof p !== 'object') return { ignored: 'payload' };
+    // any webhook is a chance to send a handoff that was logged over a ceiling (no-op when none waits)
+    this.sweepDeferred();
     const accountId = p.account && p.account.id != null ? String(p.account.id) : null;
     if (accountId !== this.accountId) return { ignored: 'account' };
     const inboxId =
@@ -291,9 +300,68 @@ class Bot {
     });
   }
 
+  // ------------------------------------------------------------------ deferred handoffs (D3)
+  /*
+   * A handoff logged over the hourly ceiling (or the per-visitor cap) is not final: once a slot is
+   * free it is sent as a normal alert (@mention note, open toggle), without waiting for the visitor
+   * to write again. Nothing is sent while a cap still holds.
+   */
+  deferredList() {
+    const list = this.store.getMeta ? this.store.getMeta(DEFERRED_KEY) : null;
+    return Array.isArray(list) ? list : [];
+  }
+
+  trackDeferred(convId, state) {
+    if (!this.store.setMeta) return;
+    const key = this.key(convId);
+    const list = this.deferredList().filter((x) => x && x.key !== key);
+    if (this.engine.deferred(state))
+      list.push({ key, convId: String(convId), contact: this.contactKey(state), at: this.now() });
+    const before = JSON.stringify(this.deferredList());
+    const next = list.slice(-MAX_DEFERRED);
+    if (JSON.stringify(next) !== before) this.store.setMeta(DEFERRED_KEY, next);
+  }
+
+  /** Cheap and synchronous: queue a retry for each deferred handoff that would pass the caps now. */
+  sweepDeferred() {
+    const list = this.deferredList();
+    if (!list.length) return 0;
+    const now = this.now();
+    let queued = 0;
+    for (const x of list) {
+      if (queued >= 5) break;
+      // the ledger first (no state read): while the ceiling holds this loop costs almost nothing
+      if (this.flood.check({ conv: x.key, contact: x.contact || null, now })) continue;
+      const st = this.store.get(x.key);
+      if (!st || !this.engine.deferred(st)) {
+        this.trackDeferred(x.convId, st || {});
+        continue;
+      }
+      queued++;
+      this.enqueue(x.convId, () => this.runDeferred(x.convId));
+    }
+    return queued;
+  }
+
+  async runDeferred(convId) {
+    const st = this.store.get(this.key(convId));
+    if (!st || !this.engine.deferred(st)) return { ignored: 'deferred' };
+    // the merged custom attributes and the live status come from Chatwoot itself
+    const c = await this.client.getConversation(convId);
+    if (!c.ok || !c.data) return { ignored: 'deferred_fetch' };
+    const conv = c.data;
+    if (conv.status === 'resolved' || conv.status === 'snoozed') return { ignored: 'deferred_status' };
+    const res = this.engine.retryDeferred(st, { now: this.now() });
+    return this.execute(convId, conv, res);
+  }
+
   // ------------------------------------------------------------------ turns
   async runTurn(convId, conv, st, input) {
     const res = this.engine.handle(st, input, { now: this.now() });
+    return this.execute(convId, conv, res);
+  }
+
+  async execute(convId, conv, res) {
     let state = res.state;
     const events = [...res.events];
     let escalated = false;
@@ -303,11 +371,6 @@ class Bot {
         sent.push(await this.perform(convId, a, events));
         continue;
       }
-      escalated = true;
-      const attributes = {
-        ...this.baseAttributes(conv, state),
-        ...this.engine.mirrorAttributes(state),
-      };
       const done = (state.handoff && state.handoff.done) || {};
       const urgent = !!(state.handoff && state.handoff.urgency === 'high');
       // a retry of a handoff whose @mention note already went out is the same alert, not a new one
@@ -316,6 +379,14 @@ class Bot {
       // check and take the slot in one synchronous step (D3): concurrent conversations can't all slip under a cap
       const slot = fresh ? this.flood.reserve(keys) : null;
       const capped = slot && slot.capped ? slot.capped : null;
+      // a handoff logged over a ceiling, tried again: still capped → nothing at all (it is already labelled
+      // and noted); a slot is free now → the normal alert, and the overflow label goes
+      if (a.deferred && capped) continue;
+      escalated = true;
+      const attributes = {
+        ...this.baseAttributes(conv, state),
+        ...this.engine.mirrorAttributes(state),
+      };
       let result;
       if (capped) {
         result = await runCappedHandoff({
@@ -358,10 +429,16 @@ class Bot {
           }),
           urgent,
           done,
+          drop: a.deferred ? ['handoff-overflow', 'handoff-capped'] : [],
         });
-        // the @mention note reached Chatwoot: that is an alert, whatever happens next (the slot stays taken).
-        // It never got there: nobody was alerted, so the slot goes back.
-        if (slot && slot.token && !(result.done && result.done.note)) this.flood.release(slot.token);
+        if (a.deferred) events.push({ type: 'deferred_handoff', ok: result.ok, was: state.handoff.capped });
+        // The @mention note reached Chatwoot: that is an alert, whatever happens next (the slot stays taken).
+        // It definitely never got there (a step before it failed, or Chatwoot answered the note with an
+        // error status): nobody was alerted, so the slot goes back. A timeout or network error on the
+        // note itself (status 0) may still have created it: keep the slot. A lost alert is cheaper than an
+        // uncapped one.
+        const noteUnknown = result.step === 'note' && !result.status;
+        if (slot && slot.token && !(result.done && result.done.note) && !noteUnknown) this.flood.release(slot.token);
       }
       if (result.done && result.done.attributes)
         state.mirrored = this.engine.mirrorAttributes(state);
@@ -374,6 +451,7 @@ class Bot {
     if (sent.some((x) => x.type === 'flag_urgent' && !x.ok)) state.dangerAt = null;
     if (!escalated) await this.mirror(convId, conv, state, events);
     this.store.set(this.key(convId), state);
+    this.trackDeferred(convId, state);
     this.tracker.log(this.key(convId), events);
     return { actions: res.actions.map((a) => a.type), sent, escalated };
   }

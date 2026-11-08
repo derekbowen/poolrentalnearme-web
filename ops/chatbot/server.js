@@ -46,6 +46,7 @@ const MAX_BODY = 1024 * 1024;
 const SIGNATURE_TOLERANCE_SEC = 300;
 const DEFAULT_PORT = 3120;
 const REJECT_LOG_EVERY_MS = 60 * 1000;
+const DEFERRED_SWEEP_MS = 60 * 1000;
 
 function isLoopback(addr) {
   return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
@@ -283,7 +284,17 @@ if (require.main === module) {
       `prnm-chatbot listening on ${config.host}:${config.port} (signature check: ${config.signed ? 'on' : 'OFF, loopback only'}, inbox: ${config.inbox})`
     );
   });
+  // a handoff logged over the hourly ceiling alerts once a slot frees up, even if nobody writes (D3)
+  const sweep = setInterval(() => {
+    try {
+      bot.sweepDeferred();
+    } catch (err) {
+      logger.error(`deferred sweep failed: ${err && err.message ? err.message : err}`);
+    }
+  }, DEFERRED_SWEEP_MS);
+  if (sweep.unref) sweep.unref();
   const stop = async () => {
+    clearInterval(sweep);
     server.close();
     await server.drain().catch(() => {});
     store.flush();

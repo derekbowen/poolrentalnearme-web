@@ -8,12 +8,19 @@
  *
  * `meta` holds small records that are not conversations (the handoff flood
  * ledger): they are saved with the file but never pruned as conversations.
+ *
+ * Writes are coalesced (at most one every `debounceMs`, 2 s by default) and the
+ * file write itself is asynchronous, so a burst of webhooks never blocks the event
+ * loop on disk. The store keeps at most 1,000 conversations (30-day TTL): about
+ * 8 MB of JSON in the worst case, a few tens of milliseconds to serialise.
+ * flush() is the synchronous write used at shutdown and in tests.
  */
 const fs = require('node:fs');
+const fsp = require('node:fs/promises');
 const path = require('node:path');
 
 class MemoryStore {
-  constructor({ file = null, ttlDays = 30, maxConversations = 5000, debounceMs = 150 } = {}) {
+  constructor({ file = null, ttlDays = 30, maxConversations = 1000, debounceMs = 2000 } = {}) {
     this.file = file;
     this.ttlMs = ttlDays * 24 * 3600 * 1000;
     this.max = maxConversations;
@@ -21,6 +28,8 @@ class MemoryStore {
     this.map = new Map();
     this.meta = new Map();
     this.timer = null;
+    this.writing = null; // the asynchronous write in progress, if any
+    this.dirty = false; // changed again while that write was running
     if (file) this.load();
   }
 
@@ -77,32 +86,67 @@ class MemoryStore {
 
   schedule() {
     if (!this.file) return;
+    if (this.writing) {
+      this.dirty = true;
+      return;
+    }
     if (this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = null;
-      this.flush();
+      this.flushAsync().catch(() => {
+        /* the next change retries; a sync flush() runs at shutdown */
+      });
     }, this.debounceMs);
     if (this.timer.unref) this.timer.unref();
   }
 
+  body() {
+    this.prune();
+    return JSON.stringify({
+      version: 1,
+      savedAt: new Date().toISOString(),
+      conversations: Object.fromEntries(this.map),
+      meta: Object.fromEntries(this.meta),
+    });
+  }
+
+  /** Coalesced background write: serialise once, write a temp file, rename it into place. */
+  async flushAsync() {
+    if (!this.file) return;
+    if (this.writing) {
+      this.dirty = true;
+      return this.writing;
+    }
+    const tmp = `${this.file}.${process.pid}.tmp`;
+    const run = async () => {
+      await fsp.mkdir(path.dirname(this.file), { recursive: true, mode: 0o700 });
+      await fsp.writeFile(tmp, this.body(), { mode: 0o600 });
+      await fsp.rename(tmp, this.file);
+    };
+    this.dirty = false;
+    this.writing = run().finally(() => {
+      this.writing = null;
+      if (this.dirty) {
+        this.dirty = false;
+        this.schedule();
+      }
+    });
+    return this.writing;
+  }
+
+  /** Synchronous write (shutdown, tests). */
   flush() {
     if (!this.file) return;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
-    this.prune();
     const dir = path.dirname(this.file);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const tmp = `${this.file}.${process.pid}.tmp`;
-    const body = JSON.stringify({
-      version: 1,
-      savedAt: new Date().toISOString(),
-      conversations: Object.fromEntries(this.map),
-      meta: Object.fromEntries(this.meta),
-    });
-    fs.writeFileSync(tmp, body, { mode: 0o600 });
+    const tmp = `${this.file}.${process.pid}.sync.tmp`;
+    fs.writeFileSync(tmp, this.body(), { mode: 0o600 });
     fs.renameSync(tmp, this.file);
+    this.dirty = false;
   }
 }
 

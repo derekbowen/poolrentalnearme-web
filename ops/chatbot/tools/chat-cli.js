@@ -41,7 +41,8 @@ function show(actions) {
       console.log(`  (private note) ${a.note}`);
       if (a.okText) console.log(`bot: ${a.okText}`);
     }
-    if (a.type === 'escalate') {
+    // a deferred retry only fires against the real flood ledger (engine/bot.js); the CLI never caps
+    if (a.type === 'escalate' && !a.deferred) {
       console.log('  --- handoff note (private, @mentions both) ---');
       console.log(
         engine

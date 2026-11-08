@@ -21,9 +21,10 @@ CF = D + "/docker-compose.yml"
 CF_MD5 = "c9e8f0054a9503299ebdd27ecd694b34"
 HOST = "chat.poolrentalnearme.com"
 EXPECT_IP = "3.222.110.146"  # cross-check only; the IP written is read from instance metadata
-# Widget throttles (Rack::Attack, free), lowered from the 4.19.1 defaults. They do NOT restore 4.16.2: it allowed 6
-# conversations per 12 h and 5 cookie-less /widget loads (each makes a contact) per hour per IP; 4.17+ counts
-# conversations per minute (2/min = 1440 per 12 h) and loads 200/h. The engine's D3 caps and nginx do the rest.
+# Widget throttles (Rack::Attack, free), lowered from the 4.19.1 defaults. 4.16.2's 6 conversations per 12 h per IP
+# cannot come back: 4.17+ counts per minute (2/min = 1440 per 12 h). RATE_LIMIT_WIDGET_LOAD counts only /widget loads
+# with no cw_conversation at all; a junk value is not counted and still makes a contact, so contact creation is
+# bounded by cw_nginx.py's per-IP prnm_wload zone (10/min), not by this. The engine's D3 caps and nginx do the rest.
 SET = {"ENABLE_ACCOUNT_SIGNUP": "false", "FRONTEND_URL": "https://" + HOST, "FORCE_SSL": "true",
        "ENABLE_PUSH_RELAY_SERVER": "true", "DISABLE_TELEMETRY": "true", "RATE_LIMIT_WIDGET_CONVERSATIONS": "2",
        "RATE_LIMIT_WIDGET_MESSAGES": "20", "RATE_LIMIT_WIDGET_LOAD": "20"}

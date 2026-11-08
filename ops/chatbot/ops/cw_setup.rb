@@ -5,6 +5,9 @@ people = [%w[derek Derek\ Bowen derek@poolrentalnearme.com], %w[brandon Brandon\
 acct = Account.find_by(name: 'Pool Rental Near Me')
 raise "not a fresh install: #{Account.count} accounts, #{User.count} users" if acct.nil? && (Account.exists? || User.exists?)
 acct ||= Account.create!(name: 'Pool Rental Near Me', locale: 'en')
+# 4.19+: 2FA is mandatory for this account's users (the AgentBot token is exempt). A founder without it enrolls at
+# his first password sign-in; a reset link never opens a session on its own. Needs the 3 encryption keys.
+acct.update!(enforce_mfa: true) if Chatwoot.mfa_enabled? && acct.respond_to?(:enforce_mfa=)
 users = people.map do |key, name, email|
   u = User.find_by(email: email)
   unless u
@@ -64,7 +67,8 @@ o = { account_id: acct.id, inbox_id: inbox.id, website_token: inbox.channel.webs
       bot_url: bot.outgoing_url, derek_id: users[0].id, brandon_id: users[1].id,
       feature_flags: inbox.channel.reload.feature_flags, max_upload_mb: GlobalConfigService.load('MAXIMUM_FILE_UPLOAD_SIZE', 40),
       push_flags: users.map { |u| u.notification_settings.find_by(account_id: acct.id).selected_push_flags },
-      mfa_available: Chatwoot.mfa_enabled?, mfa_on: users.map(&:mfa_enabled?), links: [], revoked: [] }
+      mfa_available: Chatwoot.mfa_enabled?, mfa_on: users.map(&:mfa_enabled?), links: [], revoked: [],
+      mfa_enforced: acct.reload.try(:enforce_mfa?) == true, keep_pending: acct.try(:keep_pending_on_bot_failure) }
 # Chatwoot (4.16.2 to 4.19.1) never checks reset_password_period_valid?: a printed link stays live until used or
 # replaced. So at most ONE live link exists after any run: the one printed now. Every other outstanding token dies.
 people.zip(users).each do |(key, _, email), u|

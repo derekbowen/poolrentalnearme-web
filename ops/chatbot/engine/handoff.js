@@ -10,7 +10,8 @@
  *
  * Every step must return 2xx. The first failure stops the run, so the
  * conversation stays pending and the customer is told the truth. A note that
- * already went out is not posted twice on a retry.
+ * already went out is not posted twice on a retry. `drop` removes labels that
+ * no longer apply (handoff-overflow when a deferred handoff finally alerts).
  */
 
 function uniq(a) {
@@ -20,7 +21,7 @@ function uniq(a) {
 /**
  * @returns {Promise<{ok: boolean, step?: string, status?: number, done: object}>}
  */
-async function runHandoff({ client, convId, attributes, labels, note, urgent, done = {} }) {
+async function runHandoff({ client, convId, attributes, labels, note, urgent, done = {}, drop = [] }) {
   const progress = { ...done };
   const fail = (step, r) => ({ ok: false, step, status: r ? r.status : 0, done: progress });
 
@@ -30,7 +31,9 @@ async function runHandoff({ client, convId, attributes, labels, note, urgent, do
 
   const g = await client.getLabels(convId);
   if (!g.ok) return fail('labels_get', g);
-  const l = await client.setLabels(convId, uniq([...(g.labels || []), ...labels]));
+  // `drop`: labels that no longer apply (handoff-overflow once a deferred handoff finally alerts)
+  const keep = (g.labels || []).filter((x) => !drop.includes(x));
+  const l = await client.setLabels(convId, uniq([...keep, ...labels]));
   if (!l.ok) return fail('labels_set', l);
   progress.labels = true;
 

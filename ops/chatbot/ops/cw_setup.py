@@ -1,6 +1,6 @@
 """EAST: idempotent Chatwoot setup for the PRNM assistant (ops/chatbot/ops/README.md). After cw_harden.py.
 DRY=True: read-only. DRY=False: runs cw_setup.rb; bot token+secret go only to ENVF (600, ubuntu). Refuses until
-cw_harden.py has set FRONTEND_URL and the three Active Record encryption keys (without them Chatwoot has no 2FA).
+cw_harden.py has set FRONTEND_URL and the three Active Record encryption keys (no 2FA without them; 4.19: required).
 Reset links (D6): LINK_FOR = "derek" or "brandon" prints ONLY that founder's link, and only once the public URL
 answers. Chatwoot does not enforce the 6 h expiry, so a link is live until used or revoked: every run revokes every
 other outstanding reset token. After he sets his password, run again with LINK_FOR = "" (prints no link).
@@ -9,6 +9,9 @@ import base64, hashlib, json, os, pwd, re, subprocess, sys, zlib
 
 DRY = True
 LINK_FOR = ""  # "" (print no link; revoke all) | "derek" | "brandon"
+# Derek decides. Bot down past Chatwoot's retries (~10 s; cw_nginx.py answers 500): "false" opens the chat with NO
+# push (cw_status.py counts it), "true" keeps it with the bot (it answers the next message; not in the Open view).
+KEEP_PENDING = ""  # "" leave as is (Chatwoot default: open) | "true" | "false"
 VERSION = "4.19.1"  # cw_harden.py's image
 HOST = "chat.poolrentalnearme.com"
 # Public URL on purpose: Chatwoot posts webhooks via SafeFetch, which refuses private and
@@ -18,8 +21,8 @@ BD = "/home/ubuntu/chatbot"
 ENVF = BD + "/.env"
 SDK = "docker exec chatwoot-rails-1 cat /app/public/packs/js/sdk.js"
 # cw_setup.rb, embedded zlib+base85 to fit the runner (selfcheck.py --embed writes and checks it)
-RB_SHA = "21ff145b216667326852b053236c88803fa6501e833cf57e89d8109d75b3bb62"
-RBZ = "c-oCvZByGw68_Gw=$N{-Rc8j+CD}yT9BbZosRNt>a=AK|QjMiCp0%V=Nh2Hw`0w}hjAR?)Y;7uWq?u{;`_tXCNtbnAk<KffD2gZ2&Wy2JrPOJ)wM+L}Qap<)W$Qu|bLy#Vq>@A>WGAXr@2OJhIG(6@%DY=zZky!Ts*+TqZ54=(x=iT<9bf!MjFpWiz3#`$i}UDUcpZJZJnIG<sm`a-*p&Xzjo&^yz4&)@GQ8~G3TvW@HmTdCN9rcvI(1K@Qs#-tyCI80!;51Yn>xon%_gQ&R4PbK{Ba!66_s^PMX7UJZ4}BBsRF;7f6Q*&7wL$9|DXdiQ#rY%UkhW>Qsq{rxsqk3L~OF#K7piRO$Yw}Kj=8svZ7{rJ>l(!jAIL)gE)qqR*ZF?M5B2xmzfHw`w>KR>8R)eWOS}z8~6dLbaG=!(ikdD*i|@_hP3(6e#-qmk@T-sA6uU)RkrIjo~sV&F`uv^*Xcg}@B{T)a`i=5w%Vu1M{;D%d*CI0d|b*Lmr7do>aS$(Q)*(F^0vyMfnyG}z0E}?3rY+<PSw0m{Fy$f48iueK~&?I6QDJX+X?-FfDh!Usw%4SNL0*lytDamrQ*6&mu&h>jAW%=zwPbq1W$6X`>KPuaZbs=Ox+_ks)?E9gkY<zDOK_wVN#?rM$mGob0jU}#<5|cdXSbrd{{)^K3&y?DhElXa|)fzfymXYvCE2DjqrUcWL3>fnS_vg`4+_{AL}xcR-2r+0?$)aQ(ZjUeARBqd&SQxPw*@2Wk4-0XUfPs3O0PzYoa1_&hNWm2&oR}fgZm+(ic%0mkOa|ZQ%G)!ZP&azAow_aSrE0;fpgYYtF8{FjkLs?Bu*s*6RH3F9eBn;$;y!@#46Z8n6C~0+^y=tCGmsE*huuj@jJY!kf9FtMluRIJikiuc@f3iJ;%v#p7{EjvJ()-Uu0E3I+Mtr;KawX=D<((J$2Sf2PWAMJK11SJ#vwu;d-ww!1^@86;7iBS0hz0(l+7Se6OpH88FuJ1<%kM94^Bpl8JrVIh_Cfd1)Le$9{}EEKX>2^!|H;$&{X3X!1iR>UN0XreR5RmZc(8%&9l(<(q*ffuEc5w;Q9@dSI2QE#36fuN7Fv^v&>Wbd>D0FpTkPfi?!I&KSDGdaZpSaH%yS|MtiZ#ayp3~@%y7gEejohCG@zkc;}#l+;w$q~x}#u9XmFhWX<fDqFKOGLSalmggm0Sz<c!C_N|UU-mZ8lSxwdK>q+E?H^oic3!iEVsr87hr)W>jdu+!Pabf3$tR5pBIx6b)wROdfHN<<7q`EPv-<hpdCN!Tmfqx^F&sYk%99Ar#2|qayT^}ix(lwqAem8rNX^KMOdnGp&2b=^xLi0_}}h4)8ViFI8uLFCC|SBfQlMl-8ND;U{Y@|oalUHzCdc9oBX1xZ>kh(GksR0N?VjC)P{vPr%bRY5HCPy9d-XZn!wX}u2L5T?jZ!lXPw+B`@PT4{3j!H8sIXqwy47G?b&Q5)|KLJ5O`fh!)k$YkZ9%@!EmVoOm;VSjt8%g-*uTs3R)FeZ5awXzjFb*OJzcHQ+E+`j0B>?S}l&sJB}iJ<}*icEOR>bK?f2S%=>iBtqJ~`x^&SBwC4s24n&BthE-hZ0&9I2vV&9M498V#4q4c&p+<Z}iG(~wsUpr4Zl|(H<#LoVdW~gT0opjzbY5#ak5KHQra<{khWj){_mf1ZmJ&@y$l(h;Kql%bq{l-hWPK|T-ZtVwjuK)Y>8A6Il{X*kQ>RazwJva*xAY|bG&=8f``v)KFEVHh7bA&%5<v)kqcZcSjyOqG+0+1Off*Cdhw44QBYvL+JM|<AI)cKKTPWxzy@ypDhLmax-ARegbfXP}*8SdI5xZd};TGm=wtZ1TfUvxa&AU=5hSrxxe-Y#{#EYuByjSyY+ymI2@)stEh3ds_(?<yh{xEy}=o9Xo8}7Ab->DXo`){S{KW%K%v4icU3909!o=`?tu#UshBR9^{E}b6$!GVTH2UMCF;up|txTiwbPQBk!Gm_~cw=8#8s=U{+Lhpa-n^or%zqgPTjfB-Q)nC;LzMK#KdwTxqJUTf&JB~hmJR1&<qN~&Y9e0C;m+oa+<LItyG^Z;TO65qU47(4&0N)XG>BGN}#K*h4M|*FP#NE1Nd~cQy-t8Xl9`bT?e9NobZ2x@t)8P1Mb(^&vBT1SAZ;pO^d-U!(kaf8Z$-J5Y4cZSaFr-`O$Zxa??as;TcgH&iU3i733S*|OILo;UYzB;2HOAxl1<fzXved8uRT9J0oG|IwtrS?ngzg0+PTYLO)c8mPmA8w~LB@JZ-E^!$Qf)Q)_<=Rr`+4teD-VB;s+rEvCoRd#B{?^Rpe|eLcYA}M4&E}gKe1#9?0KX!Ui=#!YJ;%WwWulB35UjD5x>U^ckmI)84s)@$;-B^6+L;Oi!#q5*V4Ktr=fpr%o~+z>=!(SX39=X;#XXB#Pdd3H>PlbJ9N$Bz}ixeYO9Xa*u}2N|AsQMrHU{^gfv}U$xOm^E_`0;+wH&!koXFlh$UH~D~v4jh*JjIPj6lefhoD{bt8^3Larc=wRO4Gj0*gZTVhNLoB(LG{)X(UReR7@Bp_>Brh=}Qal|r?M527HV)#WkTs4JjS<DtC%r)$;ed2D{jouD>nt57uTX`2rk5Ild>^)cF@e^#ciulH3J*upN;1WSxkB4}GqWI~P?;?4;iLJf|l3Xg-I1C3VChi1!rOK+_v&Aqx{C#l!c{sd|PA{&m2WMx4>(k*yG`u(%4la*QFMbO)PBiA-S&7D^*WI>RvE78B6@OMHhpQf-{Z!>n3IUU&H;degaK8{t!8u+^;h#}8QJk0_#a@+JNIT}u&Q7pl9PX_hv7Gj9$(K7`YdfY!famSdv&}wpchoEeXdATSRp$&|UUg63U!VA)j*HgK&aLCwT#u}5?B1??@I~E!E)oVRBNOrLOdmtam#8jyC(1@4ttml*H+$bND}CDA30eu3y?Y~|Xqp^U+gju+Q!ZbKG2|}$<29BK)=mXaEw^keBYBTrg6sTp<`KN!6#xCcJH=N63we4!gsUeok?>UoB)+-rqq(^^t|Ves=1RX9q<VW|_l@|G(+yAW#BR{shq$}D%3pd!i)#slmNrR*LZg#?DC95Bkjw5m%@02*QU$Y})hP>?kSW2iy-g8x#Z4MzTtoP7&YgDD{&uOkBb51^FXsFm9>&E5quk6y)2J98vWbfsKqTSX<^q!vjrpXx%M)L9(Q`Hmmf+oUmrPM}6$4Av3{-kd&2>(D@#q|4ZbE0sTl(b}x@m50I-3tG_m(G@!;9<Viz9z;`LvB@VH;pL*>3H&%~ziLFKp?A{jm8^BOLOi7xL!1BLT`Nqjg$A!n%$4btgr^tGV58?u0z9aZ6ffdDUA-5>n3kyx8K8py0U8ptV91L(UG)3@at1;Etl>E@+3Ju4(hZv~cv)+4w)M7of@"
+RB_SHA = "7fa56cc0d58884119ada8cffb65e323574695ff4407c13abeb276bf164c61387"
+RBZ = "c-oCv`%~LU68_zPMF;9)tIi16JT_4_#~N@p)bdCHxm+FVQjMiCo><c8G$V``^S|HMBgqfqq_UMY()9F9KfmtQHeHsPA(c@y7Ivz&-6@1h%+5aDDM8URG}4y2pU<cx)1i!G83$x!GK$7Bn(+G0jw5(JU5_PA$FpFSt;;WYX~v<I#$v&5l|@4Dsek@&e<W=*?zBH$o}Yz>7uVtE%hR^kN>nxpN4lss-Bje$lk-2r4;Pp1fp2waXq(z?no}$bIl<pyA+lI!0a?hPGf9Pn1jI*SNf|22jPgQd)==m8wb#m}&J&3%ZvHX7sZKfO-@oWkPi0me{Clo-Qpn7TB$J{@r61{Z&?T_c7t&$%_b=)vN|;8D&5VPVh$4$Sdr_pz%=#mh#o=()$wVpxYJUO~T{<p02OFJ9m;?SWlD0B!Nze#-jo~hXJxM^@56w~T_mM>PYPukOHnM2eOFWw`QX}4B{Y)hX^!zz>8g_ZFj5P-|pOa&&-@QuW`FtsJR7hdvvmeRar9?*}VY1Ai!8ZN!p$CuruT+JMsq@m`fBVlaWm3k*IqU^Z<ji;h$*j;xiql9~%7rmgUBqP6ZMLJbcW&<xcCdN^7s0FYUZ%NqLi%MMJHcdz*okDAjs(J?D5b}0AJyUQV>y(W7$!1yCUCs4YOdi6s}DNC$^q|L_|+u%v)}&|e(IkepPc`JKyq;t%Sgr2c<(qQ6DjT_63VtF`C0(4a@Ik-F84&rJj`VltL!$^SqMeL5puCCU`RgfJ+)b#w$le8$S*V!iID?eWl>Vb@}M)xz0F$v;CN{1;sf$lY2l|Lr&!Y*Zh@cR=`P6>o98W}65CviG|}rQLAAl-4Ot?Mp%RZo`4ro?wjZu!gqtooJ5qlrjC}Q`^K#F76utdtTgYaYHz^0joh-<V^)z$*d>c$NbLzXKY|{Z<mANc>aSGfDoG_lB$!Q&vEArM-br-P|K%nJY80l=Jid0y|*pW}Y>Q3KGRK7-h))3%beuf?KE6QauFHNG0uu2jb=UJ!D$iTUz>k=`b(xV5O-_PmZN5C@-1%kCf(iOr2`X1fsi`d{z!IM2KYsNl1*H(>G<m9}P*22L*5F}J_C5x}(N*uRR;<Y-_2fEA1$~bhk3rC5#<!f#Ra8st~>g@UxHg41LD`H@O$C%Hl36z2pYY*n4uqslyU~z({Mc~Orj?~<P$ae2AKMpcZtx69((6=Opi_H{x8OXtO=e_U$=UA)VGG0FeVTBuv5w~(sOI?RR+2SBj*-+m@>dK=0BF#6rj{K)Da%hz0?48dS;+!zU0#cuZ$|mmacQiru&N7L3KdK)BaC}kmt+d}eep($Fq8#Ivv9-Agc6X=KslTaswLP!W)vvEw#3m$~x{F}AL?gJ{+k5@qtNz<I-;sb<hE`b);H{60C%1`+X{O6|A!&?^_P1E8#a3~Ps?Caj0c2AoGCIMwBxe@fWXA_+G=Tm1r^^CaVl{FUb%h;>y2u)us8Bi9U__LQ-ihxFSI9h>K^8V^pb#HnEFe!_$dJ1q?m5z?HUt&2qJ7Z_udGyd7NR2xYgnm>oTN#DejyG4UIJw~;P8bWVDrlfq{l<*i*n#2ylu$1io~~by4m{1%G(e2ajQ#P8(rXt1A6qoYL#``-L}WKFEVHZ7Xx3bB!Up?MyC3!3Ud`rWKn0XuvSE4&IiMWVGvsjb`-Q1UaRr*vYxU*LbmftMlI}9lPj!11h7C0;%y-%1He<OK8fN8_lKq|?&Rzn`va#Ze8L#cHczN^-SQ>WV!M{}Dx=Q0Bi)F`PPKsCpA|5EM48{GvqLy6NBc+&VY3x`y{nr@Jw*fpbTva9YJ2OX>cpJ+j<{Ydp%+MPl}Oazas>*`djB~&`+OFDI63WypFf>m^p3-;lmGVH-ooB@A}O(T-*r)w6<rfClnEo`1Jaet<!IEV_y0n^_4oIWU%o-Uwaelb;?~QDZ}*S(k9fJ>z614g8Q0`rk6!fp$E##kYlL{NH@rUn<<0Tib<Am_Z`cu;nIdtUgBI!DE;FPeCWD6Z;nmyz-eDW|<(64%_9RNf%*7z*b|h=#afgn!fkaU#Sb&Vca4@5>Hg+dLS~H`2K@%U<r|1%g)TlOC1Obw(veeC%)rkL{I(6Q&MlXMT`KFPFk0UcxX^IS4uop{quDakZ8t%6*doK>(Fn6_Mc_m<CPN%&16D>duhSv1}39j=UaN>&S9bUNi;Rem1sT>Mkc8%U+C3Ie7Y3O<e_vAFJ9&7W4g&b8272KuLj&)qExaf#xwX&|k<63l78enM8+CmLWE05*K#jehNLK)F;g=o^yr>?G~I_8oTtQX~m>^TAAsu;%pk}XyyPsA+bl!5k>n^(S%hPmjpLyj>*t{{$;b-7jdV*Ec(2584P0S>kO3E5W*Y_BOE)LB#%uU*MFWEqD(dVE(_7%34BS9Oh9)}2MQp^r!?pu}i|QKgzIU29Yii+;P2caii6<y+0(bJZ9>UaL{0>Jc`h$|{^K5kxR2H~0ZhOI?C+wlv&7MpoScNiHR990a`t<75oI5@}^;Z7~RrKK8D^Two|aIlsE@ou2ltPcF{Gi}S;a-X+g4Uh9Lxq%bYeLv-4^HqCeIFtq+xqcgbbp&Hbj6h2IjHY#*0zWaq>63(fl^s8qSIFuRYM_rah8ql78y|?GJw8OoPJ*?B-Emeh!*P7<07GS+|StEA&cE`<9fVW0FUUkmk<yH4|t8W8U*UaVTW^dr`tY`lf!v0|8z$YboU8F)LTEza^o-U>0J}h&lgy}G#KN39@NmXX9WO1h==`*qO{j$;}3|Wl?%Qm|f(69Ru)Xmb*R>lY(co}k+t?UNNdm9`0$L2O3w8b5|0<PG><^jCxcJb`Bkf-xJSl!`u-A5cqd^6~xgS*qNB;sY|ntEbyM5~Qyi`m*Rf8g;D$za;0)oHlqa@&6}B`>&Lx6r6lk301>)#r@r+mpP{RRKuUS>nc{>SL7q1_jW_&`KaLX9ml6a`l^(|F_CJ&K%wnr#o&E59_fOMkyJS)QIZQxcO%0jG}J>XR`tQ_8Z;Q6EJ4*l}~OTE-%in`{&2iC%4C4^aZ=Xz42}{8t(!P?19rHT#U;uVcu^)U=D_fIsp?mZShbs8JH6T3CqSGn|As+uV(h3p06ti<36%XGt=3`f&riPc|zhtP+J_)YphU*i?f3>!%DTtxp~-fpJpyTU(@!3Zjk43tMz{>nloM"
 RB = zlib.decompress(base64.b85decode(RBZ)).decode()
 
 
@@ -42,8 +45,8 @@ def sri(c):  # D1: the public sha384 SRI of the bytes `c` prints (sdk.js), or No
 
 
 bad = [] if hashlib.sha256(RB.encode()).hexdigest() == RB_SHA else ["embedded ruby != cw_setup.rb"]
-if LINK_FOR not in ("", "derek", "brandon"):
-    bad.append("LINK_FOR must be '', 'derek' or 'brandon'")
+if LINK_FOR not in ("", "derek", "brandon") or KEEP_PENDING not in ("", "true", "false"):
+    bad.append("LINK_FOR must be '', 'derek' or 'brandon'; KEEP_PENDING '', 'true' or 'false'")
 fe = q("docker exec chatwoot-rails-1 printenv FRONTEND_URL")
 if fe != "https://" + HOST:
     bad.append("FRONTEND_URL is %r: run cw_harden.py first" % fe)
@@ -75,8 +78,8 @@ if bad:
 if DRY:
     sys.exit("DRY RUN: nothing changed (ruby syntax OK; bot url would be %s)" % BOT_URL)
 try:
-    rc, out = sh("docker exec -i -e PRNM_LINK_FOR=%s -e PRNM_BOT_URL=%s chatwoot-rails-1 bundle exec rails runner -"
-                 % (link or "''", BOT_URL), 400, RB)
+    rc, out = sh("docker exec -i -e PRNM_LINK_FOR=%s -e PRNM_KEEP_PENDING=%s -e PRNM_BOT_URL=%s chatwoot-rails-1 bundle "
+                 "exec rails runner -" % (link or "''", KEEP_PENDING or "''", BOT_URL), 400, RB)
     if rc == 124:  # the runner outlives a killed `docker exec`: stop it so it cannot write the file after the cleanup
         print("runner timed out; stopping it:", sh("docker exec chatwoot-rails-1 pkill -f 'rails runner -'", 30))
 finally:  # bot token + webhook secret: read once, never left in the container
@@ -111,11 +114,14 @@ os.replace(ENVF + ".tmp", ENVF)
 print("wrote %s mode %o (token/secret not shown) | onboarding page %s (302 = closed)" % (ENVF, os.stat(ENVF).st_mode & 0o777,
       q("curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-Proto: https' http://127.0.0.1:3009/installation/onboarding")))
 print("reset tokens revoked this run (nobody can use an older link): %s" % (", ".join(o["revoked"]) or "none outstanding"))
+mf = ("he signs in at https://%s/app/login and Chatwoot makes him set up 2FA there (2FA is required for this account)"
+      % HOST if o.get("mfa_enforced") else "he turns on 2FA: Profile Settings > Security, enable two-factor")
 for e, k in lk:
     print("\n== ONE-TIME RESET LINK for %s = a credential. Hand it to him privately, now. It stays valid until used or "
-          "revoked (Chatwoot does not enforce the 6 h expiry). After he sets his password he turns on 2FA: Profile "
-          "Settings > Security, enable two-factor, scan the QR code, keep the backup codes (cw_status.py shows it per "
-          "founder). Then run cw_setup.py with LINK_FOR = \"\" to revoke any copy.\n%s" % (e, k))
-print("2FA available: %s | on for derek, brandon: %s" % (o.get("mfa_available"), o.get("mfa_on")))
+          "revoked (Chatwoot does not enforce the 6 h expiry). After he sets his password %s: scan the QR code, keep "
+          "the backup codes; only then the mobile app (it asks for the code). Then run cw_setup.py with LINK_FOR = \"\" "
+          "to revoke any copy.\n%s" % (e, mf, k))
+print("2FA available: %s | enforced: %s | on for derek, brandon: %s | keep chats with the bot when its webhook fails: "
+      "%s" % (o.get("mfa_available"), o.get("mfa_enforced"), o.get("mfa_on"), o.get("keep_pending")))
 print("DONE. Builds: VITE_CHATWOOT_WEBSITE_TOKEN=%s (public) VITE_CHATWOOT_SDK_SRI=%s (from the running image). "
       "EAST: east_widget.py reads the token from the DB." % (o["website_token"], sdk))

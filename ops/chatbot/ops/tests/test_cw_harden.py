@@ -238,6 +238,12 @@ check("plan names the version change and the migration", "4.16.2 -> 4.19.1 (db:c
 check("plan shows the lower widget throttles (conversations 2/min, messages 20/min, cookie-less loads 20/h)",
       "RATE_LIMIT_WIDGET_CONVERSATIONS: None -> '2'" in out and "RATE_LIMIT_WIDGET_MESSAGES: None -> '20'" in out
       and "RATE_LIMIT_WIDGET_LOAD: None -> '20'" in out)
+src_h, src_n = open(SCRIPT).read(), open(os.path.join(os.path.dirname(SCRIPT), "cw_nginx.py")).read()
+check("the load-throttle comment is true to 4.19.1 (Rack::Attack skips a junk cw_conversation, which still makes a "
+      "contact) and names the nginx zone that bounds contacts, at the rate cw_nginx.py really sets",
+      "a junk value is not counted and still makes a contact" in src_h and "prnm_wload zone (10/min)" in src_h
+      and "limit_req_zone $binary_remote_addr zone=prnm_wload:2m rate=10r/m;" in src_n
+      and "limit_req zone=prnm_wload burst=10 nodelay;" in src_n)
 check("plan: 3 2FA encryption keys generated at the change (none in DRY), never printed",
       "env ACTIVE_RECORD_ENCRYPTION_* (2FA): 3 generated at the change, into .env only, never printed" in out)
 check("no pull, stop, migrate or up in DRY", not [x for x in calls if x.startswith("docker pull") or "compose" in x])

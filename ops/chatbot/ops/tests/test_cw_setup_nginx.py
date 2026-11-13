@@ -4,7 +4,8 @@
 # cw_setup_stub.rb) and cw_nginx.py: subprocess.run is replaced by a fake box that answers their commands; paths
 # are redirected to a temp dir. Then the generated vhost runs in a throwaway local nginx in front of fake
 # Chatwoot/bot upstreams. Nothing touches docker, the live nginx, certbot or a server.
-import base64, hashlib, http.client, json, os, pwd, re, runpy, shutil, socket, ssl, subprocess, sys, tempfile, threading
+import base64, hashlib, http.client, json, os, pwd, re, runpy, shlex, shutil, socket, ssl, subprocess, sys, tempfile
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import StringIO
@@ -55,13 +56,14 @@ AR = {"ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": "P" * 32, "ACTIVE_RECORD_ENCRYPTIO
       "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": "S" * 32}  # what cw_harden.py puts in the rails env
 
 
-def setup_case(name, dry, public=True, resolve="3.222.110.146", runner_rc=0, link_for="", seed="", keys=3):
+def setup_case(name, dry, public=True, resolve="3.222.110.146", runner_rc=0, link_for="", seed="", keys=3, keep="",
+               old=False, seedkeep=False):
     c = H + "/setup-" + name
     shutil.rmtree(c, ignore_errors=True)
     os.makedirs(c)
     s = open(REPO + "/cw_setup.py").read()
     for a, b in [("DRY = True\n", "DRY = %s\n" % dry), ('BD = "/home/ubuntu/chatbot"', 'BD = "%s/chatbot"' % c),
-                 ('LINK_FOR = ""  #', 'LINK_FOR = "%s"  #' % link_for)]:
+                 ('LINK_FOR = ""  #', 'LINK_FOR = "%s"  #' % link_for), ('KEEP_PENDING = ""  #', 'KEEP_PENDING = "%s"  #' % keep)]:
         assert s.count(a) == 1, a
         s = s.replace(a, b)
     p = c + "/cw_setup.test.py"
@@ -97,7 +99,8 @@ def setup_case(name, dry, public=True, resolve="3.222.110.146", runner_rc=0, lin
                 raise subprocess.TimeoutExpired(cmd, timeout)
             if runner_rc:
                 return cp(runner_rc, "boom")
-            env = dict(os.environ, FRONTEND_URL="https://" + HOST, PRNM_TEST_DIR=c, PRNM_TEST_SEED=seed, **AR)
+            env = dict(os.environ, FRONTEND_URL="https://" + HOST, PRNM_TEST_DIR=c, PRNM_TEST_SEED=seed, **AR,
+                       PRNM_TEST_OLD="1" if old else "", PRNM_TEST_KEEP="1" if seedkeep else "")
             env.update((k, v.strip("'")) for k, v in re.findall(r"-e (\w+)=(\S*)", cmd))
             r = real_run(["ruby", "-r", STUB, "-"], input=input, capture_output=True, text=True, env=env)
             t = [x for x in r.stdout.splitlines() if x.startswith("PRNM_TEST ")]
@@ -164,8 +167,12 @@ check("real cw_setup.rb: push flags for both founders = creation, mention, assig
       "participating_conversation_new_message OFF", [v.get("push") for v in st.get("users", {}).values()] == [PUSH, PUSH]
       and "participating" not in out)
 check("2FA: keys checked by presence only (3/3, values never printed), available, nobody enrolled yet",
-      "2FA keys 3/3" in out and '"mfa_available": true' in out and "2FA available: True | on for derek, brandon: "
-      "[False, False]" in out and not any(v in out for v in AR.values()))
+      "2FA keys 3/3" in out and '"mfa_available": true' in out and "2FA available: True | enforced: True | on for derek, "
+      "brandon: [False, False]" in out and not any(v in out for v in AR.values()))
+check("real cw_setup.rb: 2FA required for the account (4.19 enforce_mfa, reported); KEEP_PENDING \"\" passed empty and "
+      "the account left at Chatwoot's default (open on bot failure)", st.get("account") == {"enforce_mfa": True,
+      "keep_pending": None} and '"mfa_enforced": true' in out and "-e PRNM_KEEP_PENDING='' " in runner_cmd(seen)[0]
+      and "keep chats with the bot when its webhook fails: False" in out)
 
 print("== cw_setup real, LINK_FOR = \"derek\", both founders hold an older outstanding token")
 c, code, out, seen, st = setup_case("derek", False, link_for="derek", seed="tokens")
@@ -179,8 +186,32 @@ check("Brandon's outstanding token revoked", u.get("brandon@poolrentalnearme.com
       and "revoked this run (nobody can use an older link): brandon@poolrentalnearme.com" in out)
 check("the warning is true to 4.19.1: no 6 h promise, revoke instruction", "stays valid until used or revoked" in out
       and 'LINK_FOR = ""' in out and "expire" not in out.replace("expiry", ""))
-check("the 2FA step it prints exists (keys set) and the per-founder state is reported (Derek on, Brandon off)",
-      "Profile Settings > Security, enable two-factor" in out and "on for derek, brandon: [True, False]" in out)
+check("the 2FA step it prints is the enforced one (sign in, Chatwoot asks for the setup; then the app) and the "
+      "per-founder state is reported (Derek on, Brandon off)", "he signs in at https://%s/app/login and Chatwoot makes him "
+      "set up 2FA there (2FA is required for this account): scan the QR code" % HOST in out and "only then the mobile app"
+      in out and "Profile Settings" not in out and "on for derek, brandon: [True, False]" in out)
+
+print("== cw_setup real on the 4.16.2 image (IMAGE = \"running\"): no enforce_mfa setting exists")
+c, code, out, seen, st = setup_case("old", False, link_for="derek", seed="tokens", old=True)
+check("runs (respond_to? guard), 2FA reported not enforced, and the printed step is the optional one",
+      code is None and "DONE." in out and '"mfa_enforced": false' in out and "enforced: False" in out
+      and "he turns on 2FA: Profile Settings > Security, enable two-factor: scan the QR code" in out
+      and st.get("account", {}).get("enforce_mfa") is None)
+
+print("== cw_setup KEEP_PENDING (Derek decides): \"true\" sets it, \"\" leaves it, \"false\" clears it")
+c, code, out, seen, st = setup_case("keep-true", False, keep="true")
+check("\"true\": the account keeps chats with the bot when its webhook fails, and says so",
+      st.get("account", {}).get("keep_pending") is True and "-e PRNM_KEEP_PENDING=true " in runner_cmd(seen)[0]
+      and '"keep_pending": true' in out and "keep chats with the bot when its webhook fails: True" in out)
+c, code, out, seen, st = setup_case("keep-unchanged", False, seed="tokens", seedkeep=True)
+check("\"\": an earlier choice (true) is left as it is", st.get("account", {}).get("keep_pending") is True
+      and "webhook fails: True" in out)
+c, code, out, seen, st = setup_case("keep-false", False, seed="tokens", seedkeep=True, keep="false")
+check("\"false\": cleared (Chatwoot opens the chat on bot failure)", st.get("account", {}).get("keep_pending") is False
+      and "webhook fails: False" in out)
+c, code, out, seen, st = setup_case("keep-bad", False, keep="yes")
+check("a bad KEEP_PENDING aborts before the runner", isinstance(code, str) and "KEEP_PENDING" in code
+      and not runner_cmd(seen))
 
 print("== cw_setup real, LINK_FOR = \"\" after the founders set passwords: revoke every printed copy")
 c, code, out, seen, st = setup_case("revoke", False, seed="tokens")
@@ -235,7 +266,9 @@ CO_UK = "subject=CN = poolrentalnearme.co.uk"
 
 def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches=False, verify_ok=True, have_cert=False,
                mode="proxied", rails_env=GOOD_ENV, sidekiq_env=GOOD_ENV, db="1|2|0", onb="0", signup="false",
-               extra_sites=(), shift=False, hairpin_src=EAST, edge_ray=True, upv="403", events="404 " * 11 + "429 " * 4):
+               extra_sites=(), shift=False, hairpin_src=EAST, edge_ray=True, upv="403", events="404 " * 11 + "429 " * 4,
+               loads="404 " * 11 + "429 " * 4, bot_up=False, bot_down="500", bot_up_code=None, writes="403",
+               contact_get="404", w20k="413"):
     c = H + "/nginx-" + name
     shutil.rmtree(c, ignore_errors=True)
     os.makedirs(c + "/sites-enabled")
@@ -323,8 +356,14 @@ def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches
             return cp(0, "HTTP/2 200\r\ncontent-type: application/json\r\n" + ("cf-ray: 9a1b-IAD\r\n" if edge_ray else ""))
         if "head -c 1100000 /dev/zero" in cmd:
             return cp(0, "413")
+        if "head -c 20000 /dev/zero" in cmd and "/api/v1/widget/messages" in cmd:
+            return cp(0, w20k)
         if cmd.startswith("for i in $(seq 15)") and "/api/v1/widget/events.json" in cmd:
             return cp(0, events)
+        if cmd.startswith("for i in $(seq 15)") and "/widget?website_token=prnm-verify&cw_conversation=x" in cmd:
+            return cp(0, loads)
+        if cmd == "ss -ltnH 'sport = :3120'":
+            return cp(0, "LISTEN 0 511 127.0.0.1:3120 0.0.0.0:*" if bot_up else "")
         if "-w '%{http_code}'" in cmd:
             if "--path-as-is -X POST" in cmd and "direct_uploads" in cmd:
                 return cp(0, upv)
@@ -338,13 +377,15 @@ def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches
                 return cp(0, "404")
             if "Host: chat.poolrentalnearme.com" in cmd:
                 return cp(0, "301")
-            if "/prnm-bot/hairpin-" in cmd:
+            if "/prnm-bot/hairpin-" in cmd:  # passes nginx: the bot's own 404, or nginx's code for a dead bot
                 open(log, "a").write('%s - - "POST /prnm-bot/%s HTTP/1.1" 404\n' % (hairpin_src, cmd.split("/prnm-bot/")[1]))
-                return cp(0, "404" if hairpin_src == EAST else "403")
+                return cp(0, "403" if hairpin_src != EAST else bot_up_code or "404" if bot_up else bot_down)
             if "/prnm-bot/" in cmd:
                 if "-X POST" not in cmd or ":443:%s " % LAN in cmd:
                     return cp(0, "403")
-                return cp(0, "502")  # local POST passes nginx; the bot is not deployed yet
+                return cp(0, bot_up_code or "401" if bot_up else bot_down)  # unsigned: the bot's 401; dead: nginx's
+            if re.search(r"/api/v1/widget/(contact|labels|conversations/set_custom_attributes)", cmd):
+                return cp(0, writes if " -X " in cmd else contact_get)
             if "/api/v1/widget/direct_uploads" in cmd or "-F a=b" in cmd:
                 return cp(0, "403")
             if "/cable" in cmd:
@@ -368,15 +409,25 @@ check("vhost: /prnm-bot/ allows EAST + 127.0.0.1 only; its zone is a runaway cei
       "allow 3.222.110.146;\n        allow 127.0.0.1;\n        deny all;" in out
       and "limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;" in out
       and "limit_req zone=prnm_bot burst=600 nodelay;" in out and out.count("limit_req_status 429;") == 1)
-check("vhost: per-visitor zones on the webhook amplifiers (1r/s) and all widget calls (10r/s)",
+check("vhost: per-visitor zones on the webhook amplifiers (1r/s), all widget calls (10r/s), /widget loads (10/min)",
       "zone=prnm_wamp:2m rate=1r/s;" in out and "zone=prnm_widget:2m rate=10r/s;" in out
-      and "location ~ ^/api/v1/widget/(events|labels|messages/[^/]+|conversations/(set|destroy)_custom_attributes)"
-      "(\\.|/|$) {" in out
-      and out.count("limit_req zone=prnm_widget burst=40 nodelay;") == 2)
-check("vhost: widget/storage 1m bodies, uploads prefix-blocked, storage GET only, multipart 403, sdk.js ACAO",
-      out.count("client_max_body_size 1m;") == 3 and "location ^~ /api/v1/widget/direct_uploads { return 403; }" in out
+      and "zone=prnm_wload:2m rate=10r/m;" in out
+      and "location ~ ^/api/v1/widget/(events|messages/[^/]+)(\\.|/|$) {\n        limit_req zone=prnm_wamp burst=10 nodelay;"
+      in out and "location ~ ^/widget(\\.|/|$) {\n        limit_req zone=prnm_wload burst=10 nodelay;" in out
+      and out.count("limit_req zone=prnm_widget burst=40 nodelay;") == 3)
+check("vhost: visitor contact / labels / custom-attribute writes denied (GET only), placed before the other widget "
+      "regex (first match wins)", "location ~ ^/api/v1/widget/(contact|labels|conversations/(set|destroy)_custom_attributes)"
+      "(\\.|/|$) {\n        limit_except GET { deny all; }" in out
+      and out.index("(contact|labels|") < out.index("(events|messages/") < out.index("location /api/v1/widget/ {"))
+check("vhost: a dead or hung bot answers 500 (Chatwoot retries 429/500 only; a 502 opens the chat silently), "
+      "nginx gives up at 3 s, under Chatwoot's 5 s", "error_page 502 503 504 =500 @prnm_bot_down;" in out
+      and "location @prnm_bot_down { return 500; }" in out and "proxy_read_timeout 3s;" in out
+      and "proxy_connect_timeout 2s;" in out)
+check("vhost: widget bodies 16k, storage/bot 1m, uploads prefix-blocked, storage GET only, multipart 403, sdk.js ACAO",
+      out.count("client_max_body_size 16k;") == 2 and out.count("client_max_body_size 1m;") == 2
+      and "location ^~ /api/v1/widget/direct_uploads { return 403; }" in out
       and "location ^~ /rails/active_storage/direct_uploads { return 403; }" in out
-      and "location ^~ /rails/active_storage/ {\n        limit_except GET { deny all; }" in out
+      and re.search(r"location \^~ /rails/active_storage/ \{[^\n]*\n        limit_except GET \{ deny all; \}", out)
       and "location = " not in out.replace("location = /packs/js/sdk.js", "")
       and 'if ($http_content_type ~* "^multipart/") { return 403; }' in out
       and 'add_header Access-Control-Allow-Origin "*" always;' in out)
@@ -416,10 +467,17 @@ check("full vhost written as zz-chat-prnm.conf (sorts after intl.conf)", os.path
       and "map $http_upgrade $prnm_cw_connection" in open(vh).read() and "location /prnm-bot/" in open(vh).read())
 check("order: stub reload, certbot, reload", [x.split()[0] for x in seen if x.startswith(("certbot", "nginx -t &&"))]
       == ["nginx", "certbot", "nginx"])
-check("verify ran every check (lan POST 403, local POST passes, hairpin from EAST, 413s, ACAO once)",
-      all(x in out for x in ("'bot POST from lan': '403'", "'bot POST local': '502'", "'bot POST hairpin': '404'",
-                              "'widget 1.1MB': '413'", "'storage 1.1MB': '413'", "'widget multipart': '403'",
-                              "hairpin source logged: ['3.222.110.146']", "sdk.js ACAO: ['access-control-allow-origin: *']")))
+check("verify ran every check (lan POST 403; bot not deployed yet: local and hairpin POST get nginx's 500, not 502; "
+      "hairpin from EAST, 413s, ACAO once)",
+      all(x in out for x in ("'bot POST from lan': '403'", "'bot POST local': '500'", "'bot POST hairpin': '500'",
+                              "'widget 20KB': '413'", "'storage 1.1MB': '413'", "'widget multipart': '403'",
+                              "bot listening: False", "hairpin source logged: ['3.222.110.146']",
+                              "sdk.js ACAO: ['access-control-allow-origin: *']")))
+wr = [x for x in seen if x.startswith("curl") and re.search(r"-X \w+ --resolve \S+ https://\S+/api/v1/widget/(contact|labels|conv)", x)]
+check("verify: PATCH contact, POST labels, POST set_custom_attributes -> 403; GET contact still reaches Chatwoot (404 "
+      "without a token); 15 junk-cookie /widget loads cut after the burst",
+      "'widget writes': '403 403 403'" in out and [x.split()[9] for x in wr] == ["PATCH", "POST", "POST"]
+      and "'contact GET': '404'" in out and "'loads x15': ['404'," in out and out.count("'429']") == 2)
 uv = [x.split("https://" + HOST, 1)[1] for x in seen if x.startswith("curl") and "--path-as-is -X POST" in x]
 check("verify: 6 upload-route variants (.json, slash, %2E, %2F, //./, storage .json) all 403; storage PUT 403; "
       "events flood cut after the burst", "'upload variants': '403 403 403 403 403 403'" in out and uv == [
@@ -462,6 +520,22 @@ check("exit 1, rolled back", code == 1 and "FAILED -> restoring" in out
 print("== cw_nginx real: widget events are not throttled")
 c, code, out, seen, keep = nginx_case("events", False, have_cert=True, events="404 " * 15)
 check("exit 1, rolled back", code == 1 and not os.path.exists(c + "/sites-enabled/zz-chat-prnm.conf"))
+for nm, kw, why in (("botup", dict(bot_up=True), "the bot already runs: its own 401/404 pass through"),):
+    print("== cw_nginx real: " + why)
+    c, code, out, seen, keep = nginx_case(nm, False, have_cert=True, **kw)
+    check("exit 0 DONE, 'bot POST local': '401', hairpin '404', bot listening: True", code == 0 and "DONE." in out
+          and "'bot POST local': '401'" in out and "'bot POST hairpin': '404'" in out and "bot listening: True" in out)
+for nm, kw, why in (("bot502", dict(bot_down="502"), "a dead bot gets nginx's 502 (Chatwoot would open the chat silently)"),
+                    ("bot504", dict(bot_down="504"), "a hung bot gets 504"),
+                    ("botup500", dict(bot_up=True, bot_up_code="500"), "the bot listens but answers 500 (hung)"),
+                    ("writes", dict(writes="204"), "a visitor can still write contact / labels / custom attributes"),
+                    ("contactget", dict(contact_get="403"), "GET contact is blocked too (the widget needs it)"),
+                    ("loads", dict(loads="404 " * 15), "junk-cookie /widget loads are not throttled"),
+                    ("w20k", dict(w20k="200"), "a 20 KB widget message still reaches Chatwoot")):
+    print("== cw_nginx real: " + why)
+    c, code, out, seen, keep = nginx_case(nm, False, have_cert=True, **kw)
+    check("exit 1, rolled back", code == 1 and "FAILED -> restoring" in out
+          and not os.path.exists(c + "/sites-enabled/zz-chat-prnm.conf"))
 print("== cw_nginx real: no cf-ray through the edge while DNS = \"proxied\"")
 c, code, out, seen, keep = nginx_case("edge", False, have_cert=True, edge_ray=False)
 check("still DONE (origin verified), with a Cloudflare WARN", code == 0 and "WARN: check Cloudflare" in out)
@@ -509,6 +583,12 @@ check("2FA: available with all 3 keys, fingerprint = cw_harden.py's formula, key
 check("contacts count, D3 label counts, bot-failure opens, reset-token flag, upload limit row are queried",
       all(any(k in x for x in seen) for k in ("from contacts", "'handoff-capped'", "error with the agent bot",
                                               "reset_password_token is not null", "MAXIMUM_FILE_UPLOAD_SIZE")))
+check("founder alerts are counted from the bot's @mention notes (visitors can preset labels, not write notes); the "
+      "account's 2FA enforcement and keep-pending setting and the vhost's round-3 rules are shown",
+      "founder alerts = bot notes that @mention Derek and Brandon" in out and "labels do not prove an alert" in out
+      and "last 5 founder alerts" in out and any("settings->>" in x and "enforce_mfa" in x and "keep_pending_on_bot_failure" in x for x in seen)
+      and "chat vhost has: load zone False | widget contact/labels read-only False | bot down -> 500 False" in out)
+STATUS_SQL = [shlex.split(x)[-1] for x in seen if " psql -U postgres -d chatwoot_production -AtF " in x]
 check("D1: container sdk.js SRI printed; :3009 and public copies compared", "container file: %s (%d bytes)" % (SDK_SRI, len(SDK))
       in out and "served on :3009: same | public: same" in out and "need exactly one '*'): ['access-control-allow-origin: *']" in out)
 code, out, seen = status_case("ok", 0.0, public_sdk=SDK + b"stale")
@@ -516,11 +596,62 @@ check("disk OK below the threshold; a stale public copy is shown with its own SR
       and "public: sha384-" in out and "(%d bytes) (a public copy" % (len(SDK) + 5) in out)
 
 
+def real_pg_status():
+    """Every query cw_status.py runs, against the 4.19.1 columns it reads (tests/fixtures/cw_status_schema.sql) in a
+    throwaway PostgreSQL 16: they all run, and the founder-alert count ignores visitor-set labels and customer text."""
+    bins = "/usr/lib/postgresql/16/bin"
+    print("== cw_status queries in a real PostgreSQL (%s)" % bins)
+    if not os.path.exists(bins + "/initdb") or os.geteuid() != 0:
+        return print("  skip: needs root (to run initdb as ubuntu) and PostgreSQL 16 binaries")
+    d = tempfile.mkdtemp(prefix="prnm-pg-status-")
+    os.chmod(d, 0o777)
+    port = "55438"
+
+    def u(c):
+        return real_run(["runuser", "-u", "ubuntu", "--", "bash", "-c", c], capture_output=True, text=True)
+
+    def q(x, db="chatwoot_production"):
+        return u("psql -h %s -p %s -U postgres -d %s -v ON_ERROR_STOP=1 -AtF ' | ' -c %s" % (d, port, db, shlex.quote(x)))
+
+    try:
+        u("%s/initdb -D %s/data -U postgres --auth=trust >/dev/null" % (bins, d))
+        u("%s/pg_ctl -D %s/data -o \"-k %s -p %s -c listen_addresses=''\" -w start >/dev/null" % (bins, d, d, port))
+        q("create database chatwoot_production", "postgres")
+        r = q(open(os.path.join(REPO, "tests", "fixtures", "cw_status_schema.sql")).read())
+        ago = "now() - interval '%s'"
+        r2 = q("insert into conversations (display_id, status, priority, created_at) values (1, 2, 3, now()), (2, 0, null, "
+               "now()), (3, 0, null, now() - interval '3 days'); insert into tags (name) values ('handoff'), ('urgent'); "
+               "insert into taggings (tag_id, taggable_type, taggable_id, context, created_at) values (1, 'Conversation', 1, "
+               "'labels', now()), (2, 'Conversation', 1, 'labels', now()); insert into messages (content, conversation_id, "
+               "message_type, private, sender_type, created_at) values ('see [@x](mention://user/1/x)', 1, 0, false, "
+               "'Contact', now()), ('Handoff [@Derek Bowen](mention://user/1/Derek%%20Bowen)', 2, 1, true, 'AgentBot', %s), "
+               "('Already flagged earlier in this chat', 2, 1, true, 'AgentBot', now()), ('[@Brandon Elias]"
+               "(mention://user/2/Brandon%%20Elias)', 3, 1, true, 'AgentBot', %s)" % (ago % "2 hours", ago % "3 days"))
+        res = [q(x) for x in STATUS_SQL]
+        bad = [(x[:60], r.stderr.strip()[-160:]) for x, r in zip(STATUS_SQL, res) if r.returncode or r.stderr.strip()]
+        n = open(REPO + "/cw_status.py").read().count("\nsql(")
+        check("all %d cw_status.py queries (of %d) run on the 4.19.1 columns%s" % (len(STATUS_SQL), n, (": %s" % bad) if bad
+              else ""), r.returncode == r2.returncode == 0 and len(STATUS_SQL) == n > 15 and not bad)
+        row = dict(zip(STATUS_SQL, (x.stdout.strip() for x in res)))
+        al = [v for k, v in row.items() if "count(distinct conversation_id)" in k]
+        last = [v for k, v in row.items() if "group by c.id order by 2 desc limit 5" in k]
+        check("founder alerts: 1 in 24 h, 2 in 7 d, 2 notes in 2 chats; the visitor-labelled chat 1 and its customer "
+              "text with mention markup are not counted (%s; last alerts %s)" % (al, last),
+              al == ["1 | 2 | 2 | 2"] and last and [x.split(" | ")[0] for x in last[0].splitlines()] == ["2", "3"])
+    finally:
+        u("%s/pg_ctl -D %s/data -m immediate -w stop >/dev/null 2>&1" % (bins, d))
+        shutil.rmtree(d, ignore_errors=True)
+
+
+real_pg_status()
+
+
 # ------------------------------------------------------------------ the vhost itself, in a real local nginx
 class Up(BaseHTTPRequestHandler):  # fake Chatwoot (rack-cors style ACAO on /packs) and fake bot (401 unless signed)
     seen = []
     fired = []  # webhooks fake Chatwoot posted for widget events (AgentBotListener#webwidget_triggered), with status
     hook = None  # (port, ssl context): where fake Chatwoot posts them, by the hairpin source 127.0.0.3
+    hang = 0  # seconds the fake bot sleeps before answering a POST (a hung bot)
 
     def log_message(self, *a):
         pass
@@ -531,6 +662,8 @@ class Up(BaseHTTPRequestHandler):  # fake Chatwoot (rack-cors style ACAO on /pac
             self.rfile.read(n)
         Up.seen.append({"port": self.server.server_port, "path": self.path, "h": {k.lower(): v for k, v in self.headers.items()}})
         bot = self.server.server_port == BOT_PORT
+        if bot and self.command == "POST" and Up.hang:
+            time.sleep(Up.hang)
         if not bot and self.command == "POST" and self.path.startswith("/api/v1/widget/events") and Up.hook:
             try:  # one agent-bot webhook per widget event, as Chatwoot does
                 w = http.client.HTTPSConnection("127.0.0.1", Up.hook[0], context=Up.hook[1], timeout=10,
@@ -544,8 +677,11 @@ class Up(BaseHTTPRequestHandler):  # fake Chatwoot (rack-cors style ACAO on /pac
         if self.path.startswith("/packs/") and self.headers.get("Origin"):
             self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", "2")
-        self.end_headers()
-        self.wfile.write(b"ok")
+        try:
+            self.end_headers()
+            self.wfile.write(b"ok")
+        except (BrokenPipeError, ConnectionResetError):  # the hung-bot case: nginx gave up at 3 s
+            pass
 
     do_GET = do_POST = do_PUT = do_PATCH = handle_one
 
@@ -561,8 +697,9 @@ def free_port():
 BOT_PORT = None
 
 
-def old_limits(v):  # the round-1 limits: one 30r/s bot bucket, no per-visitor zones (control for the flood check)
+def old_limits(v):  # round 1: one 30r/s bot bucket, no per-visitor zones, no bot-down mapping (the controls)
     v = v.replace("rate=300r/s", "rate=30r/s").replace("burst=600", "burst=60")
+    v = v.replace("        error_page 502 503 504 =500 @prnm_bot_down;\n", "")
     return re.sub(r"\n *limit_req zone=prnm_w\w+ burst=\d+ nodelay;", "", v)
 
 
@@ -599,9 +736,16 @@ def real_nginx():
     check("nginx -t accepts the vhost (http-level map + limit_req_zone in the included file)", r.returncode == 0)
     if r.returncode:
         return print(r.stderr[-800:])
-    servers = [ThreadingHTTPServer(("127.0.0.1", port), Up) for port in (up, BOT_PORT)]
-    for srv in servers:
+    def serve(port):
+        srv = ThreadingHTTPServer(("127.0.0.1", port), Up)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
+        return srv
+
+    def bot_down():  # nothing listens on the bot port any more (pm2 restart, crash)
+        servers[1].shutdown()
+        servers[1].server_close()
+
+    servers = [serve(up), serve(BOT_PORT)]
     ctx = ssl._create_unverified_context()
     Up.hook = (p443, ctx)
 
@@ -680,9 +824,11 @@ def real_nginx():
         got = [req("POST", p, b"{}", {"Content-Type": "application/json"})[0] for p in upv]
         check("every Rails-routable variant of both upload routes -> 403, none reaches Chatwoot: %s" % sorted(set(got)),
               got == [403] * len(upv) and not [x for x in Up.seen if "direct_uploads" in x["path"]])
-        check("widget JSON 1.1 MB -> 413, 20 KB -> proxied", req("POST", "/api/v1/widget/messages", b"x" * 1100000,
-              {"Content-Type": "application/json"})[0] == 413 and req("POST", "/api/v1/widget/messages", b"x" * 20000,
-              {"Content-Type": "application/json"})[0] == 200)
+        check("widget JSON 20 KB -> 413 (16k: the bot reads 1,500 chars), 15 KB -> proxied; message update the same",
+              req("POST", "/api/v1/widget/messages", b"x" * 20000, {"Content-Type": "application/json"})[0] == 413
+              and req("POST", "/api/v1/widget/messages", b"x" * 15000, {"Content-Type": "application/json"})[0] == 200
+              and req("PATCH", "/api/v1/widget/messages/9", b"x" * 20000, src="127.0.0.11")[0] == 413
+              and req("POST", "/api/v1/widget/conversations", b"x" * 20000)[0] == 413)
         n0 = len(Up.seen)
         check("active storage: PUT 1.1 MB -> 413, PUT 100 KB / POST -> 403 (never proxied), GET disk + blob -> proxied",
               req("PUT", "/rails/active_storage/disk/k/f", b"x" * 1100000)[0] == 413
@@ -708,11 +854,33 @@ def real_nginx():
         ev = [req("POST", "/api/v1/widget/events.json", b"{}", src="127.0.0.5")[0] for _ in range(15)]
         check("widget events: one visitor gets 10 + 1, then 429 (%s)" % ev, 429 not in ev[:10] and ev[-1] == 429)
         check("widget events: another visitor is not affected", req("POST", "/api/v1/widget/events", b"{}", src="127.0.0.6")[0] == 200)
-        lb = [req("POST", "/api/v1/widget/labels", b"{}", src="127.0.0.7")[0] for _ in range(15)]
-        ca = [req("POST", "/api/v1/widget/conversations/set_custom_attributes/", b"{}", src="127.0.0.8")[0] for _ in range(15)]
+        n0 = len(Up.seen)
+        wr = [("PATCH", "/api/v1/widget/contact"), ("PUT", "/api/v1/widget/contact"), ("PATCH", "/api/v1/widget/contact.json"),
+              ("PATCH", "/api/v1/widget/contact/set_user"), ("POST", "/api/v1/widget/contact/destroy_custom_attributes"),
+              ("POST", "/api/v1/widget/contact?_method=PATCH"), ("PATCH", "/api/v1/widget//contact"),
+              ("PATCH", "/api/v1/widget/%63ontact"), ("PATCH", "/api/v1//widget/./contact"),
+              ("PATCH", "/api/v1/widget/x/../contact?website_token=x"), ("POST", "/api/v1/widget/labels"),
+              ("POST", "/api/v1/widget/labels.json"), ("DELETE", "/api/v1/widget/labels/urgent"),
+              ("POST", "/api/v1/widget/%6Cabels"), ("POST", "/api/v1/widget/conversations/set_custom_attributes"),
+              ("POST", "/api/v1/widget/conversations/set_custom_attributes/"),
+              ("POST", "/api/v1/widget/conversations/destroy_custom_attributes.json")]
+        got = [req(m, x, b'{"avatar_url":"https://example.com/15mb.png","label":"handoff"}',
+                   {"Content-Type": "application/json"}, src="127.0.0.7")[0] for m, x in wr]
+        check("visitor writes (contact avatar_url/set_user, labels add/remove, chat attributes; encoded, //, ./, ../, "
+              "_method variants) -> 403, none reaches Chatwoot: %s" % sorted(set(got)),
+              got == [403] * len(wr) and len(Up.seen) == n0)
+        check("GET contact (what the widget itself calls) still reaches Chatwoot",
+              req("GET", "/api/v1/widget/contact?website_token=x", src="127.0.0.7")[0] == 200
+              and Up.seen[-1]["path"] == "/api/v1/widget/contact?website_token=x")
         mu = [req("PATCH", "/api/v1/widget/messages/12.json", b"{}", src="127.0.0.10")[0] for _ in range(15)]
-        check("the other webhook amplifiers (labels, set_custom_attributes/, message update) are throttled the same way",
-              429 not in lb[:10] + ca[:10] + mu[:10] and lb[-1] == ca[-1] == mu[-1] == 429)
+        check("message update (a webhook amplifier) is throttled like events (%s)" % mu, 429 not in mu[:10] and mu[-1] == 429)
+        ld = [req("GET", ("/widget?website_token=t&cw_conversation=junk", "/widget.json?cw_conversation=x", "/widget/",
+                          "/%77idget?x=1")[i % 4], src="127.0.0.12")[0] for i in range(15)]
+        check("/widget loads with a junk cw_conversation (each would make a contact; Rack::Attack skips them): one "
+              "visitor 10 + 1, then 429, whatever the spelling (%s)" % ld, 429 not in ld[:11] and ld[11:] == [429] * 4)
+        check("... another visitor still loads it; /widget_tests and /widgets are not in that zone",
+              req("GET", "/widget?website_token=t", src="127.0.0.13")[0] == 200
+              and [req("GET", x, src="127.0.0.12")[0] for x in ("/widget_tests", "/widgets", "/widgetx")] == [200] * 3)
         wg = [req("GET", "/api/v1/widget/messages?website_token=x", src="127.0.0.9")[0] for _ in range(100)]
         check("widget API: a page's 40-call burst passes, a scripted 100 is cut (%d x 429)" % wg.count(429),
               429 not in wg[:40] and wg.count(429) > 10)
@@ -726,6 +894,19 @@ def real_nginx():
         c80.request("GET", "/x?y=1", headers={"Host": HOST})
         r80 = c80.getresponse()
         check(":80 -> 301 https", r80.status == 301 and r80.getheader("Location") == "https://%s/x?y=1" % HOST)
+        Up.hang = 4
+        t0 = time.time()
+        st = req("POST", "/prnm-bot/webhook", b"{}", {"X-Chatwoot-Signature": "sha256=x"}, src="127.0.0.3")[0]
+        el = time.time() - t0
+        Up.hang = 0
+        check("bot hung: nginx gives up at 3 s (< Chatwoot's 5 s) and answers 500, which Chatwoot retries (%d in %.1f s)"
+              % (st, el), st == 500 and 2.5 < el < 4.5)
+        bot_down()
+        dn = [req("POST", "/prnm-bot/webhook", b"{}", src=x)[0] for x in ("127.0.0.3", "127.0.0.1", "127.0.0.2")]
+        check("bot down (restart, crash): hairpin and local POST -> 500, not 502; other addresses still 403 (%s)" % dn,
+              dn == [500, 500, 403])
+        servers[1] = serve(BOT_PORT)
+        check("bot back: the next webhook reaches it", req("POST", "/prnm-bot/webhook", b"{}", src="127.0.0.3")[0] == 401)
     finally:
         stop()
     open(d + "/vhost.conf", "w").write(old_limits(v))
@@ -735,6 +916,11 @@ def real_nginx():
         check("control, round-1 limits (30r/s bot bucket, no visitor zones): the same flood (%d events, %d webhooks) "
               "429s %d of %d real webhooks" % (len(res), len(fired), sig.count(429), len(sig)),
               sig.count(429) > 0 and 429 not in res)
+        time.sleep(2.1)  # let the 30r/s bot bucket drain
+        bot_down()
+        st = req("POST", "/prnm-bot/webhook", b"{}", src="127.0.0.3")[0]
+        check("control, no error_page mapping: the same dead bot gives 502 (Chatwoot: no retry, chat opened silently)",
+              st == 502)
     finally:
         stop()
         for srv in servers:

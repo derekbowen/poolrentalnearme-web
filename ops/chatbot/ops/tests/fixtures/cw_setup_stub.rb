@@ -1,8 +1,10 @@
 # Test double for tests/test_cw_setup_nginx.py: the handful of Chatwoot/ActiveRecord calls cw_setup.rb makes,
 # in memory, so the real cw_setup.rb runs under plain ruby (ruby -r ./cw_setup_stub.rb cw_setup.rb).
 # PRNM_TEST_SEED: "" fresh install | "tokens" both founders exist with an outstanding reset token | "foreign" an
-# unrelated account exists. PRNM_TEST_DIR: where /tmp/prnm_bot.json is redirected. At exit it prints
-# "PRNM_TEST <json>" with the resulting state (token digests, flags, labels, upload limit).
+# unrelated account exists. PRNM_TEST_KEEP=1: the seeded account already keeps chats pending on bot failure.
+# PRNM_TEST_OLD=1: the 4.16.2 image (Account has no enforce_mfa setting). PRNM_TEST_DIR: where /tmp/prnm_bot.json is
+# redirected. At exit it prints "PRNM_TEST <json>" with the resulting state (token digests, flags, labels, upload
+# limit, account settings).
 require 'json'
 require 'securerandom'
 require 'digest'
@@ -13,6 +15,7 @@ end
 
 class Object
   def present? = !(nil? || (respond_to?(:empty?) && empty?))
+  def try(m, *a) = respond_to?(m) ? public_send(m, *a) : nil # ActiveSupport
 end
 
 DB = Hash.new { |h, k| h[k] = [] }
@@ -73,7 +76,17 @@ class Rel
 end
 
 class Account < Rec
+  OLD = ENV['PRNM_TEST_OLD'] == '1'
   def inboxes = Rel.new(Inbox, account: self)
+  def enforce_mfa? = Chatwoot.mfa_enabled? && @a[:enforce_mfa] == true # as 4.19.1 app/models/account.rb
+  undef_method :enforce_mfa? if OLD
+
+  def respond_to_missing?(m, p = false) = !(OLD && m.to_s.start_with?('enforce_mfa'))
+
+  def method_missing(m, *a)
+    raise NoMethodError, "4.16.2 Account has no #{m}" if OLD && m.to_s.start_with?('enforce_mfa')
+    super
+  end
 end
 
 module Chatwoot # as config/application.rb: 2FA exists only when all three encryption keys are in the env
@@ -141,6 +154,7 @@ end
 case ENV['PRNM_TEST_SEED'].to_s
 when 'tokens'
   acct = Account.create!(name: 'Pool Rental Near Me', locale: 'en')
+  acct.keep_pending_on_bot_failure = true if ENV['PRNM_TEST_KEEP'] == '1'
   [['Derek Bowen', 'derek@poolrentalnearme.com', SuperAdmin], ['Brandon Elias', 'brandon@poolrentalnearme.com', User]].each do |n, e, k|
     u = k.create!(name: n, email: e)
     u.update_columns(reset_password_token: 'old-digest-' + e, reset_password_sent_at: Time.now,
@@ -157,8 +171,10 @@ at_exit do
                 push: NotificationSetting.find_by(user_id: u.id)&.selected_push_flags }]
   end.to_h
   w = Channel::WebWidget.table.first
+  ac = Account.find_by(name: 'Pool Rental Near Me')
   puts "PRNM_TEST #{{ users: users, feature_flags: w&.feature_flags, labels: Label.table.map(&:title),
                       max_upload: GlobalConfigService.load('MAXIMUM_FILE_UPLOAD_SIZE', 40),
                       onboarding_deleted: Redis::Alfred.deleted,
-                      bot_inbox_status: AgentBotInbox.table.first&.status }.to_json}"
+                      bot_inbox_status: AgentBotInbox.table.first&.status,
+                      account: ac && { enforce_mfa: ac.a[:enforce_mfa], keep_pending: ac.a[:keep_pending_on_bot_failure] } }.to_json}"
 end

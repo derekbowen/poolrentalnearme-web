@@ -22,6 +22,7 @@ LBL = ("select g.name, count(*) filter (where t.created_at > now() - interval '1
        "t.created_at > now() - interval '7 days'), count(*) from taggings t join tags g on g.id=t.tag_id where "
        "t.taggable_type='Conversation' and t.context='labels' and g.name in ('handoff','urgent','handoff-capped',"
        "'handoff-overflow') group by 1 order by 1")
+ALERT = "private and sender_type = 'AgentBot' and content like '%(mention://user/%'"  # only a founder alert has one
 
 
 def sh(c, t=60):
@@ -86,15 +87,19 @@ sql("contacts (total | new 24 h | new 7 d | contact_inboxes): each /widget load 
 print("== conversations and handoffs")
 sql("conversations by status (0 open, 1 resolved, 2 pending/bot, 3 snoozed)",
     "select status, count(*) from conversations group by 1 order by 1")
-sql("labels applied (label | 24 h | 7 d | all): handoff = founders alerted; capped/overflow = D3 limit hit, no alert", LBL)
-sql("bot-failure opens (24 h | 7 d): webhook failed, Chatwoot opened the chat and sent NO push; check the bot",
+sql("labels applied (label | 24 h | 7 d | all): capped/overflow = D3 limit hit, no alert. A visitor can preset any label "
+    "on his own new chat (4.19.1 widget messages#create), so labels do not prove an alert: the next line does", LBL)
+sql("founder alerts = bot notes that @mention Derek and Brandon (notes 24 h | 7 d | all | chats); visitors cannot write "
+    "notes", "select count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at > "
+    "now() - interval '7 days'), count(*), count(distinct conversation_id) from messages where " + ALERT)
+sql("bot-failure opens (24 h | 7 d): webhook failed past Chatwoot's retries, chat opened with NO push; check the bot "
+    "(always 0 while the account keeps chats with the bot on failure: cw_setup.py KEEP_PENDING, accounts row above)",
     "select count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at > now() - "
     "interval '7 days') from messages where message_type=2 and content='Conversation was marked open by system due to "
     "an error with the agent bot.'")
-sql("last 5 handoffs (conv # | created | priority 3=urgent | assignee | status)",
-    "select c.display_id, c.created_at, c.priority, c.assignee_id, c.status from conversations c join taggings t on "
-    "t.taggable_type='Conversation' and t.taggable_id=c.id and t.context='labels' join tags g on g.id=t.tag_id and "
-    "g.name='handoff' order by c.created_at desc limit 5")
+sql("last 5 founder alerts (conv # | last alert | priority 3=urgent | assignee | status)",
+    "select c.display_id, max(m.created_at), c.priority, c.assignee_id, c.status from conversations c join messages m on "
+    "m.conversation_id=c.id and m." + ALERT.replace(" and ", " and m.") + " group by c.id order by 2 desc limit 5")
 sql("notifications last 7 d (user | type 1=new conversation 4=mention 2=assigned 3/5=new message | n)",
     "select user_id, notification_type, count(*) from notifications where created_at > now() - interval '7 days' "
     "group by 1, 2 order by 1, 2")
@@ -143,7 +148,9 @@ gb = vfs.f_bavail * vfs.f_frsize / 2**30
 print(("DISK ALERT: %.1f GB free on / (alert under %.1f GB): find what grew below" if gb < ALERT_GB else
        "disk OK: %.1f GB free on / (alert under %.1f GB)") % (gb, ALERT_GB))
 print("MB used:", sh("du -sm /var/lib/docker/volumes/chatwoot_cw_storage/_data /var/lib/docker/volumes/chatwoot_cw_pg/_data "
-                     "/home/ubuntu/.pm2/logs /var/log/nginx %s/data /home/ubuntu/chatwoot-backups 2>/dev/null | tr '\\n' ' '" % B))
+                     "/var/lib/docker/containers /home/ubuntu/.pm2/logs /var/log/nginx %s/data /home/ubuntu/chatwoot-backups "
+                     "2>/dev/null | tr '\\n' ' '" % B), "| docker log driver (containers = their logs):",
+      sh("docker info --format '{{.LoggingDriver}}'"))
 print(sh("docker system df --format '{{.Type}} {{.Size}} (reclaimable {{.Reclaimable}})' | tr '\\n' ';'"))
 print(sh("docker stats --no-stream --format '{{.Name}} {{.MemUsage}} {{.CPUPerc}}'"))
 print("== backups:", sh("ls -1 /home/ubuntu/chatwoot-backups 2>&1 | tail -5"))

@@ -23,7 +23,7 @@ This release ships the PRNM chat launcher (`#prnm-chat-launcher`) to the marketp
 **Build tree matches the repo.** `/home/ubuntu/build` matches the repo before the change (`a0761c8`):
 - `AppRouter.jsx` md5 `c30d1847…` and `server/csp.js` md5 `f8c3beae…` are pinned.
 - `src/components/ChatwootWidget/` does not exist.
-- The 5 files the widget imports are byte-identical to the repo: `routeConfigurationContext.js`, `ui.duck.js`, `useMediaQuery.js`, `util/routes.js` and `routeConfiguration.js`. All 11 route names that the hide rules use exist.
+- The 5 files the widget imports are byte-identical to the repo: `routeConfigurationContext.js`, `ui.duck.js`, `useMediaQuery.js`, `util/routes.js` and `routeConfiguration.js`. All 12 route names that the hide rules use exist. The probe checked 11; `PayoutDashboardPage`, added since, is in the same `routeConfiguration.js`, which is md5-pinned byte-identical to the box.
 - React is 18.2, so `useSyncExternalStore` is available.
 
 **Where the build reads `VITE_*` from: only the build tree's `.env`.**

@@ -300,3 +300,65 @@ test('round 3: a 1,500-char "x?x?…" message is one text, not 750 questions: a 
     engine.matcher.match = orig;
   }
 });
+
+// ------------------------------------------------------------------ round-3 review (engine): host-only answers (wrong.tsv, E2E B04)
+test('round 3: guest questions on a first message never get a host answer (calendar, payouts); "does it cost anything to list" is the free-listing entry', () => {
+  const hostIds = (ids) => ids.filter((id) => engine.hostOnly.has(id));
+  // must-not-answer: a guest search / booking question with no role known
+  for (const t of [
+    'my kids are dying to go swimming this weekend, any pools open saturday?',
+    'are any pools open this saturday',
+    'are any pools open saturday',
+    'do you have pools in canada',
+    'do you have pools in the uk',
+    'is the pool open on sunday',
+    'what time does the pool open',
+    'where is my money',
+    'is my address public',
+  ]) {
+    const tr = talk(engine, [t]).transcript[0];
+    assert.deepEqual(hostIds(answeredIn(tr)), [], `${t}: answered with host copy`);
+    assert.ok(!answeredIn(tr).includes('pay-all-in-price') || t !== 'does it cost anything to list');
+  }
+  for (const t of ['are any pools open this saturday', 'are any pools open saturday', 'do you have pools in canada'])
+    assert.deepEqual(answeredIn(talk(engine, [t]).transcript[0]), ['booking-how-to-book'], t);
+  assert.deepEqual(answeredIn(talk(engine, ['does it cost anything to list']).transcript[0]), ['host-pricing-01']);
+  assert.ok(!answeredIn(talk(engine, ['does it cost anything to list']).transcript[0]).includes('pay-all-in-price'));
+  // a host question with no host words: the role first, then the host answer
+  const r = talk(engine, ['how long until it goes live', { button: 'role:host' }]);
+  assert.ok(r.transcript[0].events.some((e) => e.type === 'clarify' && e.kind === 'role'));
+  assert.deepEqual(answeredIn(r.transcript[1]), ['host-listing-06']);
+  // and a guest who says so never gets it
+  const g = talk(engine, ['do you have pools in the uk', { button: 'role:swimmer' }]);
+  assert.deepEqual(hostIds([...answeredIn(g.transcript[1]), ...offeredIn(g.transcript[1])]), []);
+  // a host who says so in words is answered outright
+  for (const [t, id] of [
+    ['how do i list my pool', 'host-listing-01'],
+    ['when do i get paid', 'payouts-02'],
+    ['can i charge more on weekends', 'host-pricing-03'],
+    ['how do i block days', 'host-pricing-05'],
+    ['why cant i publish', 'host-listing-05'],
+    ['change my hourly rate', 'host-pricing-02'],
+  ])
+    assert.deepEqual(answeredIn(talk(engine, [t]).transcript[0]), [id], t);
+});
+
+test('round 3: every host-entry phrasing on a first message is its own answer (host words) or the role question, never another answer; no guest phrasing gets host copy', () => {
+  const host = new Set(['creating a host listing', 'host pricing and calendars', 'payouts']);
+  const wrong = [];
+  for (const e of entries) {
+    for (const t of [e.question, ...e.variants]) {
+      const tr = talk(engine, [t]).transcript[0];
+      const ans = answeredIn(tr);
+      if (host.has(e.category)) {
+        const askedRole = tr.events.some((x) => x.type === 'clarify' && x.kind === 'role');
+        if (!ans.includes(e.id) && !askedRole) wrong.push(`${e.id}: "${t}" -> ${ans.join(',') || 'no answer, no role question'}`);
+        // an outright host answer only when the words say they host
+        for (const id of ans) if (engine.roleUnknownFor({ role: null }, id, t)) wrong.push(`ungated ${id}: "${t}"`);
+      } else {
+        for (const id of ans) if (engine.hostOnly.has(id)) wrong.push(`${e.id}: "${t}" -> host answer ${id}`);
+      }
+    }
+  }
+  assert.deepEqual(wrong, []);
+});

@@ -133,9 +133,24 @@ const CATEGORY_SLUG = {
 // calendar answer, "do you have pools in canada" the host payout one), plus these named ones.
 const HOST_CATEGORIES = new Set(['creating a host listing', 'host pricing and calendars', 'payouts']);
 const HOST_CONTEXT_ENTRIES = new Set(['host-pricing-04', 'host-pricing-09', 'host-pricing-01', 'host-listing-06', 'host-listing-08']);
-// words only a host would use ("get paid back" is a refund, "why was i charged" a guest question)
-const HOST_WORDS =
-  /\b(?:host|hosts|hosting|hosted|my pool|my listing|my listings|list|listing|listed|guests|my guests|payout|payouts|charge (?:my|guests)|per hour i|should i charge|i charge|my calendar|my backyard|my hot tub|my space|my hours|my schedule|my availability|my rate|my rates|my pricing|my earnings|earnings|earned|1099|tax form|get paid(?! back)|getting paid(?! back)|paid out|block (?:off )?(?:days?|dates?|times?|weekends?|holidays?)|sync (?:my )?(?:swimply )?calendar|turn on instant booking|offer (?:a |guests )?(?:discount|promo\w*)|create (?:a )?promo\w*|photos do i need)\b/;
+// words only a host would use. Not ones a guest uses too: "get paid back" is a refund, "why was i charged" /
+// "where is my money" / "stripe declined my card" / "double booked" / "promo code" are guest questions as well.
+const HOST_WORDS = new RegExp(
+  `\\b(?:${[
+    'host|hosts|hosting|hosted|my pool|my listing|my listings|list|listing|listed|guests|my guests|guest paid',
+    'payout|payouts|paid out|get paid(?! back)|getting paid(?! back)|earnings|earned|have i made|can i make|1099|tax form|tax documents|rental income|rental money',
+    'charge (?:my|guests)|per hour i|should i charge|i charge|commission|commision|your cut|took a cut|how much do i keep',
+    '(?:change|set|raise|lower|update|edit) (?:my )?(?:hourly )?(?:price|prices|rate|rates|pricing)|my rate|my rates|my pricing|my hourly',
+    'my calendar|my backyard|my hot tub|my cold plunge|my space|rent out|my landlord|publish\\w*',
+    'my hours|my schedule|my availability|set (?:my )?(?:availability|avalability|schedule|hours)|can people (?:book|see)',
+    'block (?:off )?(?:days?|dates?|times?|weekends?|holidays?)|(?:mark|make) (?:days|dates) unavailable',
+    'sync (?:my )?(?:swimply )?calendar|ical|calendar feed|connect my (?:other )?calendar|import (?:from |my )?(?:swimply|peerspace|giggster)\\w*',
+    '(?:enable|turn on|switch on) (?:instant|insta)\\w*|auto ?accept\\w*|approving each request',
+    'offer (?:a |guests )?(?:discount|deal|promo\\w*)|(?:create|make) (?:a )?promo\\w*',
+    'photos do i need|pics do i need|photos should i upload|photo requirements|stock photos',
+    'connect stripe|stripe (?:verif\\w*|account|asking|wont verify|needs)|get verified|direct deposit|bank info|(?:add|link|update|switch|change) (?:my )?(?:bank|checking)\\w*',
+  ].join('|')})\\b`
+);
 // an entry that needs one of its own words to be offered or answered (a shared "stop" is not "stop text
 // messages", "contact you" is not "contact the host", "delete my listing" is not "delete my account")
 const ENTRY_GATES = {

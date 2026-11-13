@@ -68,6 +68,12 @@ class FloodLedger {
     return null;
   }
 
+  /** Founder alerts the hourly ceiling still allows right now (the per-conversation / per-contact caps aside). */
+  freeGlobal(now = Date.now()) {
+    this.prune(now);
+    return Math.max(0, this.limits.globalPerHour - this.data.global.length);
+  }
+
   /**
    * Check and take a slot in the same synchronous step, so escalations that
    * arrive together (separate conversation queues, each awaiting several

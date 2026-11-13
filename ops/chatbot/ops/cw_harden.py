@@ -23,8 +23,9 @@ HOST = "chat.poolrentalnearme.com"
 EXPECT_IP = "3.222.110.146"  # cross-check only; the IP written is read from instance metadata
 # Widget throttles (Rack::Attack, free), lowered from the 4.19.1 defaults. 4.16.2's 6 conversations per 12 h per IP
 # cannot come back: 4.17+ counts per minute (2/min = 1440 per 12 h). RATE_LIMIT_WIDGET_LOAD counts only /widget loads
-# with no cw_conversation at all; a junk value is not counted and still makes a contact, so contact creation is
-# bounded by cw_nginx.py's per-IP prnm_wload zone (10/min), not by this. The engine's D3 caps and nginx do the rest.
+# with no cw_conversation at all; a junk value is not counted and still makes a contact, and so does every POST
+# /api/v1/widget/config (no Rack::Attack rule at all). Contact creation is bounded by cw_nginx.py's prnm_wload zone,
+# which holds both paths (10/min per visitor = IPv4 address or IPv6 /64), not by this. D3 caps and nginx do the rest.
 SET = {"ENABLE_ACCOUNT_SIGNUP": "false", "FRONTEND_URL": "https://" + HOST, "FORCE_SSL": "true",
        "ENABLE_PUSH_RELAY_SERVER": "true", "DISABLE_TELEMETRY": "true", "RATE_LIMIT_WIDGET_CONVERSATIONS": "2",
        "RATE_LIMIT_WIDGET_MESSAGES": "20", "RATE_LIMIT_WIDGET_LOAD": "20"}
@@ -32,6 +33,9 @@ SET = {"ENABLE_ACCOUNT_SIGNUP": "false", "FRONTEND_URL": "https://" + HOST, "FOR
 # `rails db:encryption:init`), only into the mode-600 .env, never printed; never regenerated if present.
 AR = ("ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY", "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
       "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT")
+# Docker's json-file default never caps a container log, on the / Postgres and fresh-web share; Rails logs every widget
+# request's params, sidekiq every webhook retry. Capped per container (all 4): at most 5 x 20 MB.
+LOGS = {"max-size": "20m", "max-file": "5"}
 API = "curl -s -m 10 -H 'X-Forwarded-Proto: https' http://127.0.0.1:3009/api"
 PSQL = "docker exec chatwoot-postgres-1 psql -U postgres -d %s -Atc "
 SCHEMA = PSQL % "chatwoot_production" + "'select max(version) from schema_migrations'"
@@ -107,12 +111,16 @@ for s in ("rails", "sidekiq"):
 del N["postgres"]["environment"]
 N["postgres"].update(image=pins.get("postgres"), env_file=["postgres.env"])
 N["redis"]["image"] = pins.get("redis")
+for s in N:
+    N[s]["logging"] = {"driver": "json-file", "options": dict(LOGS)}  # a copy each: no YAML anchors in the compose
 appenv = dict(env, **SET)
 text = ("# Managed by ops/chatbot/ops/cw_harden.py. Secrets: .env and postgres.env (mode 600).\n"
         + yaml.safe_dump(new, sort_keys=False, default_flow_style=False))
 print("== planned compose (no secrets in it):\n" + text + "".join("env %s: %r -> %r\n" % (k, env.get(k), v) for k, v in SET.items())
       + "env ACTIVE_RECORD_ENCRYPTION_* (2FA): %s\n" % ("kept from the compose" if have_ar else "3 generated at the change, "
-                                                        "into .env only, never printed"))
+                                                        "into .env only, never printed")
+      + "container logs (%s): json-file, max-size %s, max-file %s each (none in the compose now)\n" % (", ".join(N), LOGS["max-size"],
+                                                                                         LOGS["max-file"]))
 print("public IP %s | free %.1f GB | schema %s | %s -> %s%s | %s" % (ip, gb, schema, FROM_V, WANT, " (db:chatwoot_prepare "
       "with rails+sidekiq stopped)" if WANT != FROM_V else "", q("free -m | sed -n 2p")))
 if bad:
@@ -189,6 +197,13 @@ def verify():
         im = q("docker inspect %s --format '{{.Config.Image}}'" % c)
         print(c, "| env keys not as planned:", miss, "|", HOST, "->", res, "|", im)
         ok = ok and not miss and res == [ip] and im == img and "SAFE_FETCH_ALLOW_PRIVATE_NETWORK" not in have
+    for s in N:  # what each running container really got (up -d recreated them from the new compose)
+        try:
+            lc = json.loads(q("docker inspect chatwoot-%s-1 --format '{{json .HostConfig.LogConfig}}'" % s))
+        except ValueError:
+            lc = None
+        print(s, "log config:", lc)
+        ok = ok and lc == {"Type": "json-file", "Config": LOGS}
     print(q("cd %s && docker compose ps --format '{{.Name}} {{.State}}'" % D))
     return ok
 

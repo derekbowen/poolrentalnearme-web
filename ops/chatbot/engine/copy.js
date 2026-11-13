@@ -36,6 +36,8 @@ const COPY = {
   firstMiss: "Hmm, I don't want to guess on that one. Can you say it another way?",
   founderButton: { title: 'Talk to the founder', value: 'founder' },
   rephrase: 'No worries. Can you tell me a bit more, in your own words?',
+  // an upset customer with nothing else in the message ("im so mad right now"): calm, no 911 line, one question
+  upsetTellMore: 'Sorry about that. Can you tell me what happened?',
   twoStrikes: "Good question. I don't want to guess on that, so I'll bring in Derek and Brandon.",
   askQuestion: "What's it about, so they don't have to ask you again?",
   askBookingRef: "What's your booking reference? No stress if you don't have it.",

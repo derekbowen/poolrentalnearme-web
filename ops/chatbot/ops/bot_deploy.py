@@ -18,6 +18,7 @@ PORT = "3120"
 NEED = ("CHATWOOT_BOT_TOKEN", "CHATWOOT_WEBHOOK_SECRET", "CHATWOOT_ACCOUNT_ID", "CHATWOOT_DEREK_USER_ID",
         "CHATWOOT_BRANDON_USER_ID")
 PM2 = 'env -i HOME=/home/ubuntu PATH="$PATH" PM2_HOME=/home/ubuntu/.pm2 pm2 '  # no secrets reach dump.pm2
+VH = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"  # cw_nginx.py's VH (selfcheck.py: one value everywhere)
 LR = "/etc/logrotate.d/prnm-chatbot"
 ROT = ("/home/ubuntu/.pm2/logs/chatbot-*.log {\n su ubuntu ubuntu\n size 20M\n rotate 3\n compress\n missingok\n"
        " notifempty\n copytruncate\n}\n")  # su: the pm2 log dir is group-writable; copytruncate: pm2 keeps its fd
@@ -164,14 +165,16 @@ def check():
           if p["name"] == "chatbot"]
     print("healthz", hz, lis, "| signed", signed, "unsigned", unsigned, "| leak", leak, st)
     ok = hz == "200" and lis == ["127.0.0.1:" + PORT] and signed[:1] == "2" and unsigned in ("401", "403")
-    ok = ok and not leak and st[:1] and st[0][0] == "online"
-    if ok and os.path.exists("/etc/nginx/sites-enabled/chat-prnm.conf"):
+    ok = bool(ok and not leak and st[:1] and st[0][0] == "online")
+    if ok and os.path.exists(VH):
         # Chatwoot's own path: sidekiq -> public IP (extra_hosts) -> nginx -> bot; unsigned must be refused
         rb = ("require 'net/http'; puts Net::HTTP.post(URI('https://chat.poolrentalnearme.com/prnm-bot/webhook'), "
               "'{}', 'Content-Type' => 'application/json').code")
         via = sh("docker exec chatwoot-sidekiq-1 ruby -e " + shlex.quote(rb), 30)[1][-3:]
         print("sidekiq->nginx->bot unsigned:", via)
         ok = via in ("401", "403")
+    elif ok:
+        print("sidekiq->nginx->bot: not checked (no %s yet: cw_nginx.py has not run)" % VH)
     return ok
 
 

@@ -215,6 +215,33 @@ class Pins(unittest.TestCase):
         self.assertEqual(sha256(shipped_source(S["BLOCK"][0])), S["BLOCK"][1], "re-pin: gate block")
         self.assertEqual(sha256(shipped_source(S["FLIP"][0])), S["FLIP"][1], "re-pin: flip block")
 
+    def test_every_hide_route_name_exists_in_the_route_configuration(self):
+        """A typo in HIDE_ON_ROUTES or HIDE_ON_COMPACT_ROUTES would silently leave a payment page unhidden:
+        shouldHide() just never matches. Checked against the box's routeConfiguration.js (md5-pinned in DEPS)
+        and the repo's, with the loader the pinned commit serves."""
+        rc_path = "src/routing/routeConfiguration.js"
+        box_rc = git_show(BASE, rc_path)
+        self.assertEqual(md5(box_rc), P["DEPS"][rc_path])  # the box's file, byte for byte
+        loader = shipped_source("src/components/ChatwootWidget/chatwootLoader.js").decode()
+        hide = {}
+        for k in ("HIDE_ON_ROUTES", "HIDE_ON_COMPACT_ROUTES"):
+            m = re.search(r"^export const %s = Object\.freeze\(\[\n(.*?)\n\]\);$" % k, loader, re.M | re.S)
+            self.assertIsNotNone(m, k)
+            lines = [x.strip() for x in m.group(1).split("\n")]
+            self.assertTrue(all(re.fullmatch(r"'\w+',", x) for x in lines), (k, lines))  # one quoted name per line
+            hide[k] = [x[1:-2] for x in lines]
+        total = sum(map(len, hide.values()))
+        self.assertEqual(total, 12)
+        self.assertIn("All %d route names that the hide rules use exist" % total, read(os.path.join(HERE, "README.md"), "r"))
+        for label, rc in (("box", box_rc), ("repo", read(os.path.join(ROOT, rc_path)))):
+            rc = rc.decode()
+            names = re.findall(r"^\s+name: '(\w+)',$", rc, re.M)
+            self.assertEqual(len(names), len(re.findall(r"^\s+path: ", rc, re.M)), label)  # every route's name parsed
+            self.assertGreater(len(names), 30, label)
+            for k, v in hide.items():
+                for n in v:
+                    self.assertIn(n, names, "%s: %r is not a route name in the %s routeConfiguration.js" % (k, n, label))
+
     def test_both_scripts_share_values(self):
         for k in ("SHA", "TOKEN", "SRI", "SDK"):
             self.assertEqual(P[k], S[k], k)

@@ -8,6 +8,7 @@ and no message content is printed (one count matches Chatwoot's own bot-error ac
 import base64, hashlib, json, os, shlex, subprocess
 
 HOST = "chat.poolrentalnearme.com"
+VH = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"  # cw_nginx.py's VH (selfcheck.py: one value everywhere)
 B = "/home/ubuntu/chatbot"
 ALERT_GB = 2.0  # DISK ALERT below this much free space on / (Postgres, uploads, logs and fresh-web share it)
 EXPECT_SRI = "sha384-NMOiMrdTUxTmFY1l+sFGdJGBULpsENmHiq+1biXcN6oREUhlYB9ij9AFbm5/I3Xr"  # v4.19.1-ce sdk.js
@@ -25,8 +26,11 @@ LBL = ("select g.name, count(*) filter (where t.created_at > now() - interval '1
 ALERT = "private and sender_type = 'AgentBot' and content like '%(mention://user/%'"  # only a founder alert has one
 
 
-def sh(c, t=60):
-    r = subprocess.run(c, shell=True, capture_output=True, text=True, timeout=t, executable="/bin/bash")
+def sh(c, t=60):  # a slow step is reported, never an exception that ends the report part-way
+    try:
+        r = subprocess.run(c, shell=True, capture_output=True, text=True, timeout=t, executable="/bin/bash")
+    except subprocess.TimeoutExpired:
+        return "TIMEOUT after %d s" % t
     return (r.stdout + r.stderr).strip()
 
 
@@ -40,8 +44,11 @@ def code(a):
 
 
 def sri(c):  # D1: sha384 SRI of the bytes a command prints, with their size
-    r = subprocess.run(c, shell=True, capture_output=True, timeout=60, executable="/bin/bash")
-    b = r.stdout if r.returncode == 0 else b""
+    try:
+        r = subprocess.run(c, shell=True, capture_output=True, timeout=60, executable="/bin/bash")
+        b = r.stdout if r.returncode == 0 else b""
+    except subprocess.TimeoutExpired:
+        b = b""
     return ("sha384-" + base64.b64encode(hashlib.sha384(b).digest()).decode(), len(b)) if len(b) > 1000 else (None, len(b))
 
 
@@ -80,8 +87,8 @@ sql("agent bots (id | name | outgoing_url | inbox | status 0=active)",
 sql("notification flags (user | email_flags | push_flags)", "select user_id, email_flags, push_flags from notification_settings")
 sql("devices registered for push (user | type 1=browser 2=app | n)",
     "select user_id, subscription_type, count(*) from notification_subscriptions group by 1, 2 order by 1, 2")
-sql("contacts (total | new 24 h | new 7 d | contact_inboxes): each /widget load without a valid cw_conversation makes "
-    "one (cw_nginx.py: 10/min per IP)",
+sql("contacts (total | new 24 h | new 7 d | contact_inboxes): each /widget load without a valid cw_conversation and each "
+    "POST /api/v1/widget/config makes one (cw_nginx.py: both in one zone, 10/min per IPv4 address or IPv6 /64)",
     "select count(*), count(*) filter (where created_at > now() - interval '1 day'), count(*) filter (where created_at "
     "> now() - interval '7 days'), (select count(*) from contact_inboxes) from contacts")
 print("== conversations and handoffs")
@@ -123,10 +130,11 @@ print("data files (name | bytes | lines):", sh("cd %s/data 2>/dev/null && for f 
                                                "echo \"$f $(stat -c %%s $f) $(wc -l < $f)\"; done" % B) or "(none)")
 print("== nginx / tls")
 print(sh("ls -la /etc/nginx/sites-enabled/; nginx -t 2>&1 | tail -1"))
-vh = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"
-vt = open(vh).read() if os.path.exists(vh) else ""
-print("chat vhost has: load zone %s | widget contact/labels read-only %s | bot down -> 500 %s" % tuple(
-    x in vt for x in ("zone=prnm_wload", "(contact|labels|", "=500 @prnm_bot_down")))
+vt = open(VH).read() if os.path.exists(VH) else ""
+print("chat vhost has: load zone %s (config POSTs in it %s) | per IPv6 /64 %s | widget contact/labels read-only %s | "
+      "reset POST denied %s | bot down -> 500 %s" % tuple(x in vt for x in (
+          "zone=prnm_wload", "(widget|api/v1/widget/config)", "limit_req_zone $prnm_visitor zone=prnm_wload",
+          "(contact|labels|", "^/auth/password(", "=500 @prnm_bot_down")))
 print("DNS %s (proxied = Cloudflare addresses only, cw_nginx.py):" % HOST,
       sorted({x.split()[0] for x in sh("getent ahosts " + HOST).splitlines() if x.strip()}) or "none")
 print("cert:", sh("openssl x509 -enddate -noout -in /etc/letsencrypt/live/%s/fullchain.pem 2>&1" % HOST))
@@ -151,6 +159,22 @@ print("MB used:", sh("du -sm /var/lib/docker/volumes/chatwoot_cw_storage/_data /
                      "/var/lib/docker/containers /home/ubuntu/.pm2/logs /var/log/nginx %s/data /home/ubuntu/chatwoot-backups "
                      "2>/dev/null | tr '\\n' ' '" % B), "| docker log driver (containers = their logs):",
       sh("docker info --format '{{.LoggingDriver}}'"))
+caps = {}
+for c in ("rails", "sidekiq", "postgres", "redis"):  # only the size options are shown (other drivers' options can hold tokens)
+    try:
+        j = json.loads(sh("docker inspect chatwoot-%s-1 --format '{{json .HostConfig.LogConfig}}'" % c)) or {}
+    except ValueError:
+        j = {}
+    o = j.get("Config") or {}
+    caps[c] = "%s %s x %s" % (j.get("Type", "?"), o.get("max-size", "NO CAP"), o.get("max-file", "1"))
+try:
+    dj = json.loads(sh("cat /etc/docker/daemon.json 2>/dev/null") or "{}")
+except ValueError:
+    dj = {}
+dj = {k: v for k, v in (dj.get("log-opts") or {}).items() if k in ("max-size", "max-file")} if isinstance(dj, dict) else {}
+print("container logs (driver, max-size x max-file):", " | ".join("%s %s" % kv for kv in caps.items()),
+      "| daemon.json default log-opts:", dj or "none", "" if all("NO CAP" not in v for v in caps.values()) else
+      "\nLOG ALERT: a container log has no size cap and can fill /: cw_harden.py writes json-file 20m x 5")
 print(sh("docker system df --format '{{.Type}} {{.Size}} (reclaimable {{.Reclaimable}})' | tr '\\n' ';'"))
 print(sh("docker stats --no-stream --format '{{.Name}} {{.MemUsage}} {{.CPUPerc}}'"))
 print("== backups:", sh("ls -1 /home/ubuntu/chatwoot-backups 2>&1 | tail -5"))

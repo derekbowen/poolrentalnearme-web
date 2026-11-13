@@ -4,11 +4,12 @@
 # Local integration harness for ops/chatbot/ops/bot_deploy.py with REAL bot code and a REAL pm2 (7.0.1, as on EAST)
 # running as the local `ubuntu` user. Touches no server. The bot code is a `git archive` snapshot of ops/chatbot at
 # --rev, never the working tree, so other people's uncommitted edits cannot change the result.
-# Substitutions in a copy of the script: DRY, SHA, MANIFEST_SUM, RAW (file:// fake repo) and the logrotate entry's
-# path (a temp file instead of /etc/logrotate.d/prnm-chatbot). Runs get PRNM_RUNNER_TIMEOUT=900, as
-# ops/runners/east_runx.py exports for the script's RUNNER_TIMEOUT. `ss` is a local shim reading /proc/net/tcp
-# (iproute2 is not installed here).
-import hashlib, json, os, pwd, re, shutil, subprocess, sys, tempfile, time
+# Substitutions in a copy of the script: DRY, SHA, MANIFEST_SUM, RAW (file:// fake repo), the logrotate entry's
+# path (a temp file instead of /etc/logrotate.d/prnm-chatbot) and the chat vhost path VH (a temp file, absent unless a
+# case creates it). Runs get PRNM_RUNNER_TIMEOUT=900, as ops/runners/east_runx.py exports for the script's
+# RUNNER_TIMEOUT. `ss` is a local shim reading /proc/net/tcp (iproute2 is not installed here). With the vhost present,
+# a `docker` shim on PATH stands in for the sidekiq container's answer to the hairpin probe.
+import gzip, hashlib, hmac, json, os, pwd, re, shlex, shutil, subprocess, sys, tempfile, time
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
 sys.path.insert(0, REPO + "/ops/chatbot/ops")
@@ -19,6 +20,12 @@ SCRIPT = REPO + "/ops/chatbot/ops/bot_deploy.py"
 B = "/home/ubuntu/chatbot"
 U = pwd.getpwnam("ubuntu")
 LR = H + "/logrotate-prnm-chatbot"  # stands in for /etc/logrotate.d/prnm-chatbot
+VHF = H + "/zz-chat-prnm.conf"  # stands in for cw_nginx.py's vhost (bot_deploy.py VH)
+SHIM = H + "/bin"  # the `docker` shim: logs its argv, prints H/docker.answer (what sidekiq's Net::HTTP.post saw)
+DOCKER = """#!/bin/sh
+printf '%%s\\n' "$*" >> %(h)s/docker.calls
+cat %(h)s/docker.answer
+""" % {"h": H}
 LOGS = "/home/ubuntu/.pm2/logs"
 REV = sys.argv[sys.argv.index("--rev") + 1] if "--rev" in sys.argv else "HEAD"
 SS = r'''#!/usr/bin/env python3
@@ -85,7 +92,8 @@ def script(root, msum, dry, tag):
                  ('MANIFEST_SUM = "REPLACE_WITH_SHA256"', 'MANIFEST_SUM = "%s"' % msum),
                  ('RAW = "https://raw.githubusercontent.com/derekbowen/poolrentalnearme-web/%s/ops/chatbot/" % SHA',
                   'RAW = "file://%s/ops/chatbot/"' % root),
-                 ('LR = "/etc/logrotate.d/prnm-chatbot"', 'LR = "%s"' % LR)]:
+                 ('LR = "/etc/logrotate.d/prnm-chatbot"', 'LR = "%s"' % LR),
+                 ('VH = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"', 'VH = "%s"' % VHF)]:
         assert s.count(a) == 1, a
         s = s.replace(a, b)
     p = "%s/bot_deploy.%s.test.py" % (H, tag)
@@ -93,11 +101,13 @@ def script(root, msum, dry, tag):
     return p
 
 
-def run(p, budget="900"):
+def run(p, budget="900", shim=False):
     env = dict(os.environ)
     env.pop("PRNM_RUNNER_TIMEOUT", None)
     if budget:
         env["PRNM_RUNNER_TIMEOUT"] = budget
+    if shim:
+        env["PATH"] = SHIM + ":" + env["PATH"]
     r = subprocess.run([sys.executable, p], capture_output=True, text=True, timeout=400, env=env)
     return r.returncode, r.stdout + r.stderr
 
@@ -110,6 +120,28 @@ def pm2(cmd):
 def curl(args):
     return subprocess.run("curl -s -o /dev/null -w '%%{http_code}' -m 5 %s" % args, shell=True, capture_output=True,
                           text=True).stdout
+
+
+def signed(secret, conv, mid):
+    """A signed incoming message on a pending chat: the bot answers it and, with no Chatwoot on :3009, logs one WARN
+    line per failed send. Unlike a 401 (sampled: at most one line a minute) it is written every time."""
+    body = json.dumps({"event": "message_created", "account": {"id": 1}, "inbox": {"id": 1}, "conversation": {
+        "id": conv, "status": "pending", "inbox_id": 1}, "message_type": "incoming", "content": "hello", "id": mid,
+        "sender": {"type": "contact", "id": 77}})
+    ts = str(int(time.time()))
+    sig = hmac.new(secret.encode(), (ts + "." + body).encode(), "sha256").hexdigest()
+    return curl("-H 'Content-Type: application/json' -H 'X-Chatwoot-Timestamp: %s' -H 'X-Chatwoot-Signature: sha256=%s' "
+                "-H 'X-Chatwoot-Delivery: prnm-harness-%d' -d %s http://127.0.0.1:3120/webhook"
+                % (ts, sig, mid, shlex.quote(body)))
+
+
+def errlog_with(needle, secs=15):  # chatbot-error.log once it holds needle (or after secs)
+    end = time.time() + secs
+    while True:
+        b = open(LOGS + "/chatbot-error.log", "rb").read()
+        if needle in b or time.time() > end:
+            return b
+        time.sleep(0.2)
 
 
 fails = 0
@@ -198,16 +230,20 @@ def main():
           "existing daily logrotate.timer" in out and "-d rc 0, 0 error lines" in out)
 
     print("== logrotate entry really rotates the live pm2 logs (forced, private state file) and pm2 keeps writing")
-    curl("-d '{}' http://127.0.0.1:3120/webhook")  # unsigned -> 401 + a WARN line in chatbot-error.log
-    time.sleep(1)
+    free3009 = not subprocess.run("ss -ltnH 'sport = :3009'", shell=True, capture_output=True, text=True).stdout.strip()
+    check("nothing listens on 127.0.0.1:3009 here, so each signed message logs a failed send", free3009)
+    before = errlog_with(b"to conversation 9000 failed") if signed(secret, 9000, 1) == "200" else b""
+    check("a signed message logs a line every time (not the once-a-minute 401 line)", b"WARN send " in before
+          and b"to conversation 9000 failed" in before)
     r = subprocess.run(["logrotate", "-f", "-s", H + "/lr.state", LR], capture_output=True, text=True)
     rotated = sorted(x for x in os.listdir(LOGS) if x.startswith("chatbot-") and x.endswith(".gz"))
-    check("logrotate -f rc 0 and gzipped copies made (%s)" % rotated, r.returncode == 0 and rotated)
-    curl("-d '{}' http://127.0.0.1:3120/webhook")
-    time.sleep(1)
-    errlog = open(LOGS + "/chatbot-error.log", "rb").read()
-    check("after copytruncate pm2 appends from the start (WARN line present, no NUL hole, %d bytes)" % len(errlog),
-          b"WARN" in errlog and b"\x00" not in errlog and len(errlog) < 4096)
+    old = b"".join(gzip.open(LOGS + "/" + x).read() for x in rotated if x.startswith("chatbot-error"))
+    check("logrotate -f rc 0 and gzipped copies made, the error log's holding the pre-rotation line (%s)" % rotated,
+          r.returncode == 0 and rotated and b"to conversation 9000 failed" in old)
+    errlog = errlog_with(b"to conversation 9001 failed") if signed(secret, 9001, 2) == "200" else b""
+    check("after copytruncate the same pm2 fd appends from the start: the new line first, the old one gone, no NUL hole "
+          "(%d bytes)" % len(errlog), b"to conversation 9001 failed" in errlog.split(b"\n", 1)[0]
+          and b"conversation 9000" not in errlog and b"\x00" not in errlog and len(errlog) < 4096)
     check("bot still online after rotation", '"ok":true' in subprocess.run(
         "curl -s http://127.0.0.1:3120/healthz", shell=True, capture_output=True, text=True).stdout)
 
@@ -241,6 +277,29 @@ def main():
     rc, out = run(script(root4, msum4, False, "g"))
     check("exit 1, release removed, current unchanged", rc == 1 and "tests failed on the box" in out
           and os.path.realpath(B + "/current") == cur2 and len(os.listdir(B + "/releases")) == 2)
+
+    print("== the chat vhost exists (cw_nginx.py ran): Chatwoot's own path, sidekiq -> nginx -> bot, decides the deploy")
+    open(VHF, "w").write("# vhost stand-in\n")
+    os.makedirs(SHIM, exist_ok=True)
+    open(SHIM + "/docker", "w").write(DOCKER)
+    os.chmod(SHIM + "/docker", 0o755)
+    open(H + "/docker.answer", "w").write("I, [log] booting\n502")  # nginx could not reach the bot
+    rc, out = run(script(root, msum, False, "h"), shim=True)
+    calls = open(H + "/docker.calls").read().splitlines() if os.path.exists(H + "/docker.calls") else []
+    print("\n".join("     | " + x for x in out.strip().splitlines()[-4:]))
+    check("hairpin probe answered 502 -> unhealthy: exit 1, rolled back to the previous release, new release removed",
+          rc == 1 and "sidekiq->nginx->bot unsigned: 502" in out and "rolling back" in out
+          and os.path.realpath(B + "/current") == cur2 and len(os.listdir(B + "/releases")) == 2)
+    check("the probe is the unsigned POST from inside chatwoot-sidekiq-1 to the public webhook URL (%d call(s))" % len(calls),
+          calls and all(x.startswith("exec chatwoot-sidekiq-1 ruby -e ") and "Net::HTTP.post(URI('https://"
+                                                                             "chat.poolrentalnearme.com/prnm-bot/webhook')" in x for x in calls))
+    open(H + "/docker.answer", "w").write("401")  # nginx passed it, the bot refused it unsigned
+    rc, out = run(script(root, msum, False, "i"), shim=True)
+    check("hairpin probe answered 401 -> exit 0 DONE, current moved", rc == 0 and "DONE." in out
+          and "sidekiq->nginx->bot unsigned: 401" in out and os.path.realpath(B + "/current") != cur2)
+    os.remove(VHF)
+    check("without the vhost the probe is skipped and says so", "not checked (no %s yet" % VHF in run(script(
+        root, msum, False, "j"), shim=True)[1])
 
     pm2("delete chatbot")
     pm2("kill")

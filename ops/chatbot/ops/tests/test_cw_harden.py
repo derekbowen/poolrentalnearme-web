@@ -88,10 +88,10 @@ def parse_env_file(p):  # compose v2 semantics for KEY='value' lines (literal, q
     return out
 
 
-def make_fake(D, healthy=True, schema=FROM_SCHEMA, migrate="ok", restore_rc=0):
+def make_fake(D, healthy=True, schema=FROM_SCHEMA, migrate="ok", restore_rc=0, logcap=True):
     import yaml
     calls = []
-    st = {"schema": schema, "image": "chatwoot/chatwoot:latest", "up": True}
+    st = {"schema": schema, "image": "chatwoot/chatwoot:latest", "up": True, "logging": {}}  # as each container was created
 
     def version():
         if not st["up"]:
@@ -105,7 +105,10 @@ def make_fake(D, healthy=True, schema=FROM_SCHEMA, migrate="ok", restore_rc=0):
         out, rc = "", 0
         if not text:  # binary reads (sdk.js for the SRI)
             return subprocess.CompletedProcess(c, 0, SDK if "packs/js/sdk.js" in c and st["up"] else b"", b"")
-        if m := re.search(r"docker image inspect (\S+) --format", c):
+        if m := re.search(r"docker inspect chatwoot-(\w+)-1 --format '\{\{json \.HostConfig\.LogConfig\}\}'$", c):
+            lg = st["logging"].get(m.group(1)) or {}  # Docker: the compose's logging, else the daemon default
+            out = json.dumps({"Type": lg.get("driver", "json-file"), "Config": (lg.get("options") or {}) if logcap else {}})
+        elif m := re.search(r"docker image inspect (\S+) --format", c):
             out = json.dumps([DIG[IMG[m.group(1)]]])
         elif m := re.search(r"docker inspect chatwoot-(\w+)-1 --format '\{\{\.Image\}\}'", c):
             out = DIG[m.group(1)].split("@")[1]
@@ -155,7 +158,9 @@ def make_fake(D, healthy=True, schema=FROM_SCHEMA, migrate="ok", restore_rc=0):
         elif c.startswith("docker run --rm"):
             out = "  version: '4.19.1'\ned=ce"
         elif "docker compose up -d" in c:
-            st["image"] = yaml.safe_load(open(D + "/docker-compose.yml"))["services"]["rails"]["image"]
+            svc = yaml.safe_load(open(D + "/docker-compose.yml"))["services"]
+            st["image"] = svc["rails"]["image"]
+            st["logging"] = {k: v.get("logging") for k, v in svc.items()}  # up -d recreates changed containers
             st["up"] = True
             out = "Container chatwoot-rails-1 Started"
         elif m := re.search(r"docker exec (chatwoot-\w+-1) env$", c):
@@ -240,10 +245,17 @@ check("plan shows the lower widget throttles (conversations 2/min, messages 20/m
       and "RATE_LIMIT_WIDGET_LOAD: None -> '20'" in out)
 src_h, src_n = open(SCRIPT).read(), open(os.path.join(os.path.dirname(SCRIPT), "cw_nginx.py")).read()
 check("the load-throttle comment is true to 4.19.1 (Rack::Attack skips a junk cw_conversation, which still makes a "
-      "contact) and names the nginx zone that bounds contacts, at the rate cw_nginx.py really sets",
-      "a junk value is not counted and still makes a contact" in src_h and "prnm_wload zone (10/min)" in src_h
-      and "limit_req_zone $binary_remote_addr zone=prnm_wload:2m rate=10r/m;" in src_n
-      and "limit_req zone=prnm_wload burst=10 nodelay;" in src_n)
+      "contact, and has no rule for config POSTs, which always make one) and names the nginx zone that bounds both, at "
+      "the rate and key cw_nginx.py really sets", "a junk value is not counted and still makes a contact" in src_h
+      and "every POST\n# /api/v1/widget/config (no Rack::Attack rule at all)" in src_h
+      and "prnm_wload zone,\n# which holds both paths (10/min per visitor = IPv4 address or IPv6 /64)" in src_h
+      and "limit_req_zone $prnm_visitor zone=prnm_wload:2m rate=10r/m;" in src_n
+      and "location ~ ^/(widget|api/v1/widget/config)(\\\\.|/|$) {\n        limit_req zone=prnm_wload burst=10 nodelay;"
+      in src_n)
+check("plan: every service's log capped (json-file, max-size 20m, max-file 5), each as its own block (no YAML anchors)",
+      out.count("    logging:\n      driver: json-file\n      options:\n        max-size: 20m\n        max-file: '5'\n") == 4
+      and "&id" not in out and "container logs (postgres, redis, rails, sidekiq): json-file, max-size 20m, max-file 5 each"
+      in out)
 check("plan: 3 2FA encryption keys generated at the change (none in DRY), never printed",
       "env ACTIVE_RECORD_ENCRYPTION_* (2FA): 3 generated at the change, into .env only, never printed" in out)
 check("no pull, stop, migrate or up in DRY", not [x for x in calls if x.startswith("docker pull") or "compose" in x])
@@ -275,6 +287,9 @@ for image in ("ce", "running"):
           and "2FA keys fingerprint %s. BACK THEM UP OFF-BOX" % hashlib.sha256("".join(ks).encode()).hexdigest()[:12] in out
           and "sudo grep ^ACTIVE_RECORD_ENCRYPTION_ " in out)
     check("verify compared the keys too (rails + sidekiq env as planned)", out.count("env keys not as planned: []") == 2)
+    check("verify read each running container's log config: all 4 capped as planned",
+          all("%s log config: {'Type': 'json-file', 'Config': {'max-size': '20m', 'max-file': '5'}}" % x in out
+              for x in ("postgres", "redis", "rails", "sidekiq")))
     want = CE if image == "ce" else DIG["rails"]
     check("images pinned (%s)" % want[:40], comp.count(want) == 2 and DIG["postgres"] in comp and DIG["redis"] in comp
           and ":latest" not in comp)
@@ -303,6 +318,8 @@ for image in ("ce", "running"):
               and cfg["rails"]["environment"]["RATE_LIMIT_WIDGET_LOAD"] == "20"
               and cfg["sidekiq"]["environment"][AR[0]] == env[AR[0]] and cfg["rails"]["environment"][AR[2]] == env[AR[2]]
               and cfg["postgres"]["environment"] == {"POSTGRES_PASSWORD": PGP}
+              and all(cfg[x].get("logging") == {"driver": "json-file", "options": {"max-size": "20m", "max-file": "5"}}
+                      for x in ("postgres", "redis", "rails", "sidekiq"))
               and cfg["rails"]["extra_hosts"] in (["chat.poolrentalnearme.com=3.222.110.146"],
                                                   ["chat.poolrentalnearme.com:3.222.110.146"],
                                                   {"chat.poolrentalnearme.com": ["3.222.110.146"]}))
@@ -310,7 +327,7 @@ for image in ("ce", "running"):
             print(json.dumps(cfg["rails"].get("extra_hosts")), cfg["rails"]["environment"].get("FRONTEND_URL"))
     else:
         print(r.stderr[-500:])
-    check("real `docker compose config` accepts it and resolves env_file values exactly", ok)
+    check("real `docker compose config` accepts it, resolves env_file values exactly and keeps every service's log cap", ok)
 
 
 def rolled_back(D, orig, calls, st, code, out, ups):
@@ -338,6 +355,11 @@ check("ABORT names it", isinstance(code, str) and "2FA encryption keys set: fix 
 print("== real, API never healthy after up -d -> rollback (compose + DB)")
 c, D, orig, code, out, calls, st = run_case("rollback", False, "ce", healthy=False)
 rolled_back(D, orig, calls, st, code, out, 2)
+
+print("== real, a container comes up without the log cap (the daemon ignored it) -> rollback (compose + DB)")
+c, D, orig, code, out, calls, st = run_case("logcap", False, "ce", logcap=False)
+rolled_back(D, orig, calls, st, code, out, 2)
+check("the uncapped log config is printed", "rails log config: {'Type': 'json-file', 'Config': {}}" in out)
 
 print("== real, migration fails half-way -> the new image never starts; compose + DB restored")
 c, D, orig, code, out, calls, st = run_case("migfail", False, "ce", migrate="fail")

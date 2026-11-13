@@ -13,7 +13,8 @@ east_runx.py sends: plain when it fits, else gzip) against the 9500-char limit, 
 of headroom; the embedded Ruby equals cw_setup.rb and passes `ruby -c`; the widget CSS block is byte-identical in
 the WEST loader and the EAST snippet; east_widget.py's md5 and both anchors match the saved box copy (prints the
 resulting diff); the EAST TSX carries the names east_widget.py builds with; the bot port is one value
-everywhere (bot_deploy.py PORT = nginx = cw_status = server.js DEFAULT_PORT); placeholders are reported.
+everywhere (bot_deploy.py PORT = nginx = cw_status = server.js DEFAULT_PORT); the chat vhost path is one value
+(cw_nginx.py VH = bot_deploy.py VH = cw_status.py VH); placeholders are reported.
 """
 import base64, difflib, hashlib, os, re, shutil, subprocess, sys, zlib
 
@@ -189,6 +190,16 @@ def main():
         print("  %-14s %-24s %s" % (f, need, "yes" if have else "MISSING"))
         if not have:
             fail("%s does not use bot port %s" % (f, port))
+    print("== chat vhost path: one value everywhere (bot_deploy.py gates its sidekiq hairpin check on it)")
+    nx = {}
+    exec(open(os.path.join(HERE, "cw_nginx.py")).read().split("\n\ndef sh(", 1)[0], nx)  # constants only; nothing runs
+    print("  %-14s %s" % ("cw_nginx.py", nx.get("VH")))
+    for f in ("bot_deploy.py", "cw_status.py"):
+        m = re.search(r'^VH = "([^"]+)"', open(os.path.join(HERE, f)).read(), re.M)
+        have = m.group(1) if m else None
+        print("  %-14s %-46s %s" % (f, have, "yes" if have == nx.get("VH") else "DIFFERS"))
+        if not have or have != nx.get("VH"):
+            fail("%s VH %r is not cw_nginx.py's %r" % (f, have, nx.get("VH")))
     stale = []
     for d, _, fs in os.walk(os.path.join(HERE, "..")):
         if os.sep + "bank" in d or os.sep + "data" in d or "node_modules" in d:

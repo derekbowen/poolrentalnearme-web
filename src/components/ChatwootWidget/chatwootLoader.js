@@ -72,12 +72,22 @@ export const SDK_SETTINGS = Object.freeze({
 //   message preview below 667px moves above the launcher too.
 // - While the chat or the preview shows, #prnm-cta is hidden so it cannot cover
 //   the composer (both use z-index 2147483000; the launcher sits just below).
-// - On tablets the open card is capped at 640px, as on desktop.
+// - On tablets (667-1024px) the open card is capped at 640px, as on desktop, and
+//   also leaves the top 80px free, so it never runs under the sticky top bar
+//   (WEST topbar 60px, EAST header 65px): 136px bottom offset + 68px + 12px gap.
+//   1024x768 -> 552px card, 1024x600 -> 384px, 768x500 -> 284px.
+// - Short landscape (667-1024px wide, at most 465px high: phones turned sideways)
+//   would leave a card under the SDK's own 250px minimum that way. There the open
+//   chat goes full height, as the SDK does on phones, but beside the launcher
+//   instead of over it: the launcher becomes the 48px tile at left 10px and the
+//   card starts at left 68px, because the widget's own close button only shows at
+//   <=668px. The unread preview uses the phone offsets above the tile.
 // - While the widget is hidden (html.prnm-cw-hidden), the SDK's window is made
 //   invisible the same way the SDK hides a closed chat (visibility, so the window
-//   keeps its layout). A reply that arrives then (the SDK's unread preview) stays
-//   out of sight over checkout or a modal, is not marked read, and shows once the
-//   visitor is back on a page where the widget shows.
+//   keeps its layout). An unread preview (a reply that arrives then, or one that
+//   was on screen when hiding started) stays out of sight over checkout or a
+//   modal, is not marked read, and shows once the visitor is back on a page where
+//   the widget shows.
 /* prnm-cw-css:start */
 export const WIDGET_CSS = `
 #prnm-chat-launcher { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 2147482999; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; margin: 0; padding: 0 18px 0 14px; border: 0; border-radius: 22px; background: #0b6ea8; color: #fff; font: 700 15px/1 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0; text-transform: none; text-decoration: none; white-space: nowrap; box-shadow: 0 6px 20px rgba(10, 40, 70, .28); cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -101,6 +111,12 @@ export const WIDGET_CSS = `
 }
 @media (min-width: 667px) and (max-width: 1024px) {
   .woot-widget-holder.woot-elements--left:not(.woot--hide) { top: auto !important; bottom: calc(136px + env(safe-area-inset-bottom, 0px)) !important; max-height: min(640px, calc(100% - 156px)) !important; min-height: 0 !important; }
+  .woot-widget-holder.woot-elements--left:not(.woot--hide):not(.has-unread-view) { max-height: min(640px, calc(100% - 216px)) !important; }
+}
+@media (min-width: 667px) and (max-width: 1024px) and (max-height: 465px) {
+  #prnm-chat-launcher { left: 10px; width: 48px; height: 52px; padding: 7px 0 6px; flex-direction: column; gap: 4px; border-radius: 14px; font-size: 11px; }
+  .woot-widget-holder.woot-elements--left:not(.woot--hide):not(.has-unread-view) { top: env(safe-area-inset-top, 0px) !important; bottom: env(safe-area-inset-bottom, 0px) !important; left: 68px !important; height: auto !important; max-height: none !important; border-radius: 0 !important; }
+  .woot-widget-holder.has-unread-view.woot-elements--left:not(.woot--hide) { bottom: calc(144px + env(safe-area-inset-bottom, 0px)) !important; max-height: calc(100% - 164px) !important; }
 }
 @media (max-width: 666px) {
   .woot-widget-holder.has-unread-view.woot-elements--left:not(.woot--hide) { bottom: calc(144px + env(safe-area-inset-bottom, 0px)) !important; max-height: calc(100% - 164px) !important; }
@@ -400,17 +416,22 @@ export const toggleChat = (win, doc, config) => {
   emit(win);
 };
 
-// Hide (route, width, modal) or show again. Hiding closes an open chat or
-// preview, drops a pending open, and sets HIDDEN_CLASS on <html> so that anything
-// the SDK opens while hidden stays invisible. Showing again removes it: an unread
-// preview that arrived meanwhile then appears.
+// Hide (route, width, modal) or show again. Hiding closes the full chat window,
+// drops a pending open, and sets HIDDEN_CLASS on <html> so that whatever the SDK
+// shows while hidden stays invisible and unclickable. Showing again removes it.
+// An unread preview is never closed here, whether it was on screen when hiding
+// started or arrived while hidden: in Chatwoot (widget/App.vue, 4.16.2 and
+// 4.19.1) closing from the unread-messages view marks the reply seen
+// (setUserLastSeen) and dismisses it, and with hideMessageBubble and no email
+// continuity nothing else would tell the visitor that Derek or the bot replied.
+// It stays open behind HIDDEN_CLASS and is on screen again when the widget shows.
 export const setChatHidden = (win, hidden, doc = win && win.document) => {
   if (!win) return;
   const s = stateOf(win);
   s.hidden = !!hidden;
   if (s.hidden) {
     s.wantOpen = false;
-    if (s.phase === 'ready' && s.view !== 'closed') callToggle(win, 'close');
+    if (s.phase === 'ready' && s.view === 'open') callToggle(win, 'close');
   }
   if (doc) syncRoot(win, doc);
   emit(win);

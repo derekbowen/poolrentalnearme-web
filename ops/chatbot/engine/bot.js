@@ -18,7 +18,9 @@
  * logged over the hourly ceiling (or the per-visitor cap) is deferred, not
  * dropped: it is retried on the visitor's next message and by a sweep on every
  * webhook (and a 60 s timer in server.js), and sent as a normal alert only when
- * a slot is free. While any cap holds nothing is sent.
+ * a slot is free. While any cap holds nothing is sent. Deferred alerts wait in
+ * line (urgent first, then the longest wait) and a full state store evicts
+ * ordinary chats before any of them (memory.js setRank).
  */
 const { runHandoff, runCappedHandoff } = require('./handoff');
 const { findBookingRef, MAX_INPUT_CHARS, MAX_STORED_CHARS } = require('./safety');
@@ -47,7 +49,31 @@ function contactIdOf(p) {
 }
 
 const DEFERRED_KEY = 'deferred';
+// the retry line: over MAX_DEFERRED the oldest non-urgent entry goes; urgent entries are never dropped to make
+// room, up to a hard ceiling (MAX_DEFERRED_URGENT, about 50 hours of alerts at 10 an hour)
 const MAX_DEFERRED = 200;
+const MAX_DEFERRED_URGENT = 500;
+const SWEEP_BATCH = 5;
+const RETRY_FETCH_MS = 60 * 1000; // getConversation failed: try that one again in a minute
+const RETRY_STATUS_MS = 5 * 60 * 1000; // resolved or snoozed in Chatwoot: look again in five minutes
+
+/** Urgent first, then the one logged earliest. */
+function orderDeferred(list) {
+  return list.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || (a.at || 0) - (b.at || 0));
+}
+
+/** Keep the line bounded without ever dropping an urgent alert for room (until the hard ceiling). */
+function boundDeferred(list) {
+  while (list.length > MAX_DEFERRED) {
+    // ordered: the first non-urgent entry is the oldest non-urgent one
+    const i = list.findIndex((x) => !x.urgent);
+    if (i < 0) break;
+    list.splice(i, 1);
+  }
+  // only urgent entries left over the cap: the newest of them wait outside the list (their own next message re-adds them)
+  if (list.length > MAX_DEFERRED_URGENT) list.length = MAX_DEFERRED_URGENT;
+  return list;
+}
 
 const MESSAGE_TYPES = { 0: 'incoming', 1: 'outgoing', 2: 'activity', 3: 'template' };
 function messageType(v) {
@@ -108,6 +134,23 @@ class Bot {
     this.seenSelections = new Lru();
     this.flood = new FloodLedger({ store, limits: floodLimits });
     this.logCapped = sampler(60 * 1000, now);
+    // deferred alerts (D3): conversations holding a reserved slot right now, retries queued by a sweep and
+    // not finished yet, and retries that failed to fetch the conversation (tried again later, out of line)
+    this.inflight = new Set();
+    this.sweepQueued = new Set();
+    this.retryAfter = new Map();
+    // a full store evicts ordinary chats first: never a founder alert still waiting for a slot
+    if (store && typeof store.setRank === 'function') store.setRank((st) => this.retainRank(st));
+  }
+
+  /** How much a stored state matters when the store is full (memory.js): 3 urgent deferred alert … 0 ordinary. */
+  retainRank(st) {
+    const h = st && st.handoff;
+    if (!h || st.humanOwned) return 0;
+    if (this.engine.deferred(st)) return h.urgency === 'high' ? 3 : 2;
+    // handed off and waiting for a person (or a failed alert their next message retries)
+    if (h.status === 'sent' || h.status === 'capped' || h.status === 'failed') return 1;
+    return 0;
   }
 
   contactKey(state) {
@@ -124,16 +167,21 @@ class Bot {
       : '';
   }
 
-  /** Serialise work per conversation so two quick messages never race. */
+  /**
+   * Serialise work per conversation so two quick messages never race. One key type for every caller:
+   * webhooks carry the conversation id as a number, the deferred list as a string, and a deferred retry
+   * must never run beside a message turn for the same conversation (round 3, race2.js).
+   */
   enqueue(convId, fn) {
-    const prev = this.queues.get(convId) || Promise.resolve();
+    const q = String(convId);
+    const prev = this.queues.get(q) || Promise.resolve();
     const next = prev.then(fn, fn);
     const tail = next.catch((err) => {
-      this.logger.error(`conversation ${convId}: ${err && err.message ? err.message : err}`);
+      this.logger.error(`conversation ${q}: ${err && err.message ? err.message : err}`);
     });
-    this.queues.set(convId, tail);
+    this.queues.set(q, tail);
     tail.then(() => {
-      if (this.queues.get(convId) === tail) this.queues.delete(convId);
+      if (this.queues.get(q) === tail) this.queues.delete(q);
     });
     return next;
   }
@@ -306,6 +354,13 @@ class Bot {
    * free it is sent as a normal alert (@mention note, open toggle), without waiting for the visitor
    * to write again. Nothing is sent while a cap still holds.
    */
+  /*
+   * The retry line (round 3, deferred_starve): urgent alerts first, then the one that has waited longest.
+   * An entry keeps its place (the time it was first logged, handoff.cappedAt) however often it is retried
+   * or the customer writes again, so newer junk never gets ahead of it. A free slot goes to the front of
+   * the line: a sweep queues at most as many retries as there are free slots, and any other alert (a fresh
+   * handoff, or a retry from further back) that finds the slots spoken for is logged and waits its turn.
+   */
   deferredList() {
     const list = this.store.getMeta ? this.store.getMeta(DEFERRED_KEY) : null;
     return Array.isArray(list) ? list : [];
@@ -314,43 +369,121 @@ class Bot {
   trackDeferred(convId, state) {
     if (!this.store.setMeta) return;
     const key = this.key(convId);
-    const list = this.deferredList().filter((x) => x && x.key !== key);
-    if (this.engine.deferred(state))
-      list.push({ key, convId: String(convId), contact: this.contactKey(state), at: this.now() });
-    const before = JSON.stringify(this.deferredList());
-    const next = list.slice(-MAX_DEFERRED);
-    if (JSON.stringify(next) !== before) this.store.setMeta(DEFERRED_KEY, next);
+    const before = this.deferredList();
+    const old = before.find((x) => x && x.key === key);
+    const list = before.filter((x) => x && x.key && x.key !== key);
+    if (state && this.engine.deferred(state)) {
+      const h = state.handoff;
+      // its original place in line: a retry or a new message never sends it to the back
+      const at = Number.isFinite(h.cappedAt) ? h.cappedAt : old && Number.isFinite(old.at) ? old.at : this.now();
+      list.push({ key, convId: String(convId), contact: this.contactKey(state), at, urgent: h.urgency === 'high' });
+    }
+    const next = boundDeferred(orderDeferred(list));
+    if (JSON.stringify(next) !== JSON.stringify(before)) this.store.setMeta(DEFERRED_KEY, next);
   }
 
-  /** Cheap and synchronous: queue a retry for each deferred handoff that would pass the caps now. */
+  /** The line as it stands: still-deferred entries in order (urgency read from the live state), and stale keys. */
+  deferredQueue() {
+    const queue = [];
+    const stale = [];
+    for (const x of this.deferredList()) {
+      if (!x || !x.key) continue;
+      const st = this.store.peek ? this.store.peek(x.key) : this.store.get(x.key);
+      if (!st || !this.engine.deferred(st)) {
+        stale.push(x.key);
+        continue;
+      }
+      const h = st.handoff;
+      queue.push({ ...x, urgent: h.urgency === 'high', at: Number.isFinite(h.cappedAt) ? h.cappedAt : x.at || 0 });
+    }
+    return { queue: orderDeferred(queue), stale };
+  }
+
+  backedOff(key, now) {
+    const until = this.retryAfter.get(key);
+    if (until == null) return false;
+    if (now >= until) {
+      this.retryAfter.delete(key);
+      return false;
+    }
+    return true;
+  }
+
+  /** Deferred alerts ahead of `key` in line that could take a free slot right now. */
+  aheadInLine(key, urgent, now) {
+    const { queue } = this.deferredQueue();
+    const inLine = queue.some((x) => x.key === key);
+    let ahead = 0;
+    for (const x of queue) {
+      if (x.key === key) break;
+      // not in line (a fresh handoff): an urgent one goes ahead of every non-urgent wait
+      if (!inLine && urgent && !x.urgent) break;
+      if (this.inflight.has(x.key) || this.backedOff(x.key, now)) continue;
+      if (this.flood.check({ conv: x.key, contact: x.contact || null, now })) continue;
+      ahead++;
+    }
+    return ahead;
+  }
+
+  /**
+   * Check and take a flood slot (D3) in one synchronous step, in line: when the free slots are spoken for
+   * by deferred alerts ahead of this one, it is treated as over the hourly ceiling and waits its turn.
+   */
+  reserveInLine({ conv, contact, now }, urgent) {
+    const capped = this.flood.check({ conv, contact, now });
+    if (capped) return { capped };
+    if (this.deferredList().length && this.aheadInLine(conv, urgent, now) >= this.flood.freeGlobal(now))
+      return { capped: 'global' };
+    const slot = this.flood.reserve({ conv, contact, now });
+    if (slot.token) this.inflight.add(conv);
+    return slot;
+  }
+
+  /** Cheap and synchronous: queue retries for the front of the line, at most one per free slot. */
   sweepDeferred() {
     const list = this.deferredList();
     if (!list.length) return 0;
     const now = this.now();
+    // while the hourly ceiling holds nothing can pass, and this costs almost nothing on every webhook
+    const free = this.flood.freeGlobal(now);
+    if (free <= 0) return 0;
+    const { queue, stale } = this.deferredQueue();
+    if (stale.length && this.store.setMeta)
+      this.store.setMeta(DEFERRED_KEY, list.filter((x) => x && !stale.includes(x.key)));
     let queued = 0;
-    for (const x of list) {
-      if (queued >= 5) break;
-      // the ledger first (no state read): while the ceiling holds this loop costs almost nothing
+    for (const x of queue) {
+      if (queued >= Math.min(free, SWEEP_BATCH)) break;
+      // holding a slot already (counted in `free`), or its last fetch failed: not in the way of the rest
+      if (this.inflight.has(x.key) || this.backedOff(x.key, now)) continue;
+      // its own per-conversation / per-visitor cap still holds
       if (this.flood.check({ conv: x.key, contact: x.contact || null, now })) continue;
-      const st = this.store.get(x.key);
-      if (!st || !this.engine.deferred(st)) {
-        this.trackDeferred(x.convId, st || {});
-        continue;
-      }
       queued++;
-      this.enqueue(x.convId, () => this.runDeferred(x.convId));
+      if (this.sweepQueued.has(x.key)) continue; // queued by an earlier sweep and not run yet
+      this.sweepQueued.add(x.key);
+      const done = () => this.sweepQueued.delete(x.key);
+      // (errors are logged by enqueue; then(done, done) adds no unhandled rejection of its own)
+      this.enqueue(x.convId, () => this.runDeferred(x.convId)).then(done, done);
     }
     return queued;
   }
 
   async runDeferred(convId) {
-    const st = this.store.get(this.key(convId));
+    const key = this.key(convId);
+    // read when its turn comes (the queue is shared with message turns): a newer state wins
+    const st = this.store.get(key);
     if (!st || !this.engine.deferred(st)) return { ignored: 'deferred' };
     // the merged custom attributes and the live status come from Chatwoot itself
     const c = await this.client.getConversation(convId);
-    if (!c.ok || !c.data) return { ignored: 'deferred_fetch' };
+    if (!c.ok || !c.data) {
+      this.retryAfter.set(key, this.now() + RETRY_FETCH_MS);
+      return { ignored: 'deferred_fetch' };
+    }
     const conv = c.data;
-    if (conv.status === 'resolved' || conv.status === 'snoozed') return { ignored: 'deferred_status' };
+    if (conv.status === 'resolved' || conv.status === 'snoozed') {
+      this.retryAfter.set(key, this.now() + RETRY_STATUS_MS);
+      return { ignored: 'deferred_status' };
+    }
+    this.retryAfter.delete(key);
     const res = this.engine.retryDeferred(st, { now: this.now() });
     return this.execute(convId, conv, res);
   }
@@ -362,6 +495,15 @@ class Bot {
   }
 
   async execute(convId, conv, res) {
+    try {
+      return await this.executeTurn(convId, conv, res);
+    } finally {
+      // a reserved slot is now either an alert that went out or one given back: no longer "in flight"
+      this.inflight.delete(this.key(convId));
+    }
+  }
+
+  async executeTurn(convId, conv, res) {
     let state = res.state;
     const events = [...res.events];
     let escalated = false;
@@ -376,8 +518,9 @@ class Bot {
       // a retry of a handoff whose @mention note already went out is the same alert, not a new one
       const fresh = !done.note;
       const keys = { conv: this.key(convId), contact: this.contactKey(state), now: this.now() };
-      // check and take the slot in one synchronous step (D3): concurrent conversations can't all slip under a cap
-      const slot = fresh ? this.flood.reserve(keys) : null;
+      // check and take the slot in one synchronous step (D3): concurrent conversations can't all slip under a cap,
+      // and a free slot goes to the front of the deferred line (urgent first, then the longest wait)
+      const slot = fresh ? this.reserveInLine(keys, urgent) : null;
       const capped = slot && slot.capped ? slot.capped : null;
       // a handoff logged over a ceiling, tried again: still capped → nothing at all (it is already labelled
       // and noted); a slot is free now → the normal alert, and the overflow label goes

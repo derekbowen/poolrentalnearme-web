@@ -20,7 +20,8 @@
 //   body overflow hidden; Radix dialogs set data-scroll-locked). While hidden,
 //   <html> carries prnm-cw-hidden and the CSS keeps the SDK's window invisible, so
 //   a reply that arrives then (the SDK's unread preview) cannot pop over the
-//   dialog; it shows once the dialog closes.
+//   dialog; it shows once the dialog closes. A preview already on screen when the
+//   dialog opens is kept the same way, not closed (closing would mark it read).
 // Both env values are public build-time values (east_widget.py writes them to
 // .env.production.local for the build).
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -86,6 +87,12 @@ const WIDGET_CSS = `
 }
 @media (min-width: 667px) and (max-width: 1024px) {
   .woot-widget-holder.woot-elements--left:not(.woot--hide) { top: auto !important; bottom: calc(136px + env(safe-area-inset-bottom, 0px)) !important; max-height: min(640px, calc(100% - 156px)) !important; min-height: 0 !important; }
+  .woot-widget-holder.woot-elements--left:not(.woot--hide):not(.has-unread-view) { max-height: min(640px, calc(100% - 216px)) !important; }
+}
+@media (min-width: 667px) and (max-width: 1024px) and (max-height: 465px) {
+  #prnm-chat-launcher { left: 10px; width: 48px; height: 52px; padding: 7px 0 6px; flex-direction: column; gap: 4px; border-radius: 14px; font-size: 11px; }
+  .woot-widget-holder.woot-elements--left:not(.woot--hide):not(.has-unread-view) { top: env(safe-area-inset-top, 0px) !important; bottom: env(safe-area-inset-bottom, 0px) !important; left: 68px !important; height: auto !important; max-height: none !important; border-radius: 0 !important; }
+  .woot-widget-holder.has-unread-view.woot-elements--left:not(.woot--hide) { bottom: calc(144px + env(safe-area-inset-bottom, 0px)) !important; max-height: calc(100% - 164px) !important; }
 }
 @media (max-width: 666px) {
   .woot-widget-holder.has-unread-view.woot-elements--left:not(.woot--hide) { bottom: calc(144px + env(safe-area-inset-bottom, 0px)) !important; max-height: calc(100% - 164px) !important; }
@@ -261,13 +268,16 @@ function toggleChat() {
   emit();
 }
 
-// Hiding closes an open chat or preview and drops a pending open; anything the SDK
-// opens while hidden stays invisible (HIDDEN_CLASS) and shows when this ends.
+// Hiding closes the full chat window and drops a pending open; whatever the SDK
+// shows while hidden stays invisible (HIDDEN_CLASS) and shows again when this ends.
+// An unread preview is never closed here: in Chatwoot (widget/App.vue) closing from
+// the unread-messages view marks the reply seen and dismisses it, and with the
+// bubble hidden nothing else would tell the visitor a reply is waiting.
 function setHidden(hidden: boolean) {
   st.hidden = hidden;
   if (hidden) {
     st.wantOpen = false;
-    if (st.phase === "ready" && st.view !== "closed") callToggle(window as CwWindow, "close");
+    if (st.phase === "ready" && st.view === "open") callToggle(window as CwWindow, "close");
   }
   syncRoot(document);
   emit();

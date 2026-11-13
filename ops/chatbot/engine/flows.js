@@ -156,6 +156,8 @@ const MAX_ESCALATION_TRIES = 5;
 const MAX_EXTRA = 5; // "They also said" lines kept per handoff (the note shows these five)
 const MAX_OFFERED = 12; // button values remembered from the last select
 const MAX_OFFERED_LOG = 30; // button values remembered across earlier selects
+const MAX_PARTS = 6; // questions of one message matched on their own (multiPart)
+const MAX_SPLIT = 12; // more pieces than this is not a list of questions: one text
 const DANGER_REPEAT_MS = 10 * 60 * 1000; // the 911 line while waiting for a person: at most once per 10 minutes
 // taps whose meaning depends on the question on screen right now; from an older message they need words
 const CONTEXT_VALUES = /^(?:other|yes:|no:|ref:none|reply:|safety:)/;
@@ -503,8 +505,16 @@ class Engine {
 
   /** A handoff logged over the hourly or per-visitor ceiling may still alert once a slot frees up (D3). */
   deferred(st) {
-    const h = st.handoff;
-    return !!(h && h.status === 'capped' && (h.capped === 'global' || h.capped === 'contact') && !st.humanOwned);
+    const h = st && st.handoff;
+    return !!(
+      h &&
+      h.status === 'capped' &&
+      (h.capped === 'global' || h.capped === 'contact') &&
+      !st.humanOwned &&
+      // an alert that already went out (a sentAt, or its @mention note done) is never retried as a new one
+      !h.sentAt &&
+      !(h.done && h.done.note)
+    );
   }
 
   /** Plain private note (no @mention, so no new push: D3) about danger reported while waiting. */
@@ -648,6 +658,21 @@ class Engine {
     if (guard && guard.kind === 'urgent' && !(retrying && st.handoff.urgency === 'high'))
       return this.startUrgent(st, guard, text, turn);
 
+    // The reply to "Is someone hurt or in danger right now?" (round 4). Anything that is not clearly
+    // "no" is a yes ("hurry", "my son", "he is 4", "idk", "she is in the water"): the urgent handoff,
+    // with what they wrote kept. "no" alone carries on; "no, it's about my booking" is matched afresh.
+    let safetyChecked = false;
+    let rematch = null;
+    if (st.awaiting && st.awaiting.kind === 'safety-check') {
+      const reply = safety.safetyReply(text);
+      turn.log('safety_check_reply', { reply: reply.kind });
+      if (reply.kind === 'yes') return this.safetyAnswer(st, true, turn, safety.yesNo(text) === 'yes' ? null : text);
+      if (reply.kind === 'no') return this.safetyAnswer(st, false, turn);
+      st.awaiting = null;
+      safetyChecked = true;
+      rematch = reply.rest || null;
+    }
+
     // A previous handoff failed: try again with whatever they just added.
     if (retrying) {
       this.addDetail(st.handoff, text);
@@ -656,7 +681,7 @@ class Engine {
 
     // "HELP!!!", "pls help", "she's not responding" and nothing else: one question, 911 line first.
     // Asked again while that question is on screen, it is a yes.
-    if (guard && guard.kind === 'check') {
+    if (guard && guard.kind === 'check' && !safetyChecked) {
       if (st.awaiting && st.awaiting.kind === 'safety-check') return this.safetyAnswer(st, true, turn, text);
       return this.safetyCheck(st, text, turn);
     }
@@ -686,7 +711,7 @@ class Engine {
       return;
     }
     const plain = safety
-      .stripRefs(text)
+      .stripRefs(rematch || text)
       .replace(/\[[a-z ]+ removed\]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -698,14 +723,14 @@ class Engine {
     if (notEnglish(text)) {
       turn.log('not_english', {});
       // it counts as a miss: a second one brings in Derek and Brandon with both messages kept
-      if (st.attempts >= 1) return this.miss(st, plain, turn, null);
+      if (st.attempts >= 1) return this.miss(st, plain, turn, null, { safetyChecked: true });
       st.attempts += 1;
       st.misses.push(safety.redactForLog(plain, 300));
       if (st.misses.length > 4) st.misses.splice(0, st.misses.length - 4);
       st.awaiting = null;
       return turn.select(COPY.englishOnly, [COPY.founderButton]);
     }
-    return this.answerOrClarify(st, plain, turn);
+    return this.answerOrClarify(st, plain, turn, { safetyChecked });
   }
 
   onButton(st, input, turn) {
@@ -748,7 +773,10 @@ class Engine {
     }
     if (v === 'other') {
       turn.log('clarify_rejected', {});
-      return this.miss(st, (awaiting && awaiting.text) || '', turn, null, { fromClarify: true });
+      return this.miss(st, (awaiting && awaiting.text) || '', turn, null, {
+        fromClarify: true,
+        safetyChecked: !!(awaiting && awaiting.safetyChecked),
+      });
     }
     if (v.startsWith('route:')) {
       const parts = v.split(':');
@@ -779,11 +807,19 @@ class Engine {
   // ------------------------------------------------------------------ matching
   answerOrClarify(st, text, turn, { safetyChecked = false, whole = null } = {}) {
     const m = this.gate(this.matcher.match(text, { role: st.role, topic: st.topic }), text, st);
+    // a statement that a person is in or at the water ("my son is in the deep end", "she is by the drain")
+    // is asked about (911 line first), never answered with a bank fact or a menu (round 4)
+    const atWater = !safetyChecked && !whole && safety.personAtWater(text);
     if (m.status === 'confident') {
       const top = this.byId.get(m.top.id);
+      if (atWater) return this.safetyCheck(st, text, turn);
       // An urgent entry (911 line, founders paged) only through a safety guard, never from a
       // look-alike question ("is the pool safe for kids?" ≈ "the pool is unsafe"): ask first.
-      if (top.urgency === 'high' && top.mode === 'handoff') return this.confirmEntry(st, top, text, turn, m);
+      if (top.urgency === 'high' && top.mode === 'handoff') {
+        // "im so mad right now" is not "I feel unsafe right now": calm voice, no 911 line, no confirm (round 4)
+        if (safety.plainAnger(text)) return this.miss(st, text, turn, m, { safetyChecked });
+        return this.confirmEntry(st, top, text, turn, m, { safetyChecked });
+      }
       // a host-side answer to a question with no host words and no known role: ask who they are first
       if (!st.role && HOST_CONTEXT_ENTRIES.has(top.id) && !HOST_WORDS.test(clean(text))) {
         st.awaiting = { kind: 'role', text: cap(text) };
@@ -803,8 +839,10 @@ class Engine {
     // Not sure what they mean, and it reads like someone may be hurt or in danger (or it is about a
     // person and not a booking question): ask that first, with the 911 line, instead of offering
     // unrelated answers. A false positive costs one question.
-    if (!safetyChecked && (safety.softDanger(text) || safety.personConcern(text)))
+    if (!safetyChecked && (atWater || safety.softDanger(text) || safety.personConcern(text)))
       return this.safetyCheck(st, text, turn);
+    // nothing but anger ("im so annoyed right now"): calm voice, never a menu of unrelated answers
+    if (safety.plainAnger(text)) return this.miss(st, text, turn, m, { safetyChecked });
     // several questions in one message: answer the first part we are sure about
     if (!whole && this.answerParts(st, text, turn)) return;
     if (m.status === 'ambiguous') {
@@ -817,10 +855,10 @@ class Engine {
         });
         return;
       }
-      if (st.clarifiedOnce) return this.miss(st, text, turn, m);
+      if (st.clarifiedOnce) return this.miss(st, text, turn, m, { safetyChecked });
       st.clarifiedOnce = true;
       const opts = m.candidates.slice(0, 3);
-      st.awaiting = { kind: 'disambiguate', options: opts.map((o) => o.id), text: cap(text) };
+      st.awaiting = { kind: 'disambiguate', options: opts.map((o) => o.id), text: cap(text), safetyChecked };
       // one candidate: a yes/no ("is this what you mean?"), not a one-item menu
       turn.select(opts.length === 1 ? COPY.confirmOne : COPY.disambiguate, [
         ...opts.map((o) => ({ title: this.byId.get(o.id).question, value: `entry:${o.id}` })),
@@ -844,7 +882,7 @@ class Engine {
         needBookingRef: mentionsBooking(text),
       });
     }
-    return this.miss(st, text, turn, m);
+    return this.miss(st, text, turn, m, { safetyChecked });
   }
 
   /**
@@ -866,14 +904,20 @@ class Engine {
     return { ...m, status: 'ambiguous', top, candidates: candidates.slice(0, 3), needsRole: false };
   }
 
-  /** "how many people can we bring, can we bring a speaker and also is there parking?" → the separate questions. */
+  /**
+   * "how many people can we bring, can we bring a speaker and also is there parking?" → the separate questions.
+   * Bounded (round 3, redos2.js): a split into more than MAX_SPLIT pieces ("x?x?x?…", 750 of them) is not a
+   * list of questions, so it is treated as one text (no parts); otherwise at most MAX_PARTS are matched.
+   */
   multiPart(text) {
-    return String(text || '')
+    const pieces = String(text || '')
       .split(
         /\?+|\s+(?:and also|also|plus|oh and|and another thing)\s+|[.!;]\s+(?=[a-z])|,\s*(?=(?:and )?(?:can|could|do|does|did|is|are|how|what|whats|when|where|will|would|should|any)\b)/i
       )
       .map((p) => (p || '').replace(/^\s*(?:and|also|so|ok|okay|hi|hey|hello|but)\b[\s,]*/i, '').trim())
-      .filter((p) => this.matcher.canon(p).length >= 1);
+      .filter(Boolean);
+    if (pieces.length > MAX_SPLIT) return [];
+    return pieces.filter((p) => this.matcher.canon(p).length >= 1).slice(0, MAX_PARTS);
   }
 
   /** Answer the first confidently matched part of a multi-question message; offer the others as buttons. */
@@ -921,7 +965,14 @@ class Engine {
     );
   }
 
-  miss(st, text, turn, m, { fromClarify = false } = {}) {
+  miss(st, text, turn, m, { fromClarify = false, safetyChecked = false } = {}) {
+    // The structural fallback (round 4): a statement about a person and water, a drain, a gate or a
+    // fence ("my son is in the deep end", "she is by the drain") is never answered "say it another way".
+    // Ask the safety question first (911 line); a "no" brings the message back here, checked.
+    if (!safetyChecked && text && (safety.personAtWater(text) || safety.bodyState(text))) {
+      turn.log('structural_fallback', { text: safety.redactForLog(text) });
+      return this.safetyCheck(st, text, turn);
+    }
     st.attempts += 1;
     if (text) st.misses.push(safety.redactForLog(text, 300));
     if (st.misses.length > 4) st.misses.splice(0, st.misses.length - 4);
@@ -941,19 +992,22 @@ class Engine {
         needBookingRef: mentionsBooking(question),
       });
     }
+    // an upset customer with no harm word ("im so mad right now"): calm, one question, the founder one tap away
+    if (safety.plainAnger(text)) return turn.select(COPY.upsetTellMore, [COPY.founderButton]);
     if (fromClarify) return turn.say(COPY.rephrase);
     // one question per message: "say it another way?", with the founder as a button, not a second question
     turn.select(COPY.firstMiss, [COPY.founderButton]);
   }
 
   /** "Is this what you mean?" for an urgent entry the matcher reached without a safety guard. */
-  confirmEntry(st, entry, text, turn, m) {
-    if (st.clarifiedOnce) return this.miss(st, text, turn, m);
+  confirmEntry(st, entry, text, turn, m, { safetyChecked = false } = {}) {
+    if (st.clarifiedOnce) return this.miss(st, text, turn, m, { safetyChecked });
     st.clarifiedOnce = true;
-    st.awaiting = { kind: 'disambiguate', options: [entry.id], text: cap(text) };
+    st.awaiting = { kind: 'disambiguate', options: [entry.id], text: cap(text), safetyChecked };
     // a statement that matched a 911 entry ("my kid got hurt ...") still hears the 911 line first;
     // a question ("is the pool safe for kids?") does not
-    const lead = entry.answer.startsWith(LINE_911) && !safety.isQuestion(text);
+    // ... and only when something in it is about harm (round 4: "im so over this right now" ≈ "i feel unsafe right now")
+    const lead = entry.answer.startsWith(LINE_911) && !safety.isQuestion(text) && safety.harmCue(text);
     turn.select(lead ? `${LINE_911} ${COPY.confirmOne}` : COPY.confirmOne, [
       { title: entry.question, value: `entry:${entry.id}` },
       { title: COPY.somethingElse, value: 'other' },
@@ -1121,14 +1175,13 @@ class Engine {
     const a = st.awaiting;
     const s = clean(text);
     if (a.kind === 'safety-check') {
-      const whole = safety.yesNo(text);
-      const lead = whole || safety.yesNo(text, { prefix: true });
-      // "yes" / "yes he's still in the water": urgent, with whatever they added
-      if (lead === 'yes') {
-        this.safetyAnswer(st, true, turn, whole ? null : text);
+      // onText answers this question before anything else (safetyReply); kept here so no path drops it
+      const reply = safety.safetyReply(text);
+      if (reply.kind === 'yes') {
+        this.safetyAnswer(st, true, turn, safety.yesNo(text) === 'yes' ? null : text);
         return true;
       }
-      if (whole === 'no') {
+      if (reply.kind === 'no') {
         this.safetyAnswer(st, false, turn);
         return true;
       }
@@ -1167,7 +1220,7 @@ class Engine {
         return true;
       }
       if (/^(neither|none|no|nope|none of (those|them|these)|something else|other)$/.test(s)) {
-        this.miss(st, a.text, turn, null, { fromClarify: true });
+        this.miss(st, a.text, turn, null, { fromClarify: true, safetyChecked: !!a.safetyChecked });
         return true;
       }
       // the same question again is not a pick: run it fresh (it counts towards the two misses)

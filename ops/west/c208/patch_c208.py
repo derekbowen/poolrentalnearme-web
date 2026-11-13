@@ -24,8 +24,8 @@ FILES = {  # path: (md5 of the build-tree file now, None = must not exist; sha25
     "src/routing/AppRouter.jsx": ("c30d1847b1a6b54c26b66ac2b7119499", "219bd60a4ee1965170a62972145f2e017e7da5954f0f9e9f2157d0be3389a1e5"),
     "server/csp.js": ("f8c3beae7696e51d26c83339a21ff43c", "09ff46739405395ca62abf970d4ea795be3a44bf6d5c9faa3e0ed75eff9cc436"),
     "src/components/ChatwootWidget/ChatwootWidget.js": (None, "b3016b29393f7f5682b64c804080d2a8f0236098deea82a7c2520ff315b00ff9"),
-    "src/components/ChatwootWidget/chatwootLoader.js": (None, "121c54e032a7d13c0694c0c2a258dff71f9219b5c10bdb38f63e35fa059e7879"),
-    "src/components/ChatwootWidget/chatwootLoader.test.js": (None, "2e491369ba16223fe469b2112daffa3e38fc3338e786692466217a68a0996419"),
+    "src/components/ChatwootWidget/chatwootLoader.js": (None, "2ad21435da1246304309801927b2df4801e9e7d1a4f3a2a7e56c1a4022297653"),
+    "src/components/ChatwootWidget/chatwootLoader.test.js": (None, "2fe3185a57064738bbd454600ab34b40d866759eaa4cd63190da3c24e14c29fc"),
 }
 DEPS = {  # imported by the widget, unchanged by c208
     "src/context/routeConfigurationContext.js": "9638d0adec76bf3cfa45278fa74b3a0c",

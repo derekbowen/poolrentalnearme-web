@@ -259,3 +259,44 @@ test('round 3: a message with several questions answers one and offers the other
     for (const sel of sels) assert.doesNotMatch(sel.content, /\?/);
   }
 });
+
+// ------------------------------------------------------------------ round-3 review (engine): multiPart cost (redos2.js)
+test('round 3: a 1,500-char "x?x?…" message is one text, not 750 questions: a bounded number of matches, fast', () => {
+  const { newState } = require('../engine/flows');
+  let calls = 0;
+  const orig = engine.matcher.match;
+  engine.matcher.match = function (...a) {
+    calls++;
+    return orig.apply(this, a);
+  };
+  try {
+    const shapes = ['x?'.repeat(750), 'pool? '.repeat(250), 'pool and also '.repeat(110), 'pool. host '.repeat(140), 'pool, can '.repeat(150), 'can i book a pool? '.repeat(80)].map((s) => s.slice(0, 1500));
+    for (const t of shapes) {
+      assert.deepEqual(engine.multiPart(t), [], `${t.slice(0, 12)}: a pathological split is no list of questions`);
+      calls = 0;
+      const r = engine.handle(null, { kind: 'text', text: t });
+      assert.ok(calls <= 8, `${t.slice(0, 12)}: ${calls} matcher calls (was 752 for x?x?…)`);
+      assert.ok(r.actions.some((a) => a.type === 'say' || a.type === 'select'), 'still answered (never silence)');
+      // the matching path itself (safety checks aside): well under 25 ms per message
+      const run = () => {
+        const turn = { say() {}, select() {}, log() {}, note() {}, escalate() {}, actions: [], events: [] };
+        engine.answerOrClarify(newState(), t, turn, { safetyChecked: true });
+      };
+      run();
+      const t0 = process.hrtime.bigint();
+      for (let i = 0; i < 10; i++) run();
+      const ms = Number(process.hrtime.bigint() - t0) / 1e6 / 10;
+      assert.ok(ms < 25, `${t.slice(0, 12)}: ${ms.toFixed(1)} ms per message`);
+    }
+    // a real list of questions still splits, and at most six parts are ever matched
+    const qs = ['how do i book a pool for saturday', 'can we bring towels', 'is there parking', 'can we bring a dog', 'is the pool heated', 'how deep is it', 'are there lifeguards', 'can i cancel'];
+    const many = qs.join('? ');
+    assert.equal(engine.multiPart(many).length, 6);
+    calls = 0;
+    engine.handle(null, { kind: 'text', text: many });
+    assert.ok(calls <= 8, `${calls} matcher calls for eight questions`);
+    assert.equal(engine.multiPart(Array.from({ length: 13 }, () => 'is there parking').join('? ')).length, 0, 'thirteen pieces: one text');
+  } finally {
+    engine.matcher.match = orig;
+  }
+});

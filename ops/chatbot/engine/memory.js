@@ -14,10 +14,21 @@
  * loop on disk. The store keeps at most 1,000 conversations (30-day TTL): about
  * 8 MB of JSON in the worst case, a few tens of milliseconds to serialise.
  * flush() is the synchronous write used at shutdown and in tests.
+ *
+ * Eviction is not plain LRU (round 3, deferred_starve): the executor ranks each
+ * state (setRank) and the lowest rank goes first, least recently written first
+ * within a rank. A founder alert still waiting for a free slot (rank 2-3) is
+ * never evicted to make room for ordinary chats, so a flood of 1,000 "hi"
+ * conversations cannot make the bot forget an emergency it told the customer it
+ * had logged. A pinned state (rank >= PIN_RANK) is also exempt from the TTL.
  */
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+
+// states ranked this high (a founder alert still waiting for a slot) also outlive the TTL
+const PIN_RANK = 2;
+const PRUNE_SLACK = 50;
 
 class MemoryStore {
   constructor({ file = null, ttlDays = 30, maxConversations = 1000, debounceMs = 2000 } = {}) {
@@ -27,6 +38,8 @@ class MemoryStore {
     this.debounceMs = debounceMs;
     this.map = new Map();
     this.meta = new Map();
+    // how much a state matters when the store is full (0 = ordinary); see setRank()
+    this.rank = () => 0;
     this.timer = null;
     this.writing = null; // the asynchronous write in progress, if any
     this.dirty = false; // changed again while that write was running
@@ -56,9 +69,33 @@ class MemoryStore {
     return v ? JSON.parse(JSON.stringify(v)) : null;
   }
 
+  /** The stored state itself, not a copy: read-only, for cheap checks on hot paths (the deferred sweep). */
+  peek(key) {
+    return this.map.get(key) || null;
+  }
+
+  /**
+   * How much a state matters when the store is full: (state) => number. Lower ranks are evicted first;
+   * a rank of PIN_RANK or more is also kept past the TTL.
+   */
+  setRank(fn) {
+    this.rank = typeof fn === 'function' ? fn : () => 0;
+  }
+
+  rankOf(v) {
+    try {
+      const r = Number(this.rank(v));
+      return Number.isFinite(r) ? r : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   set(key, state) {
     this.map.delete(key);
     this.map.set(key, JSON.parse(JSON.stringify(state)));
+    // bounded between writes too (and for a store with no file): prune once it is a little over the cap
+    if (this.map.size > this.max + PRUNE_SLACK) this.prune();
     this.schedule();
   }
 
@@ -79,9 +116,14 @@ class MemoryStore {
 
   prune(now = Date.now()) {
     for (const [k, v] of this.map) {
-      if (now - (v.updatedAt || 0) > this.ttlMs) this.map.delete(k);
+      if (now - (v.updatedAt || 0) > this.ttlMs && this.rankOf(v) < PIN_RANK) this.map.delete(k);
     }
-    while (this.map.size > this.max) this.map.delete(this.map.keys().next().value);
+    const over = this.map.size - this.max;
+    if (over <= 0) return;
+    // lowest rank first, least recently written first within a rank (the map keeps write order)
+    const order = [...this.map].map(([k, v], i) => ({ k, r: this.rankOf(v), i }));
+    order.sort((a, b) => a.r - b.r || a.i - b.i);
+    for (let n = 0; n < over; n++) this.map.delete(order[n].k);
   }
 
   schedule() {
@@ -150,4 +192,4 @@ class MemoryStore {
   }
 }
 
-module.exports = { MemoryStore };
+module.exports = { MemoryStore, PIN_RANK };

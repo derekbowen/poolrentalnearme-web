@@ -200,7 +200,7 @@ function declinesBookingRef(text) {
 
 // ----------------------------------------------------------------- mood
 const UPSET_WORDS =
-  /\b(ridiculous|unacceptable|terrible|awful|worst|furious|angry|pissed|wtf|horrible|disgusting|outrageous|useless|livid|fed up|sick of|joke|unbelievable|scam artists|bullshit|bs|garbage|trash|pathetic|incompetent|insane|crazy|fuming|mad|frustrat\w*|annoy\w*|disappoint\w*|upset|ruin\w*|complain\w*|bbb|better business bureau|sue|suing|lawyer\w*|attorney\w*|not happy|unhappy|so done|irritat\w*|scammers?|thieves|thief|rip ?off|ripped off)\b/;
+  /\b(ridiculous|unacceptable|terrible|awful|worst|furious|angry|pissed|wtf|horrible|disgusting|outrageous|useless|livid|fed up|sick of|joke|unbelievable|scam artists|bullshit|bs|garbage|trash|pathetic|incompetent|insane|crazy|fuming|mad|frustrat\w*|annoy\w*|disappoint\w*|upset|ruin\w*|complain\w*|bbb|better business bureau|sue|suing|lawyer\w*|attorney\w*|not happy|unhappy|so done|irritat\w*|scammers?|thieves|thief|rip ?off|ripped off|(?:im|i am|so|were|we are) (?:so |totally |really )?over (?:this|it))\b/;
 function mood(text) {
   const raw = String(text || '');
   const s = clean(raw);
@@ -237,6 +237,15 @@ const SUBJ = alt(`i|im|we|he|hes|she|shes|they|theyre|someone|somebody|anyone|an
 const OTHERSUBJ = alt(`he|hes|she|shes|they|theyre|someone|somebody|${PNOUN}`);
 const OBJ = alt(`me|us|him|her|them|${PNOUN}`);
 const POSS = alt('my|his|her|their|our|your|a|the|its|one of|both|one of my|one of the');
+// round 4: a person as a noun phrase ("our 2 yr old", "a little girl", "the toddler", "he"), as a subject
+const DET = '(?:my|our|his|her|their|a|an|the|this|that|some|your|one of my|one of the|one of our)';
+const PERSON_NP = alt(
+  `${DET} (?:\\w+ ){0,2}(?:${PNOUN}|${CHILD})|${AGE}|he|hes|she|shes|someone|somebody|stranger|strangers|kid|toddler|baby|child|infant|boy|girl`
+);
+// ... and as an object, one person only ("pulled my son out", not "we pulled the kids out when it rained")
+const PERSON_ONE = alt(
+  `him|her|someone|somebody|${DET} (?:\\w+ ){0,2}(?:son|daughter|kid|child|baby|toddler|boy|girl|friend|brother|sister|husband|wife|guest|swimmer|nephew|niece|cousin|man|woman|guy|lady|person|grandson|granddaughter|infant|homie|buddy|teen|teenager|dad|mom|mum|father|mother|grandpa|grandma|kiddo|little one|bro|sis|${AGE})`
+);
 // a body part, unless it is a modifier ("the back door", "the arm of the chair")
 const BODY = `${alt(
   'head|face|eye|eyes|foot|feet|toe|toes|hand|hands|finger|fingers|thumb|arm|arms|leg|legs|knee|knees|ankle|ankles|' +
@@ -265,6 +274,10 @@ const BELONG = alt(
   'phone|cell|cellphone|iphone|bag|bags|purse|wallet|keys|key|stuff|things|belongings|sunglasses|glasses|towel|towels|' +
     'clothes|shoes|sandals|flip flops|watch|jewelry|ring|necklace|bracelet|earrings|laptop|ipad|tablet|camera|speaker|' +
     'cooler|float|floats|toys|backpack|airpods|headphones|charger|kindle|cash|car|bike|goggles|swimsuit|hat|jacket|stroller'
+);
+// round 4: things, not people: "my phone fell in the pool" is lost property, not a fall
+const THING = alt(
+  `${BELONG}|it|something|everything|anything|toy|ball|balls|noodle|noodles|raft|tube|lid|tile|cup|cups|bottle|bottles|can|cans|glass|plate|food|drink|drinks|umbrella|chair|book|card|leaf|leaves|branch|debris|sand|rock|rocks|ring|earring|earrings|wallet|ipod|earbuds|controller|remote|frisbee|cover|mask|snorkel|fin|fins|hair tie|hairtie|hair ties|scrunchie|hair clip|clip|barrette|headband|hair band|hairband|bobby pin|tie|band|bead|beads|lego|legos|coin|coins|penny`
 );
 const r = (src) => new RegExp(src);
 
@@ -317,10 +330,30 @@ const BENIGN = [
   /\bbleeding (?:money|cash)\b|\blightning (?:fast|quick)\b/g,
   // "I almost had a heart attack at the price" (not "I think he's about to have a heart attack")
   /\b(?:almost|nearly|practically|about to|gonna|going to|could have|could ve)\b(?: \w+){0,2} heart attack\b(?= (?:\w+ ){0,4}(?:price|prices|pricing|pricey|bill|fee|fees|cost|costs|total|charge|charges|quote|number|cheap|expensive|much|deal|rate|rates|lol|lmao|haha|jk)\b)|\bheart attack (?:at|over|when i saw|from) (?:the |that |this |your )?(?:price|prices|bill|fee|fees|cost|costs|total|charge|charges)\b/g,
+  // round 4 ---------------------------------------------------------------
+  // laughing and joy: "we almost died laughing", "died of excitement", "to die for", "drowned our sorrows",
+  // "almost had a heart attack when I saw how nice it was". "my son almost died in the pool" is untouched.
+  /\b(?:almost |nearly |practically |literally |basically |just about |about to |gonna |going to )?(?:died|die|dies|dying|dead)\b(?: (?:of|from|with|in))? (?:laughing|laughin|laughter|lol|lmao|haha\w*|excitement|joy|happiness|embarrassment|cuteness|jealousy|envy|boredom)\b/g,
+  /\bto die for\b|\bdrown(?:ed|ing|s)? (?:my|our|his|her|their|your|the) sorrows?\b|\btears of joy\b|\b(?:screaming|crying|squealing|shrieking|yelling|jumping) (?:with|of|from|in) (?:joy|happiness|excitement|delight|laughter)\b/g,
+  /\b(?:almost|nearly|practically|basically|literally|about to|could have|could ve) (?:had |have |having |give me |given me |gave me |got )?(?:a )?(?:heart attack|died|fainted|passed out|cried|fell over)\b(?= (?:when|after|seeing|at|over|because) (?:(?:i|we|he|she|they|my \w+|the kids) (?:saw|seen|see|looked|walked|got there|got in|found out|heard|realized|read|checked|opened)|how|the (?:view|price|prices|size|sight|backyard|pool)|seeing)\b)/g,
+  /\bheart attack (?:seeing|at how|over how|looking at|when (?:i|we) (?:saw|walked in|got there|got in))\b/g,
+  // "feeling blue", "blue about leaving": a mood, not a colour of the skin
+  /\b(?:feeling|feel|feels|felt) blue\b|\bblue (?:about|over|because|cause|since)\b/g,
+  // negated danger: "not dangerous", "nothing unsafe", "not an emergency", "nobody got hurt", "no injuries"
+  /\b(?:not|isnt|wasnt|arent|werent|aint|never|nothing|no|hardly|doesnt seem|didnt seem|does not seem|did not seem|dont think (?:its|it is|it was|thats|that is)|not really|not at all|nothing is|nothing was|nothing looked) (?:(?:at all|really|very|super|that|too|so|actually|even|remotely|in any way|particularly) )?(?:dangerous|unsafe|a danger|danger|in danger|hazardous|a hazard|hazard|an emergency|emergency|urgent|serious|scary|life threatening)\b/g,
+  /\b(?:nobody|no one|noone|no body|none of us|none of them|neither of (?:us|them)|nobody else)\b(?: (?:actually|really|ever|even))? (?:got |gets |get |was |were |is |are |has been |have been |been )?(?:hurt|injured|harmed|in danger)\b|\bno (?:injury|injuries|harm done)\b|\bwithout (?:any )?(?:injur\w*|getting hurt)\b/g,
+  // a fear, not an event: "my toddler is scared of the water", "she's afraid of drowning" ("scared of the host" stays)
+  /\b(?:scared|afraid|terrified|nervous|frightened|fearful) (?:of|about|around) (?:the |deep |getting |being )?(?:water|deep end|deep water|deep|pool|pools|swimming|heights|dark|slide|slides|diving|jumping in|getting wet|drowning|going under|falling|slipping|getting hurt|hurt)\b/g,
+  // a thing that fell in the water is lost property ("my phone fell in the pool", "it slipped into the deep end")
+  // (a thing falling ON someone is still an injury: "the umbrella fell on my son")
+  [r(`\\b(${THING})(?: (?:just|accidentally|also|then|somehow|all|both|literally))?(?: (?:popped|deflated|broke|ripped|tipped|flipped|blew off|came loose|came off) and(?: then)?)? (?:fell|falls|fallen|slipped|slips|tripped|went|sank|sunk|sinks|flew|blew|rolled)\\b(?! (?:on|onto|over) (?:me|him|her|them|us|my|our|his|their|someone|somebody|a kid|a child|the kid|a guest|the guest|people|everyone)\\b)`), '$1 dropped'],
+  // ... and a thing stuck in the drain is a clog, not an entrapment ("my son's toy is stuck in the drain")
+  // (only the thing as the one stuck: "the pool cover trapped my kid" is an entrapment)
+  [r(`\\b(${THING})(?: (?:is|was|got|has been|just got|keeps getting|are|were|is still|got all))? (?:stuck|caught|sucked|trapped|jammed)\\b(?= (?:in|into|at|on|under|to|inside|by|between|behind|down)\\b|$)`), '$1 lodged'],
 ];
 function benign(s) {
   let out = ` ${s} `;
-  for (const re of BENIGN) out = out.replace(re, ' ');
+  for (const re of BENIGN) out = Array.isArray(re) ? out.replace(new RegExp(re[0].source, 'g'), ` ${re[1]} `) : out.replace(re, ' ');
   return out.replace(/\s+/g, ' ').trim();
 }
 
@@ -361,6 +394,13 @@ const INJURY_STRONG = r(
     '(?:doing|giving|performing|started|starting|start|gave|did|do|give) cpr(?: on| to)?',
     'cpr (?:on|now|right now)',
     'needs cpr',
+    // round 4: CPR in other words
+    '(?:chest )?compressions',
+    '(?:pumping|pushing on|pressing on|pushing down on|pressing down on|pounding on) (?:his|her|their|the|a|my|our|this|that) (?:\\w+ )?chest',
+    'rescue breath\\w*',
+    'mouth to mouth',
+    'defibrillat\\w*',
+    '(?:an |the )?aed',
     'seizure\\w*',
     'seizing',
     'convuls\\w*',
@@ -378,7 +418,7 @@ const INJURY_STRONG = r(
     'zapped',
     'hit (?:his |her |their |my |its )?(?:head )?(?:on )?the bottom',
     '(?:turning|turned|went|gone|going) (?:purple|grey|gray)',
-    '(?:lips?|face|skin|fingers|nails) (?:is |are |went |turned |turning |going |gone |looks? |looking |getting )?(?:blue|purple|grey|gray)',
+    '(?:lips?|face|skin|fingers|fingertips|finger tips|nails|toes|mouth|cheeks)\\b(?: \\w+){0,3} (?:is |are |went |turned |turning |going |gone |looks? |looking |getting |seems? )?(?:(?:really|so|very|kinda|kind of|a little|a bit|pretty|all) )?(?:blue|bluish|blueish|purple|purplish|grey|gray|greyish|grayish|dark|white|pale|black)\\b(?! (?:lipstick|polish|nail polish|paint|eyeliner|marker))',
     '(?:cant|cannot|can t|couldnt|could not|unable to|not able to) (?:feel|move) (?:his|her|my|their|our) (?:legs?|arms?|body|hands?|feet|foot|toes|fingers|neck|face)',
     '(?:cant|cannot|can t|couldnt|could not|unable to|trying to|struggling to) catch (?:his|her|my|their|our) breath',
     'struggling to (?:swim|stay up|stay afloat|keep (?:his|her|their|my) head)',
@@ -411,7 +451,8 @@ const INJURY_STRONG = r(
     'heat exhaustion',
     'overdos\\w*',
     'hives',
-    'swallowed (?:a lot of |a bunch of |some |too much |so much )?(?:pool )?(?:water|chlorine|chemicals?)',
+    // any amount ("a ton of", "half the pool's"), and breathed in, not "drank some water"
+    '(?:swallowed|swallowing|swallows|inhaled|inhaling|aspirated|breathed in|breathing in|gulped|gulping|sucked in|choked on|choking on) (?:\\w+ ){0,4}(?:water|chlorine|chemicals?)',
     '(?:chlorine|chemical) (?:burn|burns|poisoning)',
     'poisoned',
     'sprain\\w*',
@@ -535,7 +576,7 @@ const INJURY_CONTEXT = [
   r(`\\b${SUBJ} (?:\\w+ ){0,2}(?:died|is dying|not alive)\\b`),
   // drowning in everyday words: not coming up, at the bottom, under the water, struggling, face down
   r(
-    `\\b${SUBJ}\\b(?: \\w+){0,5} (?:not|isnt|is not|hasnt|has not|havent|have not|didnt|did not|never|wont|still hasnt|still not|aint) (?:(?:come|came|coming|popped) (?:back )?up|resurfaced|surfaced|come back to the surface)\\b(?! with\\b| to (?:the|my|our) (?:house|gate|door|front|room|office|pool area|backyard|yard)\\b| (?:in|on|for|when|under) (?:the |a |my |our |any )?(?:search|searches|google|results|map|maps|app|site|page|list|listings?|screen|calendar|filter|filters)\\b)`
+    `\\b${SUBJ}\\b(?: \\w+){0,8} (?:not|isnt|is not|hasnt|has not|havent|have not|didnt|did not|never|wont|still hasnt|still not|aint) (?:(?:come|came|coming|popped) (?:back )?up|resurfaced|surfaced|come back to the surface)\\b(?! with\\b| to (?:the|my|our) (?:house|gate|door|front|room|office|pool area|backyard|yard)\\b| (?:in|on|for|when|under) (?:the |a |my |our |any )?(?:search|searches|google|results|map|maps|app|site|page|list|listings?|screen|calendar|filter|filters)\\b)`
   ),
   r(`\\b${SUBJ}\\b(?: \\w+){0,3} (?:at|on|to|near) the bottom of the (?:pool|deep end|water|hot tub|hottub|spa|lake)\\b`),
   r(`\\b(?:sank|sunk|sinking|went down|gone down|going down|lying|laying) (?:to|at|on) the bottom\\b`),
@@ -549,11 +590,49 @@ const INJURY_CONTEXT = [
     `\\b(?:pull|pulled|pulling|drag|dragged|dragging|fished|carried) (?:him|her|someone|somebody|(?:my|our|a|the|his|her|their) (?:son|daughter|kid|child|baby|toddler|boy|girl|friend|brother|sister|husband|wife|guest|swimmer|nephew|niece|cousin|man|woman|guy|lady|person|grandson|granddaughter|infant|homie|buddy)) out of the (?:pool|water|deep end|hot tub|hottub|spa|lake)\\b`
   ),
   r(`\\b${SUBJ} (?:\\w+ ){0,2}(?:wandered|crawled|toddled|stumbled|fell) (?:in|into) the (?:pool|water|deep end|hot tub|hottub|spa|lake)\\b(?! area| house| room)`),
+  // round 4 ---------------------------------------------------------------
+  // pulled out, any wording: "pulled my nephew out the water", "pulled a little girl from the deep end"
+  r(
+    `\\b(?:pull|pulled|pulling|drag|dragged|dragging|fished|fishing|carried|yanked|hauled|rescued) ${PERSON_ONE} (?:out|from)\\b(?: of)?(?: the| a| our| their)? (?:pool|water|deep end|hot tub|hottub|spa|lake|jacuzzi|bottom)\\b`
+  ),
+  // ... and passive: "my nephew got pulled out of the pool", "she was rescued from the water"
+  r(
+    `\\b${PERSON_NP}\\b(?: \\w+){0,3} (?:got|was|were|been|has been|had to be|just got|is being|being) (?:just )?(?:pulled|dragged|fished|rescued|yanked|hauled) (?:out|from)\\b(?: of)?(?: the| a| our| their)? (?:pool|water|deep end|hot tub|hottub|spa|lake|jacuzzi|bottom)\\b`
+  ),
+  // found in the water: "our 2 yr old was found floating", "we found our toddler in the pool"
+  r(
+    `\\b(?:found|find|finding) ${PERSON_ONE}\\b(?: \\w+){0,2} (?:floating|face ?down|at the bottom|on the bottom|under ?water|under the water|in the (?:pool|water|deep end|hot tub|hottub|spa|lake|jacuzzi)(?! area| house| room| yard| gate)|not breathing|unresponsive|not moving|lifeless|limp)\\b`
+  ),
+  r(
+    `\\b${PERSON_NP}\\b(?: \\w+){0,2} (?:was|were|got|been|has been|is|are|just) (?:just )?found\\b(?: \\w+){0,2} (?:floating|face ?down|at the bottom|on the bottom|under ?water|under the water|in the (?:pool|water|deep end|hot tub|hottub|spa|lake|jacuzzi)(?! area| house| room| yard| gate)|not breathing|unresponsive|not moving|lifeless|limp)\\b`
+  ),
+  // a person who is blue: "he is blue", "hes all blue", "my baby is turning purple" (not "feeling blue")
+  r(
+    `\\b(?:he|hes|she|shes|they|theyre|${PERSON_NP})\\b (?:(?:is|was|s|are|were|looks|look|looked|looking|seems|seemed|getting|got|went|turned|turning|gone|has gone|is going|is getting|is turning|is looking|still|is still|is all|was all|looks all) (?:all |so |really |very |kinda |kind of |a little |a bit |completely |totally |pretty |super )?|(?:all|so|completely|totally) )(?:blue|bluish|blueish|purple|purplish|grey|gray|greyish|grayish)\\b(?! (?:float|floats|slide|team|one|ones|shirt|shirts|swimsuit|suit|trunks|goggles|cap|hat|towel|eyes|hair|bikini|noodle|raft|tube|ball|toy|stuff)\\b)`
+  ),
+  // a person who sank or is at the bottom: "a little girl just sank", "kid ... has been at the bottom for a while"
+  r(`\\b(?:${SUBJ}|${PERSON_NP})\\b(?: \\w+){0,2} (?:sank|sinking|sinks|sunk|slipped under|slid under|disappeared under|dipped under|went down under)\\b`),
+  r(
+    `\\b(?:${SUBJ}|${PERSON_NP})\\b(?: \\w+){0,6} (?:(?:is|was|are|were|been|has been|have been|still|lying|laying|stuck|sitting|resting|floating|just) (?:\\w+ )?(?:at|on) the bottom|(?:went|gone|sank|sunk|sinking|dropped|drifted) (?:\\w+ )?to the bottom)\\b(?! of (?:the |my |this |your |a )?(?:page|screen|list|listing|listings|email|app|site|website|form|message|messages|inbox|calendar|search|results|stairs|steps|hill|driveway|street|road|slide|ladder|booking|receipt|invoice|post))`
+  ),
+  // a person held at a drain, jet or filter: "my kid was stuck at the drain", "sucked onto the drain"
+  r(
+    `\\b(?:${SUBJ}|${PERSON_NP})\\b(?: \\w+){0,4} (?:stuck|caught|sucked|trapped|pinned|suctioned|held down) (?:down )?(?:at|on|onto|in|into|to|against|by|under|near|over|down)\\b(?: \\w+){0,4} (?:drain|drains|drain cover|jet|jets|filter|skimmer|suction|intake|vent|grate|grates)\\b`
+  ),
   // (not responding: see unresponsivePerson(), which needs the whole message)
   // neck or chest pain after a dive or a fall, burning eyes, a sting, a zap
   r(`\\b(?:neck|spine|chest)\\b (?:really |so |still |is |is really |is so )?(?:hurts|hurting|is hurting|is killing|in pain|aches|is aching)\\b`),
   r(`\\b(?:dove|dived|diving|jumped|hit|fell|landed)\\b.*\\b(?:neck|head|spine|back)\\b.*\\b(?:hurts|hurting|pain|aches|aching|numb)\\b`),
   r(`\\b(?:burning|stinging|burned|burnt|irritating) (?:my|his|her|their|our|the kids|the) (?:eyes|eye|skin|throat|face|lungs)\\b`),
+  // round 4: numb or can't lift / move a limb after a dive, a fall, a jump or a hit
+  {
+    re: r(
+      `\\b(?:${BODY} (?:is |are |went |goes |feels |feel |got |has gone |is all )?(?:numb|tingly|tingling|paralyzed|paralysed)|(?:cant|cannot|can t|couldnt|could not|unable to) (?:lift|raise|move|bend|use) (?:it|them|his \\w+|her \\w+|their \\w+|my \\w+))\\b`
+    ),
+    test(p) {
+      return /\b(?:dove|dived|diving|dive|jumped|jump|fell|fall|slipped|hit|landed|crashed|smacked|banged|pool|water|deep end|shallow end|side)\b/.test(p) && this.re.test(p);
+    },
+  },
   r(`\\b(?:got|gotten|been|getting|was|is) (?:zapped|electrocuted|shocked)\\b`),
   // a missing child at the pool (not "I can't find my friend's listing")
   r(
@@ -577,7 +656,7 @@ const HISTORY =
   /\b(?:last (?:week|month|year|summer|spring|winter|fall|time)|(?:a|one|two|three|four|five|six|few|couple of|couple|several|\d+) (?:days?|weeks?|months?|years?) ago|years ago|a while (?:ago|back)|while back|in the past|old (?:injury|injuries)|recovering from|recovery from|surgery|disabilit\w*|disabled|chronic|ever since)\b/;
 const NOW = /\b(?:now|right now|currently|still|again|today|tonight|just|this morning)\b/;
 const STRONG_NOW =
-  /\b(?:drown\w*|bleed\w*|blood|unconscious|not breathing|cant breathe|seiz\w*|chok\w*|passed out|fainted|ambulance|911|emergency)\b/;
+  /\b(?:drown\w*|bleed\w*|blood|unconscious|not breathing|cant breathe|seiz\w*|chok\w*|passed out|fainted|ambulance|911|emergency|went under|gone under|under ?water|under the water|face ?down|not come up|not coming up|hasnt come up|didnt come up|dont see (?:him|her|them)|cant see (?:him|her|them)|cant find)\b/;
 function historyOnly(p) {
   if (!HISTORY.test(p) || STRONG_NOW.test(p)) return false;
   // "my son hurt his knee last week and now it's swelling again" is happening now
@@ -614,7 +693,8 @@ function unresponsivePerson(v) {
 const RESOLVED =
   /\b(?:(?:its|it s|it is|thats|that s|were|we re|we are|everyone is|everybody is|hes|he s|he is|shes|she s|she is|theyre|they re|they are|im|i m|i am) (?:all |totally |completely |totally fine and |perfectly )?(?:fine|ok|okay|good|alright|all right|better)(?: now)?\b(?! (?:with|to|if|for|but))|all good now|no harm done|nobody (?:got |was )?hurt|no one (?:got |was )?hurt|noone (?:got |was )?hurt)/;
 function injuryResolved(v) {
-  return RESOLVED.test(v.s) && !STRONG_NOW.test(v.s);
+  // read before the benign strips: "nobody got hurt" is itself removed from v.s (round 4)
+  return RESOLVED.test(unDropG(clean(v.raw))) && !STRONG_NOW.test(v.s);
 }
 /** True when some sentence part reports an injury outside an "if ..." clause (and not as old history). */
 function injuryInFact(v) {
@@ -630,6 +710,11 @@ function injuryAnywhere(v) {
   return v.parts.some((p) => injuryActual(p));
 }
 
+// people who are not with the customer (no family words: "my son climbed the fence" is not an intruder)
+const STRANGERISH =
+  'stranger|strangers|someone|somebody|intruder|intruders|trespassers?|people|neighbor|neighbour|neighbors|neighbours|' +
+  '(?:a|an|some|this|that|the|random|strange|weird|creepy|drunk|angry|crazy|unknown|masked|two|three) (?:\\w+ )?(?:man|men|guy|guys|dude|dudes|woman|women|lady|person|people|neighbor|neighbour)|' +
+  '(?:some|random|strange|unknown|neighbor|neighbors|neighbour|local|two|three) (?:\\w+ )?(?:kid|kids|teen|teens|teenager|teenagers|boys)';
 const DANGER = [
   // fire / smoke / gas
   /\bon fire\b|\bcaught fire\b|\bcatching fire\b|\bfire (?:near|in|at|by|on|behind|next to|started|broke out|is spreading|spreading|everywhere|in the)\b|\b(?:a|the|small|big|grill|house|brush|electrical|kitchen|grease) fire\b|\bflames?\b|\bfire alarm (?:is )?(?:going off|went off)\b|\bthere s a fire\b/,
@@ -642,6 +727,10 @@ const DANGER = [
   // electrical
   /\b(?:sparks?|sparking|arcing)\b|\bexposed wir\w*|\blive wires?\b|\belectrified\b|\btingl\w* in the water\b|\bwater (?:is |feels |was |keeps )?(?:tingl\w*|buzz\w*|shocking)\b|\bpower lines? (?:down|in the)\b|\bdowned (?:power )?lines?\b/,
   // intruders
+  // round 4: someone who is not with them over the fence ("stranger jumped the fence", "a guy hopped our back gate")
+  r(
+    `\\b(?:${STRANGERISH})\\b(?: \\w+){0,3} (?:(?:jumped|jumping|jumps|hopped|hopping|hops|climbed|climbing|climbs|scaled|scaling|snuck|sneaking|crawled|crawling) (?:over |in over |through |under |past |into )?|(?:came|coming|comes|got|getting|gets|went|going) over )(?:the |our |my |a |their |his |her )?(?:\\w+ )?(?:fence|fences|wall|gate|hedge)\\b`
+  ),
   /\b(?:intruders?|trespass\w*|prowler)\b|\b(?:someone|somebody|they|people|guys|a guy|a man|some guy|he|she) (?:\w+ ){0,2}(?:broke|breaking|break|tried to break|trying to break) in(?:to)?\b|\bbroke into (?:the|my|our) (?:house|home|yard|backyard|pool|property|gate|shed|cabana)\b|\b(?:stranger|strangers|drunk (?:guy|man|dude|person|people|woman|guys|men)|random (?:guy|man|dude|person|people|guys|men)|some (?:guy|man|dude|people) (?:i|we) dont know)\b(?: \w+){0,4} (?:trying to (?:get|come|climb|break|jump)|climbing|jumping|hopping|came|got|walked|is|are|was) (?:in|into|over|on)\b/,
 ];
 function dangerInFact(v) {
@@ -658,6 +747,10 @@ const VIOLENCE = [
   ),
   // fights
   /\bfist ?fights?\b|\bbrawl\w*\b|\b(?:theres|there is|there s|got into|getting into|started|starting|broke out|breaking out|having|had|in) (?:a |an )?(?:fist |physical |big |huge |bad |real )?fight\b(?! (?:with|over|about) (?:the |my |our |a )?(?:charge|fee|refund|bank|card|dispute|price|cancellation|booking|host about))|\b(?:a|the) fight (?:at|in|by|near|outside|going on|broke out|breaking out|started|happening)\b|\b(?:are|is|were|was|started|keep|kept|theyre|they re|guys|men|people|guests) (?:physically |literally )?fighting(?: (?:at|in|by|near|outside|each other|in the))?\b(?! (?:the|this|a|my|over the|about the|for (?:a|my|the)) (?:charge|fee|refund|dispute|ticket|bill|price|cancellation|booking))/,
+  // round 4: someone coming at a person ("is coming at us", "charged at my son"); not "came after us" (a time)
+  r(
+    `\\b(?:coming|came|comes|running|ran|runs|charging|charged|charges|lunging|lunged|lunges|rushing|rushed|rushes|swinging|swung|lunge|charge) (?:right |straight |directly )?at (?:us|me|my (?:\\w+ )?(?:${PNOUN})|our (?:\\w+ )?(?:${PNOUN})|the kids|him|her|them)\\b`
+  ),
   // a knife or bat pulled on someone
   r(
     `\\b(?:pulled|pulling|pulls|has|had|have|holding|held|waving|waved|pointed|pointing|brandish\\w*|carrying|came at (?:\\w+ )?with|threatened (?:\\w+ )?with|swinging) (?:out )?(?:a |his |her |their |an |the )?(?:knife|knives|machete|blade|bat|crowbar|hammer|gun|pistol)\\b`
@@ -675,6 +768,15 @@ function violenceInFact(v) {
 }
 
 // ----------------------------------------------------------------- harassment
+// round 4: photo requests ("asking for pics of myself in a bikini")
+const PHOTO = '(?:pics?|pictures?|photos?|selfies?|snaps?|videos?|vids?|nudes)';
+const PHOTO_ASK =
+  '(?:ask\\w*|beg\\w*|want\\w*|request\\w*|demand\\w*|pressur\\w*|bug\\w*|pester\\w*|keeps? asking|kept asking|wont stop asking|dming|dmed|messag\\w*|texting|texted)';
+const BODY_SHOT =
+  '(?:bikini|bikinis|swimsuit|swimsuits|bathing suit|bathing suits|swimwear|underwear|lingerie|thong|speedo|bra|panties|body|bodies|feet|legs|butt|ass|chest|boobs|breasts|naked|nude|topless|shirtless|undressed|in the shower)';
+const PHOTO_OF_PERSON = r(
+  `\\b(?:keeps? asking|kept asking|wont stop asking|asking|asked|asks|begging|begged|wants|wanted|demanding|demanded|pressuring|pressured) (?:me |her |him |us |my \\w+ )?(?:for |to send (?:him |her |them )?|to see |to get |to take )?(?:\\w+ ){0,2}${PHOTO} of (?:me|myself|her|herself|him|himself|you|yourself|us|my (?:wife|girlfriend|gf|daughter|son|kids?|husband|teen|sister|friend|body))\\b`
+);
 const HARASS = [
   /\b(?:harass\w*|threat\w*|assault\w*|creep\w*|stalk\w*|groped|grope|groping|molest\w*|inappropriate\w*|aggressive|abusive|abuse|abused|indecent\w*|lewd|obscene|masturbat\w*|peeping|peeper|peeping tom|voyeur\w*|racist|racial slurs?|slurs?|homophobic|hate speech|predator\w*|pervert\w*|perv|touchy)\b/,
   /\bsexual\w*\b/,
@@ -733,7 +835,69 @@ const HARASS = [
   r(
     `\\b(?:texting|texted|texts|messaging|messaged|messages|dming|dmed|dms|snapchatting|snapping|calling|called|contacting|contacted|added|friended|following|followed) (?:my|our) (?:\\d+ ?(?:year old|yr old|yo|years old)s?|teen\\w*|little \\w+|young \\w+|minor|underage \\w+|kid|kids|child|children)\\b`
   ),
+  // round 4 ---------------------------------------------------------------
+  // an adult asking a child to keep a secret ("told my son not to tell me", "its our little secret")
+  (s) => secrecyWithChild(s),
+  // alcohol, drugs or money given to a minor ("my teen said the host gave her alcohol")
+  (s) => minorGiven(s),
+  // asking for photos of someone's body or swimsuit ("asking for pics of myself in a bikini")
+  r(`\\b${PHOTO_ASK}\\b(?: \\w+){0,5} ${PHOTO}\\b(?: \\w+){0,5} ${BODY_SHOT}\\b|\\b${PHOTO_ASK}\\b(?: \\w+){0,5} ${BODY_SHOT} ${PHOTO}\\b`),
+  (s) => PHOTO_OF_PERSON.test(s) && !/\b(?:id|license|licence|verif\w*|identity|passport|damage|damages|receipt)\b/.test(s),
+  // showing up at someone's home or work, or "knows where I live" (stalking)
+  (s) => stalking(s),
 ];
+// a child mentioned anywhere in the message
+const CHILD_REF = r(`\\b(?:my|our|the|his|her|their|your) (?:\\w+ )?(?:${CHILD})\\b|\\b${AGE}\\b|\\b(?:minors?|underage)\\b`);
+// an adult, as the one doing it (not family: "my husband gave my son money for snacks" is not a report)
+const ADULT_NOUN =
+  'host|hosts|owner|owners|guest|guests|man|men|guy|guys|dude|woman|lady|stranger|neighbor|neighbour|someone|somebody|adult|adults|renter|renters|lifeguard|employee|worker|cleaner|instructor|coach';
+const SECRECY =
+  /\b(?:keep (?:it|this|that|their|the|our|his|her|your|these|those)(?: \w+){0,2} (?:private|secret|hidden|quiet|between)|keep (?:\w+ ){0,3}(?:from|away from) (?:me|us|your (?:mom|dad|parents|mother|father|mum|family))|hide (?:it|this|that|them|\w+) from (?:me|us|your)|delete (?:the |their |his |her |our |these |those )?(?:messages|texts|chat|chats|pictures|photos|pics)|not to tell|dont tell|do not tell|don t tell|never tell|not tell|wont tell|keep (?:it|this|that|things|stuff|everything) (?:a |our |their |his |her )?(?:secret|quiet|between)|keep (?:a |the )?secrets?|(?:its|it is|our|a|their|his|her) (?:little |special |own )?secret|between (?:us|them|you and me|you and him|you and her|the two of (?:us|you|them))|not (?:to )?say anything|dont say anything|keep quiet|keep (?:it|this) quiet|not (?:to )?mention)\b/;
+const ADULT_SAYS = r(
+  `\\b(?:${ADULT_NOUN}|he|she|they)\\b(?: \\w+){0,3} (?:told|tells|telling|asked|asks|asking|said|says|saying|made|makes|making|wanted|wants|warned|warns|begged|whispered|whispers|promised|instructed|reminded|texted|messaged)\\b`
+);
+function secrecyWithChild(s) {
+  if (!SECRECY.test(s) || !CHILD_REF.test(s) || !ADULT_SAYS.test(s)) return false;
+  // planning a surprise is not a secret kept from a parent
+  return !/\b(?:surprise|surprises|surprising|birthday|bday|proposal|propose|proposing|engagement|gift for|present for)\b/.test(s);
+}
+const SUBSTANCE =
+  '(?:alcohol|alcoholic|beer|beers|wine|liquor|vodka|whiskey|whisky|tequila|rum|booze|shots?|hard seltzers?|white claws?|seltzers?|cocktails?|margaritas?|weed|pot|marijuana|edibles?|gummies|thc|vape|vapes|vaping|juul|nicotine|cigarettes?|cigs|cigars?|joints?|blunts?|drugs?|pills?|molly|cocaine|coke|money|cash|\\d+ dollars|\\d+ bucks|dollars|bucks|gift cards?|venmo)';
+const GIVE_VERB =
+  '(?:gave|give|gives|giving|offered|offer|offers|offering|bought|buys|buying|handed|hands|handing|sold|sells|selling|let|lets|letting|poured|pours|served|serves|snuck|slipped|shared|sharing|passed|paid|pays|paying|sent|sending|venmoed)';
+const GIVE_ADULT = r(`\\b(?:${ADULT_NOUN})\\b(?: \\w+){0,3} ${GIVE_VERB}\\b(?: \\w+){0,7} ${SUBSTANCE}\\b`);
+const GIVE_HE = r(`\\b(?:he|she|they)\\b(?: \\w+){0,2} ${GIVE_VERB} (?:my|our) (?:\\w+ )?(?:${CHILD})\\b(?: \\w+){0,4} ${SUBSTANCE}\\b`);
+function minorGiven(s) {
+  if (!CHILD_REF.test(s)) return false;
+  if (/\b(?:refund\w*|deposit|payout|money back|change back|their money|his money|her money)\b/.test(s)) return false;
+  return GIVE_ADULT.test(s) || GIVE_HE.test(s);
+}
+const HOME = '(?:house|home|place|apartment|apt|condo|door|front door|doorstep|street|building|car)';
+const AWAY = '(?:work|job|office|workplace|kids? school|sons? school|daughters? school|school|gym)';
+const STALK = [
+  // "knows where I live", "found out my address", "knows where my kids go to school"
+  /\b(?:knows|knew|found out|find out|finding out|figured out|tracked down|track down|looked up|googled)\b(?: \w+){0,2} (?:where (?:i|we|my (?:\w+ )?\w+|our \w+) (?:live|lives|stay|stays|work|works|go|goes|park|parks)|my (?:home |real |actual )?address|our (?:home |real )?address|my (?:license plate|plate number))\b/,
+  // keeps coming to someone's home or work
+  r(
+    `\\b(?:keeps?|kept|keep on|keeps on|wont stop|will not stop|wouldnt stop|still|constantly|always|repeatedly) (?:\\w+ )?(?:showing|show|showed|coming|came|turning|driving|stopping|hanging|lurking|waiting|parking|sitting) (?:up |by |over |around |back |past )?(?:at |to |outside |near |by |past |in front of |across from |around )?(?:my|our) (?:${HOME}|${AWAY})\\b`
+  ),
+  // at someone's work or school
+  r(
+    `\\b(?:show(?:ed|ing|s)? up|came|come|comes|coming|drove|parked|parking|waiting|lurking|knocking) (?:by |over |around |up |back )?(?:at |to |outside |near |by |past |in front of )?(?:my|our) ${AWAY}\\b`
+  ),
+  // at someone's home, uninvited / after the booking / at night / again
+  r(
+    `\\b(?:show(?:ed|ing|s)? up|came|come|comes|coming|drove|drives|driving|parked|parking|sitting|waiting|lurking|hanging around|standing|knocking|knocked|stopped by|stopping by|came by|coming by|came back|coming back|come back) (?:by |over |around |up |back )?(?:at |to |outside |near |by |past |in front of |across from |on )?(?:my|our) ${HOME}\\b(?: \\w+){0,6} (?:uninvited|unannounced|without (?:asking|warning|permission|being invited|telling)|after (?:the|my|our) (?:booking|stay|swim|visit|reservation|session|rental)|at night|all night|late at night|last night|overnight|tonight|for hours|for an hour|in the middle of the night|every day|everyday|every night|again|multiple times|several times|three times|right now|still)\\b`
+  ),
+  r(
+    `\\b(?:after|since) (?:the|my|our) (?:booking|stay|swim|visit|reservation|session|rental)\\b(?: \\w+){0,4} (?:show(?:ed|ing|s)? up|came|coming|keeps? coming|came back|drove by|parked) (?:at |to |outside |by |past )?(?:my|our) ${HOME}\\b`
+  ),
+];
+function stalking(s) {
+  if (!STALK.some((re) => re.test(s))) return false;
+  // coming back for something left behind is not stalking
+  return !r(`\\b(?:get|pick up|grab|return|drop off|forgot|left|bring back|brought back) (?:\\w+ ){0,2}(?:${BELONG}|stuff|things|keys?)\\b`).test(s);
+}
 // an adult (host, guest, a man, he) doing something to someone's child
 const GROOM_SHAPE = r(
   `\\b(?:host|hosts|owner|owners|guest|guests|man|men|guy|guys|dude|woman|lady|he|hes|she|shes|they|stranger|neighbor|neighbour|someone|somebody|adult|husband|boyfriend|son|brother|uncle|dad|father|grandpa|renter|lifeguard|employee|worker|cleaner)\\b(?: \\w+){0,4} (?:asked|asking|asks|told|telling|tells|gave|giving|gives|wanted|wants|tried|trying|tries|kept|keeps|offered|offering|offers|invited|inviting|invites|begged|pressured|bribed|dared|got|made|showed|showing|sent|sending|texted|messaged|followed|took|taking|let|bought|promised|whispered|called) (?:\\w+ ){0,3}(?:my|our) (?:\\w+ )?${CHILD}\\b`
@@ -810,13 +974,21 @@ const damageInFact = (s, v) => damage(s) && !damageQuestion(s, v);
 
 const HARM_RE =
   /\b(?:hurt|hurts|injur\w*|accidents?|drown\w*|bleed\w*|seizures?|chok\w*|electrocut\w*|stung|bitten|bites (?:someone|somebody|a|my|the|him|her|them)|sue|sues|sued|suing|lawsuit\w*|concussion|emergency|(?:someone|somebody|anyone|a guest|a kid|a child|he|she|they|guest|kid|child) (?:dies|died|die))\b/;
-const harmful = (p) => HARM_RE.test(p) || injuryActual(p) || damage(p);
+// round 4: "what if someone slips on my deck", "what if a kid trips": a hypothetical fall is a liability question
+const FALL_VERB = '(?:slip|slips|slipped|slipping|fall|falls|fell|falling|trip|trips|tripped|tripping)';
+const HYPO_FALL = r(
+  `\\b(?:${SUBJ}|${PERSON_NP})\\b(?: \\w+){0,3} ${FALL_VERB}\\b(?! (?:through|apart|behind|short|asleep|in love)\\b)|\\b${FALL_VERB} (?:on|in|into|off|down|over|and|at|near|by|from|onto|head first|headfirst)\\b`
+);
+const harmful = (p) => HARM_RE.test(p) || HYPO_FALL.test(p) || injuryActual(p) || damage(p);
 const LIAB =
   /\b(?:liab\w*|insur\w*|insurence|indemn\w*|lawsuit\w*|sue|sues|sued|suing|lawyer\w*|attorney\w*|legal action|legally|financially responsible|responsib\w*|at fault|on the hook|to blame|accountable|homeowner\w*|protected|coverage)\b/;
 
 // "is the pool covered or indoor?": a roof, not a policy
 const COVER_PHYSICAL =
   /\b(?:indoor|indoors|outdoor|outdoors|shade|shaded|shady|roof|roofed|awning|canopy|enclosed|enclosure|screened|sun|sunny|rain|raining|weather|tarp|winter|solar cover|pool cover|uncovered|umbrella|pergola|gazebo)\b/;
+const COVERED_THAT = r(
+  `\\b(?:is|are|was|were|would|will|wont|isnt|arent) (?:that|this|it|they|those|these|any of (?:this|that|it)|(?:my|the|our|his|her) (?:\\w+ )?(?:${BELONG}))(?: \\w+)? (?:be )?covered\\b`
+);
 // a guarantee about the pool itself (clean, heated, available) is a normal question, not a host guarantee
 const GUARANTEE_PLAIN =
   /\bguarantee\w* (?:that )?(?:the |my |a |it |its |this )?(?:pool|water|place|listing|it|spot|booking|reservation|price|weather)? ?(?:is |will be |be |stays )?(?:clean|cleaned|available|availability|heated|warm|open|sunny|nice|the lowest|lowest|best|cheapest|spot)\b|\bguarantee\w* (?:on |for |of )?(?:my |the |a |your )?(?:booking|bookings|reservation|spot|date|time|slot|payouts?|payments?|price|prices|availability|lowest price|best price)\b|\bmoney back guarantee\b/;
@@ -829,6 +1001,10 @@ const INSURANCE = [
     /\b(?:am i|are we|are you|is (?:my|the|our) (?:pool|home|house|property|backyard|stuff)|is it|is this|are hosts|are guests|would i be|will i be|am i still) (?:\w+ )?covered\b/.test(s) &&
     !COVER_PHYSICAL.test(s),
   (s) => /\bcovered (?:by|if|for|under|when|in case)\b/.test(s) && !COVER_PHYSICAL.test(s),
+  // round 4: "my phone fell in the pool, is that covered", "would my sunglasses be covered"
+  (s) => COVERED_THAT.test(s) && !COVER_PHYSICAL.test(s),
+  // "would a broken leg be covered", "are drownings covered": coverage of a harm, not a roof
+  (s) => /\b(?:be|is|are|was|were|get|gets|getting) covered\b/.test(s) && HARM_WORDS.test(s) && !COVER_PHYSICAL.test(s),
   // "who pays if a guest cracks my tile", not "who pays the stripe fee"
   (s) => /\b(?:who|what) (?:pays|covers|is paying|will pay|has to pay)\b/.test(s) && HARM_WORDS.test(s),
   /\bcover (?:the )?(?:damage|costs? of (?:the )?(?:damage|repairs?|injur\w*)|bills? for|me if|us if|injur\w*|medical|repairs?)\b/,
@@ -877,6 +1053,45 @@ function liabilityHypothetical(v) {
   return LIAB.test(v.s);
 }
 
+/*
+ * Round 4: "does your insurance cover guest injuries", "does the host insurance cover drowning", "is a
+ * broken arm covered": a coverage question that names an injury is Derek's rule-8 question, not a live
+ * injury. Injury stays first only when someone is hurt now ("my kid is bleeding, is that covered").
+ */
+const INS_WORD =
+  /\b(?:insur\w*|insurence|coverage|covers?|covered|polic(?:y|ies)|liab\w*|claims?|who pays|who is paying|who will pay|who has to pay|who covers|reimburs\w*|indemn\w*|homeowner\w*)\b/;
+const ASKING = /\b(?:wondering|curious|want to know|wanna know|need to know|question about|quick question|tell me about|explain|info on|information on|details on|asking about)\b/;
+const HARM_NOW = /\b(?:right now|just now|just happened|happening now|is happening|currently|as we speak|at the moment|rn)\b/;
+// someone reported in the sentence ("my kid is ...", "he just ...")
+const REPORTED = r(
+  `\\b(?:${SUBJ}|${PERSON_NP})\\b(?: \\w+){0,2} (?:is|are|was|were|got|gotten|just|has|have|had|been|keeps|kept|started|cant|cannot|isnt|wont|aint|s)\\b`
+);
+function liveHarm(v) {
+  if (unresponsivePerson(v) === 'urgent') return true;
+  return v.parts.some((p) => {
+    const q = stripHypo(p);
+    if (!q || historyOnly(q) || !injuryActual(q)) return false;
+    const asks = QUESTION_START.test(q);
+    // a plain report that someone is hurt
+    if (!asks && !INS_WORD.test(q)) return true;
+    // the coverage question itself: harm only when a person is reported in it, or it is happening now
+    if (!asks) return REPORTED.test(q);
+    return HARM_NOW.test(q) && REPORTED.test(q);
+  });
+}
+function insuranceQuestion(v) {
+  if (!insurance(v.s) || emergencyQuestion(v)) return false;
+  // a waiver is its own handoff (rules-waiver), still rule 8
+  if (/\b(?:waiver|waivers|waver|release form|liability form|sign a release)\b/.test(v.s)) return false;
+  const asked =
+    /\?/.test(v.raw) ||
+    v.parts.some((p) => QUESTION_START.test(p) || QUESTION_INSIDE.test(p)) ||
+    ASKING.test(v.s) ||
+    COVERED_THAT.test(v.s) ||
+    /\bwho (?:pays|covers|is responsible|is liable)\b/.test(v.s);
+  return asked && !liveHarm(v) && !dangerInFact(v) && !violenceInFact(v) && !damageInFact(v.s, v);
+}
+
 // ----------------------------------------------------------------- trust / scams / theft / refunds
 const TRUST =
   /\b(?:legit|legitimate|trustworthy|trust (?:you|you guys|this|this site|the site|prnm|pool rental near me|your site|this website|this company))\b|\bsafe to (?:use|book|pay|book with|pay with|book on|pay on|book through|pay through|give my card|enter my card|put my card|use my card)\b|\breal (?:site|company|website|business|platform|service)\b|\b(?:is|are) (?:this|this site|the site|this website|this company|you|you guys|yall|prnm|pool rental near me|this app|your site|your website|this platform|this service) (?:a |an |even )?(?:scam|fraud|fake|ripoff|rip off|legit)\b/;
@@ -898,6 +1113,36 @@ const THEFT = [
 ];
 const DISPUTE =
   /\b(?:chargeback\w*|charge back|dispute\w*|charged (?:\w+ ){0,2}(?:twice|double|two times|2 times)|charg\w* (?:me|us) (?:twice|double|two times)|double charg\w*|charged double|charged two times|overcharg\w*|over charged|wrong (?:charge|amount)|charged (?:the )?wrong|billing (?:error|mistake)|unauthori[sz]ed (?:charge|payment|transaction)|did not authori[sz]e|didnt authori[sz]e|never authori[sz]ed|fraudulent charge|charged for a booking i (?:didnt|did not|never) make|charged for something i (?:didnt|did not|never)|(?:reverse|reversing|reversed) (?:the |this |that |my |your )?(?:charge|charges|payment|transaction)|cancel(?:ling|ing)? (?:the |this |my )?(?:charge|payment) (?:with|through) (?:my|the) bank)\b|\b(?:call|calling|called|contact|contacting|contacted|tell|telling|told|go to|going to) (?:my|the) (?:bank|card company|credit card company)\b(?=.*\b(?:charge\w*|payment|money|refund|reverse|dispute|fraud)\b)|\b(?:charge\w*|payment|money|refund)\b(?=.*\b(?:call|calling|called|contact|contacting|tell|telling) (?:my|the) (?:bank|card company|credit card company)\b)/;
+// round 4: counted and duplicate charges in any wording ("charged 3 times", "two charges on my card",
+// "the same charge twice on my statement", "you took my money twice", "charged again")
+const NUM_TIMES =
+  '(?:twice|thrice|double|triple|(?:two|three|four|five|six|several|multiple|many|a few|a couple|a couple of|\\d+) times|\\d+ ?x)';
+const DISPUTE_MORE = [
+  r(`\\bcharg(?:ed|ing|es|e) (?:me |us |my card |our card |my account |my bank |it )?(?:\\w+ ){0,3}${NUM_TIMES}\\b`),
+  /\b(?:two|2|three|3|four|4|double|duplicate|duplicated|multiple|several|extra|repeat|repeated|identical|second|same) (?:\w+ )?(?:charges?|payments?|transactions?|withdrawals?|debits?)\b(?: \w+){0,4} (?:on|in|to|from|hit|showing|showed|show up|showing up|went through|came out of) (?:my|our|the) (?:\w+ )?(?:card|statement|bank|account|bill|credit card|debit card|bank account|bank statement)\b/,
+  r(`\\b(?:same|identical) (?:charge|payment|transaction|amount)\\b(?: \\w+){0,3} ${NUM_TIMES}\\b`),
+  r(`\\b(?:charge|charges|payment|payments|transaction) (?:\\w+ ){0,2}(?:went through|came out|posted|hit|showed up|shows up|appeared|happened) (?:\\w+ ){0,2}${NUM_TIMES}\\b`),
+  /\b(?:took|taken|taking|takes|pulled|withdrew|grabbed|charged) (?:\w+ )?(?:my|our) money (?:\w+ )?(?:twice|again|two times|2 times|three times|3 times|double)\b/,
+  /\b(?:charged|billed|debited) (?:me |us |my card |our card )?again\b/,
+  /\b(?:paid|pay|paying) (?:\w+ ){0,2}(?:twice|two times|2 times|double)\b|\bdouble (?:payment|paid|billed|billing)\b|\bduplicate (?:charge|charges|payment|payments|transaction|transactions|billing)\b|\bbilled (?:\w+ ){0,2}(?:twice|double|two times)\b/,
+];
+// "will I be charged twice if I book two days?" is a question about the future, not a dispute
+const FUTURE_CHARGE =
+  /^(?:will|would|do|does|can|could|should|if|is it going to|are you going to|am i going to|is there going to)\b|\b(?:will|would|gonna|going to|wont|might) (?:i|we|you|it|they|my card|the card|guests|hosts) (?:be |get |still )?(?:charged|billed|pay|paid|charge)\b|\bif (?:i|we|they|you)\b/;
+// DISPUTE's own "charged twice" phrasings, read per sentence part so the same future question is not one either
+const DISPUTE_COUNT_SRC =
+  '\\bcharged (?:\\w+ ){0,2}(?:twice|double|two times|2 times)\\b|\\bcharg\\w* (?:me|us) (?:twice|double|two times)\\b|\\bcharged two times\\b|\\bdouble charg\\w*|\\bcharged double\\b';
+const DISPUTE_COUNT = new RegExp(DISPUTE_COUNT_SRC);
+const DISPUTE_COUNT_G = new RegExp(DISPUTE_COUNT_SRC, 'g');
+/** A billing dispute: a chargeback, an unauthorized or wrong charge, or the same charge more than once. */
+function dispute(s, v) {
+  const parts = v ? v.parts : [s];
+  if (DISPUTE.test(s)) {
+    if (DISPUTE.test(s.replace(DISPUTE_COUNT_G, ' '))) return true;
+    if (parts.some((p) => DISPUTE_COUNT.test(p) && !FUTURE_CHARGE.test(p))) return true;
+  }
+  return parts.some((p) => !FUTURE_CHARGE.test(p) && DISPUTE_MORE.some((re) => re.test(p)));
+}
 // angry accusations or legal threats aimed at us: a calm founder handoff, no facts, no scam/theft panic
 const ACCUSE_TARGET =
   '(?:you|you guys|you people|yall|ya ll|u|u guys|your company|your site|your website|your business|your app|this site|this website|this company|this app|this platform|this business|this place|the site|the company|prnm|pool rental near me|pool rental)';
@@ -916,6 +1161,39 @@ const LEGAL_THREAT = [
 const LEGAL_ELSEWHERE =
   /\b(?:host|hosts|guest|guests|renter|renters|swimmer|neighbor|neighbour|homeowner\w*|insur\w*|liab\w*|covered|coverage|cover|damag\w*|hurt|injur\w*|accident\w*|slip\w*|fell|drown\w*|if|what if)\b/;
 const legalThreat = (s) => LEGAL_THREAT.some((re) => re.test(s)) && !LEGAL_ELSEWHERE.test(s);
+
+// a drain cover is a report only with what is wrong with it ("the drain cover is missing"), not "drain cover info"
+const DRAIN_COVER_BAD =
+  /\bdrain covers? (?:is |was |are |got |has been |looks |seems |came |just )?(?:missing|broken|loose|off|cracked|gone|not there|not on|came off|came loose|lifted|removed|open|exposed|damaged|ripped|busted|sucking|pulling|weird|wrong|sketchy|bad|rusty|unsafe)\b|\b(?:missing|broken|loose|no|cracked|damaged|busted|exposed|open) drain covers?\b/;
+// a noun phrase with no verb ("the drain cover info on the listing"): the topic of a question asked next to it
+const FINITE =
+  /\b(?:is|are|was|were|am|be|been|being|isnt|wasnt|arent|werent|looks?|looked|seems?|seemed|got|gets|has|have|had|hasnt|havent|keeps?|kept|broke|broken|came|comes|went|goes|fell|falls|feels?|felt|smells?|smelled|did|does|do|doesnt|dont|didnt|cant|cannot|wont|will|would|can|could|should|im|hes|shes|theyre|its|thats|theres|missing|leaking|sparking|smoking|burning|cracked|loose)\b/;
+const frontedNoun = (p) => !FINITE.test(p) && p.split(' ').length <= 10;
+
+/** The pool itself looks unsafe: "unsafe" said as a report, a gate that won't latch, green water, a loose ladder. */
+function softUnsafe(s, v) {
+  return (
+    // "something seems dangerous here" is a report; "is the deep end dangerous for kids?" is a question,
+    // and so is "the drain cover info on the listing, where is that" (round 4)
+    v.parts.some(
+      (p) =>
+        (/\b(unsafe|not safe|dangerous|danger|hazard\w*|electrical (issue|problem|hazard))\b/.test(p) || DRAIN_COVER_BAD.test(p)) &&
+        !QUESTION_START.test(p) &&
+        !(frontedNoun(p) && v.parts.some((o) => o !== p && QUESTION_START.test(o)))
+    ) ||
+    /\bgate (does not|doesnt|wont|will not|isnt|not) (latch|close|shut|lock)\w*\b/.test(s) ||
+    /\b(no|missing|broken) (fence|fencing|barrier|pool fence)\b/.test(s) ||
+    /\b(?:pool )?(?:fence|fencing|gate|barrier) (?:is |was |got |has been )?(?:broken|down|missing|left open|wide open)\b/.test(s) ||
+    /\bbroken glass\b/.test(s) ||
+    /\b(green|cloudy|murky|black) water\b|\bwater (looks|is) (green|cloudy|murky)\b/.test(s) ||
+    /\b(?:pool|hot tub|hottub|spa|water|it) (?:is |looks |got |went |turned |is now |looks really |is really )(?:now )?(?:green|cloudy|murky|black|brown)\b/.test(s) ||
+    /\b(?:peed|pooped|pooping|poop|diarrhea|vomited|threw up|puked) in (?:the|our) (?:pool|hot tub|hottub|spa|water)\b/.test(s) ||
+    /\b(ladder|railing|rail|handrail|diving board)\b.*\b(loose|wobbly|broken|cracked)\b/.test(s)
+  );
+}
+// "not dangerous", "nothing unsafe", "not an emergency": the customer says it is not dangerous (read before the strips)
+const NEG_DANGER =
+  /\b(?:not|isnt|wasnt|arent|werent|aint|never|nothing|no|hardly|doesnt seem|didnt seem|dont think (?:its|it is|it was|thats|that is)|not really|not at all) (?:(?:at all|really|very|super|that|too|so|actually|even|remotely|particularly) )?(?:dangerous|unsafe|a danger|danger|in danger|hazardous|a hazard|hazard|an emergency|emergency|urgent|scary)\b/;
 
 // ----------------------------------------------------------------- guards
 /*
@@ -951,6 +1229,15 @@ const RULES = [
     test: (s, v) => liabilityHypothetical(v),
   },
   {
+    // "does your insurance cover guest injuries": rule 8 for Derek, no 911 line, no "someone got hurt" title
+    id: 'insurance-question',
+    kind: 'urgent',
+    route: 'safety-insurance',
+    topics: ['insurance'],
+    rule8: true,
+    test: (s, v) => insuranceQuestion(v),
+  },
+  {
     id: 'injury',
     kind: 'urgent',
     route: 'safety-injury',
@@ -983,20 +1270,8 @@ const RULES = [
     lead911: true,
     test: (s, v) =>
       dangerInFact(v) ||
-      // "something seems dangerous here" is a report; "is the deep end dangerous for kids?" is a question
-      v.parts.some(
-        (p) =>
-          /\b(unsafe|not safe|dangerous|danger|hazard\w*|electrical (issue|problem|hazard)|drain cover)\b/.test(p) &&
-          !QUESTION_START.test(p)
-      ) ||
-      /\bgate (does not|doesnt|wont|will not|isnt|not) (latch|close|shut|lock)\w*\b/.test(s) ||
-      /\b(no|missing|broken) (fence|fencing|barrier|pool fence)\b/.test(s) ||
-      /\b(?:pool )?(?:fence|fencing|gate|barrier) (?:is |was |got |has been )?(?:broken|down|missing|left open|wide open)\b/.test(s) ||
-      /\bbroken glass\b/.test(s) ||
-      /\b(green|cloudy|murky|black) water\b|\bwater (looks|is) (green|cloudy|murky)\b/.test(s) ||
-      /\b(?:pool|hot tub|hottub|spa|water|it) (?:is |looks |got |went |turned |is now |looks really |is really )(?:now )?(?:green|cloudy|murky|black|brown)\b/.test(s) ||
-      /\b(?:peed|pooped|pooping|poop|diarrhea|vomited|threw up|puked) in (?:the|our) (?:pool|hot tub|hottub|spa|water)\b/.test(s) ||
-      /\b(ladder|railing|rail|handrail|diving board)\b.*\b(loose|wobbly|broken|cracked)\b/.test(s),
+      // round 4: "the water is a bit green but not unsafe": the customer says it is not dangerous
+      (!NEG_DANGER.test(unDropG(clean(v.raw))) && softUnsafe(s, v)),
   },
   {
     // the shape of an emergency the vocabulary missed: a cry for help (or shouting) about a person near water
@@ -1095,7 +1370,7 @@ const RULES = [
     topics: ['legal threat'],
     rule8: true,
     upset: true,
-    test: (s) => legalThreat(s) && !DISPUTE.test(s),
+    test: (s, v) => legalThreat(s) && !dispute(s, v),
   },
   {
     id: 'insurance',
@@ -1120,7 +1395,7 @@ const RULES = [
     route: 'builtin:complaint',
     topics: ['complaint'],
     upset: true,
-    test: (s) => accusation(s) && !DISPUTE.test(s),
+    test: (s, v) => accusation(s) && !dispute(s, v),
   },
   {
     id: 'scam',
@@ -1159,7 +1434,7 @@ const RULES = [
     topics: ['billing dispute'],
     upset: true,
     // only real disputes: a plain "I want a refund" or "can I move my booking" is a normal handoff
-    test: (s) => DISPUTE.test(s),
+    test: (s, v) => dispute(s, v),
   },
   // ----- near-misses the bank must not answer -----------------------------
   {
@@ -1274,7 +1549,9 @@ const RULES = [
     test: (s, v) =>
       cryCheck(v.raw, v) ||
       unresponsivePerson(v) === 'check' ||
-      (injuryResolved(v) && v.parts.some((p) => injuryActual(stripHypo(p)))),
+      (injuryResolved(v) && v.parts.some((p) => injuryActual(stripHypo(p)))) ||
+      // round 4: a person and a body state no rule names ("found floating", "acting weird and sleepy")
+      bodyStateView(v),
   },
 ];
 
@@ -1386,7 +1663,9 @@ function dangerSignal(text, alt) {
   }
   return views.some(
     (v) =>
-      injuryInFact(v) ||
+      // a coverage question that names an injury is Derek's rule-8 question, not danger (round 4)
+      !insuranceQuestion(v) &&
+      (injuryInFact(v) ||
       dangerInFact(v) ||
       violenceInFact(v) ||
       harassment(v.s, v) ||
@@ -1394,7 +1673,10 @@ function dangerSignal(text, alt) {
       cryCheck(text, v) ||
       unresponsivePerson(v) === 'check' ||
       foreignEmergency(v.s) ||
-      softDangerView(v)
+      softDangerView(v) ||
+      // round 4: the structural fallback, so a message during a handoff is never met with silence
+      bodyStateView(v) ||
+      personAtWaterView(v))
   );
 }
 
@@ -1498,7 +1780,7 @@ function softDangerView(v) {
 function softDanger(raw) {
   const t = String(raw || '');
   const v = view(t);
-  return structuralDanger(t, v) || cryCheck(t, v) || unresponsivePerson(v) === 'check' || softDangerView(v);
+  return structuralDanger(t, v) || cryCheck(t, v) || unresponsivePerson(v) === 'check' || softDangerView(v) || bodyStateView(v);
 }
 /**
  * The structural fallback for a message the matcher could not place: it describes a person (my son,
@@ -1511,7 +1793,8 @@ function personConcern(raw) {
   const full = clean(raw);
   // a plain statement about a person ("my dad uses a wheelchair", "my son lost his phone") is not a
   // reason to ask about an emergency: the shape needs some urgency in how it is written
-  if (!URGENCY_MARK.test(full) && !/!{2,}/.test(String(raw || '')) && !SHOUTED(String(raw || ''))) return false;
+  // (read after the benign strips: "scared of the water" is a fear, not urgency)
+  if (!URGENCY_MARK.test(v.s) && !/!{2,}/.test(String(raw || '')) && !SHOUTED(String(raw || ''))) return false;
   // a statement only: "my kid is scared of the deep end, is there a shallow pool?" is a question
   if (PLAIN.test(full) || HOSTISH_ONLY.test(full) || LIGHT.test(full) || HELP_TASK.test(full) || /\?/.test(String(raw || ''))) return false;
   if (v.parts.some((p) => QUESTION_START.test(p) || QUESTION_INSIDE.test(p))) return false;
@@ -1533,6 +1816,167 @@ const QUESTION_INSIDE =
 // account and site words: "he can't log in", "she never got the email" are support questions
 const HOSTISH_ONLY =
   /\b(?:log ?in|logged|sign ?in|password|verify|verification|profile|photo upload|upload|publish|published|outdated|stripe|payout|tax form)\b/;
+
+/*
+ * Round 4: the structural fallback. A statement that names a person and describes what their body is
+ * doing ("our 2 yr old was found floating", "he is blue", "acting weird and sleepy", "stuck at the drain",
+ * "a stranger is coming at us") is asked about (911 line first) even when no rule names it. A person
+ * plus water, a drain, a gate or a fence, with nothing else to place it, is asked about instead of
+ * "say it another way". A false positive costs one question; a miss here could cost a life.
+ */
+// not answering: about a person, unless it is about messages or calls ("he won't answer my texts")
+const ANSWER_STATE_SRC =
+  'not talking|isnt talking|wont talk|cant talk|stopped talking|not saying anything|wont say anything|wont answer|wont respond|not answering|isnt answering';
+const ANSWER_STATE = new RegExp(`\\b(?:${ANSWER_STATE_SRC})\\b`);
+const COMMS =
+  /\b(?:messages?|texts?|texted|texting|emails?|emailed|inbox|chat|app|site|website|replies|reply|replied|calls?|called|calling|phone|dms?|voicemail|door ?bell)\b/;
+// a person: a family member, a child, a stranger, he / she, a bare "kid" at the start of a sentence
+const STRUCT_PERSON = r(
+  `${PERSON_REF.source}|\\b(?:stranger|strangers|intruder|intruders|they|theyre|them)\\b|^(?:kid|child|toddler|baby|infant|boy|girl|man|woman|guy|dude|lady|grandpa|grandma|teen|son|daughter|nephew|niece)\\b|\\b${AGE}\\b`
+);
+// states that mean trouble even in a question ("is it normal that he is limp?"). Colours, "found" and
+// "pulled out" need the person as subject or object, so the vocabulary (INJURY_CONTEXT) owns those.
+const BODY_HARD = r(
+  `\\b(?:face ?down|limp|lifeless|floppy|unresponsive|not breathing|went under|gone under|going under|eyes (?:are )?(?:rolled back|rolling back|rolling)|(?:stuck|trapped|pinned|caught|sucked|suctioned) (?:at|on|onto|in|into|to|under|against|by|down)\\b(?: \\w+){0,3} (?:drain|drains|jet|jets|filter|skimmer|pool cover|grate|suction))\\b`
+);
+// states that mean trouble in a statement about a person
+const BODY_SOFT = r(
+  `\\b(?:floating|pale|not swimming|isnt swimming|stopped swimming|(?:was|were|been|got|just got) found|(?:got|was|were|been|being|had to be) (?:\\w+ )?(?:pulled|dragged|fished|rescued|yanked|hauled) (?:out|from)|${ANSWER_STATE_SRC}|wont open (?:his|her|their) eyes|not getting up|cant get up|wont get up|didnt get up|isnt getting up|not waking|wont wake|acting (?:\\w+ )?(?:weird|strange|funny|off|odd|confused|drunk|loopy|different|out of it)|sleepy|drowsy|lethargic|groggy|out of it|confused|disoriented|delirious|not making sense|breathing (?:\\w+ )?(?:funny|weird|weirdly|strange|strangely|fast|slow|hard|heavy|heavily|shallow|noisy|loud)|shivering|convulsing|twitching|(?:coming|came|running|ran|charging|lunging|rushing|walking|heading) (?:right |straight )?(?:at|toward|towards) (?:us|me|my|our|the kids|him|her|them)|(?:jumped|hopped|climbed|scaled|snuck) (?:over |in over |through )?(?:the |our |my |a )?(?:\\w+ )?(?:fence|wall|gate)|(?:wont|will not|refuses to|refused to) leave)\\b`
+);
+// play and praise: "my kids were floating on noodles all day, so fun"
+const LIGHT_PLAY =
+  /\b(?:lol|lmao|lmfao|haha\w*|hehe\w*|jk|rofl|fun|so fun|loved|love|loves|enjoyed|enjoying|playing|played|giggling|laughing|happy|excited|cute|adorable|noodles?|floaties|floats?|raft|rafts|tube|lounging|relaxing|chilling|sunbathing|tanning|nap|napping|asleep|thank you|thanks|thx|blast|having a blast|good time|great time|having fun|best day)\b/;
+// booking and account words (narrower than PLAIN: "swim", "fence", "today" are not a reason to stay quiet)
+const PLAIN_TOPIC =
+  /\b(?:book|books|booking|bookings|booked|reserv\w*|price\w*|cost\w*|fee|fees|pay|paid|pays|paying|payment\w*|payout\w*|refund\w*|cancel\w*|reschedul\w*|listing\w*|listed|calendar|availab\w*|account|login|log in|sign in|sign up|password|email|app|site|website|link|promo|discount\w*|coupon|code|review|reviews|rating|messages?|request\w*|stripe|bank|tax\w*|instant|confirm\w*|receipt|invoice|charge\w*|party|birthday|bday|wants to know|want to know|asking (?:if|whether|about|for)|asked (?:if|whether|about)|wondering|curious|heated|heater|parking|bathroom|restroom)\b/;
+// a trait or a plan, not an event ("my son loves the water", "my daughter will be in the pool all day")
+const TRAIT_PLAN =
+  /\b(?:loves?|likes?|enjoys?|adores?|hates?|is (?:a )?(?:strong|good|great|weak|new|beginner|confident|nervous|experienced|decent|fast) swimmer|swims? (?:well|great|good|fine)|knows how to swim|can swim|scared of|afraid of|nervous (?:about|around|in)|terrified of (?:the )?(?:water|deep|pool|swimming|heights)|allergic to|will (?:be|have|bring|swim|come|need|want|go|stay|arrive|get|use|join)|(?:gonna|going to) (?:be|have|bring|swim|come|need|go|stay|book)|planning|plan to|plans to|want to|wants to|wanna|would like|hoping|hope to|cant wait|next (?:week|time|month|year|summer)|tomorrow|this weekend|all day|all afternoon|all morning|for hours|the whole (?:time|day|afternoon)|whole day|most of the day|every day|everyday|usually|always|sometimes)\b/;
+// climbing out by themselves is not a rescue ("the kids got out of the pool when it started raining")
+const SELF_EXIT =
+  /\b(?:(?:got|get|gets|climbed|came|jumped|hopped|stepped) out (?:of )?(?:the )?(?:pool|water|hot tub|hottub|spa|deep end)|(?:leaving|left|leave|leaves) (?:the )?(?:pool|water|hot tub|hottub|spa|house|place))\b/;
+const WATER_PLACE =
+  /\b(?:pool|water|deep end|shallow end|hot tub|hottub|spa|jacuzzi|lake|drain|drains|jets?|filter|skimmer|gate|fence|ladder|diving board|pool cover|steps|bottom)\b/;
+// in, at or near the water ("is in the deep end", "by the drain"), not "saw the pool" or "booked the pool"
+const WATER_LOC =
+  /\b(?:in|into|at|near|by|under|on|inside|around|next to|beside|behind|over|underneath|out of|from|off|across) (?:the |a |our |their |his |her |this |that |my )?(?:\w+ )?(?:pool|water|deep end|shallow end|hot tub|hottub|spa|jacuzzi|lake|drain|drains|jets?|filter|skimmer|gate|fence|ladder|diving board|pool cover|steps|bottom)\b|\bin (?:the )?water\b/;
+// the benign rewrites mark a thing as the subject ("my kids toy dropped in the drain")
+const THING_MARK = /\b(?:dropped|lodged)\b/;
+
+/** The strong shape: a person and a body state. Any sentence part, statements only for the soft states. */
+function bodyStateView(v) {
+  const full = clean(v.raw);
+  const soft = !LIGHT_PLAY.test(full) && !PLAIN_TOPIC.test(full);
+  return v.parts.some((p) => {
+    const q = stripHypo(p);
+    if (!q || historyOnly(q) || WORRY.test(q) || !STRUCT_PERSON.test(q)) return false;
+    if (BODY_HARD.test(q)) return true;
+    if (!soft || QUESTION_START.test(q) || QUESTION_INSIDE.test(q) || TRAIT_PLAN.test(q) || !BODY_SOFT.test(q)) return false;
+    // "he won't answer my texts" is about messages; "a man is lying by the pool and won't answer me" is not
+    return !(COMMS.test(full) && ANSWER_STATE.test(q) && !BODY_SOFT.test(q.replace(ANSWER_STATE, ' ')));
+  });
+}
+function bodyState(text) {
+  return bodyStateView(view(text));
+}
+/** The weak shape: a person and water (or a drain, gate, fence), in a statement nothing else placed. */
+// company and pastimes: "my son is in the hot tub with his friends", "my friend is by the pool waiting for me"
+const COMPANY =
+  /\b(?:with (?:his|her|their|my|our|the|a|some) (?:\w+ )?(?:friends?|dad|mom|mum|father|mother|family|cousins?|siblings?|brother|sister|grandma|grandpa|parents|husband|wife|kids|group|class|team)|splashing|waiting|hanging out|sitting|reading|eating|swimming laps|doing laps|wifi|internet|music|running late|on my way)\b/;
+function personAtWaterView(v) {
+  const full = clean(v.raw);
+  if (!WATER_PLACE.test(v.s) || /\?/.test(v.raw)) return false;
+  // only the bare statement ("my son is in the deep end", "she is by the drain"): more words tell us what it is about
+  if (full.split(' ').length > 8 || COMPANY.test(full)) return false;
+  if (LIGHT.test(full) || LIGHT_PLAY.test(full) || PLAIN_TOPIC.test(full) || HOSTISH_ONLY.test(full) || HELP_TASK.test(full)) return false;
+  if (TRAIT_PLAN.test(full) || SELF_EXIT.test(full)) return false;
+  if (v.parts.some((p) => QUESTION_START.test(p) || QUESTION_INSIDE.test(p))) return false;
+  return v.parts.some((p) => {
+    const q = stripHypo(p);
+    return q && !historyOnly(q) && !WORRY.test(q) && !THING_MARK.test(q) && PERSON_REF.test(q) && WATER_LOC.test(q);
+  });
+}
+function personAtWater(text) {
+  return personAtWaterView(view(text));
+}
+
+/*
+ * "im so mad right now": an upset customer with no harm word. Calm voice, never the 911 line or a
+ * harassment confirm (round 4).
+ */
+const HARM_ANY =
+  /\b(?:hurt\w*|injur\w*|bleed\w*|blood|unsafe|not safe|danger\w*|scared|afraid|terrified|threat\w*|harass\w*|creep\w*|uncomfortable|violated|touch\w*|grab\w*|stalk\w*|follow\w*|weapon\w*|gun|knife|drunk|attack\w*|hit|punch\w*|fight\w*|drown\w*|emergency|911|police|cops)\b/;
+// the words of anger itself; anything else left over is a question to answer ("so mad, how do I cancel")
+const ANGER_ONLY = new Set(
+  (
+    'i im am me my we were are our us so very really super right now just this is its it that the a an all today ' +
+    'literally honestly seriously totally completely beyond pretty kinda kind of af as hell damn fucking freaking ' +
+    'frickin effing ugh ugh omg wtf ffs smh lol mad angry furious pissed off annoyed frustrated frustrating upset ' +
+    'livid fuming irritated irritating disappointed disappointing fed up sick tired done over makes made make feel ' +
+    'feeling getting got ridiculous unacceptable terrible awful horrible insane crazy unbelievable joke bs bullshit ' +
+    'garbage trash pathetic useless not happy unhappy and how could you rn atm annoying'
+  ).split(' ')
+);
+/** Any word of harm, danger or harassment (or a danger shape): without one, no 911 line on a look-alike. */
+function harmCue(text) {
+  const s = clean(text);
+  return HARM_ANY.test(s) || insurance(s) || damage(s) || dangerSignal(text);
+}
+function plainAnger(text) {
+  const s = clean(text);
+  if (!s || mood(text) !== 'upset' || HARM_ANY.test(s)) return false;
+  if (!s.split(' ').every((w) => ANGER_ONLY.has(w))) return false;
+  return !dangerSignal(text);
+}
+
+/*
+ * A reply to "Is someone hurt or in danger right now?". Anything that is not clearly "no" is a yes:
+ * "hurry", "my son", "he is 4", "idk", "she is in the water". Returns
+ *   { kind: 'no' }                      a plain no ("no", "nah", "nobody is hurt", "we're fine")
+ *   { kind: 'other', rest }             a no with a new question ("no, it's about my booking"), or a
+ *                                       booking / payment question with nothing alarming in it
+ *   { kind: 'yes' }                     everything else
+ */
+// longest first: "no one is hurt" must not read as "no" + "one is hurt"
+const NO_LEAD =
+  /^(?:(?:lol|haha\w*|oh|um+|uh+|sorry|ok|okay|well|oops|ah) )*(?:(?:no one|nobody|noone|no body|none of us)(?: is| was| s| got| has been| are| were)? (?:hurt|injured|in danger|in trouble)|(?:we|were|we re|we are|im|i m|i am|everyone|everybody|everyones|everyone is|everybody is|hes|he is|shes|she is|theyre|they are|they re|its|it s|it is|all) (?:all |totally |completely |perfectly |doing )?(?:fine|ok|okay|good|safe|alright|all right)|(?:its |it s |it is |this is |thats |that s )?not an emergency|no emergency|not urgent|no thanks|no thank you|not really|never ?mind|nvm|false alarm|wrong button|my bad|all good|no worries|negative|nope|nah|naw|nop|no+|n)\b/;
+// plea and urgency words ("hurry", "come quick", "idk", "i think so")
+const PLEA = /\b(?:hurry|quick|quickly|please|pls|plz|asap|fast|emergency|urgent|come|omg|oh my god|oh god|god|idk|i dont know|dont know|not sure|unsure|maybe|i think|still|wait)\b/;
+// water as a place someone is in ("in the pool", "the water"), not "my pool booking"
+const WATER_IN =
+  /\b(?:water|deep end|shallow end|hot tub|hottub|spa|jacuzzi|drain|underwater|bottom of|(?:in|into|at|near|by|under|out of|from) the (?:pool|water|deep end|hot tub|hottub|spa|lake))\b/;
+const NO_TAIL =
+  /^(?:(?:lol|haha\w*|sorry|thanks|thank you|thx|no+|nope|nah|not now|not right now|nothing|none|im good|were good|all good|its fine|we re fine|were fine|were ok|im fine|im ok|just|but|so|and|though|actually|everyone is fine|everyones fine|we are fine|we are ok|my bad|oops|sorry about that|wrong button|false alarm|never ?mind|nvm|i have a question|i had a question|i just have a question|just a question|a question|question|just asking|just wondering)\b ?)*$/;
+function safetyReply(text) {
+  const s = clean(text);
+  if (!s) return { kind: 'yes' };
+  const v = view(text);
+  const body = (x) => BODY_HARD.test(x) || BODY_SOFT.test(x) || dangerSignal(x) || HARM_ANY.test(x);
+  const urgentWords = (x) => PLEA.test(x) || (/\bhelp\b/.test(x) && !HELP_TASK.test(x));
+  // after a "no", a polite "please" is manners, not a plea ("no, please cancel my booking")
+  const urgentAfterNo = (x) => urgentWords(x.replace(/\b(?:please|pls|plz)\b/g, ' '));
+  const m = s.match(NO_LEAD);
+  if (m) {
+    const rest = s.slice(m[0].length).trim();
+    if (!rest || NO_TAIL.test(rest)) return { kind: 'no' };
+    // "no but he's still in the water", "no, my son": not a no
+    if (urgentAfterNo(rest) || WATER_IN.test(rest) || body(rest) || (STRUCT_PERSON.test(rest) && !PLAIN_TOPIC.test(rest)))
+      return { kind: 'yes' };
+    return { kind: 'other', rest: rest.replace(/^(?:but|so|and|just|actually)\b\s*/, '') };
+  }
+  // a booking or payment question with nothing alarming in it is a different topic ("how do I change my booking")
+  if (
+    PLAIN_TOPIC.test(s) &&
+    !urgentWords(s) &&
+    !PERSON_REF.test(s) &&
+    !STRUCT_PERSON.test(s) &&
+    !WATER_IN.test(s) &&
+    !body(s) &&
+    !v.parts.some((p) => body(p))
+  )
+    return { kind: 'other', rest: s };
+  return { kind: 'yes' };
+}
 
 /*
  * A tiny non-English emergency fallback (no translation, no cost): "mi hijo se está ahogando",
@@ -1689,6 +2133,11 @@ module.exports = {
   dangerSignal,
   softDanger,
   personConcern,
+  bodyState,
+  personAtWater,
+  plainAnger,
+  harmCue,
+  safetyReply,
   triggerExcerpt,
   rule8Text,
   wantsHuman,

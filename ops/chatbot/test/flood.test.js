@@ -502,3 +502,192 @@ test('a note that timed out (status 0) keeps its flood slot: a slow Chatwoot can
   await bot2.idle();
   assert.equal(bot2.flood.check({ conv: `${H.ACCOUNT_ID}:999`, now: Date.now() }), null, 'released');
 });
+
+// ------------------------------------------------------------------ round-3 review (engine: race2, deferred_starve)
+/**
+ * An in-process Chatwoot whose calls take `delay(kind, conv, body)` ms. Records, per conversation, the
+ * @mention notes, the opens and every public text. getConversation reports the conversation pending.
+ */
+function recordingClient(delay = () => 2) {
+  const log = { mentions: {}, opens: {}, texts: {} };
+  const bump = (o, c) => (o[String(c)] = (o[String(c)] || 0) + 1);
+  const later = (kind, c, body, extra = {}) =>
+    new Promise((r) => setTimeout(() => r({ ok: true, status: 200, ...extra }), delay(kind, String(c), body)));
+  const text = (c, t) => ((log.texts[String(c)] = log.texts[String(c)] || []).push(t), later('text', c, t));
+  return {
+    log,
+    sendText: text,
+    sendSelect: text,
+    sendNote: (c, t) => {
+      if (/mention:\/\/user\//.test(t)) bump(log.mentions, c);
+      return later('note', c, t);
+    },
+    setCustomAttributes: (c) => later('attrs', c),
+    getLabels: (c) => later('labels', c, null, { labels: [] }),
+    setLabels: (c) => later('labels', c),
+    togglePriority: (c) => later('priority', c),
+    toggleStatus: (c) => (bump(log.opens, c), later('open', c)),
+    getConversation: (c) => later('get', c, null, { data: { id: Number(c), status: 'pending', custom_attributes: {} } }),
+  };
+}
+function lineBot({ client, clock, store = new MemoryStore({ file: null }), floodLimits = { globalPerHour: 1 } }) {
+  const { engine } = H.loadEngine();
+  return new Bot({
+    engine,
+    client,
+    store,
+    tracker: new Tracker({ file: null }),
+    accountId: H.ACCOUNT_ID,
+    inboxId: H.INBOX_ID,
+    agents: AGENTS,
+    logger: silent,
+    now: () => clock.t,
+    floodLimits,
+  });
+}
+const sentLines = (texts = []) => texts.filter((t) => /I've sent Derek and Brandon/.test(t));
+
+test('round 3 (race2): a deferred retry and a visitor message for the same chat never run side by side: one alert, status sent, nothing 25 h later', async () => {
+  const clock = { t: Date.now() };
+  let slow = false;
+  // the visitor's turn says "Got it…" first and that send is slow: the deferred retry (a separate queue before
+  // the fix, keyed by the string id) alerted meanwhile, and the stale message turn wrote its state last
+  const client = recordingClient((kind, c, t) => (slow && kind === 'text' && /^Got it/.test(t || '') ? 400 : 2));
+  const bot = lineBot({ client, clock });
+  await bot.handleEvent(H.incoming(801, ++msgId, 'someone is hurt at the pool'));
+  await bot.idle();
+  await bot.handleEvent(H.incoming(803, ++msgId, 'my kid is drowning'));
+  await bot.idle();
+  assert.equal(client.log.mentions['803'] || 0, 0, 'over the hourly ceiling: logged, no alert');
+  assert.deepEqual(bot.deferredList().map((x) => x.convId), ['803']);
+  clock.t += 61 * 60 * 1000;
+  slow = true;
+  // the 60 s timer and a webhook for the same conversation, not awaited in between
+  bot.sweepDeferred();
+  bot.handleEvent(H.incoming(803, ++msgId, 'please hurry'));
+  await bot.idle();
+  assert.equal(client.log.mentions['803'], 1, 'exactly one @mention');
+  assert.equal(client.log.opens['803'], 1, 'opened once');
+  const st = bot.store.get(`${H.ACCOUNT_ID}:803`);
+  assert.equal(st.handoff.status, 'sent');
+  assert.deepEqual(bot.deferredList(), []);
+  // 25 h later the per-conversation cap has aged out: the sweep must not alert this thread again
+  slow = false;
+  clock.t += 25 * 3600 * 1000;
+  assert.equal(bot.sweepDeferred(), 0);
+  await bot.handleEvent(H.incoming(803, ++msgId, 'hello?'));
+  await bot.idle();
+  assert.equal(client.log.mentions['803'], 1);
+  assert.equal(client.log.opens['803'], 1);
+  assert.equal(sentLines(client.log.texts['803']).length, 1, 'the customer is told "I\'ve sent…" once');
+  // and the queue itself: a number and a string for one conversation share one queue
+  const order = [];
+  const a = bot.enqueue(42, async () => {
+    await new Promise((r) => setTimeout(r, 30));
+    order.push('number');
+  });
+  const b = bot.enqueue('42', async () => order.push('string'));
+  await Promise.all([a, b]);
+  assert.deepEqual(order, ['number', 'string']);
+});
+
+test('round 3 (deferred_starve a): an urgent deferred alert survives a flood of 1,000 other chats and goes out when the ceiling frees', async () => {
+  const clock = { t: Date.now() };
+  const client = recordingClient(() => 0);
+  const bot = lineBot({ client, clock });
+  await bot.handleEvent(H.incoming(811, ++msgId, 'someone is hurt at the pool'));
+  await bot.handleEvent(H.incoming(812, ++msgId, 'my kid is drowning'));
+  await bot.idle();
+  assert.deepEqual(bot.deferredList().map((x) => x.convId), ['812']);
+  for (let i = 0; i < 1100; i++) await bot.handleEvent(H.incoming(20000 + i, ++msgId, 'hi'));
+  await bot.idle();
+  bot.store.prune(clock.t);
+  assert.ok(bot.store.map.size <= 1000, `${bot.store.map.size} conversations kept`);
+  assert.ok(bot.store.get(`${H.ACCOUNT_ID}:812`), 'the deferred emergency was not evicted');
+  assert.ok(bot.store.get(`${H.ACCOUNT_ID}:811`), 'nor the handed-off chat waiting for a person');
+  assert.equal(bot.store.get(`${H.ACCOUNT_ID}:20000`), null, 'the oldest ordinary chat went first');
+  // a TTL sweep never drops a deferred alert either
+  bot.store.prune(clock.t + 31 * 24 * 3600 * 1000);
+  assert.ok(bot.store.get(`${H.ACCOUNT_ID}:812`));
+  clock.t += 61 * 60 * 1000;
+  assert.equal(bot.sweepDeferred(), 1);
+  await bot.idle();
+  assert.equal(client.log.mentions['812'], 1);
+  assert.equal(sentLines(client.log.texts['812']).length, 1);
+  assert.deepEqual(bot.deferredList(), []);
+});
+
+/** A non-urgent handoff that needs three webhooks (founder request, the question, "Here in chat"). */
+async function founderHandoff(bot, conv) {
+  await bot.handleEvent(H.incoming(conv, ++msgId, 'talk to a person'));
+  await bot.handleEvent(H.incoming(conv, ++msgId, 'question about my listing photos'));
+  await bot.handleEvent(H.buttonClick(conv, ++msgId, 'reply:chat', 'Here in chat'));
+  await bot.idle();
+}
+
+test('round 3 (deferred_starve b): with 50 older junk alerts waiting, the real emergency takes the first free slot; junk retries cannot jump it', async () => {
+  const clock = { t: Date.now() };
+  const client = recordingClient(() => 1);
+  const bot = lineBot({ client, clock });
+  await founderHandoff(bot, 821); // takes this hour's one slot
+  assert.equal(client.log.mentions['821'], 1);
+  const junk = Array.from({ length: 50 }, (_, i) => 900 + i);
+  for (const conv of junk) {
+    await founderHandoff(bot, conv);
+    clock.t += 1000;
+  }
+  await bot.handleEvent(H.incoming(822, ++msgId, 'my kid is drowning'));
+  await bot.idle();
+  // the junk keeps writing while it waits: that never moves the emergency back
+  for (const conv of junk.slice(0, 10)) await bot.handleEvent(H.incoming(conv, ++msgId, 'hello??'));
+  await bot.idle();
+  const line = bot.deferredList();
+  assert.equal(line.length, 51);
+  assert.equal(line[0].convId, '822', 'urgent first in line');
+  assert.ok(line[0].urgent);
+  // the slot frees: a junk visitor writes first, in the same instant. The sweep that runs on that webhook
+  // gives the slot to the emergency, and the junk turn finds it spoken for.
+  clock.t += 60 * 60 * 1000 + 1;
+  await bot.handleEvent(H.incoming(junk[0], ++msgId, 'still waiting'));
+  await bot.idle();
+  assert.equal(client.log.mentions['822'], 1, 'the emergency alerted as soon as a slot freed');
+  assert.equal(junk.reduce((n, c) => n + (client.log.mentions[String(c)] || 0), 0), 0, 'no junk alert jumped it');
+  // the next slot goes to the junk that has waited longest
+  clock.t += 60 * 60 * 1000 + 1;
+  assert.equal(bot.sweepDeferred(), 1);
+  await bot.idle();
+  assert.equal(client.log.mentions[String(junk[0])], 1);
+  assert.equal(bot.deferredList().length, 49);
+});
+
+test('round 3 (deferred_starve c): a full line drops the oldest non-urgent entry, never an urgent one', () => {
+  const clock = { t: 1e12 };
+  const store = new MemoryStore({ file: null });
+  const bot = lineBot({ client: recordingClient(), clock, store });
+  const { engine } = H.loadEngine();
+  const deferredState = (conv, urgent, at) => {
+    const st = engine.handle(null, { kind: 'text', text: urgent ? 'my kid is drowning' : 'hi' }, { now: at }).state;
+    st.handoff = { status: 'capped', capped: 'global', cappedAt: at, urgency: urgent ? 'high' : 'normal', done: {}, extra: [] };
+    st.contactId = String(conv);
+    store.set(bot.key(conv), st);
+    bot.trackDeferred(conv, st);
+  };
+  deferredState(1, true, 1000); // the oldest entry of all is urgent
+  for (let i = 0; i < 199; i++) deferredState(100 + i, false, 2000 + i);
+  assert.equal(bot.deferredList().length, 200);
+  deferredState(400, false, 5000);
+  let line = bot.deferredList();
+  assert.equal(line.length, 200);
+  assert.equal(line[0].convId, '1', 'the urgent entry stays, first in line');
+  assert.ok(!line.some((x) => x.convId === '100'), 'the oldest non-urgent entry made room');
+  // a line of urgent entries is never trimmed to make room under the soft cap
+  for (let i = 0; i < 250; i++) deferredState(1000 + i, true, 6000 + i);
+  line = bot.deferredList();
+  assert.equal(line.filter((x) => x.urgent).length, 251);
+  assert.equal(line.length, 251, 'every non-urgent entry gave way');
+  assert.equal(line[0].convId, '1');
+  // re-tracking keeps the original place in line (cappedAt), however often it is retried
+  clock.t += 3600 * 1000;
+  bot.trackDeferred(1, store.get(bot.key(1)));
+  assert.equal(bot.deferredList()[0].at, 1000);
+});

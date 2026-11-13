@@ -4,7 +4,8 @@
 # cw_setup_stub.rb) and cw_nginx.py: subprocess.run is replaced by a fake box that answers their commands; paths
 # are redirected to a temp dir. Then the generated vhost runs in a throwaway local nginx in front of fake
 # Chatwoot/bot upstreams. Nothing touches docker, the live nginx, certbot or a server.
-import base64, hashlib, http.client, json, os, pwd, re, runpy, shlex, shutil, socket, ssl, subprocess, sys, tempfile
+import base64, hashlib, http.client, ipaddress, json, os, pwd, random, re, runpy, shlex, shutil, socket, ssl, subprocess, sys
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -268,7 +269,7 @@ def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches
                mode="proxied", rails_env=GOOD_ENV, sidekiq_env=GOOD_ENV, db="1|2|0", onb="0", signup="false",
                extra_sites=(), shift=False, hairpin_src=EAST, edge_ray=True, upv="403", events="404 " * 11 + "429 " * 4,
                loads="404 " * 11 + "429 " * 4, bot_up=False, bot_down="500", bot_up_code=None, writes="403",
-               contact_get="404", w20k="413"):
+               contact_get="404", w20k="413", config="404 " * 11 + "429 " * 4, reset_post="403", reset_put="422"):
     c = H + "/nginx-" + name
     shutil.rmtree(c, ignore_errors=True)
     os.makedirs(c + "/sites-enabled")
@@ -362,6 +363,8 @@ def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches
             return cp(0, events)
         if cmd.startswith("for i in $(seq 15)") and "/widget?website_token=prnm-verify&cw_conversation=x" in cmd:
             return cp(0, loads)
+        if cmd.startswith("for i in $(seq 15)") and "/api/v1/widget/config?website_token=prnm-verify" in cmd:
+            return cp(0, config if "-X POST --resolve %s:443:%s " % (HOST, LAN) in cmd else "UNHANDLED not from lan")
         if cmd == "ss -ltnH 'sport = :3120'":
             return cp(0, "LISTEN 0 511 127.0.0.1:3120 0.0.0.0:*" if bot_up else "")
         if "-w '%{http_code}'" in cmd:
@@ -371,6 +374,8 @@ def nginx_case(name, dry, dns=CF_DNS, routed=True, certbot_rc=0, certbot_touches
                 return cp(0, "403")
             if "Host: www.poolrentalnearme.com" in cmd:
                 return cp(0, "200")
+            if "-d reset_password_token=prnm-verify" in cmd and "/auth/password" in cmd:
+                return cp(0, reset_post if "-X POST " in cmd else reset_put if "-X PUT " in cmd else "UNHANDLED reset")
             if "co.uk" in cmd or "prnm-unknown.invalid" in cmd:
                 return cp(0, "302")
             if "/super_admin" in cmd or "/installation/onboarding" in cmd:
@@ -409,12 +414,24 @@ check("vhost: /prnm-bot/ allows EAST + 127.0.0.1 only; its zone is a runaway cei
       "allow 3.222.110.146;\n        allow 127.0.0.1;\n        deny all;" in out
       and "limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;" in out
       and "limit_req zone=prnm_bot burst=600 nodelay;" in out and out.count("limit_req_status 429;") == 1)
-check("vhost: per-visitor zones on the webhook amplifiers (1r/s), all widget calls (10r/s), /widget loads (10/min)",
-      "zone=prnm_wamp:2m rate=1r/s;" in out and "zone=prnm_widget:2m rate=10r/s;" in out
-      and "zone=prnm_wload:2m rate=10r/m;" in out
+check("vhost: per-visitor zones on the webhook amplifiers (1r/s), all widget calls (10r/s), and everything that makes "
+      "a contact (10/min): /widget loads AND widget config POSTs, in one zone",
+      "limit_req_zone $prnm_visitor zone=prnm_wamp:2m rate=1r/s;" in out
+      and "limit_req_zone $prnm_visitor zone=prnm_widget:2m rate=10r/s;" in out
+      and "limit_req_zone $prnm_visitor zone=prnm_wload:2m rate=10r/m;" in out
       and "location ~ ^/api/v1/widget/(events|messages/[^/]+)(\\.|/|$) {\n        limit_req zone=prnm_wamp burst=10 nodelay;"
-      in out and "location ~ ^/widget(\\.|/|$) {\n        limit_req zone=prnm_wload burst=10 nodelay;" in out
+      in out and "location ~ ^/(widget|api/v1/widget/config)(\\.|/|$) {\n        limit_req zone=prnm_wload burst=10 "
+      "nodelay;\n        client_max_body_size 16k;" in out and out.count("zone=prnm_wload") == 2
       and out.count("limit_req zone=prnm_widget burst=40 nodelay;") == 3)
+check("vhost: a visitor is its IPv4 address or IPv6 /64 (one http-level map) for the three visitor zones and the XFF "
+      "Rack::Attack counts; the bot zone stays on the hairpin's address; X-Real-IP keeps the full address",
+      out.count("map $remote_addr $prnm_visitor {") == 1 and out.count("limit_req_zone $prnm_visitor ") == 3
+      and "limit_req_zone $binary_remote_addr zone=prnm_bot:1m rate=300r/s;" in out
+      and out.count("limit_req_zone $binary_remote_addr") == 1 and "proxy_set_header X-Forwarded-For $prnm_visitor;" in out
+      and "proxy_set_header X-Real-IP $remote_addr;" in out and out.index("map $remote_addr") < out.index("limit_req_zone"))
+check("vhost: /auth/password (exact, .json, slash) answers PUT only (the D6 link); an anonymous POST cannot replace a "
+      "founder's reset token", "location ~ ^/auth/password(\\.|/|$) {\n        limit_except PUT { deny all; }\n"
+      "        proxy_pass http://127.0.0.1:3009;" in out)
 check("vhost: visitor contact / labels / custom-attribute writes denied (GET only), placed before the other widget "
       "regex (first match wins)", "location ~ ^/api/v1/widget/(contact|labels|conversations/(set|destroy)_custom_attributes)"
       "(\\.|/|$) {\n        limit_except GET { deny all; }" in out
@@ -424,7 +441,7 @@ check("vhost: a dead or hung bot answers 500 (Chatwoot retries 429/500 only; a 5
       and "location @prnm_bot_down { return 500; }" in out and "proxy_read_timeout 3s;" in out
       and "proxy_connect_timeout 2s;" in out)
 check("vhost: widget bodies 16k, storage/bot 1m, uploads prefix-blocked, storage GET only, multipart 403, sdk.js ACAO",
-      out.count("client_max_body_size 16k;") == 2 and out.count("client_max_body_size 1m;") == 2
+      out.count("client_max_body_size 16k;") == 3 and out.count("client_max_body_size 1m;") == 2
       and "location ^~ /api/v1/widget/direct_uploads { return 403; }" in out
       and "location ^~ /rails/active_storage/direct_uploads { return 403; }" in out
       and re.search(r"location \^~ /rails/active_storage/ \{[^\n]*\n        limit_except GET \{ deny all; \}", out)
@@ -465,7 +482,11 @@ check("exit 0 DONE", code == 0 and "DONE." in out)
 check("full vhost written as zz-chat-prnm.conf (sorts after intl.conf)", os.path.exists(vh)
       and sorted(os.listdir(c + "/sites-enabled"))[-1] == "zz-chat-prnm.conf" and "listen 443 ssl;" in open(vh).read()
       and "map $http_upgrade $prnm_cw_connection" in open(vh).read() and "location /prnm-bot/" in open(vh).read())
-check("order: stub reload, certbot, reload", [x.split()[0] for x in seen if x.startswith(("certbot", "nginx -t &&"))]
+check("bot_deploy.py (its sidekiq hairpin check) and cw_status.py look for this same vhost file, not the old name",
+      all(re.search(r'^VH = "/etc/nginx/sites-enabled/zz-chat-prnm\.conf"  #', open(REPO + "/" + f).read(), re.M)
+          for f in ("bot_deploy.py", "cw_status.py")) and "os.path.exists(VH)" in open(REPO + "/bot_deploy.py").read()
+      and "chat-prnm.conf\")" not in open(REPO + "/bot_deploy.py").read())
+check("order: stub reload, certbot, reload",[x.split()[0] for x in seen if x.startswith(("certbot", "nginx -t &&"))]
       == ["nginx", "certbot", "nginx"])
 check("verify ran every check (lan POST 403; bot not deployed yet: local and hairpin POST get nginx's 500, not 502; "
       "hairpin from EAST, 413s, ACAO once)",
@@ -475,9 +496,14 @@ check("verify ran every check (lan POST 403; bot not deployed yet: local and hai
                               "sdk.js ACAO: ['access-control-allow-origin: *']")))
 wr = [x for x in seen if x.startswith("curl") and re.search(r"-X \w+ --resolve \S+ https://\S+/api/v1/widget/(contact|labels|conv)", x)]
 check("verify: PATCH contact, POST labels, POST set_custom_attributes -> 403; GET contact still reaches Chatwoot (404 "
-      "without a token); 15 junk-cookie /widget loads cut after the burst",
-      "'widget writes': '403 403 403'" in out and [x.split()[9] for x in wr] == ["PATCH", "POST", "POST"]
-      and "'contact GET': '404'" in out and "'loads x15': ['404'," in out and out.count("'429']") == 2)
+      "without a token); 15 junk-cookie /widget loads and 15 config POSTs (from the lan address: a bucket of its own) "
+      "cut after the burst", "'widget writes': '403 403 403'" in out and [x.split()[9] for x in wr] == ["PATCH", "POST", "POST"]
+      and "'contact GET': '404'" in out and "'loads x15': ['404'," in out and "'config x15': ['404'," in out
+      and out.count("'429']") == 3 and any(x.startswith("for i in $(seq 15)") and "/api/v1/widget/config" in x
+                                          and ":443:%s " % LAN in x for x in seen))
+check("verify: reset POST and POST .json -> 403, the D6 PUT reaches Chatwoot (its 422 for a bad token)",
+      "'reset': '403 403 422'" in out and [x.split()[9] + x.rsplit("/", 1)[1] for x in seen if "reset_password_token="
+                                            "prnm-verify" in x] == ["POSTpassword", "POSTpassword.json", "PUTpassword"])
 uv = [x.split("https://" + HOST, 1)[1] for x in seen if x.startswith("curl") and "--path-as-is -X POST" in x]
 check("verify: 6 upload-route variants (.json, slash, %2E, %2F, //./, storage .json) all 403; storage PUT 403; "
       "events flood cut after the burst", "'upload variants': '403 403 403 403 403 403'" in out and uv == [
@@ -531,7 +557,11 @@ for nm, kw, why in (("bot502", dict(bot_down="502"), "a dead bot gets nginx's 50
                     ("writes", dict(writes="204"), "a visitor can still write contact / labels / custom attributes"),
                     ("contactget", dict(contact_get="403"), "GET contact is blocked too (the widget needs it)"),
                     ("loads", dict(loads="404 " * 15), "junk-cookie /widget loads are not throttled"),
-                    ("w20k", dict(w20k="200"), "a 20 KB widget message still reaches Chatwoot")):
+                    ("w20k", dict(w20k="200"), "a 20 KB widget message still reaches Chatwoot"),
+                    ("config", dict(config="404 " * 15), "config POSTs (each makes a contact) are not throttled"),
+                    ("resetpost", dict(reset_post="200"), "an anonymous reset POST still reaches Chatwoot"),
+                    ("resetput", dict(reset_put="403"), "the D6 PUT is blocked too (founders could not set a password)"),
+                    ("resetput5", dict(reset_put="502"), "the D6 PUT does not reach a working Chatwoot")):
     print("== cw_nginx real: " + why)
     c, code, out, seen, keep = nginx_case(nm, False, have_cert=True, **kw)
     check("exit 1, rolled back", code == 1 and "FAILED -> restoring" in out
@@ -542,20 +572,35 @@ check("still DONE (origin verified), with a Cloudflare WARN", code == 0 and "WAR
 
 
 # ------------------------------------------------------------------ cw_status (read-only report)
-def status_case(name, alert_gb, public_sdk=SDK):
+CAPPED = {"Type": "json-file", "Config": {"max-file": "5", "max-size": "20m"}}
+
+
+def status_case(name, alert_gb, public_sdk=SDK, caps=None, daemon="", slow=(), vhost=None):
     c = H + "/status-" + name
     os.makedirs(c, exist_ok=True)
     s = open(REPO + "/cw_status.py").read()
-    a = "ALERT_GB = 2.0  #"
-    assert s.count(a) == 1
+    for a, b in (("ALERT_GB = 2.0  #", "ALERT_GB = %r  #" % alert_gb),
+                 ('VH = "/etc/nginx/sites-enabled/zz-chat-prnm.conf"', 'VH = "%s/vhost.conf"' % c)):
+        assert s.count(a) == 1, a
+        s = s.replace(a, b)
+    if vhost:
+        open(c + "/vhost.conf", "w").write(vhost)
     p = c + "/cw_status.test.py"
-    open(p, "w").write(s.replace(a, "ALERT_GB = %r  #" % alert_gb))
+    open(p, "w").write(s)
     seen = []
+    caps = caps or {}
 
     def fake(cmd, shell=True, capture_output=True, text=False, timeout=None, executable=None, input=None):
         seen.append(cmd)
+        if any(x in cmd for x in slow):  # one command hangs past its timeout
+            raise subprocess.TimeoutExpired(cmd, timeout)
         if not text:
             return cp(0, public_sdk if cmd.endswith("'https://%s/packs/js/sdk.js'" % HOST) else SDK)
+        m = re.search(r"docker inspect chatwoot-(\w+)-1 --format '\{\{json \.HostConfig\.LogConfig\}\}'$", cmd)
+        if m:
+            return cp(0, json.dumps(caps.get(m.group(1), {"Type": "json-file", "Config": {}})))
+        if cmd.startswith("cat /etc/docker/daemon.json"):
+            return cp(0, daemon)
         if "docker exec chatwoot-rails-1 env" in cmd:
             return cp(0, GOOD_ENV + "\nSMTP_PASSWORD=hunter2hunter2\nRATE_LIMIT_WIDGET_MESSAGES=20\nRATE_LIMIT_WIDGET_LOAD=20\n"
                       + "".join("%s=%s\n" % kv for kv in AR.items()))
@@ -587,13 +632,35 @@ check("founder alerts are counted from the bot's @mention notes (visitors can pr
       "account's 2FA enforcement and keep-pending setting and the vhost's round-3 rules are shown",
       "founder alerts = bot notes that @mention Derek and Brandon" in out and "labels do not prove an alert" in out
       and "last 5 founder alerts" in out and any("settings->>" in x and "enforce_mfa" in x and "keep_pending_on_bot_failure" in x for x in seen)
-      and "chat vhost has: load zone False | widget contact/labels read-only False | bot down -> 500 False" in out)
+      and "chat vhost has: load zone False (config POSTs in it False) | per IPv6 /64 False | widget contact/labels "
+      "read-only False | reset POST denied False | bot down -> 500 False" in out)
+check("container log caps: none set -> NO CAP for each of the 4 and a LOG ALERT; daemon.json absent -> none",
+      "container logs (driver, max-size x max-file): rails json-file NO CAP x 1 | sidekiq json-file NO CAP x 1 | postgres "
+      "json-file NO CAP x 1 | redis json-file NO CAP x 1 | daemon.json default log-opts: none" in out
+      and "LOG ALERT: a container log has no size cap" in out)
 STATUS_SQL = [shlex.split(x)[-1] for x in seen if " psql -U postgres -d chatwoot_production -AtF " in x]
 check("D1: container sdk.js SRI printed; :3009 and public copies compared", "container file: %s (%d bytes)" % (SDK_SRI, len(SDK))
       in out and "served on :3009: same | public: same" in out and "need exactly one '*'): ['access-control-allow-origin: *']" in out)
-code, out, seen = status_case("ok", 0.0, public_sdk=SDK + b"stale")
+code, out, seen = status_case("ok", 0.0, public_sdk=SDK + b"stale", caps=dict.fromkeys(("rails", "sidekiq", "postgres",
+                              "redis"), CAPPED), daemon='{"log-driver": "splunk", "log-opts": {"max-size": "50m", '
+                              '"splunk-token": "SplunkSecret123"}, "registry-mirrors": ["https://m.invalid"]}')
 check("disk OK below the threshold; a stale public copy is shown with its own SRI", "disk OK:" in out
       and "public: sha384-" in out and "(%d bytes) (a public copy" % (len(SDK) + 5) in out)
+check("container log caps: all 4 capped (cw_harden.py's 20m x 5), no alert; daemon.json shows its size options only, "
+      "never another option's value", "rails json-file 20m x 5 | sidekiq json-file 20m x 5 | postgres json-file 20m x 5 | "
+      "redis json-file 20m x 5 | daemon.json default log-opts: {'max-size': '50m'}" in out and "LOG ALERT" not in out
+      and "SplunkSecret123" not in out)
+NS = {}
+exec(open(REPO + "/cw_nginx.py").read().split("\n\ndef sh(", 1)[0], NS)  # cw_nginx.py's constants only; nothing runs
+code, out, seen = status_case("vhost", 0.0, caps={"rails": CAPPED}, vhost=NS["FULL"])
+check("against cw_nginx.py's real vhost every rule cw_status.py looks for is found; one uncapped container -> LOG ALERT",
+      "chat vhost has: load zone True (config POSTs in it True) | per IPv6 /64 True | widget contact/labels read-only "
+      "True | reset POST denied True | bot down -> 500 True" in out and "sidekiq json-file NO CAP x 1" in out
+      and "LOG ALERT" in out)
+code, out, seen = status_case("slow", 0.0, slow=("from contacts", "docker exec chatwoot-rails-1 cat /app/public"))
+check("a command past its timeout (one psql, the container sdk.js read) is reported as TIMEOUT and the read-only report "
+      "still runs to the end", code is None and "== backups:" in out and "TIMEOUT after 60 s" in out
+      and "container file: None" in out)
 
 
 def real_pg_status():
@@ -697,6 +764,17 @@ def free_port():
 BOT_PORT = None
 
 
+def round2(v):  # round 2 (the controls): config POSTs only in the 10 r/s widget zone, zones + XFF per address, POST reset open
+    for a, b in (("location ~ ^/(widget|api/v1/widget/config)(\\.|/|$) {", "location ~ ^/widget(\\.|/|$) {"),
+                 ("limit_req_zone $prnm_visitor ", "limit_req_zone $binary_remote_addr "),
+                 ("proxy_set_header X-Forwarded-For $prnm_visitor;", "proxy_set_header X-Forwarded-For $remote_addr;")):
+        assert a in v, a
+        v = v.replace(a, b)
+    w = re.sub(r"\n    location ~ \^/auth/password\(.*?\n    \}", "", v, count=1, flags=re.S)
+    assert w != v and "/auth/password" not in w
+    return w
+
+
 def old_limits(v):  # round 1: one 30r/s bot bucket, no per-visitor zones, no bot-down mapping (the controls)
     v = v.replace("rate=300r/s", "rate=30r/s").replace("burst=600", "burst=60")
     v = v.replace("        error_page 502 503 504 =500 @prnm_bot_down;\n", "")
@@ -729,6 +807,8 @@ def real_nginx():
     open(d + "/nginx.conf", "w").write(
         "pid %(d)s/nginx.pid;\nerror_log %(d)s/error.log;\nevents { worker_connections 512; }\nhttp {\n"
         " access_log %(d)s/access.log;\n client_body_temp_path %(d)s/tmp;\n proxy_temp_path %(d)s/tmp2;\n"
+        # stands in for snippets/cloudflare-real-ip.conf: only "Cloudflare" (127.0.0.250) may name the client
+        " set_real_ip_from 127.0.0.250;\n real_ip_header CF-Connecting-IP;\n"
         " fastcgi_temp_path %(d)s/tmp3;\n uwsgi_temp_path %(d)s/tmp4;\n scgi_temp_path %(d)s/tmp5;\n"
         " include %(d)s/vhost.conf;\n}\n" % {"d": d})
     ngx = ["nginx", "-p", d + "/", "-c", d + "/nginx.conf", "-e", d + "/error.log"]
@@ -884,6 +964,82 @@ def real_nginx():
         wg = [req("GET", "/api/v1/widget/messages?website_token=x", src="127.0.0.9")[0] for _ in range(100)]
         check("widget API: a page's 40-call burst passes, a scripted 100 is cut (%d x 429)" % wg.count(429),
               429 not in wg[:40] and wg.count(429) > 10)
+        n0 = len(Up.seen)
+        cf = [req("POST", "/api/v1/widget/config?website_token=x", b"{}", {"Content-Type": "application/json"},
+                  src="127.0.0.14")[0] for _ in range(15)]
+        check("widget config POST x15 (each makes a contact; no Rack::Attack rule): one visitor gets only the burst (10 + "
+              "1), then 429, and only those reach Chatwoot (%s)" % cf, cf == [200] * 11 + [429] * 4
+              and len([x for x in Up.seen[n0:] if "/config" in x["path"]]) == 11)
+        cv = [req("POST", x, b"{}", {"Content-Type": "application/json"}, src="127.0.0.15")[0] for x in (
+            "/api/v1/widget/config.json", "/api/v1/widget/config/", "/api/v1//widget/config", "/api/v1/widget/%63onfig",
+            "/api/v1/widget/x/../config", "/api/v1/widget/./config?website_token=x") * 2 + ("/api/v1/widget/config",) * 3]
+        check("... every spelling Rails routes (.json, slash, //, %%63, ../, ./) is in that bucket (%s)" % cv,
+              cv == [200] * 11 + [429] * 4)
+        sb = [req("GET", "/widget?website_token=t", src="127.0.0.16")[0] for _ in range(11)]
+        check("... /widget loads and config POSTs share one per-visitor budget (11 loads, then a config POST -> 429)",
+              sb == [200] * 11 and req("POST", "/api/v1/widget/config", b"{}", src="127.0.0.16")[0] == 429)
+        check("... a config body over 16k -> 413", req("POST", "/api/v1/widget/config", b"x" * 20000, src="127.0.0.17")[0] == 413)
+        n0 = len(Up.seen)
+        rp = [req(m, x, b'{"email":"derek@poolrentalnearme.com"}', {"Content-Type": "application/json"}, src="127.0.0.18")[0]
+              for m, x in (("POST", "/auth/password"), ("POST", "/auth/password.json"), ("POST", "/auth/password/"),
+                           ("POST", "//auth//password"), ("POST", "/auth/%70assword"), ("POST", "/auth/x/../password"),
+                           ("PATCH", "/auth/password"), ("DELETE", "/auth/password"),
+                           ("GET", "/auth/password/edit?reset_password_token=x"))]
+        check("reset: POST (exact, .json, slash, //, %%70, ../), PATCH, DELETE and the API's GET edit -> 403, none reaches "
+              "Chatwoot (%s)" % sorted(set(rp)), rp == [403] * len(rp) and len(Up.seen) == n0)
+        st = req("PUT", "/auth/password", b'{"reset_password_token":"t","password":"p","password_confirmation":"p"}',
+                 {"Content-Type": "application/json"}, src="127.0.0.18")[0]
+        check("reset: the D6 PUT reaches Chatwoot; sign-in and other /auth routes are untouched", st == 200
+              and Up.seen[-1]["path"] == "/auth/password" and req("POST", "/auth/sign_in", b"{}", src="127.0.0.18")[0] == 200
+              and req("POST", "/auth/password_x", b"{}", src="127.0.0.18")[0] == 200)
+
+        def via_cf(path, addr, method="GET", src="127.0.0.250"):  # as Cloudflare: CF-Connecting-IP names the client
+            return req(method, path, b"{}" if method == "POST" else None, {"CF-Connecting-IP": addr}, src=src)[0]
+
+        def xff(addr, src="127.0.0.250"):
+            via_cf("/api", addr, src=src)
+            return last("/api").get("x-forwarded-for")
+
+        fixed = [("2001:db8:1:2::5", "2001:db8:1:2::"), ("2001:0DB8:0001:0002:0000:0000:0000:0005", "2001:db8:1:2::"),
+                 ("2001:db8:1:2:aaaa:bbbb:cccc:dddd", "2001:db8:1:2::"), ("2001:db8::1", "2001:db8:0:0::"),
+                 ("2001:db8:0:0:1::", "2001:db8:0:0::"), ("2001:db8:0:0:1:0:0:1", "2001:db8:0:0::"),
+                 ("2001:db8:1::", "2001:db8:1:0::"), ("2001:db8:1:0:5:6:7:8", "2001:db8:1:0::"),
+                 ("2001::4:5:6:7:8", "2001:0:0:4::"), ("2001:0:0:4::1", "2001:0:0:4::"), ("2001::", "2001:0:0:0::"),
+                 ("::3:4:5:6:7:8", "0:0:3:4::"), ("::5:6:7:8:9", "0:0:0:5::"), ("::1", "0:0:0:0::"),
+                 ("2001:db8:1:3::5", "2001:db8:1:3::"), ("198.51.100.7", "198.51.100.7"),
+                 ("::ffff:198.51.100.7", "::ffff:198.51.100.7")]
+        got = [xff(a) for a, _ in fixed]
+        check("visitor = IPv6 /64 (as XFF and zone key) or IPv4 address, whatever the spelling: compressed, full with "
+              "leading zeros, upper case, '::' before, inside or after the first 64 bits; a neighbouring /64 differs%s"
+              % "".join("; %s -> %s, want %s" % (a, g, w) for (a, w), g in zip(fixed, got) if g != w),
+              got == [w for _, w in fixed])
+        rnd, wrong = random.Random(64), []
+        for _ in range(250):
+            g = [rnd.randrange(1, 65536)] + [rnd.choice((0, 0, 0, rnd.randrange(1, 65536))) for _ in range(7)]
+            a = ipaddress.IPv6Address(":".join("%x" % x for x in g))
+            want = ":".join("%x" % x for x in g[:4]) + "::"
+            for f in (a.compressed, a.exploded.upper()):
+                k = xff(f)
+                try:
+                    ok = k == want and ipaddress.ip_address(k) == ipaddress.ip_network("%s/64" % a, strict=False)[0]
+                except ValueError:
+                    ok = False
+                if not ok:
+                    wrong.append((f, k))
+        check("250 random IPv6 addresses (many zero groups), compressed and full: XFF is a valid address, the /64's network, "
+              "one text per /64 (%d wrong%s)" % (len(wrong), (": %s" % wrong[:3]) if wrong else ""), not wrong)
+        p64 = [via_cf("/widget?website_token=t", ("2001:db8:aa:1:%x::%x" % (i + 1, i + 7)) if i % 2 else
+                      "2001:0db8:00aa:0001:%04x:0000:0000:%04x" % (i + 1, i + 7)) for i in range(15)]
+        check("one IPv6 /64 is one visitor: 15 /widget loads from 15 of its addresses (compressed and full) -> 10 + 1, then "
+              "429 (%s)" % p64, p64 == [200] * 11 + [429] * 4)
+        e64 = [via_cf("/api/v1/widget/events", "2001:db8:bb:1::%x" % (i + 1), "POST") for i in range(15)]
+        check("... the same for widget events (a webhook amplifier) (%s)" % e64, 429 not in e64[:10] and e64[-1] == 429)
+        v4 = [via_cf("/widget?website_token=t", "198.51.100.7") for _ in range(12)]
+        check("... the next /64 still loads; two IPv4 visitors behind Cloudflare stay separate",
+              via_cf("/widget?website_token=t", "2001:db8:aa:2::1") == 200 and v4[-1] == 429
+              and via_cf("/widget?website_token=t", "198.51.100.8") == 200)
+        check("CF-Connecting-IP from a non-Cloudflare address is ignored (the visitor stays that address)",
+              xff("2001:db8:ff::1", src="127.0.0.2") == "127.0.0.2")
         res, sig, fired = flood()
         check("junk-event flood from 2 visitors for 1.5 s: cut at the visitor edge (%d of %d events passed, %d webhooks "
               "fired)" % (res.count(200), len(res), len(fired)), res.count(429) > 0.8 * len(res) > 200
@@ -907,6 +1063,18 @@ def real_nginx():
               dn == [500, 500, 403])
         servers[1] = serve(BOT_PORT)
         check("bot back: the next webhook reaches it", req("POST", "/prnm-bot/webhook", b"{}", src="127.0.0.3")[0] == 401)
+    finally:
+        stop()
+    open(d + "/vhost.conf", "w").write(round2(v))
+    start()
+    try:
+        cf = [req("POST", "/api/v1/widget/config?website_token=x", b"{}", src="127.0.0.14")[0] for _ in range(15)]
+        p64 = [req("GET", "/widget?website_token=t", headers={"CF-Connecting-IP": "2001:db8:cc:1::%x" % (i + 1)},
+                   src="127.0.0.250")[0] for i in range(15)]
+        rp = req("POST", "/auth/password", b"{}", src="127.0.0.18")[0]
+        check("control, round-2 vhost (config only in the 10 r/s zone, zones per address, no reset rule): %d of 15 config "
+              "POSTs and %d of 15 loads from one /64 pass; POST /auth/password reaches Chatwoot (%d)"
+              % (cf.count(200), p64.count(200), rp), cf == [200] * 15 and p64 == [200] * 15 and rp == 200)
     finally:
         stop()
     open(d + "/vhost.conf", "w").write(old_limits(v))

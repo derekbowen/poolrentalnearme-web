@@ -17,15 +17,15 @@ Every script defaults to `DRY = True`. A real run uses a copy with `DRY = False`
 
 | File | Runs on | What it does |
 |---|---|---|
-| `cw_harden.py` | EAST | Backs up `/home/ubuntu/chatwoot` (tarball) and `pg_dump`s the DB. Pulls **Chatwoot CE 4.19.1** pinned by digest. Rewrites the md5-gated compose: secrets move to `.env` and `postgres.env` (mode 600). Generates the 3 Active Record encryption keys 2FA needs (never printed). Sets signup off, `FRONTEND_URL`, `FORCE_SSL`, push relay on, telemetry off and the Rack::Attack widget limits. `extra_hosts` pins `chat.poolrentalnearme.com` to EAST's public IP. Runs `db:chatwoot_prepare` (46 migrations, with rails and sidekiq stopped), starts the stack and verifies it. Prints the sdk.js SRI and the 2FA key fingerprint. `RUNNER_TIMEOUT = 5400`. |
+| `cw_harden.py` | EAST | Backs up `/home/ubuntu/chatwoot` (tarball) and `pg_dump`s the DB. Pulls **Chatwoot CE 4.19.1** pinned by digest. Rewrites the md5-gated compose: secrets move to `.env` and `postgres.env` (mode 600). Generates the 3 Active Record encryption keys 2FA needs (never printed). Sets signup off, `FRONTEND_URL`, `FORCE_SSL`, push relay on, telemetry off and the Rack::Attack widget limits. `extra_hosts` pins `chat.poolrentalnearme.com` to EAST's public IP. Caps every container's log (json-file, `max-size 20m`, `max-file 5`: Docker's default has no cap). Runs `db:chatwoot_prepare` (46 migrations, with rails and sidekiq stopped), starts the stack and verifies it, including each container's log config. Prints the sdk.js SRI and the 2FA key fingerprint. `RUNNER_TIMEOUT = 5400`. |
 | `cw_setup.py` + `cw_setup.rb` | EAST | Idempotent `rails runner` (see "Order", step 3, for what it creates). Writes the bot token and webhook secret only to `/home/ubuntu/chatbot/.env` (600, ubuntu). Prints the ids, the public website token and the SRI. Switches: `LINK_FOR` (D6) and `KEEP_PENDING`. |
 | `cw_nginx.py` | EAST | Port-80 stub, Let's Encrypt cert (`certbot certonly --nginx`), then the full vhost `/etc/nginx/sites-enabled/zz-chat-prnm.conf`, `nginx -t`, reload and verify. The protected files (`nginx.conf`, `fresh-web`, `intl.conf`, the Cloudflare real-IP snippet) are md5-gated and re-checked. `DNS = "proxied"` is the default. `RUNNER_TIMEOUT = 900`. |
 | `pin_bot.py` | here | Writes `bot_manifest.sha256` from a commit (everything under `ops/chatbot/` except `ops/`, `data/`, `bank/drafts/` and dotfiles), then pins `SHA` and `MANIFEST_SUM` in `bot_deploy.py`. |
 | `bot_deploy.py` | EAST | Fetches the pinned manifest and every file (sha256 each), runs the bot's tests with EAST's node, swaps `/home/ubuntu/chatbot/current`, and starts pm2 `chatbot` as ubuntu on 127.0.0.1:3120. Health-checks, rolls back on failure, and writes the logrotate entry. `RUNNER_TIMEOUT = 900`. |
 | `cw_push_test.py` | EAST | DRY lists Derek's and Brandon's registered devices and push flags. `DRY = False` sends Chatwoot's own test push to every device of both. No customer is involved. |
-| `cw_status.py` | EAST | Read-only report: containers, env (secrets as set/unset only), accounts, users and 2FA, inbox, bot, push devices, labels, founder alerts, bot-failure opens, pm2, nginx/TLS/DNS, the sdk.js SRI and CORS, disk, backups. |
+| `cw_status.py` | EAST | Read-only report: containers, env (secrets as set/unset only), accounts, users and 2FA, inbox, bot, push devices, labels, founder alerts, bot-failure opens, pm2, nginx/TLS/DNS, the sdk.js SRI and CORS, disk, each container's log cap (a `LOG ALERT` when one has none), backups. A command that times out is reported as `TIMEOUT after N s` and the report goes on. |
 | `east_widget.py` + `east/chatwoot-widget.tsx` | EAST | Adds the chat launcher to every non-admin fresh-web page. A staged, memory-capped build, then an atomic `dist` swap. `RUNNER_TIMEOUT = 1800`. `TRIAL = True` only measures the build. |
-| `selfcheck.py` | here | Syntax, `DRY = True`, and the runner payload of each script as it will really run. Checks that the embedded Ruby equals `cw_setup.rb` (`--embed` rewrites it), that the widget CSS is identical on WEST and EAST, the `east_widget.py` anchors, and that the bot port is one value everywhere. |
+| `selfcheck.py` | here | Syntax, `DRY = True`, and the runner payload of each script as it will really run. Checks that the embedded Ruby equals `cw_setup.rb` (`--embed` rewrites it), that the widget CSS is identical on WEST and EAST, the `east_widget.py` anchors, and that the bot port and the chat vhost path (`VH` in `cw_nginx.py`, `bot_deploy.py` and `cw_status.py`) are each one value everywhere. |
 | `tests/` | here | Harnesses that run the real scripts against fake boxes, real nginx and real PostgreSQL (see "Local tests"). |
 
 **WEST side (in this repo):**
@@ -60,7 +60,7 @@ Marks: **[Derek]**, **[Claude via runner, needs Derek's GO]** (DRY first, which 
 
 ### 2. `cw_harden.py` [Claude via runner, needs Derek's GO]
 
-- DRY prints the planned compose and every gate.
+- DRY prints the planned compose (with the log caps) and every gate.
 - The real run takes long, so start it in the background. It needs at least 4.0 GB free.
 - Before the real run, record the running image's digest (`docker image inspect chatwoot/chatwoot:latest --format '{{json .RepoDigests}}'`). The script deletes that image after a successful switch.
 - **Right after `DONE`, [Derek]:** back up the 2FA keys off the box. In an interactive shell on EAST (not the runner, which keeps output), run `sudo grep ^ACTIVE_RECORD_ENCRYPTION_ /home/ubuntu/chatwoot/.env` and store the 3 lines in his password manager. Lost keys lock out every 2FA user. `cw_status.py` prints the same 12-character fingerprint as `cw_harden.py`, to match the backup against.
@@ -98,7 +98,8 @@ Marks: **[Derek]**, **[Claude via runner, needs Derek's GO]** (DRY first, which 
   - `/prnm-bot/` takes only the hairpin and loopback, and a dead bot gives 500;
   - every widget write (contact, labels, attributes) and every upload variant returns 403;
   - oversized bodies return 413;
-  - a junk-cookie widget-load burst and an event burst hit 429;
+  - a junk-cookie widget-load burst, a widget config-POST burst and an event burst hit 429;
+  - a POST to `/auth/password` (and `.json`) returns 403, and the PUT a D6 link sends reaches Chatwoot;
   - the websocket upgrades (101);
   - sdk.js carries exactly one `Access-Control-Allow-Origin: *`;
   - the other sites are unchanged.
@@ -114,10 +115,11 @@ Marks: **[Derek]**, **[Claude via runner, needs Derek's GO]** (DRY first, which 
 
 The link is a credential:
 - Chatwoot does not enforce the reset expiry, so a link is live until it is used or revoked.
+- nginx answers only PUT on `/auth/password` (what the link's page sends), so nobody can replace an unused link through the forgot-password form. Email resets could not work here anyway: there is no SMTP.
 - Whoever uses it first also enrols the 2FA.
 - The runner's output is kept by SSM in AWS.
 
-If a link stops working, print a new one (see "Open before going public").
+If a link stops working, print a new one (step 5.1 again).
 
 ### 6. Chatwoot app [Derek, Brandon]
 
@@ -140,6 +142,7 @@ The real run:
 - swaps `current`;
 - starts pm2 `chatbot` with `env -i` (no secrets reach `dump.pm2`), using `--env-file`, `--max-memory-restart 200M` and `pm2 save`;
 - requires healthz 200, a listener on 127.0.0.1:3120, a signed POST → 2xx, an unsigned POST → 401 or 403, and no token in `dump.pm2`;
+- once the chat vhost exists (step 4), also Chatwoot's own path: an unsigned POST from inside `chatwoot-sidekiq-1` to `https://chat.poolrentalnearme.com/prnm-bot/webhook` (public IP, nginx, bot) must get 401 or 403. Without the vhost it prints `not checked`;
 - keeps the last 3 releases.
 
 **Rollback [automatic]:** back to the previous release, or with none, the pm2 process is removed.
@@ -162,7 +165,7 @@ Expect:
 - "I've sent Derek and Brandon the rundown…";
 - on **both** phones, a new-conversation push and a mention push.
 
-Then one founder assigns the chat to himself and replies (the bot goes silent), and resolves it. `cw_status.py` should then show 1 founder alert. This is also the end-to-end proof of the hairpin path (see "Open before going public"). The test uses that browser's D3 allowance for 24 h. Nothing to roll back.
+Then one founder assigns the chat to himself and replies (the bot goes silent), and resolves it. `cw_status.py` should then show 1 founder alert. `bot_deploy.py` already proved the hairpin path with an unsigned POST; this proves a signed webhook end to end. The test uses that browser's D3 allowance for 24 h. Nothing to roll back.
 
 ### 10. EAST widget: `east_widget.py` [Claude via runner, needs Derek's GO]
 
@@ -239,14 +242,17 @@ Chatwoot's own internal sidekiq jobs already run in the existing containers; no 
 
 - **Webhook URL.** The webhook URL is the public HTTPS name, not the docker gateway. Chatwoot posts agent-bot webhooks through SafeFetch, which refuses private and loopback addresses. `SAFE_FETCH_ALLOW_PRIVATE_NETWORK` must stay unset, because turning it on would let visitor-supplied URLs reach internal services. `cw_harden.py` and `cw_nginx.py` refuse while it is set, and `cw_status.py` shows it.
 - **Image.** CE 4.19.1: Community Edition, as the brief asks (the running image is EE on the free plan), and the newest v4 release at review time, with security fixes after 4.16.2. `cw_setup.py` and `cw_nginx.py` require 4.19.1, so `IMAGE = "ce"` is the only path the later steps accept.
-- **Proxy headers.** `FORCE_SSL=true`: every local caller sends `X-Forwarded-Proto: https`. The client IP comes from EAST's Cloudflare real-IP snippet, and the vhost overwrites `X-Forwarded-For` with it, so Rack::Attack limits apply per visitor.
+- **Proxy headers.** `FORCE_SSL=true`: every local caller sends `X-Forwarded-Proto: https`. The client IP comes from EAST's Cloudflare real-IP snippet. The vhost overwrites `X-Forwarded-For` with the visitor: the IPv4 address, or for IPv6 the /64 written as an address (`2001:db8:0:0::` for any address in `2001:db8::/64`). So Rack::Attack limits apply per visitor, and a client with a whole /64 (any VPS) is still one visitor. Chatwoot therefore records an IPv6 visitor's /64, not the full address. `X-Real-IP` keeps the full address.
 - **Throttles.**
-  - nginx per IP:
-    - `/widget` loads: 10 per minute, burst 10;
+  - nginx per visitor (IPv4 address or IPv6 /64, the same key as `X-Forwarded-For`):
+    - whatever makes a contact, in one zone: `/widget` loads and `POST /api/v1/widget/config` (which makes a contact on every call; Rack::Attack has no rule for it, and the 4.19.1 web widget never calls it): 10 per minute, burst 10;
     - widget events and message updates: 1 r/s, burst 10;
     - all widget API: 10 r/s, burst 40.
+  - `/auth/password` answers PUT only (see step 5).
   - Widget bodies are capped at 16 KB.
   - Rack::Attack: `RATE_LIMIT_WIDGET_CONVERSATIONS=2` (per minute in 4.17+), `RATE_LIMIT_WIDGET_MESSAGES=20`, `RATE_LIMIT_WIDGET_LOAD=20`. These do not restore 4.16.2's 6 per 12 h. The engine's D3 caps bound the founder alerts.
+  - Optional defense in depth, not configured by any script: a free Cloudflare rate-limiting rule on `/widget`, `/api/v1/widget/config` and `/api/v1/widget/messages` (Security → WAF → Rate limiting rules). Check the plan's current limits for that rule type in the dashboard first; nginx stays the bound either way.
+- **Container logs.** Rails logs every widget request with its params and sidekiq logs each webhook retry, on the `/` that Postgres and fresh-web share. Each container keeps at most 5 files of 20 MB (json-file, set in the compose by `cw_harden.py`), so at most 400 MB for the four.
 - **Site widget (D1).**
   - The launcher is PRNM's own `#prnm-chat-launcher`, bottom-left, labelled "Chat". `sdk.js` loads only on click, or on page load for a visitor with a `cw_conversation` cookie.
   - The script tag carries `integrity` (= `VITE_CHATWOOT_SDK_SRI`) and `crossorigin="anonymous"`, from `sdk.js?v=<16 characters of the SRI>`, so a new SRI is a new URL.
@@ -279,7 +285,7 @@ python3 ops/west/c208/test_c208.py
 cd ops/chatbot && npm test
 ```
 
-One `test_bot_deploy_local.py` check is timing-dependent: the bot logs a rejected request at most once a minute, so the post-rotation 401 needs more than 60 s after the previous one.
+`test_bot_deploy_local.py` proves the log rotation with signed messages (each logs a line), not with 401s (logged at most once a minute).
 
 **Box facts** (read-only probes, November 2026):
 - RAM 3,831 MB, with about 2.1 GB available; 2 GB swap, unused; about 4.6 GB free on `/`.
@@ -291,15 +297,10 @@ One `test_bot_deploy_local.py` check is timing-dependent: the bot logs a rejecte
 
 Engine gaps are listed in `../README.md`.
 
-- **Contact creation:** `POST /api/v1/widget/config` creates a contact on every call and is limited only by the 10 r/s widget zone, not the 10-per-minute load zone. The `cw_harden.py` comment and the `cw_status.py` contacts label say 10/min, which is wrong for this path. Fix: put `/api/v1/widget/config` in the load zone and add it to `verify()`.
-- **IPv6:** every per-visitor limit (nginx and Rack::Attack) is keyed per address, so a client with an IPv6 /64 behind Cloudflare gets unlimited buckets. Key on the /64, or add a free Cloudflare rate-limit rule.
-- **Container logs:** they have no size cap (Docker's json-file default) on the `/` that Postgres and fresh-web share. Fix (free): add `logging: {driver: json-file, options: {max-size: 20m, max-file: "5"}}` to every service in `cw_harden.py`'s compose plan.
-- **`bot_deploy.py` hairpin check:** its end-to-end check looks for the old vhost name `chat-prnm.conf`, so it never runs. Until it is fixed, step 9 is the end-to-end proof.
-- **Reset links:** anyone can `POST /auth/password` for a founder's email, which replaces an unused reset token (nothing is emailed, because there is no SMTP). Fix: deny everything but PUT on `/auth/password`.
-- **`cw_status.py` timeouts:** `cw_status.py` doesn't catch a command timeout, so one slow command stops the report.
+- **IPv6 per /64, not yet seen on EAST:** the vhost keys visitors on the IPv6 /64. The map was tested only in a local nginx 1.24 (EAST runs 1.28.3), with Cloudflare's header faked, never with a real IPv6 client through Cloudflare. Before going public, from a machine with an IPv6 /64 (most VPSs): send 11 loads of `https://chat.poolrentalnearme.com/widget?website_token=prnm-verify&cw_conversation=x` from one of its addresses (`curl -6 --interface <address>`), then one from another address in the same /64. That 12th must get 429, and EAST's access log must show the IPv6 address. A bad token makes no contact.
 - **Widget, unread preview:** an unread preview already on screen when the widget hides (going to checkout, a modal, or a listing page at ≤1024 px) is closed, and Chatwoot then marks the reply as seen. Fix: close only the full chat, not the preview.
 - **Widget, short screens:** on short landscape screens (1024×768, 667×375) the open card can run under the sticky header.
-- **Not re-checked on EAST:** the DRY runs of `cw_harden`, `cw_setup`, `cw_nginx` and `cw_status` were not re-run on EAST after this round's edits.
+- **Not re-checked on EAST:** the DRY runs of `cw_harden`, `cw_setup`, `cw_nginx` and `cw_status` were not re-run on EAST after this round's edits (including the 2026-11-13 round-3 fixes: config zone, IPv6 /64 key, reset PUT only, log caps).
 
 ## Decisions for Derek
 
@@ -307,7 +308,7 @@ Engine gaps are listed in `../README.md`.
 2. **`KEEP_PENDING`** (`cw_setup.py`). When the bot is down past Chatwoot's retries: `""` (Chatwoot's default) or `"false"` opens the chat with no push; `"true"` keeps it with the bot, which answers the next message, but it doesn't show in the Open view.
 3. **DNS:** proxied (recommended) or DNS-only.
 4. **GO for the `east_widget.py` TRIAL build** before the real run. The real build on the t3.medium has never been measured.
-5. **The container log cap** above. It is free, and it changes the compose plan.
+5. **The container log cap.** `cw_harden.py`'s compose plan now caps each container's log at 5 × 20 MB (free; the DRY plan shows it). The GO for `cw_harden.py` covers it; to leave it out, say so and the `logging` lines come out of the plan.
 6. **Chatwoot DB backups after go-live.** A nightly local `pg_dump` would be a new scheduled job, disclosed under rule 4 when created.
 7. **Widget reply time** is "in a day", the least promising option. It can be changed in the inbox settings and must never promise minutes.
 8. **Behaviour to confirm:**

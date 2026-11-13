@@ -14,7 +14,7 @@ This release ships the PRNM chat launcher (`#prnm-chat-launcher`) to the marketp
 | `flip_c208_block.sh` | fetched by step 2 | The new c208 flip checks and the abort that returns traffic to MAIN. Fetched at the pinned commit and sha256-checked, like the gate block. |
 | `launch_c208.py` | WEST, via `ssm_runx.py` | `DRY = True` prints where the release stands: each step's `.done`, log size and age, and the running c208 scripts. `DRY = False` starts the next step (build, then gate, then flip) outside the SSM command and confirms it is running. |
 | `pin_c208.py` | local only | Fills in `SHA`, every sha256 (5 files and 2 blocks), and optionally `TOKEN`/`SRI`, from a commit. |
-| `test_c208.py` | local only | 56 tests. They run the scripts against a throwaway fake box and run the gate block under `sh` with curl/docker stubs. The whole generated `flip-c208.sh` also runs under `sh` against a simulated nginx, docker and curl, including aborts at each stage. |
+| `test_c208.py` | local only | 57 tests. They cross-check every hide-rule route name against `routeConfiguration.js`, run the scripts against a throwaway fake box and run the gate block under `sh` with curl/docker stubs. The whole generated `flip-c208.sh` also runs under `sh` against a simulated nginx, docker and curl, including aborts at each stage. |
 | `fixtures/c207/` | – | Byte-exact copies of the c207 scripts on WEST, md5-verified, with 0 secret-pattern hits. |
 | `fixtures/csp_*.txt` | – | The live c207 `/login` CSP header, and the header the new `server/csp.js` renders. |
 

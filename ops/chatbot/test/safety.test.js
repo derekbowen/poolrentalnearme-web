@@ -381,7 +381,7 @@ test('benign phrasings never trigger an urgent guard (no false 911 / founder pag
   assert.notEqual((guardFn('renter is breaking my house rules') || {}).route, 'safety-damage');
 });
 
-test('918 bank phrasings: no safety guard hijacks a question unless it belongs to a safety/dispute/rule-8 entry', () => {
+test('923 bank phrasings: no safety guard hijacks a question unless it belongs to a safety/dispute/rule-8 entry', () => {
   const allowed = new Set(
     entries
       .filter((e) => e.category === 'safety, disputes, and human help')
@@ -401,7 +401,7 @@ test('918 bank phrasings: no safety guard hijacks a question unless it belongs t
         hijacked.push(`${e.id}: "${t}" -> ${g.id}`);
     }
   }
-  assert.equal(n, 918);
+  assert.equal(n, 923);
   assert.deepEqual(hijacked, []);
 });
 

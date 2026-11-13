@@ -128,10 +128,14 @@ const CATEGORY_SLUG = {
   'accounts and technical problems': 'account',
 };
 
-// host-side answers that only fit a host: with no host words and no known role, ask "booking or hosting?" first
+// host-side answers that only fit a host: with no host words and no known role, ask "booking or hosting?" first.
+// Every entry of the host categories (round 3, wrong.tsv / E2E B04: "are any pools open saturday" drew the host
+// calendar answer, "do you have pools in canada" the host payout one), plus these named ones.
+const HOST_CATEGORIES = new Set(['creating a host listing', 'host pricing and calendars', 'payouts']);
 const HOST_CONTEXT_ENTRIES = new Set(['host-pricing-04', 'host-pricing-09', 'host-pricing-01', 'host-listing-06', 'host-listing-08']);
+// words only a host would use ("get paid back" is a refund, "why was i charged" a guest question)
 const HOST_WORDS =
-  /\b(?:host|hosts|hosting|my pool|my listing|my listings|list|listing|listed|guests|my guests|payout|payouts|charge (?:my|guests)|per hour i|should i charge|i charge|my calendar|my backyard)\b/;
+  /\b(?:host|hosts|hosting|hosted|my pool|my listing|my listings|list|listing|listed|guests|my guests|payout|payouts|charge (?:my|guests)|per hour i|should i charge|i charge|my calendar|my backyard|my hot tub|my space|my hours|my schedule|my availability|my rate|my rates|my pricing|my earnings|earnings|earned|1099|tax form|get paid(?! back)|getting paid(?! back)|paid out|block (?:off )?(?:days?|dates?|times?|weekends?|holidays?)|sync (?:my )?(?:swimply )?calendar|turn on instant booking|offer (?:a |guests )?(?:discount|promo\w*)|create (?:a )?promo\w*|photos do i need)\b/;
 // an entry that needs one of its own words to be offered or answered (a shared "stop" is not "stop text
 // messages", "contact you" is not "contact the host", "delete my listing" is not "delete my account")
 const ENTRY_GATES = {
@@ -285,6 +289,10 @@ class Engine {
     this.bank = bank;
     this.routes = routes || {};
     this.byId = new Map(bank.map((e) => [e.id, e]));
+    // host-only answers: never the confident answer to a message with no known role and no host words
+    this.hostOnly = new Set(
+      bank.filter((e) => HOST_CATEGORIES.has(e.category) || HOST_CONTEXT_ENTRIES.has(e.id)).map((e) => e.id)
+    );
     this.matcher = new Matcher(bank, { extraVocab: SAFETY_VOCAB });
     this.siteUrl = siteUrl.replace(/\/+$/, '');
     this.checkRoutes();
@@ -821,12 +829,7 @@ class Engine {
         return this.confirmEntry(st, top, text, turn, m, { safetyChecked });
       }
       // a host-side answer to a question with no host words and no known role: ask who they are first
-      if (!st.role && HOST_CONTEXT_ENTRIES.has(top.id) && !HOST_WORDS.test(clean(text))) {
-        st.awaiting = { kind: 'role', text: cap(text) };
-        turn.select(COPY.askRole, COPY.roleButtons);
-        turn.log('clarify', { kind: 'role', candidates: [{ id: top.id, score: round(m.top.score) }] });
-        return;
-      }
+      if (this.roleUnknownFor(st, top.id, text)) return this.askRole(st, text, turn, [{ id: top.id, score: round(m.top.score) }]);
       this.answerEntry(st, top, turn, {
         via: 'match',
         score: m.top.score,
@@ -892,7 +895,7 @@ class Engine {
   gate(m, text, st) {
     const s = clean(text);
     // a guest asking "how much does it cost" is never given host pricing advice
-    const hostOnly = (id) => st && st.role === 'swimmer' && HOST_CONTEXT_ENTRIES.has(id) && !HOST_WORDS.test(s);
+    const hostOnly = (id) => st && st.role === 'swimmer' && this.hostOnly.has(id) && !HOST_WORDS.test(s);
     const ok = (id) => passesGate(id, s) && !hostOnly(id);
     if (!m.top || ok(m.top.id)) {
       if (m.candidates) m.candidates = m.candidates.filter((c) => ok(c.id));
@@ -920,18 +923,40 @@ class Engine {
     return pieces.filter((p) => this.matcher.canon(p).length >= 1).slice(0, MAX_PARTS);
   }
 
+  /** No known role, a host-only entry, and nothing in the text that only a host would say. */
+  roleUnknownFor(st, id, text) {
+    return !st.role && this.hostOnly.has(id) && !HOST_WORDS.test(clean(text));
+  }
+
+  /** "Are you booking a swim or hosting?", keeping their question to answer once they say. */
+  askRole(st, text, turn, candidates = []) {
+    st.awaiting = { kind: 'role', text: cap(text) };
+    turn.select(COPY.askRole, COPY.roleButtons);
+    turn.log('clarify', { kind: 'role', candidates });
+  }
+
   /** Answer the first confidently matched part of a multi-question message; offer the others as buttons. */
   answerParts(st, text, turn) {
     const parts = this.multiPart(text);
     if (parts.length < 2) return false;
     const hits = [];
+    let roleSkipped = null;
     for (const p of parts) {
       // each part on its own merits: no topic bias from the answer we are about to give
       const m = this.gate(this.matcher.match(p, { role: st.role, topic: null }), p, st);
       if (m.status !== 'confident') continue;
       const e = this.byId.get(m.top.id);
       if (e.urgency === 'high' || hits.some((h) => h.e.id === e.id)) continue;
+      // a host-only answer to a part, and nothing in the whole message says they host: not without asking
+      if (this.roleUnknownFor(st, e.id, text)) {
+        roleSkipped = roleSkipped || { id: e.id, score: round(m.top.score) };
+        continue;
+      }
       hits.push({ e, part: p, score: m.top.score });
+    }
+    if (!hits.length && roleSkipped) {
+      this.askRole(st, text, turn, [roleSkipped]);
+      return true;
     }
     if (!hits.length) return false;
     const [first, ...rest] = hits;
@@ -952,6 +977,8 @@ class Engine {
       if (m.status !== 'confident') continue;
       const e = this.byId.get(m.top.id);
       if (e.id === answeredId || e.urgency === 'high' || rest.some((h) => h.e.id === e.id)) continue;
+      // the answer we just gave may have set the role ("booking" → guest); otherwise no host-only offer without host words
+      if (this.roleUnknownFor(st, e.id, text)) continue;
       rest.push({ e, part: p });
     }
     if (rest.length) this.offerParts(st, rest, turn);

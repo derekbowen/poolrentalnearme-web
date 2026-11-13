@@ -86,7 +86,7 @@ test('validate-bank CLI passes on the shipped bank', () => {
     [path.join(__dirname, '..', 'tools', 'validate-bank.js')],
     { encoding: 'utf8' }
   );
-  assert.match(out, /100 entries, 918 questions\+variants, 0 self-match misses, 0 errors/);
+  assert.match(out, /100 entries, 923 questions\+variants, 0 self-match misses, 0 errors/);
 });
 
 test('server refuses to start without the webhook secret or Chatwoot settings (and never echoes values)', () => {

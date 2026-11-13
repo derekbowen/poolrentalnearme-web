@@ -135,7 +135,7 @@ cd ops/chatbot && npm test     # = node --test test/*.test.js: 157 tests, about 
 
 The suites:
 - `bank`: validation and forbidden phrases.
-- `matcher`: all 918 questions and variants hit their own entry; typos and slang; must-not-answer cases.
+- `matcher`: all 923 questions and variants hit their own entry; typos and slang; must-not-answer cases.
 - `safety`: emergency and benign phrasings run through the full engine.
 - `flows`: role memory, the booking ref never asked twice, founder requests, two-strike handoff, cards and passwords, upset tone, no SMS or phone anywhere, and stale or forged taps.
 - `flood`: the D3 caps, 30 concurrent escalations, deferral and the sweep.

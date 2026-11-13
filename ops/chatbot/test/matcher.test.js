@@ -7,7 +7,7 @@ const { roleOfCategory } = require('../engine/matcher');
 const { entries, engine } = loadEngine();
 const m = engine.matcher;
 
-test('every question and every variant matches its own entry (918 phrasings)', () => {
+test('every question and every variant matches its own entry (923 phrasings)', () => {
   const misses = [];
   let n = 0;
   for (const e of entries) {
@@ -21,7 +21,7 @@ test('every question and every variant matches its own entry (918 phrasings)', (
         misses.push(`${e.id}: "${text}" -> ${r.status} ${r.top && r.top.id}`);
     }
   }
-  assert.equal(n, 918);
+  assert.equal(n, 923);
   assert.deepEqual(misses, []);
 });
 

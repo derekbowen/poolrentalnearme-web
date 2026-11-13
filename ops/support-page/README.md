@@ -5,14 +5,14 @@ One static page that asks hosts for voluntary monthly support and links to three
 
 - Hosted on Vercel: team "DEREK BOWEN", project `prnm-support` (prj_TBHVfokNGRZZTpCnQb41wHOnhaWB).
 - Live at https://prnm-support-derekbowencorp-5352.vercel.app/ (noindex).
-- Planned address: https://support.poolrentalnearme.com (needs two DNS records in Cloudflare; see below).
+- Public address: https://support.poolrentalnearme.com (live since 2026-11-13; verified on Vercel, served through Cloudflare).
 - Vercel's login wall (Vercel Authentication) was turned off for this project so hosts can open it.
 
-## DNS records still needed (Cloudflare, zone poolrentalnearme.com)
+## DNS records (added by Derek in Cloudflare, zone poolrentalnearme.com)
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| CNAME | `support` | `ed75c107ce4bb8ba.vercel-dns-016.com` | DNS only |
+| CNAME | `support` | `ed75c107ce4bb8ba.vercel-dns-016.com` | currently proxied; works |
 | TXT | `_vercel` | `vc-domain-verify=support.poolrentalnearme.com,297a354416f6ffd55881` | n/a |
 
 ## Copy notes
@@ -24,6 +24,7 @@ One static page that asks hosts for voluntary monthly support and links to three
 - Cancel instructions say to email support@poolrentalnearme.com. Replace with Stripe's customer portal link when it is turned on.
 - No insurance benefit is claimed; only the one approved sentence appears.
 - The 2027 requirement is not mentioned on this page.
+- The $40/month advertising add-on section uses Derek's own wording from his Stripe product.
 
 ## Updating
 

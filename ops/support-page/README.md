@@ -28,4 +28,11 @@ One static page that asks hosts for voluntary monthly support and links to three
 
 ## Updating
 
-Edit `index.html`, then redeploy the two files to the `prnm-support` project (target production).
+1. Edit the files here, refresh `SHA1SUMS` (`sha1sum index.html logo.png share.png apple-touch-icon.png > SHA1SUMS`), commit and push.
+2. Redeploy the `prnm-support` project (target production) with one uploaded file, `build.sh`, build command `sh build.sh`,
+   output directory `public`. `build.sh` downloads these files from the pinned commit on GitHub and checks their hashes;
+   put the new commit id in it.
+3. Cloudflare caches `/` on every hostname in the zone for 10 minutes, so the bare address can show the old page for up to
+   10 minutes after a deploy. Adding `?v=2` to the address shows the new page at once.
+
+`share.png` (1200x630) is the picture shown when the link is shared; `apple-touch-icon.png` is the icon phones show.

@@ -103,6 +103,13 @@
   .example { border-left: 4px solid var(--blue); padding: 10px 16px; background: var(--blue-soft); border-radius: 0 var(--radius) var(--radius) 0; }
   .example b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--blue-dark); margin-bottom: 2px; }
 
+  .ads { border: 2px solid var(--blue); border-radius: var(--radius); padding: 24px 22px; background: #fff; box-shadow: 0 10px 30px rgba(0, 157, 207, .10); }
+  @media (min-width: 640px) { .ads { padding: 32px 36px; } }
+  .ads ul { margin: 0 0 14px; padding-left: 22px; }
+  .ads li { margin-bottom: 6px; }
+  .ads .btn { margin-top: 6px; }
+  .ads .fine { margin: 14px 0 0; color: var(--muted); font-size: 15px; }
+
   details { border-bottom: 1px solid var(--line); }
   details:first-of-type { border-top: 1px solid var(--line); }
   summary { cursor: pointer; padding: 16px 30px 16px 0; font-weight: 700; font-size: 18px; list-style: none; position: relative; min-height: 44px; }
@@ -224,6 +231,26 @@
     </div>
   </section>
 
+  <section id="ads" aria-labelledby="ads-h" style="padding-top: 8px;">
+    <div class="wrap">
+      <div class="ads">
+        <p class="eyebrow">Advertising add-on · $40 a month</p>
+        <h2 id="ads-h">More eyes on your pool. Less work for you.</h2>
+        <p>We’ll create an advertisement using your Pool Rental Near Me listing, photos, and details, then run ads targeting potential guests in your area. Interested renters go directly to your listing to explore your pool, check availability, and book.</p>
+        <p><strong>Your $40 monthly subscription includes:</strong></p>
+        <ul>
+          <li>Ad creation using your existing listing.</li>
+          <li>Campaign setup and management.</li>
+          <li>An advertising budget averaging $1 per day.</li>
+        </ul>
+        <p>You handle the hosting—we handle the advertising.</p>
+        <p>Billed monthly. Results vary; bookings are not guaranteed.</p>
+        <a class="btn" href="https://buy.stripe.com/cNi9AU6swdEcgj6flPfQI09" rel="noopener">Add advertising — $40/month</a>
+        <p class="fine">This is a separate $40 monthly subscription, charged by 10000 Solutions LLC until you cancel. To cancel, email support@poolrentalnearme.com from the email you paid with.</p>
+      </div>
+    </div>
+  </section>
+
   <section aria-labelledby="faq-h" style="padding-top: 8px;">
     <div class="wrap">
       <h2 id="faq-h">Questions</h2>
@@ -295,7 +322,7 @@
       var anyVisible = Object.keys(seen).some(function (k) { return seen[k]; });
       bar.hidden = anyVisible;
     }, { rootMargin: '-2px 0px -60px 0px' });
-    ['.hero-actions', '#give', '.final', 'footer'].forEach(function (sel) {
+    ['.hero-actions', '#give', '#ads', '.final', 'footer'].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (el) io.observe(el);
     });

@@ -31,13 +31,17 @@ One static page that asks hosts for voluntary monthly support and links to three
 Added 2026-11-13 for the $5 email series to customers. Served at https://support.poolrentalnearme.com/guests/ (noindex).
 
 - One amount only: $5 a month, the same Stripe link as the $5 option on the host page.
-- Says plainly that nothing is included in return, and that the checkout page names the product
-  "Pool rental near me host silver" (remove that sentence once the Stripe product is renamed).
-- Carries one status sentence: parts of the site, including search and booking, are offline right now.
-  Remove it when the marketplace app is back.
+- The offer Derek approved on 2026-11-13: for as long as a customer stays subscribed, they pay no booking fee
+  (normally 15%) on any pool they book. They still pay the host's price. The marketplace has to honour this
+  at checkout when it reopens; nothing in the app does that yet.
+- Says "We are closed until January 1, so no-fee booking starts when we reopen." Update or remove when that changes.
+- Asks people to subscribe with the email on their PRNM account, because that is the only way to match a
+  subscription to an account.
+- Says the checkout page names the product "Pool rental near me host silver" (remove that sentence once the
+  Stripe product is renamed).
 - Derek's note is his host letter with the host-only sentences removed and two sentences added
-  ("I'm asking for $5 a month." and "It does not include customer service or anything else in return.").
-- No host levels, no customer service, no insurance sentence, no 2027 requirement.
+  ("I'm asking for $5 a month." and the no-booking-fee sentence).
+- No host levels, no customer service claim, no insurance sentence, no 2027 requirement.
 
 ## Updating
 

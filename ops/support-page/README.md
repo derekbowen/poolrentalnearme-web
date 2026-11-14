@@ -26,9 +26,22 @@ One static page that asks hosts for voluntary monthly support and links to three
 - The 2027 requirement is not mentioned on this page.
 - The $40/month advertising add-on section uses Derek's own wording from his Stripe product.
 
+## Customer page (`guests/index.html`)
+
+Added 2026-11-13 for the $5 email series to customers. Served at https://support.poolrentalnearme.com/guests/ (noindex).
+
+- One amount only: $5 a month, the same Stripe link as the $5 option on the host page.
+- Says plainly that nothing is included in return, and that the checkout page names the product
+  "Pool rental near me host silver" (remove that sentence once the Stripe product is renamed).
+- Carries one status sentence: parts of the site, including search and booking, are offline right now.
+  Remove it when the marketplace app is back.
+- Derek's note is his host letter with the host-only sentences removed and two sentences added
+  ("I'm asking for $5 a month." and "It does not include customer service or anything else in return.").
+- No host levels, no customer service, no insurance sentence, no 2027 requirement.
+
 ## Updating
 
-1. Edit the files here, refresh `SHA1SUMS` (`sha1sum index.html logo.png share.png apple-touch-icon.png > SHA1SUMS`), commit and push.
+1. Edit the files here, refresh `SHA1SUMS` (`sha1sum index.html logo.png share.png apple-touch-icon.png guests/index.html > SHA1SUMS`), commit and push.
 2. Redeploy the `prnm-support` project (target production) with one uploaded file, `build.sh`, build command `sh build.sh`,
    output directory `public`. `build.sh` downloads these files from the pinned commit on GitHub and checks their hashes;
    put the new commit id in it.

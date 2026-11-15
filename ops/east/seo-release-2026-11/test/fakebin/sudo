@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# TEST SHIM for `sudo -u <user> [VAR=value ...] command ...`: runs the command as the
+# current user. `bash -lc` becomes `bash -c` because a login profile would reset PATH
+# and drop these shims. control/mutate_before_deploy edits a pinned EAST-only file
+# right before ops/deploy-east.sh starts (the "changed after preflight" scenario).
+[ "$1" = "-u" ] || { echo "fake sudo: expected -u <user>" >&2; exit 90; }
+shift 2
+envs=()
+while [ $# -gt 0 ] && [[ "$1" == [A-Za-z_]*=* ]]; do envs+=("$1"); shift; done
+if [ "$1" = bash ] && [ "$2" = -lc ]; then
+  cmd="$3"
+  if [ -e "$SIM_ROOT/control/mutate_before_deploy" ] && [[ "$cmd" == *ops/deploy-east.sh* ]] && [[ "$cmd" != *ROLLBACK=1* ]]; then
+    rm -f "$SIM_ROOT/control/mutate_before_deploy"
+    echo "// changed after preflight (test)" >> "$SIM_ROOT/east/fresh-web/src/components/home-page.tsx"
+  fi
+  set -- bash -c "$cmd"
+fi
+exec env ${envs[@]+"${envs[@]}"} "$@"

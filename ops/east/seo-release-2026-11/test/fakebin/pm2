@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# TEST SHIM for pm2. Logs every call with the NODE_OPTIONS it received. `jlist` carries a
+# sentinel "secret" in the process environment, as real pm2 does: no output may contain it.
+# The live site is served by the harness from dist/ on disk (serve.mjs reads static files,
+# the stamp included, from disk), so a restart changes nothing the stamp shows.
+echo "pm2 $* NODE_OPTIONS=${NODE_OPTIONS:-}" >> "$SIM_ROOT/control/log"
+case "$1" in
+  jlist) printf '[{"name":"fresh-web","pm2_env":{"status":"%s","DUMMY_SECRET":"%s"}}]\n' \
+           "$(cat "$SIM_ROOT/control/pm2_status" 2>/dev/null || echo online)" "$(cat "$SIM_ROOT/control/secret")" ;;
+  restart) echo "[PM2] Applying action restartProcessId on app [$2]" ;;
+esac
+exit 0

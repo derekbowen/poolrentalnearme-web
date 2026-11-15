@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# TEST SHIM: deploy-east.sh polls with `sleep 1` / `sleep 2`; 0.1 s keeps the suite fast.
+exec "$SIM_REAL_SLEEP" 0.1

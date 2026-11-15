@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""TEST SHIM for `npm run [--silent] <script>` as ops/deploy-east.sh calls it.
+
+Stubbed (expensive or needs production): check:types, the vite half of build, and every
+verify:production check except check:deployed-sha. Real: the postbuild stamp
+(scripts/stamp-build.mjs, run from package.json), check:deployed-sha and
+check:production-drift. Control files in $SIM_ROOT/control steer failures.
+"""
+import json, os, random, shutil, subprocess, sys
+
+C = os.path.join(os.environ["SIM_ROOT"], "control")
+args = [a for a in sys.argv[1:] if a != "--silent"]
+with open(os.path.join(C, "log"), "a") as f:
+    f.write("npm %s NODE_OPTIONS=%s\n" % (" ".join(args), os.environ.get("NODE_OPTIONS", "")))
+if len(args) < 2 or args[0] != "run":
+    sys.exit("fake npm: unexpected invocation %r" % args)
+script, repo = args[1], os.getcwd()
+pkg = json.load(open(os.path.join(repo, "package.json")))["scripts"]
+real = lambda name: subprocess.call(pkg[name], shell=True)
+flag = lambda name: os.path.exists(os.path.join(C, name))
+
+if script == "check:types":
+    sys.exit(1 if flag("typecheck_fail") else 0)
+if script == "build":
+    dist = os.path.join(repo, "dist")
+    shutil.rmtree(dist, ignore_errors=True)  # vite empties the output dir first
+    if flag("build_hang"):  # killed by the caller's timeout with dist/ already emptied
+        import time
+        time.sleep(120)
+    if flag("build_fail"):
+        print("error during build: (test) simulated failure")
+        sys.exit(1)
+    if flag("mutate_during_build"):
+        os.remove(os.path.join(C, "mutate_during_build"))
+        with open(os.path.join(repo, "src/components/home-page.tsx"), "a") as f:
+            f.write("// changed during the build (test)\n")
+    os.makedirs(os.path.join(dist, "client/fw-assets"))
+    os.makedirs(os.path.join(dist, "server"))
+    tag = "%08x" % random.getrandbits(32)
+    open(os.path.join(dist, "client/fw-assets/index-%s.js" % tag), "w").write("console.log(1)\n")
+    open(os.path.join(dist, "server/server.js"), "w").write(
+        "export default { async fetch(req) {\n"
+        "  const p = new URL(req.url).pathname;\n"
+        "  const html = `<!doctype html><html><body><h1>Test page ${p}</h1>` + '<p>filler text</p>'.repeat(2000) + '</body></html>';\n"
+        "  return new Response(html, { status: 200, headers: { 'content-type': 'text/html' } });\n"
+        "} };\n")
+    print("vite build (test stub) -> dist/ %s" % tag)
+    sys.exit(real("postbuild"))
+if script == "verify:production":
+    rc = real("check:deployed-sha")
+    print("verify:production (test stub): only check:deployed-sha is real here")
+    sys.exit(rc)
+if script in ("check:deployed-sha", "check:production-drift"):
+    sys.exit(real(script))
+sys.exit("fake npm: script %s is not simulated" % script)

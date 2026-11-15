@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# TEST SHIM for node: check-price-variants needs the Sharetribe Integration API, which a
+# test box does not have, so only that script is stubbed. Everything else is real node.
+for a in "$@"; do
+  case "$a" in
+    *check-price-variants.mjs)
+      echo "check:price-variants: tiered listings offer their tiers (test stub)"
+      [ -e "$SIM_ROOT/control/pv_fail" ] && exit 1
+      exit 0 ;;
+  esac
+done
+exec "$SIM_REAL_NODE" "$@"

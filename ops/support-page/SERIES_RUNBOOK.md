@@ -88,7 +88,7 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 |---|---|---|---|---|
 | 2026-11-13 morning | Hosts | Please, we desperately need your help | 220 | 0 |
 | 2026-11-13 evening | Hosts (the rest) | Pool rental near me - very important | 44 | 0 |
-| 2026-11-14 about 2am | Customers | Pool Rental Near Me needs your help | 180 confirmed; last 33 triggered, check the log | 0 so far |
+| 2026-11-14 | Customers | Pool Rental Near Me needs your help | 213 | 0 |
 
 ## Still to do before the offer can be honoured
 

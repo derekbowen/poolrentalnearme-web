@@ -1,0 +1,81 @@
+# Crawlers that are blocked completely.
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Yandex
+Disallow: /
+
+
+# Everyone else. A crawler that has a group of its own ignores the "*" group, so the
+# crawlers that are explicitly welcome (SEO tools, AI search and citation crawlers) are
+# listed on this group instead of each getting a separate "Allow: /": that way the
+# Disallow rules below bind to them as well.
+User-agent: SemrushBot
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: *
+Allow: /
+
+# Sharetribe authenticated routes
+Disallow: /profile-settings
+Disallow: /l/new$
+Disallow: /l/new?
+Disallow: /l/*/checkout
+Disallow: /l/*/draft
+Disallow: /l/*/pending-approval
+Disallow: /l/*/new
+Disallow: /l/*/edit
+Disallow: /inbox
+Disallow: /order/
+Disallow: /sale/
+Disallow: /listings
+Disallow: /account
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /preview
+Disallow: /host/preview/
+
+# Fresh-web app routes
+Disallow: /admin
+Disallow: /auth$
+Disallow: /auth?
+Disallow: /auth/
+Disallow: /api/
+
+# /p/p/... is NOT disallowed: it answers 301 to the clean /p/... URL, and a crawler
+# has to be allowed to fetch it to see that redirect.
+
+# Block hybrid listing+search URLs
+Disallow: /l/*/p/
+
+
+# Google ignores Crawl-Delay; other crawlers may honour it.
+Crawl-Delay: 5
+
+# Faceted search pagination: keep deep /s? page facets out of the crawl.
+# Bare /s and first-page facet URLs stay crawlable so they can be seen
+# and dropped via their noindex,follow X-Robots-Tag.
+# /s?page=N (page as the first parameter) is not matched by this rule: it stays
+# crawlable and is dropped the same way.
+Disallow: /s?*&page=
+
+Sitemap: https://www.poolrentalnearme.com/sitemap.xml
+Sitemap: https://www.poolrentalnearme.com/public-pools.xml

@@ -16,6 +16,10 @@ export const LIVE = 'robots.www.poolrentalnearme.com.live.txt';
 export const PROPOSED = 'robots.www.poolrentalnearme.com.proposed.txt';
 export const FIXTURE = 'fixtures/sitemap-paths.www.poolrentalnearme.com.2026-11-15.txt';
 export const CCTLD_FIXTURE = 'fixtures/sitemap-country-urls.cctld.2026-11-15.txt';
+// The sitemap files themselves: /sitemap.xml and the 15 child sitemaps its index
+// listed on 2026-11-15 (public-pools.xml among them). A crawler will not read a
+// sitemap it is disallowed from fetching, so these must be allowed too.
+export const SITEMAP_FILES_FIXTURE = 'fixtures/sitemap-files.www.poolrentalnearme.com.2026-11-15.txt';
 
 // sha256 of the files exactly as fetched on 2026-11-15 (see README.md).
 export const LIVE_SHA256 = {
@@ -152,7 +156,8 @@ export const CASES = [
   { path: '/order', live: D, proposed: A, edit: 'E6 side effect: bare /order is not a route (404 + noindex today)' },
 ];
 
-// Crawlers the live file names with nothing but "Allow: /" (each its own group).
+// Crawlers the live file names in a group of their own with "Allow: /": eleven with
+// nothing else, and CCBot, whose group also holds "Disallow: /host/preview/" (L1).
 export const WELCOME_BOTS = [
   'SemrushBot',
   'GPTBot',

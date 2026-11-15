@@ -1,10 +1,12 @@
 // Unit tests for robots-match.mjs. Every case in the first five blocks is an example
 // taken from Google's documentation (read 2026-11-15, "Last updated 2026-10-23 UTC"):
 // https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt
-// Run: node --test ops/west/robots/
+// Run: node --test ops/west/robots/*.test.mjs
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRobots, selectRules, pathMatches, isAllowed, explain, normalizeAgent, toUrlPath } from './robots-match.mjs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { parseRobots, selectRules, pathMatches, isAllowed, explain, normalizeAgent, toUrlPath, normalizePercent } from './robots-match.mjs';
+import { read, PROPOSED, LIVE, UUID } from './robots-cases.mjs';
 
 describe('Google doc: "URL matching based on path values" table', () => {
   const table = [
@@ -223,6 +225,71 @@ describe('Syntax rules stated in the documentation', () => {
       assert.equal(isAllowed(txt, 'bot', '/foo/bar/%E3%83%84'), false);
       assert.equal(isAllowed(txt, 'bot', '/foo/bar/ツ'), false);
     }
+  });
+  test('RFC 9309 §2.2.2 Figure 4: the form a path is matched in', () => {
+    // [path as written, path to match]
+    const figure4 = [
+      ['/foo/bar?baz=quz', '/foo/bar?baz=quz'],
+      ['/foo/bar?baz=https%3A%2F%2Ffoo.bar', '/foo/bar?baz=https%3A%2F%2Ffoo.bar'],
+      ['/foo/bar/ツ', '/foo/bar/%E3%83%84'],
+      ['/foo/bar/%E3%83%84', '/foo/bar/%E3%83%84'],
+      ['/foo/bar/%62%61%7A', '/foo/bar/baz'],
+    ];
+    for (const [written, expected] of figure4) {
+      assert.equal(toUrlPath(written), expected, written);
+      assert.equal(normalizePercent(written), expected, written);
+    }
+  });
+  test('escaped unreserved characters are decoded on both sides; reserved ones stay escaped', () => {
+    assert.equal(isAllowed('user-agent: *\ndisallow: /foo/bar/baz\n', 'x', '/foo/bar/%62%61%7A'), false);
+    assert.equal(isAllowed('user-agent: *\ndisallow: /foo/bar/%62%61%7A\n', 'x', '/foo/bar/baz'), false);
+    assert.equal(isAllowed('user-agent: *\ndisallow: /account\n', 'x', '/%61ccount'), false);
+    assert.equal(normalizePercent('/a%2Db%2Ec%5Fd%7Ee%30'), '/a-b.c_d~e0');
+    // reserved: / ? # [ ] @ ! $ & ' ( ) * + , ; =  and % itself
+    assert.equal(normalizePercent('/a%2fb%3fc%2ad%24e%25f'), '/a%2Fb%3Fc%2Ad%24e%25f');
+    // a rule's %2A is a literal star, never a wildcard
+    assert.equal(isAllowed('user-agent: *\ndisallow: /a%2Ab\n', 'x', '/axxb'), true);
+    assert.equal(isAllowed('user-agent: *\ndisallow: /a%2Ab\n', 'x', '/a%2ab'), false);
+  });
+  test('hex case of an escape does not matter, on either side', () => {
+    assert.equal(isAllowed('user-agent: *\ndisallow: /caf%c3%a9\n', 'x', '/caf%C3%A9'), false);
+    assert.equal(isAllowed('user-agent: *\ndisallow: /caf%C3%A9\n', 'x', '/caf%c3%a9'), false);
+    assert.equal(isAllowed('user-agent: *\ndisallow: /caf%C3%A9\n', 'x', '/café'), false);
+  });
+  test('encoded spellings of private URLs are blocked by the proposed www file as their plain spellings are', () => {
+    const proposed = parseRobots(read(PROPOSED));
+    for (const p of ['/%61ccount', '/%69nbox', `/l/some-pool/${UUID}/%63heckout`]) {
+      assert.equal(isAllowed(proposed, 'Googlebot', p), false, p);
+    }
+  });
+  test('no rule line of either www file holds a "%" or raw non-ASCII, so normalisation changes none of their rules', () => {
+    for (const f of [LIVE, PROPOSED]) {
+      const ruleText = read(f)
+        .split('\n')
+        .map((l) => (l.includes('#') ? l.slice(0, l.indexOf('#')) : l))
+        .join('\n');
+      assert.equal(/[%\u0080-\uFFFF]/.test(ruleText), false, f);
+    }
+  });
+  test('every documented run command names the test files (the explicit, documented form)', () => {
+    const here = new URL('./', import.meta.url);
+    const files = readdirSync(here).filter((f) => /\.(mjs|md)$/.test(f));
+    const docs = new URL('../../../docs/OPS_RECORD_2026-11-15_robots-txt-versioned.md', import.meta.url);
+    const texts = [...files.map((f) => [f, readFileSync(new URL(f, here), 'utf8')]), ['ops record', readFileSync(docs, 'utf8')]];
+    const bad = [];
+    for (const [name, text] of texts) {
+      // Built from two words so that this line is not itself a match.
+      for (const m of text.matchAll(new RegExp(`${['node', '--test'].join(' ')} ([^\\s\`]+)`, 'g'))) {
+        if (!/\.test\.mjs$/.test(m[1])) bad.push(`${name}: ${m[0]}`);
+      }
+    }
+    assert.deepEqual(bad, []);
+  });
+  test('index.js (what the directory form runs) imports every test file here', () => {
+    const here = new URL('./', import.meta.url);
+    const testFiles = readdirSync(here).filter((f) => f.endsWith('.test.mjs')).sort();
+    const imported = [...readFileSync(new URL('index.js', here), 'utf8').matchAll(/import\('\.\/([^']+)'\)/g)].map((m) => m[1]).sort();
+    assert.deepEqual(imported, testFiles);
   });
   test('"$" is an end anchor only at the end of a rule; a wildcard can sit before it', () => {
     assert.equal(pathMatches('/p/*-uk$', '/p/hosting-uk'), true);

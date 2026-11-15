@@ -8,7 +8,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRobots, explain, isAllowed, selectRules } from './robots-match.mjs';
-import { read, sha256, lines, LIVE, FIXTURE, CCTLD_FIXTURE, LIVE_SHA256, CASES, UUID, LISTING, WELCOME_BOTS, BLOCKED_BOTS } from './robots-cases.mjs';
+import { read, sha256, lines, LIVE, FIXTURE, SITEMAP_FILES_FIXTURE, CCTLD_FIXTURE, LIVE_SHA256, CASES, UUID, LISTING, WELCOME_BOTS, BLOCKED_BOTS } from './robots-cases.mjs';
 
 const live = parseRobots(read(LIVE));
 const AGENTS = ['Googlebot', 'ExampleBot'];
@@ -84,6 +84,8 @@ describe('live www file: named crawlers', () => {
       for (const p of [`${LISTING}/checkout`, `${LISTING}/edit/details`, '/account', '/inbox', '/admin', '/api/x', '/reset-password']) {
         assert.equal(isAllowed(live, bot, p), true, `${bot} ${p}`);
       }
+      // CCBot's group is not only "Allow: /": it also carries the last line of the file.
+      assert.equal(isAllowed(live, bot, '/host/preview/x'), bot !== 'CCBot', `${bot} /host/preview/x`);
     });
   }
   for (const bot of BLOCKED_BOTS) {
@@ -103,6 +105,13 @@ describe('live www file: sitemap URLs (snapshot of 2026-11-15, listing URLs left
     for (const agent of AGENTS) {
       const blocked = paths.filter((p) => !isAllowed(live, agent, p));
       assert.deepEqual(blocked, [], `${agent}: ${blocked.length} blocked`);
+    }
+  });
+  test('no sitemap FILE (/sitemap.xml and the 15 children its index lists) is blocked', () => {
+    const files = lines(SITEMAP_FILES_FIXTURE);
+    assert.equal(files.length, 16);
+    for (const agent of AGENTS) {
+      assert.deepEqual(files.filter((p) => !isAllowed(live, agent, p)), [], agent);
     }
   });
 });

@@ -7,7 +7,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRobots, explain, isAllowed, selectRules } from './robots-match.mjs';
-import { read, lines, LIVE, PROPOSED, FIXTURE, CASES, UUID, LISTING, WELCOME_BOTS, BLOCKED_BOTS } from './robots-cases.mjs';
+import { read, lines, LIVE, PROPOSED, FIXTURE, SITEMAP_FILES_FIXTURE, CASES, UUID, LISTING, WELCOME_BOTS, BLOCKED_BOTS } from './robots-cases.mjs';
 import { fetchAllLocs } from './sitemap-locs.mjs';
 
 const live = parseRobots(read(LIVE));
@@ -112,6 +112,16 @@ describe('proposed www file: every sitemap URL must be allowed', () => {
       assert.deepEqual(paths.filter((p) => !isAllowed(proposed, agent, p)), []);
     });
   }
+  const sitemapFiles = lines(SITEMAP_FILES_FIXTURE);
+  test(`the ${sitemapFiles.length} sitemap files (/sitemap.xml and its children) are allowed`, () => {
+    // A rule such as "Disallow: /*page=" would block /sitemap-pages-host-acquisition.xml?page=2,
+    // and a crawler does not follow a sitemap it may not fetch.
+    assert.equal(sitemapFiles.length, 16);
+    assert.ok(sitemapFiles.includes('/sitemap-pages-host-acquisition.xml?page=2'));
+    for (const agent of [...AGENTS, 'GPTBot']) {
+      assert.deepEqual(sitemapFiles.filter((p) => !isAllowed(proposed, agent, p)), [], agent);
+    }
+  });
   test('listing URLs /l/<slug>/<uuid> are allowed whatever the slug starts with', () => {
     for (const slug of ['heated-backyard-pool', 'new', 'new-heated-pool', 'newport-beach-pool', 'p', 'edit', 'draft', 'checkout', 'pending-approval', 'sale', 'order', 'preview', 'account', 's']) {
       assert.equal(isAllowed(proposed, 'Googlebot', `/l/${slug}/${UUID}`), true, slug);
@@ -128,6 +138,10 @@ describe('proposed www file: every sitemap URL must be allowed', () => {
       for (const agent of [...AGENTS, 'GPTBot']) {
         const blocked = locs.filter((u) => !isAllowed(proposed, agent, u));
         assert.equal(blocked.length, 0, `${agent}: ${blocked.length} of ${locs.length} blocked`);
+        // The sitemap files too, not only the URLs inside them.
+        const files = sitemaps.map((s) => s.url);
+        const blockedFiles = files.filter((u) => !isAllowed(proposed, agent, u));
+        assert.deepEqual(blockedFiles, [], `${agent}: sitemap files blocked`);
       }
       const liveBlocked = locs.filter((u) => !isAllowed(live, 'Googlebot', u));
       console.log(`live sitemaps: ${sitemaps.length} files, ${locs.length} distinct URLs, ${locs.filter((u) => u.startsWith(`${origin}/l/`)).length} listings; blocked by the live file for Googlebot: ${liveBlocked.length}`);

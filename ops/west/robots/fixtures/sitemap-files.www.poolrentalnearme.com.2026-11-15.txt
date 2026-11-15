@@ -1,0 +1,16 @@
+/sitemap.xml
+/sitemap-static.xml
+/sitemap-pages-comparisons.xml
+/sitemap-pages-host-acquisition.xml
+/sitemap-pages-host-acquisition.xml?page=2
+/sitemap-pages-host-acquisition.xml?page=3
+/sitemap-pages-host-acquisition.xml?page=4
+/sitemap-pages-event-guides.xml
+/sitemap-pages-articles.xml
+/sitemap-pages-academy.xml
+/sitemap-pages-advocacy.xml
+/sitemap-pages-spanish.xml
+/sitemap-pages-swim-instructor.xml
+/sitemap-pages-blog.xml
+/sitemap-listings.xml
+/public-pools.xml

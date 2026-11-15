@@ -29,8 +29,9 @@ What was found, in short:
 - `Disallow: /p/p/` hides a 301 from crawlers.
 - `Disallow: /s?*&page=` hides `noindex, follow` responses, and does not cover
   `/s?page=N`. Left as it is in the proposed file pending Search Console data.
-- Twelve named crawlers have their own `Allow: /` group, so none of the private-URL
-  rules apply to them.
+- Twelve named crawlers have their own `Allow: /` group (CCBot's also holds the
+  stray `Disallow: /host/preview/`), so none of the other private-URL rules apply to
+  them.
 - `/l/new`, `/auth`, `/sale` and `/order` are prefix rules that would swallow a
   listing titled "New …", `/author/…`, `/salem` and the like. No such URL is live today.
 - Signed-in routes (`/account`, `/inbox`, `/profile-settings`, listing edit and
@@ -39,3 +40,29 @@ What was found, in short:
 - On the ccTLDs, `/sitemap-country.xml` is disallowed by the same file that names it
   as the sitemap. That is in fresh-web; not changed here.
 - No URL in today's sitemaps is blocked by the live file.
+
+## Review fixes (2026-11-15, same branch, nothing installed)
+
+A review of the committed work found four gaps. None changes a verdict on the live
+or the proposed file; all four are fixed in `ops/west/robots/`:
+
+- **Sitemap files were not checked against robots.txt**, only the URLs inside them.
+  `/sitemap.xml` and its 15 children (fetched read-only from www on 2026-11-15) are
+  now a fixture, and the live run also checks every sitemap file it read. A rule such
+  as `Disallow: /*page=` would have blocked `/sitemap-pages-host-acquisition.xml?page=2`
+  with the old suite still finding 0 blocked sitemap URLs.
+- **Percent-encoding (RFC 9309 §2.2.2).** The matcher now decodes escaped unreserved
+  characters and upper-cases other escapes on both sides; it used to answer ALLOW for
+  `/%61ccount` under the proposed file. Figure 4 of the RFC is a unit test.
+- **Run command.** The header of `robots-match.test.mjs` named the bare directory
+  `ops/west/robots/` as the test target, which fails on Node 22 with MODULE_NOT_FOUND.
+  It is the glob form now, and a test checks every written run command. The
+  directory form also works now: `ops/west/robots/index.js` imports the three test
+  files, and a test keeps that list in step with the directory.
+- **CCBot.** The README said all twelve welcome crawlers had only `Allow: /`; CCBot's
+  group also carries `Disallow: /host/preview/`, so E5 does not newly restrict CCBot
+  there. README L5 and §5 are corrected and the live test asserts it.
+
+Result: `node --test ops/west/robots/*.test.mjs` 269 tests, 268 pass, 0 fail,
+1 skipped (opt-in live run); `ROBOTS_LIVE=1 node --test
+ops/west/robots/robots.proposed.test.mjs` 91 of 91 pass.

@@ -5,7 +5,8 @@
 //
 // Used two ways:
 //   * by robots.proposed.test.mjs when ROBOTS_LIVE=1 is set (checks today's sitemaps);
-//   * from the command line, to refresh the committed fixture:
+//   * from the command line, to refresh the committed fixtures (sitemap URLs, and the
+//     sitemap files themselves):
 //       node ops/west/robots/sitemap-locs.mjs --write-fixture
 //     The fixture holds paths only and leaves out /l/... listing URLs, because a
 //     listing slug is written by the host and can contain a person's name. Listing
@@ -62,5 +63,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const paths = locs.filter((l) => !listings.includes(l) && !foreign.includes(l)).map((l) => l.slice(origin.length) || '/');
     writeFileSync(file, paths.join('\n') + '\n');
     console.log(`wrote ${paths.length} paths to ${file} (update FIXTURE in robots-cases.mjs to use it)`);
+    // The sitemap files themselves, so that a rule blocking one of them fails the suite.
+    const filesFixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', `sitemap-files.www.poolrentalnearme.com.${day}.txt`);
+    const files = sitemaps.map((s) => s.url).filter((u) => u.startsWith(origin + '/')).map((u) => u.slice(origin.length));
+    writeFileSync(filesFixture, files.join('\n') + '\n');
+    console.log(`wrote ${files.length} sitemap files to ${filesFixture} (update SITEMAP_FILES_FIXTURE in robots-cases.mjs to use it)`);
   }
 }

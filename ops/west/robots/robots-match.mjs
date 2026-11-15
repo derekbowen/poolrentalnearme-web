@@ -26,6 +26,17 @@
 //     equally long, allow (the least restrictive) wins. No matching rule = allowed.
 //   * Rules are matched against the path and query of the URL; raw UTF-8 in a rule
 //     is treated as its percent-encoded form.
+//   * Both sides are compared in one percent-encoded form (the page: "As defined in
+//     RFC 9309 Section 2.2.2, Google's crawlers compare rules against URLs using
+//     their percent-encoded forms"). RFC 9309 §2.2.2: a percent-encoded ASCII octet
+//     "MUST be unencoded prior to comparison, unless it is a reserved character"
+//     (its example: /foo/bar/%62%61%7A is matched as /foo/bar/baz). Here that is
+//     done for the RFC 3986 unreserved set (A-Z a-z 0-9 - . _ ~); every other
+//     escape is kept and its hex digits are upper-cased, on the rule side and the
+//     URL side alike, so %c3%a9 and %C3%A9 are the same octet. A reserved escape
+//     stays an escape: a rule's %2A is a literal "*", never a wildcard.
+//     Not checked here: whether Google's open-source parser decodes as well, or
+//     only normalises hex case. Neither committed robots file contains a "%".
 //
 // Deliberate limits (things that page does not specify, so they are not guessed):
 //   * Which characters count as part of a user-agent name. This file uses letters,
@@ -35,8 +46,11 @@
 //   * A crawler with more than one token (for example an image crawler that falls
 //     back to "googlebot") is the caller's business: pass the tokens most specific
 //     first, e.g. ['Googlebot-Image', 'Googlebot'].
-//   * No typo tolerance ("disalow"), no hex-case normalisation of %xx escapes, and
-//     the length used for precedence is the rule exactly as written.
+//   * No typo tolerance ("disalow"). The length used for precedence is the rule
+//     after the percent normalisation above (identical to the rule as written when
+//     it holds no "%" and no raw non-ASCII). ASCII characters outside the
+//     unreserved set (a space, a quote) are compared as they come; they are not
+//     percent-encoded.
 //   * /robots.txt itself, HTTP status handling, the 500 KiB limit and caching are
 //     out of scope: this answers "may this agent fetch this URL under this file".
 
@@ -55,6 +69,20 @@ function encodeNonAscii(s) {
   return s.replace(/[^\x00-\x7F]+/g, (run) =>
     Array.from(new TextEncoder().encode(run), (b) => '%' + b.toString(16).toUpperCase().padStart(2, '0')).join('')
   );
+}
+
+const UNRESERVED = /[A-Za-z0-9\-._~]/;
+
+/**
+ * The one percent-encoded form both sides are compared in (RFC 9309 §2.2.2):
+ * raw non-ASCII encoded, escapes of unreserved characters decoded, every other
+ * escape kept with upper-case hex.
+ */
+export function normalizePercent(s) {
+  return encodeNonAscii(String(s)).replace(/%([0-9A-Fa-f]{2})/g, (_, hex) => {
+    const ch = String.fromCharCode(parseInt(hex, 16));
+    return UNRESERVED.test(ch) ? ch : `%${hex.toUpperCase()}`;
+  });
 }
 
 /**
@@ -101,7 +129,7 @@ export function parseRobots(text) {
         ignored.push({ line, text: body, reason: 'rule without a path' });
         return;
       }
-      current.rules.push({ type: field, path: encodeNonAscii(value), line });
+      current.rules.push({ type: field, path: normalizePercent(value), line });
     } else if (field === 'sitemap') {
       sitemaps.push(value);
     } else {
@@ -158,7 +186,7 @@ export function pathMatches(rulePath, urlPath) {
   return urlPath.indexOf(last, pos) !== -1;
 }
 
-/** Path + query of a URL or path, with raw non-ASCII percent-encoded. The fragment is dropped. */
+/** Path + query of a URL or path, in the normalised percent-encoded form. The fragment is dropped. */
 export function toUrlPath(urlOrPath) {
   let s = String(urlOrPath);
   const scheme = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/[^/?#]*/.exec(s);
@@ -166,7 +194,7 @@ export function toUrlPath(urlOrPath) {
   const frag = s.indexOf('#');
   if (frag !== -1) s = s.slice(0, frag);
   if (!s.startsWith('/')) s = '/' + s;
-  return encodeNonAscii(s);
+  return normalizePercent(s);
 }
 
 /**

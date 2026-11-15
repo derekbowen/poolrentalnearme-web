@@ -16,7 +16,7 @@ The capture follows the pattern of `ops/preserve_east.py`.
 | Command | What it does |
 |---|---|
 | `python3 ops/west/pp-ssr/preserve_pp_ssr.py` | prints the plan; touches nothing |
-| `python3 ops/west/pp-ssr/preserve_pp_ssr.py --selftest` | tests the secret scanner (25 cases) |
+| `python3 ops/west/pp-ssr/preserve_pp_ssr.py --selftest` | tests the secret scanner (28 cases) |
 | `python3 ops/west/pp-ssr/preserve_pp_ssr.py --go` | runs the capture; needs `PRNM_AWS_*` for SSM |
 
 Safety:

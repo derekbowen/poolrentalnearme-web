@@ -49,11 +49,13 @@ SECRET_PATTERNS = {
     # name = "value" / name: 'value' / "name": "value" (JSON, JS objects), where the
     # name contains a secret-ish word anywhere (STRIPE_SECRET_KEY, clientSecret, ...).
     "generic_assignment": re.compile(
-        r"(?i)[A-Za-z0-9_-]*(secret|api[_-]?key|password|passwd|token|private[_-]?key|service[_-]?role)"
-        r"[A-Za-z0-9_-]*['\"]?\s*[:=]\s*['\"][^'\"\s]{12,}['\"]"),
+        # No leading name prefix (search() finds the word anywhere) and a bounded
+        # suffix, so a long base64 run cannot make the scan quadratic.
+        r"(?i)(secret|api[_-]?key|password|passwd|token|private[_-]?key|service[_-]?role)"
+        r"[A-Za-z0-9_-]{0,64}['\"]?\s*[:=]\s*['\"][^'\"\s]{12,}['\"]"),
     # Unquoted shell/env/Dockerfile style: SECRET_KEY=abc..., export API_TOKEN=..., ENV X_TOKEN=...
     "env_assignment": re.compile(
-        r"(?im)^\s*(export\s+|ENV\s+)?[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE_KEY|SERVICE_ROLE)[A-Z0-9_]*"
+        r"(?im)^[ \t]*(export[ \t]+|ENV[ \t]+)?[A-Z0-9_]{0,64}(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE_KEY|SERVICE_ROLE)[A-Z0-9_]{0,64}"
         r"\s*=\s*[^\s'\"$]{12,}"),
     # Command-line flags: --token=abc..., --api-key abc...
     "cli_flag": re.compile(r"(?i)--(token|secret|password|api-?key|key)[= ][^\s'\"]{12,}"),
@@ -150,6 +152,14 @@ def selftest():
         ok = not EXCLUDE_FILE_RE.search(name)
         bad += not ok
         print(("PASS" if ok else "FAIL"), "kept:", name)
+    # Linear time on long unbroken runs (minified bundles, inline base64 assets).
+    import time
+    for blob in ("A" * 2_000_000, "token" * 200_000, ("x" * 1000 + "\n") * 2000):
+        t0 = time.time()
+        scan_text(blob)
+        ok = time.time() - t0 < 5
+        bad += not ok
+        print(("PASS" if ok else "FAIL"), "scan of a %d-char run finishes in %.2fs" % (len(blob), time.time() - t0))
     # Tree scan fails closed on files it cannot scan.
     with tempfile.TemporaryDirectory() as d:
         open(os.path.join(d, "ok.js"), "w").write("const a = 1\n")

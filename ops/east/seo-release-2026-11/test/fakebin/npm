@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """TEST SHIM for `npm run [--silent] <script>` as ops/deploy-east.sh calls it.
 
-Stubbed (expensive or needs production): check:types, the vite half of build, and every
+Runs where deploy-east.sh runs it: check:types and build in the build copy (cwd), the checks in
+the repo. Stubbed (expensive or needs production): check:types, the vite half of build, and every
 verify:production check except check:deployed-sha. Real: the postbuild stamp
 (scripts/stamp-build.mjs, run from package.json), check:deployed-sha and
 check:production-drift. Control files in $SIM_ROOT/control steer failures.
@@ -24,15 +25,23 @@ if script == "check:types":
 if script == "build":
     dist = os.path.join(repo, "dist")
     shutil.rmtree(dist, ignore_errors=True)  # vite empties the output dir first
-    if flag("build_hang"):  # killed by the caller's timeout with dist/ already emptied
+    # What the LIVE dist/ (the one serve.mjs serves) looks like while this build runs.
+    live = os.path.join(os.environ["SIM_ROOT"], "east/fresh-web")
+    try:
+        seen = json.load(open(os.path.join(live, "dist/client/fw-assets/__build.json"))).get("sha")
+    except Exception:
+        seen = None
+    open(os.path.join(C, "live_during_build"), "w").write(str(seen))
+    if flag("build_hang"):  # killed by the caller's timeout (or a SIGTERM) mid-build
+        open(os.path.join(C, "build_pid"), "w").write(str(os.getpid()))
         import time
-        time.sleep(120)
+        time.sleep(600)
     if flag("build_fail"):
         print("error during build: (test) simulated failure")
         sys.exit(1)
-    if flag("mutate_during_build"):
+    if flag("mutate_during_build"):  # someone edits the box's copy while the build runs
         os.remove(os.path.join(C, "mutate_during_build"))
-        with open(os.path.join(repo, "src/components/home-page.tsx"), "a") as f:
+        with open(os.path.join(live, "src/components/home-page.tsx"), "a") as f:
             f.write("// changed during the build (test)\n")
     os.makedirs(os.path.join(dist, "client/fw-assets"))
     os.makedirs(os.path.join(dist, "server"))

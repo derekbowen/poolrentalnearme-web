@@ -14,14 +14,19 @@ scratchpad's release-test/):
                   and a dist/ built by the stub build + the REAL scripts/stamp-build.mjs
   live server     a local HTTP server standing in for BASE. It serves the stamp from
                   dist/ on disk, as serve.mjs does (control/live_frozen pins an old one)
-  fakebin/        sudo, pm2, npm, node, sleep shims (see each file)
+  control/loaded  the stamp of the build the "process" has loaded: the fake pm2 updates it only
+                  on a restart that really happens. Because the live stamp is read from disk, a
+                  restart can only be proven through pm2; every end-state check reads this too.
+  fakebin/        sudo, pm2, npm, node, sleep, systemd-run shims (see each file)
 
 Real code under test: the whole of east_seo_release.py (its constants rewritten the way an
-operator fills them in, plus test paths), the release's ops/deploy-east.sh end to end
-(allowlist, typecheck/build gates, stamp checks, smoke against the real serve.mjs, live
-SHA polling, attestation, restore_dist), scripts/stamp-build.mjs, check-deployed-sha.mjs
-and check-production-drift.mjs. Stubbed: tsc, the vite half of the build, the other
-verify:production checks and check-price-variants (they need production).
+operator fills them in, plus test paths), ship.py's steps (run through bash exactly as SSM
+would run them), the release's ops/deploy-east.sh end to end (allowlist, build copy,
+typecheck/build gates, stamp checks, smoke against the real serve.mjs, asset carry-over,
+swap, proven restart, live SHA polling, attestation, restore_dist), scripts/stamp-build.mjs,
+check-deployed-sha.mjs and check-production-drift.mjs. Stubbed: tsc, the vite half of the
+build, the other verify:production checks, check-price-variants (they need production) and
+systemd (the shim records the scope and its memory caps).
 """
 import argparse, hashlib, http.server, json, os, re, shutil, socket, subprocess, sys, threading, time, urllib.request
 
@@ -153,12 +158,36 @@ def setup():
     return rel, shas
 
 
+MEM_AVAIL_KB, SWAP_FREE_KB = 3000 * 1024, 2000 * 1024
+
+
 def reset():
     shutil.rmtree(EAST, ignore_errors=True)
     for n in os.listdir(CTL):
         if n != "secret":
-            os.remove(os.path.join(CTL, n))
+            pth = os.path.join(CTL, n)
+            shutil.rmtree(pth) if os.path.isdir(pth) else os.remove(pth)
     sh(["cp", "-a", TPL, EAST])
+    shutil.copy(os.path.join(REPO, "dist/client/fw-assets/__build.json"), os.path.join(CTL, "loaded"))
+    os.makedirs(os.path.join(CTL, "cgroup"))
+    open(os.path.join(CTL, "cgroup", "cgroup.controllers"), "w").write("cpuset cpu io memory pids\n")
+    meminfo(MEM_AVAIL_KB, SWAP_FREE_KB)
+
+
+def meminfo(avail_kb, swap_kb):
+    open(os.path.join(CTL, "meminfo"), "w").write(
+        "MemTotal:        3900000 kB\nMemAvailable:   %d kB\nSwapTotal:       2097148 kB\nSwapFree:       %d kB\n" % (avail_kb, swap_kb))
+
+
+def ctl(name, text=""):
+    open(os.path.join(CTL, name), "w").write(text)
+
+
+def loaded():
+    try:
+        return json.load(open(os.path.join(CTL, "loaded"))).get("sha")
+    except Exception:
+        return None
 
 
 def sha256(p):
@@ -189,6 +218,8 @@ def snap():
         "refs": hashlib.md5(g("for-each-ref").encode()).hexdigest(),
         "fetch_head": os.path.exists(os.path.join(REPO, ".git/FETCH_HEAD")),
         "status": g("status", "--porcelain"),
+        "loaded": loaded(), "build_copy": os.path.exists(os.path.join(EAST, "fresh-web.build")),
+        "restarts": open(os.path.join(CTL, "pm2_restarts")).read().strip() if os.path.exists(os.path.join(CTL, "pm2_restarts")) else "0",
     }
 
 
@@ -197,7 +228,9 @@ def script_copy(mode, sha, branch, remote=None, **extra):
     src = open(SCRIPT).read()
     subs = {"MODE": mode, "RELEASE_SHA": sha, "RELEASE_BRANCH": branch, "REPO": REPO,
             "REMOTE": remote or "file://" + GH, "BASE": BASE, "PINS": os.path.join(EAST, "pins.sha256"),
-            "STATE": os.path.join(EAST, "state.json"), "BACKUP": os.path.join(EAST, "backup")}
+            "STATE": os.path.join(EAST, "state.json"), "BACKUP": os.path.join(EAST, "backup"),
+            "BUILD_DIR": os.path.join(EAST, "fresh-web.build"), "MEMINFO": os.path.join(CTL, "meminfo"),
+            "CGROUP": os.path.join(CTL, "cgroup"), "PROC_CGROUP": os.path.join(CTL, "cgroup-%d")}
     subs.update(extra)
     for k, v in subs.items():
         new = "%s = %s" % (k, repr(v) if isinstance(v, str) else v)
@@ -245,7 +278,8 @@ def check(cond, what, detail=""):
 
 def unchanged(before, out, what="nothing changed"):
     after = snap()
-    keys = ["head", "branch", "five", "live", "dist", "dist_stamp_md5", "deployed", "pins", "state", "refs", "fetch_head", "status"]
+    keys = ["head", "branch", "five", "live", "dist", "dist_stamp_md5", "deployed", "pins", "state", "refs", "fetch_head", "status",
+            "loaded", "build_copy", "restarts"]
     diff = {k: (before[k], after[k]) for k in keys if before[k] != after[k]}
     check(not diff, what, "%s\n%s" % (diff, out[-1200:]))
 
@@ -255,7 +289,9 @@ def at_prev(before, out, five_same=True):
     check(s["head"] == BASE_SHA and s["branch"] == "ops/deploy-sha-enforcement", "HEAD back on %s (ops/deploy-sha-enforcement)" % BASE_SHA[:8], (s["head"], s["branch"], out[-1500:]))
     check(s["dist"] == BASE_SHA and s["dist_server"], "dist/ is the previous build", (s["dist"], s["dist_server"]))
     check(s["live"] == BASE_SHA, "live stamp reports the previous sha", s["live"])
+    check(s["loaded"] == BASE_SHA, "the process has the previous build LOADED (pm2 restart really happened, or never needed)", s["loaded"])
     check(not s["prev_deploy"], "no dist-prev-deploy left behind")
+    check(not s["build_copy"], "no build copy left behind")
     check(s["deployed"] == before["deployed"], ".deployed-sha is what it was before", (before["deployed"], s["deployed"]))
     if five_same:
         check(s["five"] == before["five"], "five EAST-only files byte-for-byte unchanged")
@@ -311,11 +347,26 @@ def happy_path():
     check(s["deployed"] == REL_SHA, ".deployed-sha attests the release")
     check(s["pins"] and s["state"], "pin file and state file written outside the tree")
     check(os.path.isdir(os.path.join(EAST, "backup", "dist-" + BASE_SHA[:12], "server")), "previous dist kept for ROLLBACK")
+    check(os.path.exists(os.path.join(EAST, "backup", "east-only-%s.tar" % BASE_SHA[:12])), "the five EAST-only files copied to the backup")
+    check(s["loaded"] == REL_SHA, "the process LOADED the release (restart proven)", s["loaded"])
+    check(open(os.path.join(CTL, "live_during_build")).read() == BASE_SHA, "the live dist/ was untouched while the release built (built in the copy)")
+    check(not s["build_copy"], "build copy removed")
+    old = [n for n in os.listdir(os.path.join(TPL, "fresh-web/dist/client/fw-assets")) if n != "__build.json"]
+    new = os.listdir(os.path.join(REPO, "dist/client/fw-assets"))
+    own = open(os.path.join(REPO, "dist/.own-assets")).read().split()
+    check(old and all(n in new for n in old), "the previous build's hashed assets are still served (Cloudflare holds old HTML 600 s)", (old, new))
+    check(own and not set(own) & set(old), ".own-assets lists only the new build's own assets", own)
+    check("carried %d previous asset" % len(old) in out, "the carry-over is reported")
+    check("pm2 env names unchanged" in out and not os.path.exists(os.path.join(CTL, "pm2_env_extra")), "no restart merged the deploy shell's env (no --update-env)")
     log = open(os.path.join(CTL, "log")).read()
+    cap = [l for l in log.split("\n") if l.startswith("systemd-run")]
+    want = "MemoryMax=%dM MemorySwapMax=%dM" % (MEM_AVAIL_KB // 1024 - 512, 1536)
+    check(len(cap) == 1 and want in cap[0], "deploy ran in one memory-capped scope (%s)" % want, cap)
+    check("peak 1234 MB" in out, "the scope's memory peak is reported", out[-800:])
     check("npm run build NODE_OPTIONS=--max-old-space-size=3072" in log, "build ran with the 3072 MB heap", log)
     check("npm run check:types NODE_OPTIONS=--max-old-space-size=3072" in log, "typecheck ran with the 3072 MB heap")
     restarts = [l for l in log.split("\n") if l.startswith("pm2 restart")]
-    check(restarts and all(l.endswith("NODE_OPTIONS=") for l in restarts), "pm2 restart never inherits the build heap", restarts)
+    check(restarts and all(l.endswith("NODE_OPTIONS=") and "--update-env" not in l for l in restarts), "pm2 restart: no build heap, no --update-env", restarts)
     check("tracker regression 9/9 PASS" in out, "tracker regression group ran (9/9)", out[-600:])
     check("tolerated" in out and "DEPLOYED" in out, "deploy-east tolerated the five and reached DEPLOYED")
     e = dict(ENV, REPO_DIR=REPO, BASE_URL=BASE)
@@ -346,13 +397,52 @@ def rollback_after_release():
 
 
 @scenario
-def rollback_uses_deploy_east_prev():
+def rollback_prefers_dist_prev_deploy():
     before = snap()
     rc, out = run_script("GO", REL_SHA)
     sh(["cp", "-a", os.path.join(EAST, "backup", "dist-" + BASE_SHA[:12]), os.path.join(REPO, "dist-prev-deploy")])
     rc, out = run_script("ROLLBACK", REL_SHA)
-    check(rc == 0 and "deploy-east.sh ROLLBACK=1: rc 0" in out, "ROLLBACK goes through deploy-east.sh ROLLBACK=1 when dist-prev-deploy exists", out[-1500:])
+    check(rc == 0 and "dist restored from %s" % os.path.join(REPO, "dist-prev-deploy") in out, "ROLLBACK moves dist-prev-deploy back when it is the previous build", out[-1500:])
     at_prev(before, out)
+
+
+@scenario
+def rollback_restart_fails():
+    """dist/ goes back on disk (so the live stamp reads the previous sha) but pm2 cannot restart: not a rollback."""
+    before = snap()
+    rc, out = run_script("GO", REL_SHA)
+    ctl("pm2_fail_at", str(int(snap()["restarts"]) + 1))
+    rc, out = run_script("ROLLBACK", REL_SHA)
+    s = snap()
+    check(s["live"] == BASE_SHA and s["loaded"] == REL_SHA, "precondition: the stamp lies (previous sha on disk, release still loaded)", s)
+    check(rc != 0 and "ROLLBACK INCOMPLETE" in out and "pm2 restart rc 1" in out, "ROLLBACK fails when pm2 restart fails", out[-1500:])
+
+
+@scenario
+def rollback_restart_does_nothing():
+    rc, out = run_script("GO", REL_SHA)
+    ctl("pm2_noop")
+    rc, out = run_script("ROLLBACK", REL_SHA)
+    check(rc != 0 and "ROLLBACK INCOMPLETE" in out and "restart NOT proven" in out, "ROLLBACK fails when pm2 says ok but nothing restarted", out[-1500:])
+
+
+@scenario
+def gate_fails_and_restore_restart_fails_once():
+    """Step 7b fails after the restart; deploy-east's own restore cannot restart; recover() must."""
+    ctl("pv_fail"); ctl("pm2_fail_at", "2"); ctl("pm2_fail_until", "2")
+    before = snap()
+    rc, out = run_script("GO", REL_SHA)
+    check(rc != 0 and "RESTORE IS NOT PROVEN" in out, "deploy-east says its restore is not proven", out[-2500:])
+    check("production is back on the previous build" in out, "recover() restarts and proves it", out[-1500:])
+    at_prev(before, out)
+
+
+@scenario
+def gate_fails_and_pm2_stays_broken():
+    ctl("pv_fail"); ctl("pm2_fail_at", "2")
+    rc, out = run_script("GO", REL_SHA)
+    check(rc != 0 and "NOT FULLY RECOVERED" in out, "a restore that cannot restart is never reported as recovered", out[-1500:])
+    check(loaded() == REL_SHA, "precondition: the release is still loaded")
 
 
 def refused(sha, branch, why, **kw):
@@ -379,7 +469,7 @@ def release_changes_lockfile():
 
 @scenario
 def release_without_allowlist():
-    refused(BAD["bad/old-deploy"], "bad/old-deploy", "has no EAST-only allowlist")
+    refused(BAD["bad/old-deploy"], "bad/old-deploy", "lacks the EAST-only allowlist, the build copy or the proven restart")
 
 
 @scenario
@@ -456,7 +546,7 @@ def build_fails():
     rc, out = run_script("GO", REL_SHA)
     check(rc != 0 and "build failed" in out, "build failure aborts", out[-2000:])
     s = at_prev(before, out)
-    check(s["dist_stamp_md5"] == before["dist_stamp_md5"], "dist/ restored byte-identical (stamp)")
+    check(s["dist_stamp_md5"] == before["dist_stamp_md5"] and s["restarts"] == "0", "dist/ never touched and no restart (built in the copy)")
 
 
 @scenario
@@ -479,12 +569,95 @@ def price_variants_fail_after_restart():
 
 @scenario
 def deploy_killed_mid_build():
-    """SSM budget runs out while vite has emptied dist/: the script's own dist backup puts it back."""
-    open(os.path.join(CTL, "build_hang"), "w").write("")
+    """The deploy's share of the budget runs out mid-build: killed, and production was never touched."""
+    ctl("build_hang")
     before = snap()
-    rc, out = run_script("GO", REL_SHA, DEPLOY_MIN_S=4, env={"PRNM_RUNNER_TIMEOUT": "300"})
-    check(rc != 0 and "exit 124" in out and "dist restored from" in out, "the timed-out deploy is killed and dist restored from the backup", out[-2000:])
+    rc, out = run_script("GO", REL_SHA, DEPLOY_MIN_S=4, RECOVER_S=60, env={"PRNM_RUNNER_TIMEOUT": "75"})
+    check(rc != 0 and "exit 124" in out and "production is back on the previous build" in out, "the timed-out deploy is killed and reported", out[-2000:])
+    s = at_prev(before, out)
+    check(s["restarts"] == "0" and s["dist_stamp_md5"] == before["dist_stamp_md5"], "live dist/ never touched, no restart needed")
+
+
+@scenario
+def sigterm_mid_build():
+    """SSM (or anyone) sends SIGTERM while the build runs: stop the deploy, then recover."""
+    ctl("build_hang")
+    before = snap()
+    p = subprocess.Popen([sys.executable, "-u", script_copy("GO", REL_SHA, REL_BRANCH)], env=ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    for _ in range(300):
+        if os.path.exists(os.path.join(CTL, "build_pid")):
+            break
+        time.sleep(0.1)
+    time.sleep(0.5)
+    p.send_signal(15)
+    out = p.communicate(timeout=300)[0]
+    check(p.returncode == 1 and "interrupted: SystemExit SIGTERM" in out and "production is back on the previous build" in out, "SIGTERM is recovered from", out[-2000:])
     at_prev(before, out)
+    bp = int(open(os.path.join(CTL, "build_pid")).read())
+    gone = False
+    for _ in range(50):
+        try:
+            os.kill(bp, 0)
+            time.sleep(0.1)
+        except OSError:
+            gone = True
+            break
+    check(gone, "the hung build process was stopped, not left running")
+
+
+@scenario
+def budget_too_small():
+    refused(REL_SHA, REL_BRANCH, "kept for recovery", env={"PRNM_RUNNER_TIMEOUT": "1200"})
+
+
+@scenario
+def memory_too_low():
+    meminfo(1500 * 1024, SWAP_FREE_KB)
+    refused(REL_SHA, REL_BRANCH, "MemAvailable 1500 MB < 2048 MB")
+
+
+@scenario
+def no_memory_cgroup():
+    open(os.path.join(CTL, "cgroup", "cgroup.controllers"), "w").write("cpu io pids\n")
+    refused(REL_SHA, REL_BRANCH, "cannot be memory-capped")
+
+
+@scenario
+def deploy_escapes_scope():
+    ctl("scope_escape")
+    before = snap()
+    rc, out = run_script("GO", REL_SHA)
+    check(rc != 0 and "not inside its memory-capped scope" in out, "a deploy outside its memory cap is stopped", out[-2000:])
+    at_prev(before, out)
+
+
+@scenario
+def east_only_edited_after_live_build():
+    """An edit on the box after the live build: its content is not what production runs. Refused."""
+    with open(os.path.join(REPO, "src/server/listing-sync.server.ts"), "a") as f:
+        f.write("// edited on the box after the live build (test)\n")
+    before = snap()
+    rc, out = run_script("PLAN", REL_SHA)
+    check(rc == 0 and "GO WOULD REFUSE" in out and "changed after the live build (['src/server/listing-sync.server.ts'])" in out, "PLAN reports the newer EAST-only file", out[-1200:])
+    unchanged(before, out)
+    refused(REL_SHA, REL_BRANCH, "changed after the live build")
+    rc, out = run_script("PLAN", REL_SHA, ALLOW_EAST_ONLY_NEWER=True)
+    check(rc == 0 and "PLAN OK" in out, "the explicit override lifts that gate (after a human read it)", out[-800:])
+
+
+@scenario
+def two_releases_carry_one_generation():
+    """Release, then a second release on top: the dist carries the previous build's assets, never older ones."""
+    rc, out = run_script("GO", REL_SHA)
+    check(rc == 0, "first release", out[-1500:])
+    t_assets = [n for n in os.listdir(os.path.join(TPL, "fresh-web/dist/client/fw-assets")) if n != "__build.json"]
+    r1_own = open(os.path.join(REPO, "dist/.own-assets")).read().split()
+    rel2 = BAD["bad/moved"]
+    rc, out = run_script("GO", rel2, "bad/moved", CURRENT_SHA=REL_SHA)
+    s = snap()
+    names = os.listdir(os.path.join(REPO, "dist/client/fw-assets"))
+    check(rc == 0 and s["live"] == rel2 and s["loaded"] == rel2, "second release shipped and loaded", out[-1500:])
+    check(all(n in names for n in r1_own) and not any(n in names for n in t_assets), "carries the first release's assets, not the template's", (names, r1_own, t_assets))
 
 
 @scenario
@@ -543,6 +716,20 @@ def deploy_east_stale_pin():
 
 
 @scenario
+def deploy_east_restart_not_proven():
+    """pm2 says the restart worked but nothing restarted: step 5 fails, and so does the restore's restart."""
+    on_release()
+    p = write_pins()
+    ctl("pm2_noop")
+    rc, out = deploy_east(EAST_ONLY_SHA256=p)
+    s = snap()
+    check(rc != 0 and "the restart of fresh-web was not proven" in out and "RESTORE IS NOT PROVEN" in out, "deploy-east never claims an unproven restart", out[-1500:])
+    check(s["dist"] == BASE_SHA and s["loaded"] == BASE_SHA and not s["build_copy"], "previous dist/ back on disk, build copy gone", s)
+    rc, out = deploy_east(ROLLBACK="1")
+    check(rc != 0 and "nothing to roll back to" in out, "ROLLBACK=1 without dist-prev-deploy is an error, not 'rolled back.'", out[-500:])
+
+
+@scenario
 def deploy_east_stamp_must_match_exactly():
     """A file step 1's filter skips (".env" in the name) but the real stamp counts: step 3 must refuse."""
     on_release()
@@ -556,15 +743,55 @@ def deploy_east_stamp_must_match_exactly():
 
 
 @scenario
-def payload_fits_ssm():
+def payload_and_ship():
+    """ship.py: every step fits one SSM command; run through bash as SSM runs them, the parts
+    reassemble into the exact script, a bad part is refused before anything runs, and the
+    script's budget and exit code come through."""
     sys.path.insert(0, RUNNERS)
+    sys.path.insert(0, os.path.dirname(HERE))
     from _runner_common import shipped, script_timeout, MAX_COMMAND
+    import ship
     raw = open(SCRIPT, "rb").read()
-    n = len(shipped(raw, "/tmp/prnm_step_0123456789.py", 3600, "auto"))
-    check(n <= MAX_COMMAND, "east_runx payload %d <= %d chars" % (n, MAX_COMMAND))
     check(script_timeout(SCRIPT) == 3600, "RUNNER_TIMEOUT = 3600 is declared")
     src = raw.decode()
     check(re.search(r'(?m)^MODE = "PLAN"$', src) and "<FILL" in src, "the committed script defaults to PLAN with placeholders")
+    er = open(os.path.join(RUNNERS, "east_runx.py")).read()
+    check('INSTANCE, REGION = "%s", "%s"' % (ship.INSTANCE, ship.REGION) in er, "ship.py targets the same instance and region as east_runx.py")
+    base = os.path.join(SIM, "shipbase")
+    os.makedirs(base, exist_ok=True)
+
+    def ship_run(raw_bytes, tag, timeout, corrupt=False):
+        plan = ship.steps(raw_bytes, tag, base, timeout)
+        outs = []
+        for i, (label, text, t) in enumerate(plan):
+            f = os.path.join(SIM, "step-%s-%d.py" % (tag, i))
+            open(f, "w").write(text)
+            if label == "run":
+                check(script_timeout(f) == timeout, "the loader declares RUNNER_TIMEOUT = %d" % timeout)
+                if corrupt:
+                    pf = os.path.join(base, "eastrel-ship-" + tag, "000")
+                    open(pf, "w").write(open(pf).read()[:-4] + "AAAA")
+            cmd = shipped(text.encode(), os.path.join(SIM, "remote-%s-%d.py" % (tag, i)), t, "auto")
+            check(len(cmd) <= MAX_COMMAND, "%s %s: %d <= %d chars" % (tag, label, len(cmd), MAX_COMMAND))
+            # as SSM runs it; the command's own status is rm's, so the script's exit code is echoed
+            r = subprocess.run(["bash", "-c", cmd.replace("; rm -f ", '; echo "RC=$?"; rm -f ', 1)], capture_output=True, text=True, env=ENV, timeout=120)
+            m = re.search(r"RC=(\d+)", r.stdout)
+            outs.append((int(m.group(1)) if m else None, r.stdout + r.stderr))
+        return plan, outs
+
+    plan, outs = ship_run(raw, "real", 3600)
+    check(len(plan) >= 3, "the real script needs several parts (%d steps)" % len(plan))
+    rc, out = outs[-1]
+    check(rc == 2 and "reassembled" in out and "placeholders" in out, "the reassembled script runs as itself (and refuses its placeholders)", out[-500:])
+    check(not os.path.exists(os.path.join(base, "eastrel-ship-real")), "the parts are removed after the run")
+    probe = b"import os, sys\nprint('BUDGET', os.environ.get('PRNM_RUNNER_TIMEOUT'))\nsys.exit(7)\n" + b"#" * 9000 + b"\n"
+    plan, outs = ship_run(probe + b"#" + os.urandom(6000).hex().encode() + b"\n", "probe", 900)
+    rc, out = outs[-1]
+    m = re.search(r"BUDGET (\d+)", out)
+    check(rc == 7 and m and 890 <= int(m.group(1)) <= 900, "the script's exit code and its remaining budget come through", out[-300:])
+    plan, outs = ship_run(raw, "bad", 3600, corrupt=True)
+    rc, out = outs[-1]
+    check(rc == 2 and "did not reassemble" in out and "placeholders" not in out, "an altered part is refused and nothing runs", out[-300:])
 
 
 # --------------------------------------------------------------------------- main ----

@@ -1,6 +1,8 @@
 """EAST: ship ONE fresh-web release SHA keeping the five EAST-only files. README.md beside this file.
-MODE PLAN = read-only preflight | GO = release, any failure puts the previous build back | ROLLBACK."""
-import hashlib, json, os, re, shlex, subprocess, sys, tempfile, time, urllib.request
+MODE PLAN = read-only preflight | GO = release, any failure puts the previous build back | ROLLBACK.
+Too big for one SSM command: ship it with ship.py (beside this file), not east_runx.py."""
+import hashlib, json, os, re, shlex, shutil, signal, subprocess, sys, tempfile, time, urllib.request
+from datetime import datetime
 
 RUNNER_TIMEOUT = 3600
 MODE = "PLAN"
@@ -8,15 +10,23 @@ RELEASE_SHA = "<FILL: 40-hex release commit>"
 RELEASE_BRANCH = "<FILL: e.g. seo/release-2026-11>"
 CURRENT_SHA = "77028454655e7b272d8c23987b54f445f9eba9f7"
 ALLOW_LOCKFILE_CHANGE = False
+ALLOW_EAST_ONLY_NEWER = False  # True only after a human has read an EAST-only edit made after the live build
 REPO = "/home/ubuntu/fresh-web"
+BUILD_DIR = REPO + ".build"  # deploy-east.sh's default build copy
 REMOTE = "https://github.com/derekbowen/fresh-web-702e04c3.git"
 BASE = "https://www.poolrentalnearme.com"
 PINS = "/home/ubuntu/fresh-web.east-only.sha256"
 STATE = "/home/ubuntu/fresh-web.release-state.json"
 BACKUP = "/home/ubuntu/fresh-web-release-backup"
 HEAP = "--max-old-space-size=3072"
-MIN_FREE_MB = 3000
+MIN_AVAIL_MB = 2048    # MemAvailable needed before GO (swap does not count)
+MEM_RESERVE_MB = 512   # left for production: the build scope gets MemAvailable minus this
+BUILD_SWAP_MB = 1536   # swap the build scope may use (its own pages, not production's)
 DEPLOY_MIN_S = 600
+RECOVER_S = 900        # budget kept back for recover(); its steps are bounded to fit
+MEMINFO = "/proc/meminfo"
+CGROUP = "/sys/fs/cgroup"
+PROC_CGROUP = "/proc/%d/cgroup"
 RUN_AS = "ubuntu"
 PM2_HOME = "/home/ubuntu/.pm2"
 EAST_ONLY = ["src/components/home-page.tsx", "src/routes/__root.tsx", "src/server/listing-sync.server.ts",
@@ -28,6 +38,7 @@ DEPLOY_IGN = re.compile(r"(^.. (dist|node_modules|\.tanstack|dist-server-bak|dis
 STAMP_IGN = re.compile(r"^(dist/|\.output/|node_modules/|\.vinxi/|\.nitro/|\.tanstack/|dist-server-bak|dist\.bak|\.cache/|\.deployed-sha$|\.env|dump\.pm2$|logs?/)|\.bak($|-|\.)|\.v2bak|\.log$")
 T0 = time.time()
 BUDGET = int(os.environ.get("PRNM_RUNNER_TIMEOUT") or RUNNER_TIMEOUT)
+DEPLOY = [None]  # the running deploy-east.sh process, so a failure can stop it before recovering
 
 
 def say(*a):
@@ -51,7 +62,7 @@ def ub(shcmd, timeout=600):  # login shell as the app user, like every EAST runb
     return run(["sudo", "-u", RUN_AS, "bash", "-lc", shcmd], timeout)
 
 
-def git(*a, gd=None, timeout=120):
+def git(*a, gd=None, timeout=60):
     loc = ["--git-dir", gd] if gd else ["-C", REPO]
     return run(["sudo", "-u", RUN_AS, "env", "GIT_TERMINAL_PROMPT=0", "git", "-c", "safe.directory=" + REPO,
                 "-c", "credential.helper=", *loc, *a], timeout)
@@ -70,16 +81,19 @@ def sha256(p):
 
 
 def dirty_sets():
-    rc, out = run(["sudo", "-u", RUN_AS, "git", "-c", "safe.directory=" + REPO, "-C", REPO, "status", "--porcelain"])
+    rc, out = git("status", "--porcelain")
     if rc:
-        die("git status failed: " + out[-300:])
+        return None  # never exits: this also runs after the checkout and inside recover()
     lines = [l for l in out.split("\n") if len(l) > 3]
     return ({l[3:] for l in lines if not DEPLOY_IGN.search(l)},
             {l[3:].strip('"') for l in lines if not STAMP_IGN.search(l[3:].strip('"'))})
 
 
 def check_tree(pins=None):
-    a, b = dirty_sets()
+    ds = dirty_sets()
+    if ds is None:
+        return "git status failed"
+    a, b = ds
     want = set(EAST_ONLY)
     if a != want or b != want:
         extra, missing = sorted((a | b) - want), sorted(want - (a & b))
@@ -91,16 +105,16 @@ def check_tree(pins=None):
     return None
 
 
-def stamp(url):
+def stamp(url, timeout=20):
     try:
         req = urllib.request.Request(url + "?cb=%d" % time.time(), headers={"Cache-Control": "no-cache", "User-Agent": "prnm-east-release"})
-        return json.loads(urllib.request.urlopen(req, timeout=20).read())
+        return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
     except Exception as e:
         return {"sha": None, "err": str(e)[:80]}
 
 
-def live():
-    return stamp(BASE + "/fw-assets/__build.json")
+def live(timeout=20):
+    return stamp(BASE + "/fw-assets/__build.json", timeout)
 
 
 def local_stamp():
@@ -110,32 +124,112 @@ def local_stamp():
         return {"sha": None}
 
 
-def pm2_status():
-    rc, out = ub("PM2_HOME=%s pm2 jlist" % PM2_HOME, 60)
-    try:  # parsed, never printed: pm2 jlist carries the process environment
-        procs = json.loads(out[out.index("["):])
-        return ",".join(p.get("pm2_env", {}).get("status", "?") for p in procs if p.get("name") == "fresh-web") or "absent"
+def pm2_info():
+    """fresh-web as pm2 sees it. `pm2 jlist` carries the process environment: parsed, never printed;
+    only the env variable NAMES are kept, as a hash and a count."""
+    rc, out = ub("PM2_HOME=%s pm2 jlist" % PM2_HOME, 30)
+    try:  # the JSON is one line; a "[PM2] ..." daemon notice may come before it
+        js = [l for l in out.split("\n") if l.startswith("[{") or l.strip() == "[]"][-1]
+        p = [x for x in json.loads(js) if x.get("name") == "fresh-web"][0]
+        e = p.get("pm2_env") or {}
+        names = sorted((e.get("env") or {}).keys())
+        return {"status": e.get("status"), "gen": [p.get("pid"), e.get("restart_time"), e.get("pm_uptime")],
+                "env": hashlib.sha256("\n".join(names).encode()).hexdigest()[:12], "nenv": len(names)}
     except Exception:
-        return "unreadable (rc %d)" % rc
+        return {"status": "absent or unreadable (rc %d)" % rc, "gen": None, "env": None, "nenv": 0}
 
 
-def restart_and_wait(sha, polls=60):
-    rc, out = ub("PM2_HOME=%s pm2 restart fresh-web" % PM2_HOME, 120)
+def restart_and_wait(sha):
+    """Restart fresh-web and PROVE it, then wait for the live stamp. The stamp alone proves nothing:
+    serve.mjs reads it from disk, so it shows the restored dist/ even if the process never restarted."""
+    before = pm2_info()["gen"]
+    if not before:
+        say("  pm2 state unreadable before the restart: a restart could not be proven")
+        return False
+    rc, out = ub("PM2_HOME=%s pm2 restart fresh-web" % PM2_HOME, 60)  # no --update-env: the env stays as it was
     if rc:
         say("  pm2 restart rc %d: %s" % (rc, out[-200:]))
-    return wait_live(sha, polls)
-
-
-def wait_live(sha, polls=60):
-    for _ in range(polls):
-        if live().get("sha") == sha:
-            return True
+        return False
+    end = time.time() + 60
+    while True:
+        i = pm2_info()
+        if i["status"] == "online" and i["gen"] and i["gen"] != before:
+            break
+        if time.time() > end:
+            say("  pm2 restart NOT proven: status %s, pid/restarts/uptime %s -> %s" % (i["status"], before, i["gen"]))
+            return False
         time.sleep(2)
-    return False
+    say("  pm2 fresh-web restarted: online, pid/uptime changed")
+    return wait_live(sha)
+
+
+def wait_live(sha, secs=120):
+    end = time.time() + secs
+    while True:
+        if live(min(10, max(1, end - time.time()))).get("sha") == sha:
+            return True
+        if time.time() > end:
+            return False
+        time.sleep(2)
+
+
+def tree(pid):
+    """pid and all its descendants (from /proc), so a deploy can be stopped whatever process groups it made."""
+    kids = {}
+    for d in os.listdir("/proc"):
+        if d.isdigit():
+            try:
+                kids.setdefault(int(open("/proc/%s/stat" % d).read().rsplit(")", 1)[1].split()[1]), []).append(int(d))
+            except Exception:
+                pass
+    out, todo = [], [pid]
+    while todo:
+        x = todo.pop()
+        out.append(x)
+        todo += kids.get(x, [])
+    return out
+
+
+def kill_deploy():
+    p = DEPLOY[0]
+    if not p or p.poll() is not None:
+        return
+    pids = tree(p.pid)
+    say("  stopping the running deploy (%d processes)" % len(pids))
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for x in pids:
+            try:
+                os.kill(x, sig)
+            except OSError:
+                pass
+        try:
+            p.wait(20)
+        except subprocess.TimeoutExpired:
+            pass
+
+
+def in_scope(pid, unit):
+    """Every process of the deploy that /proc lets us read is in the capped scope (and at least one is)."""
+    seen = []
+    for x in tree(pid):
+        try:
+            seen.append(("/%s.scope" % unit) in open(PROC_CGROUP % x).read())
+        except OSError:
+            pass
+    return bool(seen) and all(seen)
+
+
+def scope_mb(unit):
+    for f in ("memory.peak", "memory.current"):
+        try:
+            return int(open(os.path.join(CGROUP, "system.slice", unit + ".scope", f)).read().split()[0]) // 2**20
+        except Exception:
+            pass
+    return 0
 
 
 def mem_disk():
-    m = {k: int(v.split()[0]) // 1024 for k, v in (l.split(":", 1) for l in open("/proc/meminfo")) if k in ("MemAvailable", "SwapFree")}
+    m = {k: int(v.split()[0]) // 1024 for k, v in (l.split(":", 1) for l in open(MEMINFO)) if k in ("MemAvailable", "SwapFree")}
     st = os.statvfs(REPO)
     rc, du = run(["du", "-sm", os.path.join(REPO, "dist")], 120)
     return m.get("MemAvailable", 0), m.get("SwapFree", 0), st.f_bavail * st.f_frsize // 2**20, int(du.split()[0]) if rc == 0 else 0
@@ -151,21 +245,28 @@ def write_root(path, text):
 def checkout_prev(st):
     """Back to the recorded commit (and branch), keeping the five local files; never merges."""
     br, prev = st["prev_branch"], st["prev_sha"]
-    target = [br] if br != "HEAD" and gitv("rev-parse", "refs/heads/" + br) == prev else ["--detach", prev]
+    target = [br] if br != "HEAD" and gitv("rev-parse", "refs/heads/" + br, timeout=30) == prev else ["--detach", prev]
     rc, out = git("checkout", "-q", *target)
-    head = gitv("rev-parse", "HEAD")
+    head = gitv("rev-parse", "HEAD", timeout=30)
     problem = check_tree(st["pins"])
     say("  git back to %s: %s; tree: %s" % (" ".join(target), "OK" if rc == 0 and head == prev else "FAILED " + out[-200:], problem or "five pinned files intact"))
     return rc == 0 and head == prev, problem
 
 
 def restore_dist(st):
-    bk = st["backup_dist"]
-    if not os.path.isdir(bk):
-        say("  no dist backup at %s" % bk)
+    """The previous build back on disk: dist-prev-deploy if it is that build, else our own backup."""
+    prev = os.path.join(REPO, "dist-prev-deploy")
+    try:
+        pv = json.load(open(os.path.join(prev, "client/fw-assets/__build.json"))).get("sha")
+    except Exception:
+        pv = None
+    src = prev if pv == st["prev_sha"] else st["backup_dist"]
+    if not os.path.isdir(src):
+        say("  no dist backup at %s" % src)
         return False
-    rc, out = ub("set -e; cd %s; rm -rf dist; cp -a %s dist; rm -rf dist-prev-deploy" % (shlex.quote(REPO), shlex.quote(bk)), 900)
-    say("  dist restored from %s: %s" % (bk, "OK" if rc == 0 else out[-200:]))
+    put = "mv %s dist" % shlex.quote(prev) if src == prev else "cp -a %s dist; rm -rf dist-prev-deploy" % shlex.quote(src)
+    rc, out = ub("set -e; cd %s; rm -rf dist; %s" % (shlex.quote(REPO), put), 300)
+    say("  dist restored from %s: %s" % (src, "OK" if rc == 0 else out[-200:]))
     return rc == 0
 
 
@@ -180,18 +281,22 @@ def restore_attest(st):
 
 
 def recover(st, why):
-    """GO failed after the checkout: previous commit, previous dist, previous live build."""
+    """GO failed after the state file: previous commit, previous dist, previous build LOADED (restart proven)."""
     say("RECOVER (%s)" % why)
+    kill_deploy()
+    ub("rm -rf " + shlex.quote(BUILD_DIR), 60)
     ok, problem = checkout_prev(st)
+    restored = False
     if local_stamp().get("sha") != st["prev_sha"] or not os.path.isdir(os.path.join(REPO, "dist/server")):
         ok = restore_dist(st) and ok
-        ok = restart_and_wait(st["prev_sha"]) and ok
-    elif live().get("sha") != st["prev_sha"]:
+        restored = True
+    # The process may hold the release in memory (it restarted since preflight), or dist/ just changed under it.
+    if restored or pm2_info()["gen"] != st["gen"]:
         ok = restart_and_wait(st["prev_sha"]) and ok
     restore_attest(st)
-    lv = live()
-    ok = ok and lv.get("sha") == st["prev_sha"]
-    say("RESULT: FAILED, %s. live %s; %s%s" % (why, str(lv.get("sha"))[:12],
+    lv, pm = live(), pm2_info()
+    ok = ok and lv.get("sha") == st["prev_sha"] and pm["status"] == "online"
+    say("RESULT: FAILED, %s. live %s; pm2 %s; %s%s" % (why, str(lv.get("sha"))[:12], pm["status"],
         "production is back on the previous build" if ok else "NOT FULLY RECOVERED: run MODE=ROLLBACK and check by hand",
         "; BUT %s: changed on the box during the run, left as found, check by hand" % problem if problem else ""))
     sys.exit(1)
@@ -222,8 +327,9 @@ def fetch_and_inspect(head, gd):
     deps = [k for k in ("dependencies", "devDependencies", "optionalDependencies", "overrides") if pj[0].get(k) != pj[1].get(k)]
     if (locks or deps) and not ALLOW_LOCKFILE_CHANGE:
         bad.append("dependencies change (%s); this tool never runs npm install" % (locks + deps))
-    if "EAST_ONLY_SHA256" not in (gitv("show", RELEASE_SHA + ":ops/deploy-east.sh", gd=gd) or ""):
-        bad.append("the release's ops/deploy-east.sh has no EAST-only allowlist; it would refuse the five files")
+    de = gitv("show", RELEASE_SHA + ":ops/deploy-east.sh", gd=gd) or ""
+    if "EAST_ONLY_SHA256" not in de or "restart_proven" not in de or "BUILD_DIR" not in de:
+        bad.append("the release's ops/deploy-east.sh lacks the EAST-only allowlist, the build copy or the proven restart")
     return bad
 
 
@@ -240,30 +346,91 @@ def preflight(expect_head):
     pins = {f: sha256(f) for f in EAST_ONLY}
     if None in pins.values():
         die("an EAST-only file is missing")
-    for f in EAST_ONLY:
-        say("  EAST-only %-36s sha256 %s" % (f, pins[f][:16]))
-    mem, swap, disk, dist = mem_disk()
-    pm2 = pm2_status()
-    say("pm2 fresh-web: %s | MemAvailable %d MB, SwapFree %d MB | disk free %d MB, dist %d MB" % (pm2, mem, swap, disk, dist))
     lv, ls = live(), local_stamp()
     say("live stamp %s dirty=%s built %s | dist stamp %s" % (lv.get("sha"), lv.get("dirty"), lv.get("builtAt"), ls.get("sha")))
+    try:
+        built = datetime.fromisoformat(str(lv.get("builtAt")).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        built = None
+    newer = []
+    for f in EAST_ONLY:
+        mt = os.stat(os.path.join(REPO, f)).st_mtime
+        newer += [f] if built is None or mt > built else []
+        say("  EAST-only %-36s sha256 %s mtime %s" % (f, pins[f][:16], time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(mt))))
+    mem, swap, disk, dist = mem_disk()
+    pm = pm2_info()
+    say("pm2 fresh-web: %s (%d env names) | MemAvailable %d MB, SwapFree %d MB | disk free %d MB, dist %d MB" % (pm["status"], pm["nenv"], mem, swap, disk, dist))
     if lv.get("sha") != head:
         die("live stamp %s != HEAD %s" % (lv.get("sha") or lv.get("err"), head))
     if ls.get("sha") != head:
         die("dist stamp %s != HEAD %s" % (ls.get("sha"), head))
-    if pm2 != "online":
+    if pm["status"] != "online":
         die("pm2 fresh-web is not online")
-    gates = [g for c, g in ((os.path.exists(os.path.join(REPO, "dist-prev-deploy")), "dist-prev-deploy exists: an earlier deploy did not finish"),
-                            (mem + swap < MIN_FREE_MB, "only %d MB RAM+swap free, build needs ~%d" % (mem + swap, MIN_FREE_MB)),
-                            (disk < 3 * dist + 1024, "disk free %d MB < 3 x dist + 1 GB" % disk)) if c]
-    return head, br, pins, gates
+    try:
+        cg = "memory" in open(os.path.join(CGROUP, "cgroup.controllers")).read().split()
+    except OSError:
+        cg = False
+    plan = (mem - MEM_RESERVE_MB, max(0, min(BUILD_SWAP_MB, swap - 256)))
+    gates = [g for c, g in (
+        (os.path.exists(os.path.join(REPO, "dist-prev-deploy")), "dist-prev-deploy exists: an earlier deploy did not finish"),
+        (newer and not ALLOW_EAST_ONLY_NEWER, "EAST-only file(s) changed after the live build (%s): their content is not what production runs; have it read, then set ALLOW_EAST_ONLY_NEWER" % newer),
+        (mem < MIN_AVAIL_MB, "MemAvailable %d MB < %d MB" % (mem, MIN_AVAIL_MB)),
+        (not (shutil.which("systemd-run") and cg), "no systemd-run with the cgroup v2 memory controller: the build cannot be memory-capped"),
+        (disk < 3 * dist + 1024, "disk free %d MB < 3 x dist + 1 GB" % disk),
+        (T0 + BUDGET - RECOVER_S - time.time() < DEPLOY_MIN_S, "budget %d s leaves under %d s for the deploy after %d s kept for recovery" % (BUDGET, DEPLOY_MIN_S, RECOVER_S))) if c]
+    say("GO would cap the build at %d MB RAM + %d MB swap" % plan)
+    return head, br, pins, gates, pm, plan
+
+
+def release(st, plan):
+    """Checkout and deploy. Returns None on success, else why it failed (the caller recovers)."""
+    rc, out = git("checkout", "-q", "-B", RELEASE_BRANCH, RELEASE_SHA)
+    if rc:
+        return "git checkout refused: " + out[-200:]
+    problem = check_tree(st["pins"])
+    if gitv("rev-parse", "HEAD") != RELEASE_SHA or problem:
+        return problem or "HEAD did not move to the release"
+    say("checked out %s; five EAST-only files unchanged" % RELEASE_SHA[:12])
+    left = int(st["deadline"] - time.time())
+    if left < DEPLOY_MIN_S:
+        return "only %d s left for the deploy" % left
+    env = " ".join("%s=%s" % (k, shlex.quote(v)) for k, v in (("REPO_DIR", REPO), ("BASE_URL", BASE), ("EAST_ONLY_SHA256", PINS), ("NODE_OPTIONS", HEAP)))
+    cmd = "cd %s && env %s timeout -k 30 %d bash ops/deploy-east.sh 2>&1" % (shlex.quote(REPO), env, left)
+    unit = "eastrel-build-%d" % os.getpid()
+    keep = re.compile(r"^(=== |ABORT|DEPLOYED|clean at|  tolerated|  pinned|  stamp dirty|stamp|production |WARNING|FAIL|PASS|DRIFT|  - |  /|build |  dirty files|check:price|rolled back|previous dist|carried|  pm2|  no )")
+    tail, peak, scoped = [], 0, None
+    p = DEPLOY[0] = subprocess.Popen(["systemd-run", "--scope", "--quiet", "--unit=" + unit, "-p", "MemoryMax=%dM" % plan[0],
+                                      "-p", "MemorySwapMax=%dM" % plan[1], "--", "sudo", "-u", RUN_AS, "bash", "-lc", cmd],
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    for line in p.stdout:
+        if scoped is None:
+            scoped = in_scope(p.pid, unit)
+            if not scoped:
+                return "the deploy is not inside its memory-capped scope %s" % unit
+        peak = max(peak, scope_mb(unit))
+        line = line.rstrip("\n")[:220]
+        tail = (tail + [line])[-30:]
+        if keep.match(line):
+            say("  | " + line)
+    rc = p.wait()
+    say("build scope %s: peak %s MB (cap %d MB RAM + %d MB swap)" % (unit, peak or "unknown", plan[0], plan[1]))
+    if rc:
+        say("deploy-east.sh exit %d; last lines:" % rc)
+        for l in tail[-15:]:
+            say("  > " + l)
+        return "deploy-east.sh exit %d" % rc
+    return None
+
+
+def _term(*a):
+    raise SystemExit("SIGTERM")
 
 
 def go_or_plan():
     if not re.fullmatch(r"[0-9a-f]{40}", RELEASE_SHA) or not re.fullmatch(r"[A-Za-z0-9._][A-Za-z0-9._/-]*", RELEASE_BRANCH):
         die("RELEASE_SHA / RELEASE_BRANCH are still placeholders (or malformed); fill them in first")
     say("MODE %s: release %s (%s) over %s" % (MODE, RELEASE_SHA, RELEASE_BRANCH, CURRENT_SHA[:12]))
-    head, br, pins, gates = preflight(CURRENT_SHA)
+    head, br, pins, gates, pm, plan = preflight(CURRENT_SHA)
     if gates and MODE == "GO":
         die("; ".join(gates))
     # inspect in a throwaway repo borrowing the objects, so a refusal leaves the real repo unwritten
@@ -285,50 +452,37 @@ def go_or_plan():
         die("; ".join(bad) + " (nothing changed)")
     bk = os.path.join(BACKUP, "dist-" + head[:12])
     if MODE == "PLAN":
-        say(("PLAN: GO WOULD REFUSE: %s. " % "; ".join(gates) if gates else "PLAN OK. ") + "GO would: write %s (5 pins); save dist to %s and state to %s; "
-            "git checkout -B %s %s (keeping the five); run its ops/deploy-east.sh as %s with NODE_OPTIONS=%s; "
-            "on failure check out %s again and restore dist + live. Nothing changed." % (PINS, bk, STATE, RELEASE_BRANCH, RELEASE_SHA[:12], RUN_AS, HEAP, head[:12]))
+        say(("PLAN: GO WOULD REFUSE: %s. " % "; ".join(gates) if gates else "PLAN OK. ") + "GO would: write %s (5 pins); save dist to %s, "
+            "the five to %s/east-only-%s.tar, state to %s; git checkout -B %s %s (keeping the five); run its ops/deploy-east.sh as %s "
+            "with NODE_OPTIONS=%s in a memory-capped scope; on failure check out %s again, restore dist, restart (proven). Nothing changed."
+            % (PINS, bk, BACKUP, head[:12], STATE, RELEASE_BRANCH, RELEASE_SHA[:12], RUN_AS, HEAP, head[:12]))
         return
     # ---- GO ----
     write_root(PINS, "".join("%s  %s\n" % (pins[f], f) for f in EAST_ONLY))
     dp = os.path.join(REPO, ".deployed-sha")
     st = {"prev_sha": head, "prev_branch": br, "release_sha": RELEASE_SHA, "release_branch": RELEASE_BRANCH, "pins": pins,
-          "backup_dist": bk, "prev_deployed_sha": open(dp).read() if os.path.exists(dp) else None, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-    rc, out = ub("set -e; mkdir -p %s; rm -rf %s; cp -a %s %s" % (shlex.quote(BACKUP), shlex.quote(bk), shlex.quote(REPO + "/dist"), shlex.quote(bk)), 900)
+          "backup_dist": bk, "prev_deployed_sha": open(dp).read() if os.path.exists(dp) else None, "gen": pm["gen"], "env": pm["env"],
+          "deadline": T0 + BUDGET - RECOVER_S, "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    q = shlex.quote
+    rc, out = ub("set -e; umask 077; mkdir -p %s; rm -rf %s; cp -a %s %s; tar -C %s -cf %s %s" % (
+        q(BACKUP), q(bk), q(REPO + "/dist"), q(bk), q(REPO), q("%s/east-only-%s.tar" % (BACKUP, head[:12])), " ".join(map(q, EAST_ONLY))), 900)
     if rc:
-        die("could not back up dist: %s (nothing changed in the repo)" % out[-200:])
+        die("could not back up dist and the five: %s (nothing changed in the repo)" % out[-200:])
     write_root(STATE, json.dumps(st, indent=1))
-    say("pins %s, dist backup %s, state %s" % (PINS, bk, STATE))
-    rc, out = git("checkout", "-q", "-B", RELEASE_BRANCH, RELEASE_SHA)
-    if rc:
-        if gitv("rev-parse", "HEAD") == head and not check_tree(pins):
-            die("git checkout refused (%s); nothing changed" % out[-300:])
-        recover(st, "checkout failed: " + out[-200:])
-    problem = check_tree(pins)
-    if gitv("rev-parse", "HEAD") != RELEASE_SHA or problem:
-        recover(st, problem or "HEAD did not move to the release")
-    say("checked out %s; five EAST-only files unchanged" % RELEASE_SHA[:12])
-    left = max(DEPLOY_MIN_S, BUDGET - int(time.time() - T0) - 480)  # leaves time to recover
-    env = " ".join("%s=%s" % (k, shlex.quote(v)) for k, v in (("REPO_DIR", REPO), ("BASE_URL", BASE), ("EAST_ONLY_SHA256", PINS), ("NODE_OPTIONS", HEAP)))
-    cmd = "cd %s && env %s timeout -k 30 %d bash ops/deploy-east.sh 2>&1" % (shlex.quote(REPO), env, left)
-    keep = re.compile(r"^(=== |ABORT|DEPLOYED|clean at|  tolerated|  pinned|  stamp dirty|stamp|production |WARNING|FAIL|PASS|DRIFT|  - |  /|build NODE|  dirty files|check:price|rolled back|previous dist)")
-    tail = []
-    p = subprocess.Popen(["sudo", "-u", RUN_AS, "bash", "-lc", cmd], stdout=subprocess.PIPE, text=True, errors="replace")
-    for line in p.stdout:
-        line = line.rstrip("\n")[:220]
-        tail = (tail + [line])[-30:]
-        if keep.match(line):
-            say("  | " + line)
-    rc = p.wait()
-    if rc:
-        say("deploy-east.sh exit %d; last lines:" % rc)
-        for l in tail[-15:]:
-            say("  > " + l)
-        recover(st, "deploy-east.sh exit %d" % rc)
+    say("pins %s, backups in %s, state %s" % (PINS, BACKUP, STATE))
+    signal.signal(signal.SIGTERM, _term)
+    try:
+        why = release(st, plan)
+    except BaseException as e:  # an exception, a die() or a SIGTERM after the state file: never leave git moved
+        why = "interrupted: %s %s" % (type(e).__name__, str(e)[:120])
+    if why:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # recovery must not be cut short
+        recover(st, why)
     # ---- success ----
-    lv = live()
+    lv, pm2 = live(), pm2_info()
     say("live stamp: sha %s dirty %s %s built %s" % (lv.get("sha"), lv.get("dirty"), lv.get("dirtyFiles"), lv.get("builtAt")))
     problem = check_tree(pins)
+    envnote = "pm2 env names unchanged" if pm2["env"] == pm["env"] else "PM2 ENV NAMES CHANGED (%d -> %d): compare with dump.pm2" % (pm["nenv"], pm2["nenv"])
     tracker = "tracker not run"
     tg = os.path.join(REPO, "ops/seo-repairs-2026-11/tracking/track_groups.py")
     if os.path.exists(tg):  # copied out so its reports never land in the repo tree
@@ -341,10 +495,10 @@ def go_or_plan():
         for l in fails:
             say("  " + l[:160])
         run(["rm", "-rf", d])
-    ok = lv.get("sha") == RELEASE_SHA == gitv("rev-parse", "HEAD") and not problem
-    say("RESULT: %s %s (%s) over %s; live %s dirty=%s; %s; %s; rollback: MODE=ROLLBACK" % (
+    ok = lv.get("sha") == RELEASE_SHA == gitv("rev-parse", "HEAD") and not problem and pm2["env"] == pm["env"]
+    say("RESULT: %s %s (%s) over %s; live %s dirty=%s; %s; %s; %s; rollback: MODE=ROLLBACK" % (
         "RELEASED" if ok else "RELEASED WITH WARNINGS", RELEASE_SHA[:12], RELEASE_BRANCH, head[:12],
-        str(lv.get("sha"))[:12], lv.get("dirty"), problem or "five EAST-only files intact", tracker))
+        str(lv.get("sha"))[:12], lv.get("dirty"), problem or "five EAST-only files intact", envnote, tracker))
     sys.exit(0 if ok else 1)
 
 
@@ -360,16 +514,12 @@ def rollback():
     problem = check_tree(st["pins"])
     if problem:
         die(problem)
+    ub("rm -rf " + shlex.quote(BUILD_DIR), 60)
     ok = True
-    if os.path.isdir(os.path.join(REPO, "dist-prev-deploy")) and os.path.exists(os.path.join(REPO, "ops/deploy-east.sh")):
-        rc, out = ub("set -o pipefail; cd %s && ROLLBACK=1 REPO_DIR=%s bash ops/deploy-east.sh 2>&1 | tail -3" % (shlex.quote(REPO), shlex.quote(REPO)), 900)
-        say("  deploy-east.sh ROLLBACK=1: rc %d %s" % (rc, out[-200:].replace("\n", " | ")))
-        ok = rc == 0
-    if local_stamp().get("sha") != st["prev_sha"]:
+    if local_stamp().get("sha") != st["prev_sha"] or not os.path.isdir(os.path.join(REPO, "dist/server")):
         ok = restore_dist(st)
     g_ok, problem = checkout_prev(st)
-    ok = g_ok and not problem and ok
-    ok = restart_and_wait(st["prev_sha"]) and ok
+    ok = restart_and_wait(st["prev_sha"]) and g_ok and not problem and ok  # always: the release may be loaded
     restore_attest(st)
     lv = live()
     st["rolled_back"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

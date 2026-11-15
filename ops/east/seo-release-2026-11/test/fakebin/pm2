@@ -1,12 +1,31 @@
 #!/usr/bin/env bash
-# TEST SHIM for pm2. Logs every call with the NODE_OPTIONS it received. `jlist` carries a
-# sentinel "secret" in the process environment, as real pm2 does: no output may contain it.
-# The live site is served by the harness from dist/ on disk (serve.mjs reads static files,
-# the stamp included, from disk), so a restart changes nothing the stamp shows.
-echo "pm2 $* NODE_OPTIONS=${NODE_OPTIONS:-}" >> "$SIM_ROOT/control/log"
+# TEST SHIM for pm2, with state in $SIM_ROOT/control:
+#   pm2_gen       restart generation: jlist reports pid 4000+gen, restart_time gen, pm_uptime T+gen
+#   loaded        the stamp the "process" has loaded. serve.mjs reads static files (the stamp too)
+#                 from disk, so the live stamp shows dist/ on disk; THIS file is what the running
+#                 server bundle is. Only a restart that really happens updates it.
+#   pm2_restarts  restart attempts so far; pm2_fail_at=N fails attempts >= N (until pm2_fail_until)
+#   pm2_noop      restart exits 0 but does nothing (pid and uptime unchanged)
+# `jlist` prints a "[PM2]" notice line first, and carries a sentinel "secret" in the process
+# environment, as real pm2 does: no output may contain it. --update-env adds an env name.
+C="$SIM_ROOT/control"
+echo "pm2 $* NODE_OPTIONS=${NODE_OPTIONS:-}" >> "$C/log"
+gen=$(cat "$C/pm2_gen" 2>/dev/null || echo 0)
 case "$1" in
-  jlist) printf '[{"name":"fresh-web","pm2_env":{"status":"%s","DUMMY_SECRET":"%s"}}]\n' \
-           "$(cat "$SIM_ROOT/control/pm2_status" 2>/dev/null || echo online)" "$(cat "$SIM_ROOT/control/secret")" ;;
-  restart) echo "[PM2] Applying action restartProcessId on app [$2]" ;;
+  jlist)
+    echo "[PM2] (test) notice line before the JSON"
+    extra=""; [ -e "$C/pm2_env_extra" ] && extra=',"SUDO_COMMAND":"x"'
+    printf '[{"name":"fresh-web","pid":%d,"pm2_env":{"status":"%s","restart_time":%d,"pm_uptime":%d,"env":{"DUMMY_SECRET":"%s","PORT":"3000"%s}}}]\n' \
+      $((4000 + gen)) "$(cat "$C/pm2_status" 2>/dev/null || echo online)" "$gen" $((1700000000 + gen)) "$(cat "$C/secret")" "$extra" ;;
+  restart)
+    n=$(( $(cat "$C/pm2_restarts" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$C/pm2_restarts"
+    if [ -e "$C/pm2_fail_at" ] && [ "$n" -ge "$(cat "$C/pm2_fail_at")" ] && { [ ! -e "$C/pm2_fail_until" ] || [ "$n" -le "$(cat "$C/pm2_fail_until")" ]; }; then
+      echo "[PM2][ERROR] (test) restart failed" >&2; exit 1
+    fi
+    if [ -e "$C/pm2_noop" ]; then echo "[PM2] (test) restart said ok but did nothing"; exit 0; fi
+    for a in "$@"; do [ "$a" = --update-env ] && : > "$C/pm2_env_extra"; done
+    echo $((gen + 1)) > "$C/pm2_gen"
+    cp "$SIM_ROOT/east/fresh-web/dist/client/fw-assets/__build.json" "$C/loaded" 2>/dev/null || echo '{}' > "$C/loaded"
+    echo "[PM2] Applying action restartProcessId on app [$2]" ;;
 esac
 exit 0

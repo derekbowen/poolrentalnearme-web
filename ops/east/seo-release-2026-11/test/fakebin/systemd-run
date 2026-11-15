@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# TEST SHIM for `systemd-run --scope --quiet --unit=U -p MemoryMax=.. -p MemorySwapMax=.. -- cmd...`.
+# Logs the properties, records this process (it execs the command, so the pid stays) as being in
+# the scope, as /proc/<pid>/cgroup would (control/cgroup-<pid>), and writes a memory.peak for the
+# unit. control/scope_escape records it outside the scope instead (as if sudo's PAM moved it).
+C="$SIM_ROOT/control"
+unit=""; props=()
+while [ $# -gt 0 ] && [ "$1" != "--" ]; do
+  case "$1" in
+    --unit=*) unit="${1#--unit=}" ;;
+    -p) shift; props+=("$1") ;;
+    --scope|--quiet) ;;
+    *) echo "fake systemd-run: unexpected argument $1" >&2; exit 90 ;;
+  esac
+  shift
+done
+shift
+echo "systemd-run unit=$unit ${props[*]}" >> "$C/log"
+if [ -e "$C/scope_escape" ]; then echo "0::/user.slice/session-1.scope" > "$C/cgroup-$$"
+else echo "0::/system.slice/$unit.scope" > "$C/cgroup-$$"; fi
+mkdir -p "$C/cgroup/system.slice/$unit.scope"
+echo $((1234 * 1048576)) > "$C/cgroup/system.slice/$unit.scope/memory.peak"
+exec "$@"

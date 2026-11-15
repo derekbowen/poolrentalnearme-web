@@ -18,9 +18,12 @@ delete it from the box, verify sha256 at every step, then commit the tree to an
 orphan branch of this repository.
 
 Never prints an environment value. Never copies .env files, keys or node_modules.
-This repository is PUBLIC, so the tree is scanned for secrets on the box and again
-here, and the push is refused on any finding the scanner cannot clear (see SECRETS
-below). Fails closed: any mismatch aborts before anything is pushed.
+This repository is PUBLIC, so the extracted tree is scanned for secrets here, and
+the exact tree to be committed (PP_SSR_SNAPSHOT.md with the container metadata
+included) is scanned again just before the commit. The push is refused on any
+finding the scanner cannot clear (see SECRETS below), and a file too large to
+scan or unreadable is a finding, never skipped. Fails closed: any mismatch aborts
+before anything is pushed.
 """
 import argparse, base64, datetime, hashlib, json, os, re, secrets, subprocess, sys, tarfile, tempfile
 
@@ -42,8 +45,22 @@ SECRET_PATTERNS = {
     "twilio_auth": re.compile(r"\bSK[0-9a-f]{32}\b"),
     "private_key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     "github_token": re.compile(r"\bgh[pousr]_[0-9A-Za-z]{30,}"),
-    "generic_assignment": re.compile(r"(?i)\b(secret|client_secret|api_key|apikey|password|passwd|token)\b\s*[:=]\s*['\"][^'\"\s]{12,}['\"]"),
+    "supabase_secret": re.compile(r"\bsb_secret_[0-9A-Za-z_-]{10,}"),
+    # name = "value" / name: 'value' / "name": "value" (JSON, JS objects), where the
+    # name contains a secret-ish word anywhere (STRIPE_SECRET_KEY, clientSecret, ...).
+    "generic_assignment": re.compile(
+        r"(?i)[A-Za-z0-9_-]*(secret|api[_-]?key|password|passwd|token|private[_-]?key|service[_-]?role)"
+        r"[A-Za-z0-9_-]*['\"]?\s*[:=]\s*['\"][^'\"\s]{12,}['\"]"),
+    # Unquoted shell/env/Dockerfile style: SECRET_KEY=abc..., export API_TOKEN=..., ENV X_TOKEN=...
+    "env_assignment": re.compile(
+        r"(?im)^\s*(export\s+|ENV\s+)?[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE_KEY|SERVICE_ROLE)[A-Z0-9_]*"
+        r"\s*=\s*[^\s'\"$]{12,}"),
+    # Command-line flags: --token=abc..., --api-key abc...
+    "cli_flag": re.compile(r"(?i)--(token|secret|password|api-?key|key)[= ][^\s'\"]{12,}"),
 }
+# Files are scanned whole up to this size. A larger file is not skipped: it is a
+# finding, so the push is refused (fail closed) and a person decides.
+MAX_SCAN_BYTES = 50_000_000
 JWT_RE = re.compile(r"\beyJ[0-9A-Za-z_-]{8,}\.(eyJ[0-9A-Za-z_-]{8,})\.[0-9A-Za-z_-]{8,}")
 
 
@@ -65,21 +82,32 @@ def scan_text(text):
     return hits
 
 
-def scan_tree(root):
+def scan_tree(root, max_bytes=None):
+    """Scan every file that would be committed. Fails closed: a file that is too
+    large to scan, or cannot be read, is itself a finding (never silently skipped)."""
+    limit = MAX_SCAN_BYTES if max_bytes is None else max_bytes
     findings = {}
     for dp, dns, fns in os.walk(root):
         dns[:] = [d for d in dns if d not in EXCLUDE_DIRS]
         for fn in fns:
             p = os.path.join(dp, fn)
-            try:
-                if os.path.getsize(p) > 5_000_000:
+            rel = os.path.relpath(p, root)
+            if os.path.islink(p):
+                # Committed as a link; scan the link text, never follow it.
+                hits = scan_text(os.readlink(p))
+            else:
+                try:
+                    if os.path.getsize(p) > limit:
+                        findings[rel] = ["too_large_to_scan"]
+                        continue
+                    with open(p, "r", encoding="utf-8", errors="ignore") as fh:
+                        t = fh.read()
+                except OSError:
+                    findings[rel] = ["unreadable"]
                     continue
-                t = open(p, "r", encoding="utf-8", errors="ignore").read()
-            except OSError:
-                continue
-            hits = scan_text(t)
+                hits = scan_text(t)
             if hits:
-                findings[os.path.relpath(p, root)] = sorted(set(hits))
+                findings[rel] = sorted(set(hits))
     return findings
 
 
@@ -96,6 +124,15 @@ def selftest():
         ("AKIA" + "A" * 16, ["aws_access_key"]),
         ("sk_live_" + "a" * 20, ["stripe_live"]),
         ("password = 'hunter2hunter2'", ["generic_assignment"]),
+        ('{"client_secret": "exampleSecret123456"}', ["generic_assignment"]),
+        ("const cfg = {'apiKey': 'abcdefghijklmnop'}", ["generic_assignment"]),
+        ('STRIPE_SECRET_KEY = "abcdefghijklmnop"', ["generic_assignment"]),
+        ("export SUPABASE_SERVICE_ROLE_KEY=abcdefghijklmnop", ["env_assignment"]),
+        ("ENV HOOKS_ADMIN_TOKEN=abcdefghijklmnop", ["env_assignment"]),
+        ('["node", "server.js", "--token=abcdefghijklmnop"]', ["cli_flag"]),
+        ("sb_secret_" + "a" * 20, ["supabase_secret"]),
+        ("const token = process.env.API_TOKEN", []),
+        ('{"name": "pp-ssr", "version": "1.0.0"}', []),
         ("const url = 'https://example.supabase.co'", []),
         ("-----BEGIN RSA PRIVATE KEY-----", ["private_key"]),
     ]
@@ -113,6 +150,16 @@ def selftest():
         ok = not EXCLUDE_FILE_RE.search(name)
         bad += not ok
         print(("PASS" if ok else "FAIL"), "kept:", name)
+    # Tree scan fails closed on files it cannot scan.
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "ok.js"), "w").write("const a = 1\n")
+        open(os.path.join(d, "big.js.map"), "w").write("x" * 200 + "\nsk_live_" + "a" * 20)
+        open(os.path.join(d, "PP_SSR_SNAPSHOT.md"), "w").write('"cmd": ["node", "--token=abcdefghijklmnop"]')
+        got = scan_tree(d, max_bytes=100)
+        want = {"big.js.map": ["too_large_to_scan"], "PP_SSR_SNAPSHOT.md": ["cli_flag"]}
+        ok = got == want
+        bad += not ok
+        print(("PASS" if ok else "FAIL"), "tree scan (oversize file and snapshot metadata are findings) ->", got)
     print("selftest:", "ALL PASS" if not bad else "%d FAILED" % bad)
     return bad == 0
 
@@ -269,6 +316,13 @@ def go(branch, workdir):
     g = ["git", "-C", repo]
     subprocess.run(["git", "init", "-q", "-b", branch, repo], check=True)
     subprocess.run(["cp", "-a", src + "/.", repo], check=True)
+    # Scan again exactly what will be committed, PP_SSR_SNAPSHOT.md included: the
+    # container's Cmd/Entrypoint can carry credentials as arguments.
+    final = scan_tree(repo)
+    if final:
+        for f, h in sorted(final.items()):
+            print("      %s: %s" % (f, ", ".join(h)))
+        sys.exit("ABORT: possible secrets in the tree to be committed; nothing pushed. Review %s" % repo)
     subprocess.run(g + ["add", "-A"], check=True)
     subprocess.run(g + ["-c", "user.name=Claude", "-c", "user.email=noreply@anthropic.com", "commit", "-q",
                         "-m", "pp-ssr source snapshot from the running container (read-only capture)"], check=True)

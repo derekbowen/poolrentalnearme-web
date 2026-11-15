@@ -16,13 +16,17 @@ The capture follows the pattern of `ops/preserve_east.py`.
 | Command | What it does |
 |---|---|
 | `python3 ops/west/pp-ssr/preserve_pp_ssr.py` | prints the plan; touches nothing |
-| `python3 ops/west/pp-ssr/preserve_pp_ssr.py --selftest` | tests the secret scanner (15 cases) |
+| `python3 ops/west/pp-ssr/preserve_pp_ssr.py --selftest` | tests the secret scanner (25 cases) |
 | `python3 ops/west/pp-ssr/preserve_pp_ssr.py --go` | runs the capture; needs `PRNM_AWS_*` for SSM |
 
 Safety:
 - Container env values are never printed. Only the variable names are recorded.
 - `node_modules`, `.git`, `.env*` and key files are never copied.
-- This repository is public, so the tree is scanned for secrets before any push.
+- This repository is public, so the tree is scanned for secrets before any push, and
+  the exact tree to be committed (`PP_SSR_SNAPSHOT.md` with the container's command
+  line included) is scanned again just before the commit.
+- A file larger than 50 MB, or one that cannot be read, is not skipped: it counts as
+  a finding and the push is refused.
   - A JWT whose role is `anon` (a publishable key) is allowed.
   - Anything else aborts the push: AWS keys, Stripe live keys, webhook secrets, private keys, GitHub tokens, service-role JWTs, or literal secret assignments.
 - Each hop is checked by sha256: the plain tar on WEST, the ciphertext, and the decrypted tar here.

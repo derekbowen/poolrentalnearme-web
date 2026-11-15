@@ -549,6 +549,12 @@ export const AuthenticationPageComponent = (props) => {
   const schemaDescription = isLogin
     ? intl.formatMessage({ id: 'AuthenticationPage.schemaDescriptionLogin' }, { marketplaceName })
     : 'List your pool free and earn by the hour \u2014 0% host fees. No listing fees. Join hosts on Pool Rental Near Me.';
+  // /login is noindex already. /confirm is the last step of a social
+  // (identity provider) signup: it only means something with the short-lived
+  // st-authinfo cookie the server sets on the way back from the provider
+  // (server/api/auth/loginWithIdp.js). Visited directly it shows the signup
+  // page under a second URL, so it is noindex too. /signup stays indexable.
+  const shouldIndexPage = !isLogin && !isConfirm;
   const topbarClasses = classNames({
     [css.hideOnMobile]: showEmailVerification,
   });
@@ -628,7 +634,7 @@ export const AuthenticationPageComponent = (props) => {
         name: schemaTitle,
         description: schemaDescription,
       }}
-      shouldIndex={!isLogin}
+      shouldIndex={shouldIndexPage}
     >
       <LayoutSingleColumn
         mainColumnClassName={css.layoutWrapperMain}

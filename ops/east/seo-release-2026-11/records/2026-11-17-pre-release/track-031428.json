@@ -1,0 +1,286 @@
+{
+ "base": "https://www.poolrentalnearme.com",
+ "started_utc": "2026-11-17T03:14:28.906955Z",
+ "results": [
+  {
+   "group": "regression",
+   "check": "/ -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/s -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/login -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/signup -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/p/hosting -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/p/become-a-host -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/p/all-locations -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/sitemap.xml -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "regression",
+   "check": "/robots.txt -> 200",
+   "ok": true,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p ends in 404 without a loop",
+   "ok": false,
+   "detail": "[('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307)]",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p answers 404 directly (needs the WEST nginx change too)",
+   "ok": false,
+   "detail": "[('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307)]",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p/ ends in 404 without a loop",
+   "ok": false,
+   "detail": "[('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301)]",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p/ answers 404 directly (needs the WEST nginx change too)",
+   "ok": false,
+   "detail": "[('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301), ('/p/', 307), ('/p', 301)]",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p/null -> 404, not a redirect to the homepage",
+   "ok": false,
+   "detail": "(301, '/')",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p/details -> 404, not a redirect to the homepage",
+   "ok": false,
+   "detail": "(301, '/')",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "/p/mailto:someone -> 404, not a redirect to the homepage",
+   "ok": false,
+   "detail": "(301, '/')",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "stored redirects that take more than one hop (target 0)",
+   "ok": false,
+   "detail": "10 of 451; e.g. [('bubble_covers_for_swimming_pools_the_ultimate_guide_to_protecting_and_enhancing_your_pool', [('/p/bubble_covers_for_swimming_pools_the_ultimate_guide_to_protecting_and_enhancing_your_pool', 301), ('/p/bubble_covers-for-swimming-pools-the-ultimate-guide-to-protecting-and-enhancing-",
+   "kind": "check"
+  },
+  {
+   "group": "F11",
+   "check": "stored redirects that do not end at a 200 (target 0)",
+   "ok": true,
+   "detail": "0 of 451; e.g. []",
+   "kind": "check"
+  },
+  {
+   "group": "F6a",
+   "check": "78 exact-duplicate comparison URLs 301 once to their state-suffixed twin",
+   "ok": false,
+   "detail": "78 problems; e.g. [('/p/giggster-vs-pool-rental-near-me-in-boston', 200, ''), ('/p/peerspace-vs-pool-rental-near-me-in-boston', 200, ''), ('/p/peerspace-vs-pool-rental-near-me-in-carlsbad', 200, '')]",
+   "kind": "check"
+  },
+  {
+   "group": "F14",
+   "check": "/p/become-a-swimming-pool-host-saratoga-springs-ny no longer says '10% service fee'",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F14",
+   "check": "/p/swim-instructor-pool-rental-fair-oaks-ranch-tx no longer says '10% booking fee'",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F14",
+   "check": "/p/swim-instructor-pool-rental-mount-vernon-va no longer says '10% booking fee'",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F14",
+   "check": "/p/affiliate no longer says '10% platform fee'",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F1",
+   "check": "sampled host pages load and do not open with the empty-inventory notice (25)",
+   "ok": false,
+   "detail": "1 with notice; e.g. ['become-a-swimming-pool-host-philadelphia-pa']",
+   "kind": "check"
+  },
+  {
+   "group": "F7",
+   "check": "sampled renter city pages load and carry a renter heading, not the host heading (25)",
+   "ok": false,
+   "detail": "25 host-style; e.g. ['upper-arlington-oh', 'hockessin-de', 'new-braunfels-tx']",
+   "kind": "check"
+  },
+  {
+   "group": "F7",
+   "check": "sampled host pages load and have distinct H1s",
+   "ok": true,
+   "detail": "0 duplicates among 25 loaded",
+   "kind": "check"
+  },
+  {
+   "group": "F4",
+   "check": "no URL listed in two sitemaps (target 0)",
+   "ok": false,
+   "detail": "107; e.g. ['https://www.poolrentalnearme.com/p/hosting', 'https://www.poolrentalnearme.com/p/about', 'https://www.poolrentalnearme.com/p/all-locations']",
+   "kind": "check"
+  },
+  {
+   "group": "F4",
+   "check": "config/test listing absent",
+   "ok": false,
+   "detail": "",
+   "kind": "check"
+  },
+  {
+   "group": "F4",
+   "check": "noindex /p/pool-pros absent",
+   "ok": false,
+   "detail": "",
+   "kind": "check"
+  },
+  {
+   "group": "F4",
+   "check": "/sitemap-directory.xml no longer advertises noindex URLs (410 or no <loc>)",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F4",
+   "check": "sampled sitemap URLs are 200, indexable and self-canonical (~150 sampled of 10181)",
+   "ok": false,
+   "detail": "1 bad; e.g. [('/p/pool-maintenance-uk', 200, 'https://poolrentalnearme.co.uk/p/pool-maintenance-uk')]",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.co.uk/p/hosting canonical -> www.poolrentalnearme.com",
+   "ok": true,
+   "detail": "(200, 'https://www.poolrentalnearme.com/p/hosting')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.co.uk/p/become-a-swimming-pool-host-aberdeen-sd canonical -> www.poolrentalnearme.com",
+   "ok": false,
+   "detail": "(200, 'https://www.poolrentalnearme.co.uk/p/become-a-swimming-pool-host-aberdeen-sd')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.co.uk robots.txt allows its own /sitemap-country.xml",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.ca/p/hosting canonical -> www.poolrentalnearme.com",
+   "ok": true,
+   "detail": "(200, 'https://www.poolrentalnearme.com/p/hosting')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.ca/p/become-a-swimming-pool-host-aberdeen-sd canonical -> www.poolrentalnearme.com",
+   "ok": false,
+   "detail": "(200, 'https://www.poolrentalnearme.ca/p/become-a-swimming-pool-host-aberdeen-sd')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.ca robots.txt allows its own /sitemap-country.xml",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.com.au/p/hosting canonical -> www.poolrentalnearme.com",
+   "ok": true,
+   "detail": "(200, 'https://www.poolrentalnearme.com/p/hosting')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.com.au/p/become-a-swimming-pool-host-aberdeen-sd canonical -> www.poolrentalnearme.com",
+   "ok": false,
+   "detail": "(200, 'https://www.poolrentalnearme.com.au/p/become-a-swimming-pool-host-aberdeen-sd')",
+   "kind": "check"
+  },
+  {
+   "group": "F10",
+   "check": "www.poolrentalnearme.com.au robots.txt allows its own /sitemap-country.xml",
+   "ok": false,
+   "detail": "200",
+   "kind": "check"
+  }
+ ]
+}

@@ -44,7 +44,7 @@ Customers, email 1 (sent 2026-11-14), subject "Pool Rental Near Me needs your he
 > It's voluntary, and it's charged monthly until you cancel. We are closed until January 1, so no-fee booking starts when we reopen.
 > Derek Bowen, Founder, Pool Rental Near Me
 
-Also approved (emails 2 and 3 as drafted on 2026-11-13):
+Also approved (emails 2 and 3 as drafted on 2026-11-13; the hosts version of email 2 went out on 2026-11-17 with the button "Support with $5 a month" linking https://support.poolrentalnearme.com):
 
 > A few days ago I asked for your help with Pool Rental Near Me.
 > Here's the honest part: I need help covering the platform's ongoing costs. The website, software, maintenance, and work behind the scenes still need funding.
@@ -91,6 +91,7 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 | 2026-11-14 | Customers | Pool Rental Near Me needs your help | 213 | 0 |
 | 2026-11-15 | None (Derek chose hosts only, then skipped the day before anything went out) | Pool Rental Near Me still needs help (drafted) | 0 | 0 |
 | 2026-11-16 | None (the database tool's SQL calls hung all day, so results, counts and a send were impossible; Derek was not asked) | — | 0 | 0 |
+| 2026-11-17 (approved in the daily check-in dialog; sent 2026-11-18 01:40–02:20 Pacific) | Hosts only (Derek's choice; customers skipped) | Pool Rental Near Me still needs help | 263 | 0 |
 
 ## Still to do before the offer can be honoured
 

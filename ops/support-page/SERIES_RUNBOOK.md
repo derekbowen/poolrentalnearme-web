@@ -92,6 +92,12 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 | 2026-11-15 | None (Derek chose hosts only, then skipped the day before anything went out) | Pool Rental Near Me still needs help (drafted) | 0 | 0 |
 | 2026-11-16 | None (the database tool's SQL calls hung all day, so results, counts and a send were impossible; Derek was not asked) | — | 0 | 0 |
 | 2026-11-17 (approved in the daily check-in dialog; sent 2026-11-18 01:40–02:20 Pacific) | Hosts only (Derek's choice; customers skipped) | Pool Rental Near Me still needs help | 263 | 0 |
+| 2026-11-18 (approved in the daily check-in dialog; sent 18:31–18:47 Pacific) | Hosts only (Derek's choice; customers skipped again) | Pool Rental Near Me needs your help | 260 | 0 |
+
+Results of the 2026-11-17 hosts send, read before the 2026-11-18 one: 0 bounces, 3 unsubscribes (1.1%).
+The 2026-11-18 send used only approved sentences: email 2 without its first line, plus "If you can help, thank you."
+2 people unsubscribed within minutes of it. The temporary token's delete prompt timed out unanswered, so the token
+was still in the vault when this was written.
 
 ## Still to do before the offer can be honoured
 

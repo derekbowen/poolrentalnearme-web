@@ -1,0 +1,97 @@
+# Block aggressive scrapers and AI crawlers
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+# AI search crawlers — explicit allow for citation visibility
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Aggressive scrapers and low-value crawlers — block
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Yandex
+Disallow: /
+
+
+User-agent: *
+Allow: /
+
+# Sharetribe authenticated routes
+Disallow: /profile-settings
+Disallow: /l/new
+Disallow: /l/*/checkout
+Disallow: /l/*/draft
+Disallow: /l/*/pending-approval
+Disallow: /l/*/new
+Disallow: /l/*/edit
+Disallow: /inbox
+Disallow: /order
+Disallow: /sale
+Disallow: /listings
+Disallow: /account
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /preview
+
+# Fresh-web app routes
+Disallow: /admin
+Disallow: /auth
+Disallow: /api/
+
+# Block double-prefix junk
+Disallow: /p/p/
+
+# Block hybrid listing+search URLs
+Disallow: /l/*/p/
+
+
+Crawl-Delay: 5
+
+# Faceted search pagination: keep deep /s? page facets out of the crawl.
+# Bare /s and first-page facet URLs stay crawlable so they can be seen
+# and dropped via their noindex,follow X-Robots-Tag.
+Disallow: /s?*&page=
+
+Sitemap: https://www.poolrentalnearme.com/sitemap.xml
+Sitemap: https://www.poolrentalnearme.com/public-pools.xml
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+Disallow: /host/preview/

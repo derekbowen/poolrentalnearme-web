@@ -82,6 +82,7 @@ import {
   priceVariantsForSchemaMaybe,
   shortLocationLabel,
   listingCanonicalPath,
+  isListingNotFoundError,
 } from './ListingPage.shared';
 import { priceWithBookingFee } from '../../util/currency';
 import ActionBarMaybe from './ActionBarMaybe';
@@ -211,12 +212,14 @@ export const ListingPageComponent = (props) => {
 
   const topbar = <TopbarContainer />;
 
-  if (showListingError && showListingError.status === 404) {
-    // 404 listing not found
+  if (showListingError && isListingNotFoundError(showListingError)) {
+    // No such listing for this viewer: API 404, an id that is not a UUID
+    // (400), or a listing the API will not show (403 `forbidden`). HTTP 404.
     return <NotFoundPage staticContext={props.staticContext} />;
   }
   if (showListingError) {
-    // Other error in fetching listing
+    // The fetch itself failed (API 5xx, 429, network, anything unrecognised).
+    // ErrorPage flags the render as temporarily unavailable: HTTP 503.
     return <ErrorPage topbar={topbar} scrollingDisabled={scrollingDisabled} intl={intl} />;
   }
   if (!currentListing.id) {
@@ -752,8 +755,14 @@ const EnhancedListingPage = props => {
 
   const { showListingError, currentUser } = props;
   const isVariant = props.params?.variant != null;
-  if (isForbiddenError(showListingError) && !isVariant && !currentUser) {
-    // This can happen if private marketplace mode is active
+  const isPrivateMarketplace = config.accessControl.marketplace.private === true;
+  if (isForbiddenError(showListingError) && !isVariant && !currentUser && isPrivateMarketplace) {
+    // Private marketplace mode: a visitor must sign up before seeing listings.
+    // On a public marketplace a 403 for an anonymous visitor means this one
+    // listing is not public; signing up would not change that, and the empty
+    // shell this redirect renders on the server went out as an indexable HTTP
+    // 200. That case now falls through to ListingPageComponent, which renders
+    // NotFoundPage (HTTP 404) for it.
     return (
       <NamedRedirect
         name="SignupPage"
@@ -762,7 +771,6 @@ const EnhancedListingPage = props => {
     );
   }
 
-  const isPrivateMarketplace = config.accessControl.marketplace.private === true;
   const isUnauthorizedUser = currentUser && !isUserAuthorized(currentUser);
   const hasNoViewingRights = currentUser && !hasPermissionToViewData(currentUser);
   const hasUserPendingApprovalError = isErrorUserPendingApproval(showListingError);

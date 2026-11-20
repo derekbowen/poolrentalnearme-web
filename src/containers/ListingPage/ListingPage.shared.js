@@ -14,6 +14,10 @@ import {
 
 import { Page, LayoutSingleColumn } from '../../components';
 import FooterContainer from '../../containers/FooterContainer/FooterContainer';
+import { useSsrSignal } from '../../context/ssrSignalContext';
+// CommonJS on purpose (see the header of that file): the rule is covered by
+// `yarn test-server`, and entry-server.jsx imports it the same way.
+import ssrStatus from '../../../server/api-util/ssrStatus';
 
 import css from './ListingPage.module.css';
 
@@ -349,13 +353,29 @@ export const handleSubmit = parameters => values => {
 };
 
 /**
+ * Does this listing fetch error mean "there is no such listing for this
+ * viewer" (render NotFoundPage, HTTP 404) rather than "the fetch broke"
+ * (render ErrorPage, HTTP 503)?
+ *
+ * The rule itself lives in server/api-util/ssrStatus.js classifyListingLoadError:
+ * API 404/410, a 403 carrying the API's own `forbidden` error, and a 400
+ * saying the id in the URL is not a UUID are "not found"; every other failure
+ * (a bare 403 from an edge or a credential problem included) is temporary.
+ *
+ * @param {Object} error showListingError from the ListingPage duck
+ * @returns {boolean}
+ */
+export const isListingNotFoundError = (error) =>
+  ssrStatus.classifyListingLoadError(error) === ssrStatus.LISTING_LOAD_NOT_FOUND;
+
+/**
  * Create fallback views for the ListingPage: LoadingPage and ErrorPage.
  * The PlainPage is just a helper for them.
  */
 const PlainPage = props => {
-  const { title, topbar, scrollingDisabled, children } = props;
+  const { title, topbar, scrollingDisabled, shouldIndex = true, children } = props;
   return (
-    <Page title={title} scrollingDisabled={scrollingDisabled}>
+    <Page title={title} scrollingDisabled={scrollingDisabled} shouldIndex={shouldIndex}>
       <LayoutSingleColumn topbar={topbar} footer={<FooterContainer />}>
         {children}
       </LayoutSingleColumn>
@@ -363,8 +383,31 @@ const PlainPage = props => {
   );
 };
 
+/**
+ * "Could not load this listing." Two callers, two meanings:
+ *
+ * - the fetch failed for a reason that is not about the listing (the caller
+ *   has already sent "not found" errors to NotFoundPage): temporary, so the
+ *   server answers 503 + Retry-After;
+ * - `invalidListing`: the listing loaded but has no listingType /
+ *   transactionProcessAlias / unitType, so it cannot be shown or booked until
+ *   someone repairs its data: the server answers 404, and this message (more
+ *   useful to its host than "Page not found") stays.
+ *
+ * Either way the page is never something to index, so it carries
+ * `noindex, follow` and tells the renderer through the per-request SSR signal
+ * (null on the client), the same way NotFoundPage does.
+ */
 export const ErrorPage = props => {
   const { topbar, scrollingDisabled, invalidListing, intl } = props;
+  const ssrSignal = useSsrSignal();
+  if (ssrSignal) {
+    if (invalidListing) {
+      ssrSignal.notFound = true;
+    } else {
+      ssrSignal.unavailable = true;
+    }
+  }
   return (
     <PlainPage
       title={intl.formatMessage({
@@ -372,6 +415,7 @@ export const ErrorPage = props => {
       })}
       topbar={topbar}
       scrollingDisabled={scrollingDisabled}
+      shouldIndex={false}
     >
       <p className={css.errorText}>
         {invalidListing ? (

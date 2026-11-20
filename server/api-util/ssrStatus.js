@@ -51,17 +51,23 @@ const isNotFoundContext = context => {
  * The status a rendered response should carry.
  *
  * A shell error is a real server failure and outranks a route miss, so a 500
- * is never downgraded to 404.
+ * is never downgraded to 404. A miss outranks "temporarily unavailable": a URL
+ * that can never resolve is a 404 even if a fetch for it also failed.
  *
  * @param {number} current status decided so far
  * @param {boolean} notFound whether the route was a miss
+ * @param {boolean} [unavailable] whether the page rendered a temporary
+ *   load-failure view (see isUnavailableLocals)
  * @returns {number}
  */
-const resolveRenderStatus = (current, notFound) => {
+const resolveRenderStatus = (current, notFound, unavailable = false) => {
   if (current !== 200) {
     return current;
   }
-  return notFound ? 404 : 200;
+  if (notFound) {
+    return 404;
+  }
+  return unavailable === true ? 503 : 200;
 };
 
 /**
@@ -89,6 +95,117 @@ const isNotFoundLocals = locals => {
   }
   const signal = locals.ssrSignal;
   return !!(signal && typeof signal === 'object' && signal.notFound === true);
+};
+
+/**
+ * Did this request render a "temporarily unavailable" view?
+ *
+ * Third signal, same per-request object as channel 2. A listing whose fetch
+ * failed for a reason that says nothing about the listing itself (API 5xx,
+ * 429, network error, timeout, anything unrecognised) renders the friendly
+ * error page and flips `locals.ssrSignal.unavailable`. That used to go out as
+ * HTTP 200 with `index, follow` and the title "Error in loading the listing"
+ * — a page a crawler could index in place of a healthy listing. It now goes
+ * out as 503 with UNAVAILABLE_HEADERS, which tells a crawler to keep what it
+ * has and come back.
+ *
+ * Read this only after the shell has rendered, like isNotFoundLocals.
+ *
+ * @param {Object} locals express res.locals
+ * @returns {boolean}
+ */
+const isUnavailableLocals = (locals) => {
+  if (!locals || typeof locals !== 'object') {
+    return false;
+  }
+  const signal = locals.ssrSignal;
+  return !!(signal && typeof signal === 'object' && signal.unavailable === true);
+};
+
+/**
+ * Headers for a 503 render. Retry-After asks crawlers to come back in two
+ * minutes; no-store keeps the edge and browsers from holding on to an error
+ * page; noindex is the belt to the status code's braces.
+ */
+const UNAVAILABLE_HEADERS = Object.freeze({
+  'Retry-After': '120',
+  'Cache-Control': 'no-store',
+  'X-Robots-Tag': 'noindex',
+});
+
+/**
+ * Why did a listing fetch fail: is the listing not there for this viewer, or
+ * did the fetch itself break?
+ *
+ * LISTING_LOAD_NOT_FOUND — answer 404, render NotFoundPage:
+ *   - 404: the API has no such listing (the pre-existing rule).
+ *   - 410: gone, by the definition of the status.
+ *   - 400 whose API error is `validation-invalid-value` on the `id` query
+ *     parameter: the id in the URL is not a UUID, so no retry can ever succeed.
+ *     Observed live on 2026-11-15 for all six `/l/<city-slug>` URLs linked
+ *     from /p/ pages (/l/fargo-nd and friends).
+ *   - 403 that carries the Marketplace API error code `forbidden`: the API
+ *     refuses to show this listing to this viewer. NOT observed live; taken
+ *     from the template's own handling (a 403 from the listing endpoints means
+ *     "not yours to see": a draft or pending-approval listing opened by
+ *     someone other than its author). See
+ *     docs/OPS_RECORD_2026-11-15_seo-status-codes.md — this is the one rule an
+ *     owner may want to flip to "unavailable".
+ *     A 403 WITHOUT that code (no API error body: an edge, a WAF, a suspended
+ *     client credential, a plan limit) says nothing about the listing and
+ *     would otherwise 404 every listing at once. It is "unavailable".
+ *
+ * LISTING_LOAD_UNAVAILABLE — answer 503, render the friendly error page:
+ *   everything else. 5xx, 429, 401, a 403 with no `forbidden` API error, a
+ *   400 that is not about the id (a request
+ *   this app built wrongly is this app's fault, not the listing's), and an
+ *   error with no status at all (network failure, timeout). Unknown means
+ *   "try again", never "gone": a wrong 503 costs a retry, a wrong 404 costs
+ *   the page its place in the index.
+ *
+ * Works on the stored error shape (src/util/errors.js storableError):
+ * `{ status, apiErrors: [{ code, source: { path } }] }`.
+ *
+ * @param {Object} error stored showListingError
+ * @returns {string|null} one of the two constants, or null when there is no error
+ */
+const LISTING_LOAD_NOT_FOUND = 'not-found';
+const LISTING_LOAD_UNAVAILABLE = 'unavailable';
+
+const isInvalidListingIdError = (error) => {
+  const apiErrors = error && Array.isArray(error.apiErrors) ? error.apiErrors : [];
+  return apiErrors.some((apiError) => {
+    const path = apiError && apiError.source ? apiError.source.path : null;
+    return (
+      !!apiError &&
+      apiError.code === 'validation-invalid-value' &&
+      Array.isArray(path) &&
+      path.includes('id')
+    );
+  });
+};
+
+const isApiForbiddenError = (error) => {
+  const apiErrors = error && Array.isArray(error.apiErrors) ? error.apiErrors : [];
+  return apiErrors.some((apiError) => !!apiError && apiError.code === 'forbidden');
+};
+
+const classifyListingLoadError = (error) => {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+  const { status } = error;
+  if (status === 404 || status === 410) {
+    return LISTING_LOAD_NOT_FOUND;
+  }
+  // Only the Marketplace API's own "forbidden" answer is about the listing.
+  if (status === 403 && isApiForbiddenError(error)) {
+    return LISTING_LOAD_NOT_FOUND;
+  }
+  if (status === 400 && isInvalidListingIdError(error)) {
+    return LISTING_LOAD_NOT_FOUND;
+  }
+  return LISTING_LOAD_UNAVAILABLE;
 };
 
 /**
@@ -214,8 +331,18 @@ const resolveListingRedirect = (req, signal, notFound) => {
  * NotFoundPage is never reached) and used to answer 200. There is nothing to
  * fetch: treat it as not found before rendering.
  *
+ * Two shapes were missed the first time (2026-11-15):
+ *   - `/l/<x>` is the `/l/:id` route, so `<x>` must be a UUID too. `/l/fargo-nd`
+ *     and five more city slugs linked from /p/ pages answered 200, indexable,
+ *     "Error in loading the listing".
+ *   - bare `/l` (and `/l/`) has no id at all. It rendered an empty shell that
+ *     sent the browser to the homepage, and — because that shell counted as a
+ *     page — `/l/` was 301ed to `/l`, which nginx 301s back to `/l/`: a loop.
+ *     As a miss it is a plain 404 and resolveCanonicalRedirect leaves it alone.
+ *
  * `/l/new` and `/l/draft/<uuid>/new/details` are left alone (no id segment /
- * a real UUID), as is everything outside these two prefixes.
+ * a real UUID), as is everything outside these two prefixes. Bare `/u` is
+ * left alone too: Avatar links there for banned and deleted users.
  *
  * @param {string} pathname
  * @returns {boolean}
@@ -226,16 +353,24 @@ const isMalformedEntityPath = pathname => {
     return false;
   }
   const seg = pathname.split('/').filter(Boolean);
-  if (seg.length < 2) {
+  if (seg.length === 0) {
     return false;
   }
   const [prefix] = seg;
   if (prefix.toLowerCase() === 'l') {
-    // /l/new has no id; /l/<slug>/<id>… must carry a UUID in position 3.
-    if (seg.length === 2) {
-      return false;
+    // Bare /l: no id, nothing to show.
+    if (seg.length === 1) {
+      return true;
     }
+    // /l/new has no id; anything else in that position is /l/:id.
+    if (seg.length === 2) {
+      return seg[1].toLowerCase() !== 'new' && !UUID_RE.test(seg[1]);
+    }
+    // /l/<slug>/<id>… must carry a UUID in position 3.
     return !UUID_RE.test(seg[2]);
+  }
+  if (seg.length < 2) {
+    return false;
   }
   if (prefix.toLowerCase() === 'u') {
     return !UUID_RE.test(seg[1]);
@@ -243,13 +378,70 @@ const isMalformedEntityPath = pathname => {
   return false;
 };
 
+/**
+ * Everything the renderer needs to answer a rendered request: status, an
+ * optional single redirect, and the headers that go with either.
+ *
+ * This is the order of precedence, in one place:
+ *   1. a shell error (500) stands, with no extra headers beyond Content-Type;
+ *   2. a miss — router miss, NotFoundPage rendered, or an entity path whose id
+ *      can never resolve — is a 404 + `X-Robots-Tag: noindex, follow`, and is
+ *      never redirected anywhere (not to a canonical spelling, not to the
+ *      homepage, not to /s);
+ *   3. a temporary load failure is a 503 + UNAVAILABLE_HEADERS, also never
+ *      redirected;
+ *   4. a page that rendered may get ONE 301: a listing to its declared
+ *      /l/<slug>/<id> path, anything else to its lowercase slash-free spelling;
+ *   5. otherwise 200, untouched.
+ *
+ * Pure: reads `req` and `locals`, changes neither. Call it only after the
+ * shell has rendered (the signal is written during render).
+ *
+ * @param {Object} req express request (method, path, originalUrl)
+ * @param {Object} locals express res.locals (ssrNotFound, ssrSignal)
+ * @param {number} [shellStatus] 200, or 500 when the shell failed
+ * @returns {{status: number, redirectTo: string|null, headers: Object}}
+ */
+const REDIRECT_HEADERS = Object.freeze({ 'Cache-Control': 'public, max-age=86400' });
+const resolveRenderOutcome = (req, locals, shellStatus = 200) => {
+  const safeLocals = locals && typeof locals === 'object' ? locals : {};
+  const path = req && typeof req === 'object' ? req.path : undefined;
+  const notFound = isMalformedEntityPath(path) || isNotFoundLocals(safeLocals);
+  const unavailable = isUnavailableLocals(safeLocals);
+  const status = resolveRenderStatus(shellStatus, notFound, unavailable);
+
+  const redirectTo =
+    status === 200
+      ? resolveListingRedirect(req, safeLocals.ssrSignal, notFound) ||
+        resolveCanonicalRedirect(req, notFound)
+      : null;
+  if (redirectTo) {
+    return { status: 301, redirectTo, headers: { ...REDIRECT_HEADERS } };
+  }
+
+  const headers = { 'Content-Type': 'text/html' };
+  if (status === 404) {
+    headers['X-Robots-Tag'] = 'noindex, follow';
+  }
+  if (status === 503) {
+    Object.assign(headers, UNAVAILABLE_HEADERS);
+  }
+  return { status, redirectTo: null, headers };
+};
+
 module.exports = {
   NOT_FOUND_ROUTE_NAME,
+  LISTING_LOAD_NOT_FOUND,
+  LISTING_LOAD_UNAVAILABLE,
+  UNAVAILABLE_HEADERS,
   canonicalPath,
+  classifyListingLoadError,
   isMalformedEntityPath,
   resolveCanonicalRedirect,
   resolveListingRedirect,
+  resolveRenderOutcome,
   isNotFoundContext,
   isNotFoundLocals,
+  isUnavailableLocals,
   resolveRenderStatus,
 };

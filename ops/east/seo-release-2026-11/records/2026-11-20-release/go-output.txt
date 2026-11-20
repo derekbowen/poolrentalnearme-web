@@ -1,0 +1,138 @@
+ship: run
+  ... InProgress after 60 s
+  ... InProgress after 122 s
+  ... InProgress after 183 s
+  ... InProgress after 245 s
+  ... InProgress after 306 s
+  ... InProgress after 367 s
+  ... InProgress after 428 s
+  ... InProgress after 489 s
+  ... InProgress after 551 s
+STATUS: Success
+--- STDOUT ---
+ship: script reassembled, sha256 8c175451323babe8, running it
+MODE GO: release 9b2f432d7e665ef59f433fece183035d3bf260b8 (seo/release-2026-11) over 77028454655e
+repo /home/ubuntu/fresh-web HEAD 77028454655e7b272d8c23987b54f445f9eba9f7 (ops/deploy-sha-enforcement)
+live stamp 77028454655e7b272d8c23987b54f445f9eba9f7 dirty=5 built 2026-11-04T07:38:03.938Z | dist stamp 77028454655e7b272d8c23987b54f445f9eba9f7
+  EAST-only src/components/home-page.tsx         sha256 34ae2e3f6bd87e61 mtime 2026-11-04T07:36:43Z
+  EAST-only src/routes/__root.tsx                sha256 e487d9d0c9654e42 mtime 2026-11-04T07:36:43Z
+  EAST-only src/server/listing-sync.server.ts    sha256 c4d2e71dcccd9e01 mtime 2026-09-25T05:02:28Z
+  EAST-only src/server/sharetribe.server.ts      sha256 111cf68578d9ee8e mtime 2026-09-25T05:02:28Z
+  EAST-only src/lib/listing-slug.ts              sha256 a8bdd3c21c64edf8 mtime 2026-09-25T05:02:28Z
+pm2 fresh-web: online (67 env names) | MemAvailable 2069 MB, SwapFree 2015 MB | disk free 4611 MB, dist 22 MB
+GO would cap the build at 1557 MB RAM + 1536 MB swap
+release changes 128 file(s) vs HEAD:
+  A docs/seo-repairs-2026-11/PENDING-READS.md
+  A docs/seo-repairs-2026-11/academy-sitemap.md
+  A docs/seo-repairs-2026-11/duplicates-and-canonical.md
+  A docs/seo-repairs-2026-11/intent.md
+  A docs/seo-repairs-2026-11/sitemaps.md
+  A docs/seo-repairs-2026-11/untyped-pages.md
+  M ops/deploy-east.sh
+  A ops/seo-repairs-2026-11/README.md
+  A ops/seo-repairs-2026-11/RELEASE.md
+  A ops/seo-repairs-2026-11/comparison-duplicates/cities-2026-11-15.psv
+  A ops/seo-repairs-2026-11/comparison-duplicates/decisions.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/evidence-2026-11-14-exact-dups.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/generate.mjs
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch-2026-11-15.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch-2026-11-16.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch_pairs.py
+  A ops/seo-repairs-2026-11/country-mapping/content-pages-2026-11-15.psv
+  A ops/seo-repairs-2026-11/country-mapping/live-before-2026-11-15.json
+  A ops/seo-repairs-2026-11/country-mapping/live-before-2026-11-16.json
+  A ops/seo-repairs-2026-11/country-mapping/measure_live.py
+  A ops/seo-repairs-2026-11/country-mapping/sitemap-country-lastmod-live-2026-11-16.tsv
+  A ops/seo-repairs-2026-11/listing-sync/prnm-listing-sync.cron
+  A ops/seo-repairs-2026-11/listing-sync/prnm-listing-sync.sh
+  A ops/seo-repairs-2026-11/listing-sync/staleness-check.sql
+  A ops/seo-repairs-2026-11/related-links-job/rollback.sql
+  A ops/seo-repairs-2026-11/related-links-job/test.sh
+  A ops/seo-repairs-2026-11/tracking/README.md
+  A ops/seo-repairs-2026-11/tracking/data/comparison-exact-dups.tsv
+  A ops/seo-repairs-2026-11/tracking/data/redirect-slugs.txt
+  A ops/seo-repairs-2026-11/tracking/data/sample-host.txt
+  A ops/seo-repairs-2026-11/tracking/data/sample-renter.txt
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-174730.json
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-174730.md
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-192804.json
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-192804.md
+  A ops/seo-repairs-2026-11/tracking/track_groups.py
+  M package.json
+  M scripts/check-deployed-sha.mjs
+  M scripts/check-production-drift.mjs
+  A scripts/intent-report.mjs
+  A scripts/test-failed-reads.mjs
+  M src/components/breadcrumbs-jsonld.tsx
+  M src/components/host-tools/tools.tsx
+  M src/components/live-inventory.tsx
+  M src/components/templates/activity-city.tsx
+  M src/components/templates/advocacy.tsx
+  M src/components/templates/country-launch.tsx
+  M src/components/templates/event-guide.tsx
+  M src/components/templates/generic-page.tsx
+  M src/components/templates/host-acq-city.tsx
+  M src/components/templates/pool-maintenance.tsx
+  M src/components/templates/resource-article.tsx
+  M src/components/templates/swim-instructor-city.tsx
+  M src/components/templates/swim-instructor-hub.tsx
+  A src/lib/city-intent.ts
+  A src/lib/comparison-duplicates.ts
+  A src/lib/content-page-lookup.ts
+  A src/lib/country-sites.ts
+  A src/lib/failed-read.ts
+  M src/lib/host-acq-schemas.ts
+  ... and 68 more
+pins /home/ubuntu/fresh-web.east-only.sha256, backups in /home/ubuntu/fresh-web-release-backup, state /home/ubuntu/fresh-web.release-state.json
+checked out 9b2f432d7e66; five EAST-only files unchanged
+  | === 1. working tree
+  |   tolerated (pinned EAST-only, sha256 matches): src/components/home-page.tsx
+  |   tolerated (pinned EAST-only, sha256 matches): src/lib/listing-slug.ts
+  |   tolerated (pinned EAST-only, sha256 matches): src/routes/__root.tsx
+  |   tolerated (pinned EAST-only, sha256 matches): src/server/listing-sync.server.ts
+  |   tolerated (pinned EAST-only, sha256 matches): src/server/sharetribe.server.ts
+  | clean at 9b2f432d7e665ef59f433fece183035d3bf260b8 (tree 9eab0c8014ff3ed0ab39c0a20f77bd12a0b5fd64) + 5 pinned EAST-only file(s)
+  | === 1a. build copy at /home/ubuntu/fresh-web.build
+  | build copy ready (37 MB, node_modules linked)
+  | === 1b. typecheck
+  | build NODE_OPTIONS='--max-old-space-size=3072'
+  | PASS — no type errors beyond the recorded baseline.
+  | === 2. build (in /home/ubuntu/fresh-web.build; the live dist/ is not touched)
+  | stamp-build: /home/ubuntu/fresh-web.build/dist/client/fw-assets/__build.json, /home/ubuntu/fresh-web.build/dist/client/__build.json -> sha 9b2f432d tree 9eab0c80 dirty 5 assets 12220103
+  | stamp-build: WARNING built from 5 uncommitted source change(s):
+  | === 3. build stamp
+  | stamp sha=9b2f432d7e665ef59f433fece183035d3bf260b8 dirty=5
+  | === 4. smoke on :3005
+  |   / -> 200  103161B  h1=1
+  |   /p/pool-host-tools -> 200  53894B  h1=2
+  |   /p/corpus-christi-pool-rental-laws -> 200  83508B  h1=1
+  | === 5. swap dist/ and restart fresh-web
+  | carried 264 previous asset file(s) into the new dist/
+  | previous dist/ kept at /home/ubuntu/fresh-web/dist-prev-deploy
+  |   pm2 fresh-web restarted: online, pid/uptime changed
+  | production reports 9b2f432d7e665ef59f433fece183035d3bf260b8 after 1 poll(s)
+  | === 6. production reports its SHA
+  |   dirty files: exactly the 5 pinned EAST-only file(s) — tolerated
+  | PASS — production reports a traceable build SHA; its only dirty files are the pinned EAST-only set.
+  | === 7. verify:production
+  |   dirty files: exactly the 5 pinned EAST-only file(s) — tolerated
+  | PASS — production reports a traceable build SHA; its only dirty files are the pinned EAST-only set.
+  | PASS — the homepage rendered real content, not just a 200.
+  | PASS — every tool on the hub maps to a published canonical destination.
+  | PASS — every homepage /p/ link resolves to a published page.
+  | PASS — no development hostnames in source or published content.
+  | PASS — every emitted URL is a canonical 200 or an approved redirect.
+  | PASS — no prohibited insurance language and no policy number, in source or live HTML.
+  | PASS -- no uncorroborated amenity, no [object Object], no malformed currency.
+  | === 7b. check:price-variants
+  | check:price-variants — states published,draft,pendingApproval,closed
+  | PASS — every tiered listing actually offers its tiers.
+  | === 8. record the verified deploy
+  | === 9. check:production-drift
+  | PASS — verified SHA, built output, live production and working tree all agree.
+  | === DEPLOYED 9b2f432d7e665ef59f433fece183035d3bf260b8 — verified and recorded.
+build scope eastrel-build-202037: peak 1557 MB (cap 1557 MB RAM + 1536 MB swap)
+live stamp: sha 9b2f432d7e665ef59f433fece183035d3bf260b8 dirty 5 ['src/components/home-page.tsx', 'src/routes/__root.tsx', 'src/server/listing-sync.server.ts', 'src/server/sharetribe.server.ts', 'src/lib/listing-slug.ts'] built 2026-11-20T20:10:10.922Z
+RESULT: RELEASED 9b2f432d7e66 (seo/release-2026-11) over 77028454655e; live 9b2f432d7e66 dirty=5; five EAST-only files intact; pm2 env names unchanged; tracker regression 9/9 PASS; rollback: MODE=ROLLBACK
+
+exit=0

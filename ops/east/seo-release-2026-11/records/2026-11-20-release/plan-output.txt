@@ -1,0 +1,78 @@
+ship: run
+STATUS: Success
+--- STDOUT ---
+ship: script reassembled, sha256 7c0d6d872a668834, running it
+MODE PLAN: release 9b2f432d7e665ef59f433fece183035d3bf260b8 (seo/release-2026-11) over 77028454655e
+repo /home/ubuntu/fresh-web HEAD 77028454655e7b272d8c23987b54f445f9eba9f7 (ops/deploy-sha-enforcement)
+live stamp 77028454655e7b272d8c23987b54f445f9eba9f7 dirty=5 built 2026-11-04T07:38:03.938Z | dist stamp 77028454655e7b272d8c23987b54f445f9eba9f7
+  EAST-only src/components/home-page.tsx         sha256 34ae2e3f6bd87e61 mtime 2026-11-04T07:36:43Z
+  EAST-only src/routes/__root.tsx                sha256 e487d9d0c9654e42 mtime 2026-11-04T07:36:43Z
+  EAST-only src/server/listing-sync.server.ts    sha256 c4d2e71dcccd9e01 mtime 2026-09-25T05:02:28Z
+  EAST-only src/server/sharetribe.server.ts      sha256 111cf68578d9ee8e mtime 2026-09-25T05:02:28Z
+  EAST-only src/lib/listing-slug.ts              sha256 a8bdd3c21c64edf8 mtime 2026-09-25T05:02:28Z
+pm2 fresh-web: online (67 env names) | MemAvailable 2062 MB, SwapFree 2015 MB | disk free 4611 MB, dist 22 MB
+GO would cap the build at 1550 MB RAM + 1536 MB swap
+release changes 128 file(s) vs HEAD:
+  A docs/seo-repairs-2026-11/PENDING-READS.md
+  A docs/seo-repairs-2026-11/academy-sitemap.md
+  A docs/seo-repairs-2026-11/duplicates-and-canonical.md
+  A docs/seo-repairs-2026-11/intent.md
+  A docs/seo-repairs-2026-11/sitemaps.md
+  A docs/seo-repairs-2026-11/untyped-pages.md
+  M ops/deploy-east.sh
+  A ops/seo-repairs-2026-11/README.md
+  A ops/seo-repairs-2026-11/RELEASE.md
+  A ops/seo-repairs-2026-11/comparison-duplicates/cities-2026-11-15.psv
+  A ops/seo-repairs-2026-11/comparison-duplicates/decisions.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/evidence-2026-11-14-exact-dups.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/generate.mjs
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch-2026-11-15.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch-2026-11-16.json
+  A ops/seo-repairs-2026-11/comparison-duplicates/refetch_pairs.py
+  A ops/seo-repairs-2026-11/country-mapping/content-pages-2026-11-15.psv
+  A ops/seo-repairs-2026-11/country-mapping/live-before-2026-11-15.json
+  A ops/seo-repairs-2026-11/country-mapping/live-before-2026-11-16.json
+  A ops/seo-repairs-2026-11/country-mapping/measure_live.py
+  A ops/seo-repairs-2026-11/country-mapping/sitemap-country-lastmod-live-2026-11-16.tsv
+  A ops/seo-repairs-2026-11/listing-sync/prnm-listing-sync.cron
+  A ops/seo-repairs-2026-11/listing-sync/prnm-listing-sync.sh
+  A ops/seo-repairs-2026-11/listing-sync/staleness-check.sql
+  A ops/seo-repairs-2026-11/related-links-job/rollback.sql
+  A ops/seo-repairs-2026-11/related-links-job/test.sh
+  A ops/seo-repairs-2026-11/tracking/README.md
+  A ops/seo-repairs-2026-11/tracking/data/comparison-exact-dups.tsv
+  A ops/seo-repairs-2026-11/tracking/data/redirect-slugs.txt
+  A ops/seo-repairs-2026-11/tracking/data/sample-host.txt
+  A ops/seo-repairs-2026-11/tracking/data/sample-renter.txt
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-174730.json
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-174730.md
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-192804.json
+  A ops/seo-repairs-2026-11/tracking/reports/2026-11-15/track-192804.md
+  A ops/seo-repairs-2026-11/tracking/track_groups.py
+  M package.json
+  M scripts/check-deployed-sha.mjs
+  M scripts/check-production-drift.mjs
+  A scripts/intent-report.mjs
+  A scripts/test-failed-reads.mjs
+  M src/components/breadcrumbs-jsonld.tsx
+  M src/components/host-tools/tools.tsx
+  M src/components/live-inventory.tsx
+  M src/components/templates/activity-city.tsx
+  M src/components/templates/advocacy.tsx
+  M src/components/templates/country-launch.tsx
+  M src/components/templates/event-guide.tsx
+  M src/components/templates/generic-page.tsx
+  M src/components/templates/host-acq-city.tsx
+  M src/components/templates/pool-maintenance.tsx
+  M src/components/templates/resource-article.tsx
+  M src/components/templates/swim-instructor-city.tsx
+  M src/components/templates/swim-instructor-hub.tsx
+  A src/lib/city-intent.ts
+  A src/lib/comparison-duplicates.ts
+  A src/lib/content-page-lookup.ts
+  A src/lib/country-sites.ts
+  A src/lib/failed-read.ts
+  M src/lib/host-acq-schemas.ts
+  ... and 68 more
+PLAN OK. GO would: write /home/ubuntu/fresh-web.east-only.sha256 (5 pins); save dist to /home/ubuntu/fresh-web-release-backup/dist-77028454655e, the five to /home/ubuntu/fresh-web-release-backup/east-only-77028454655e.tar, state to /home/ubuntu/fresh-web.release-state.json; git checkout -B seo/release-2026-11 9b2f432d7e66 (keeping the five); run its ops/deploy-east.sh as ubuntu with NODE_OPTIONS=--max-old-space-size=3072 in a memory-capped scope; on failure check out 77028454655e again, restore dist, restart (proven). Nothing changed.
+

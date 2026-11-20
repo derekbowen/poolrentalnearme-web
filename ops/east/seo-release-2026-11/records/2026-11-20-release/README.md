@@ -13,7 +13,12 @@
   (`assets/index-DACcM51y.js` before and after).
 - Step 3.3: sitemap index 15 children; /sitemap-directory.xml 410; comparisons sitemap 1,013 URLs.
 - Step 3.4: pm2 env names live 67 = dump 67, no difference.
-- Step 3.1 (full tracker, after the 600 s edge cache): see `tracker.txt` once added.
+- Step 3.1 (full tracker, 20:21 UTC, `tracker.md`): regression 9/9, F6a, F14 (all four pages), F1, F7, F10 PASS.
+  Expected FAILs until the WEST steps: `/p` answers 301 then 404 (5c); 10 of 451 stored redirects take two hops (5d).
+  F4 "URL in two sitemaps" read 96 there, against 5 expected: a Cloudflare copy of an old child sitemap still in
+  the edge cache 11 minutes after the restart. Re-read at ~20:30 UTC with every child sitemap: 5, all
+  `sitemap-pages-academy.xml` + `sitemap-pages-articles.xml` (the 5 the runbook expects until 5e); the
+  comparisons sitemap read 1,013 both cached (HIT) and uncached.
 
 Rollback: `MODE = "ROLLBACK"` in a copy of the script (state in `/home/ubuntu/fresh-web.release-state.json`,
 previous dist in `/home/ubuntu/fresh-web/dist-prev-deploy` and `/home/ubuntu/fresh-web-release-backup/`).

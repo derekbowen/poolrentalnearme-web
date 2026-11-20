@@ -94,7 +94,20 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 | 2026-11-17 (approved in the daily check-in dialog; sent 2026-11-18 01:40–02:20 Pacific) | Hosts only (Derek's choice; customers skipped) | Pool Rental Near Me still needs help | 263 | 0 |
 | 2026-11-18 (approved in the daily check-in dialog; sent 18:31–18:47 Pacific) | Hosts only (Derek's choice; customers skipped again) | Pool Rental Near Me needs your help | 260 | 0 |
 
+| 2026-11-19 | None (that day's check-in reached the session a day late; Derek was not asked) | — | 0 | 0 |
+| 2026-11-20 | None (Derek chose "Skip today" in the check-in dialog) | — | 0 | 0 |
+
 Results of the 2026-11-17 hosts send, read before the 2026-11-18 one: 0 bounces, 3 unsubscribes (1.1%).
+Results of the 2026-11-18 hosts send (260), read 2026-11-20: 0 bounces, 5 unsubscribes (1.9%; one of them added by
+hand for a host who had asked to be removed by text on 2026-08-19 and again by email).
+
+## Removal requests made by reply are not opt-outs (found 2026-11-20)
+
+Only an unsubscribe-link click, a bounce or a STOP text puts someone on an opt-out list. A reply saying "take me
+off" by text or email changes nothing, so that person stays in every audience above. One host asked by text in
+August and by email in November and still got all three appeal emails. Before any send, check new replies to
+support@ and inbound texts for removal requests and add each one to `suppressed_emails`, `composer_unsubscribes`,
+`host_subscribers.status = 'unsubscribed'` and, for texts, `sms_opt_out` (the weekly host text reads it).
 The 2026-11-18 send used only approved sentences: email 2 without its first line, plus "If you can help, thank you."
 2 people unsubscribed within minutes of it. The temporary token's delete prompt timed out unanswered, so the token
 was still in the vault when this was written.

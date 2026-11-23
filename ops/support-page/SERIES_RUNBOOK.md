@@ -96,6 +96,16 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 
 | 2026-11-19 | None (that day's check-in reached the session a day late; Derek was not asked) | — | 0 | 0 |
 | 2026-11-20 | None (Derek chose "Skip today" in the check-in dialog) | — | 0 | 0 |
+| 2026-11-21 | None (the check-in's first database read waited on an approval prompt nobody answered; the session restarted; Derek was not asked) | — | 0 | 0 |
+| 2026-11-22 | None (Derek was asked; no answer before the session restarted) | — | 0 | 0 |
+| 2026-11-23 | None (no approval; the recommendation is to skip until the opt-outs below are applied) | — | 0 | 0 |
+
+Hold before the next send (found 2026-11-20 to 2026-11-22 by a read-only sweep of inbound texts and the readable
+Intercom history): 3 people made clear removal requests in July and August (one asked to unlist and delete her
+listing, one replied "Unsubscribe", one replied "stop texting me, I'm not interested") and are still on email lists,
+so the appeal audience above would include them. 3 more look like removal requests and were not double-checked.
+Replies to the appeal emails since 2026-11-04 land in the support@, derek@ and brandon@ Hostinger mailboxes, which
+no system here reads; a person has to check them before any further send.
 
 Results of the 2026-11-17 hosts send, read before the 2026-11-18 one: 0 bounces, 3 unsubscribes (1.1%).
 Results of the 2026-11-18 hosts send (260), read 2026-11-20: 0 bounces, 5 unsubscribes (1.9%; one of them added by

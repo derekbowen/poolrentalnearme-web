@@ -101,6 +101,7 @@ per-person unsubscribe link. Unsubscribes land in `composer_unsubscribes` and ar
 | 2026-11-23 | None (no approval; the recommendation is to skip until the opt-outs below are applied) | — | 0 | 0 |
 | 2026-11-24 | None (no reply from Derek since 2026-11-20; same hold) | — | 0 | 0 |
 | 2026-11-25 | None (no reply from Derek since 2026-11-20; same hold) | — | 0 | 0 |
+| 2026-11-26 | None (no reply from Derek since 2026-11-20; same hold) | — | 0 | 0 |
 
 Hold before the next send (found 2026-11-20 to 2026-11-22 by a read-only sweep of inbound texts and the readable
 Intercom history): 3 people made clear removal requests in July and August (one asked to unlist and delete her

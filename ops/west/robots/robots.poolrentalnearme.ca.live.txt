@@ -1,0 +1,11 @@
+# Canada domain for Pool Rental Near Me.
+# Only this country's pages are crawlable here; everything else lives on
+# https://www.poolrentalnearme.com and must not be duplicated across origins.
+User-agent: *
+Disallow: /
+Allow: /p/*-canada$
+Allow: /p/canadian-*
+Allow: /p/rent-out-your-pool-toronto$
+Allow: /p/rent-out-your-pool-vancouver$
+
+Sitemap: https://poolrentalnearme.ca/sitemap-country.xml

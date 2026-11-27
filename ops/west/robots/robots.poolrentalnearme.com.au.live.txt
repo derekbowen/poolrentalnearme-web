@@ -1,0 +1,11 @@
+# Australia domain for Pool Rental Near Me.
+# Only this country's pages are crawlable here; everything else lives on
+# https://www.poolrentalnearme.com and must not be duplicated across origins.
+User-agent: *
+Disallow: /
+Allow: /p/*-australia$
+Allow: /p/australian-*
+Allow: /p/rent-out-your-pool-sydney$
+Allow: /p/rent-out-your-pool-melbourne$
+
+Sitemap: https://poolrentalnearme.com.au/sitemap-country.xml

@@ -98,13 +98,13 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // Both channels: a router miss (set before render) and a matched
         // route that rendered NotFoundPage (set during render — which is
         // why this is read here, after the shell, and not earlier).
-        // An entity path whose id can never resolve (/l/x/abc, /l/l/x/y, /u/abc)
-        // renders a permanent loading shell, never NotFoundPage — decide it here.
-        if (ssrStatus.isMalformedEntityPath(req.path)) {
-          res.locals.ssrMalformed = true;
-        }
-        const notFound = ssrStatus.isNotFoundLocals(res.locals);
-        status = ssrStatus.resolveRenderStatus(status, notFound);
+        // An entity path whose id can never resolve (/l/x/abc, /l/l/x/y, /u/abc,
+        // /l/fargo-nd, bare /l) renders a loading or error shell, never
+        // NotFoundPage — resolveRenderOutcome decides that from the path.
+        // Third signal: the page rendered its "could not load, try again"
+        // view (a listing whose fetch failed for a reason that is not about
+        // the listing). That is a 503 + Retry-After, not a 200 a crawler may
+        // index; a 500 and a 404 both outrank it.
         // A recognised page reached through an alternate spelling (uppercase,
         // trailing slash, doubled slash) gets ONE 301 to its canonical path.
         // Decided here, after the shell, so an unknown slug in an odd spelling
@@ -114,20 +114,19 @@ async function render({ ssrServerEntry, htmlMarkup, res, req, nonce, error500HTM
         // A listing reached by /l/<id> or a stale slug goes straight to its
         // declared /l/<slug>/<id> path; that target is already lowercase and
         // slash-free, so it is checked first to keep this to a single hop.
-        const redirectTo =
-          status === 200
-            ? ssrStatus.resolveListingRedirect(req, res.locals.ssrSignal, notFound) ||
-              ssrStatus.resolveCanonicalRedirect(req, notFound)
-            : null;
-        if (redirectTo) {
-          res.set('Cache-Control', 'public, max-age=86400');
-          res.redirect(301, redirectTo);
+        // The whole decision is one pure function so that every row of the
+        // behaviour table is covered by ssrStatus.test.js.
+        const outcome = ssrStatus.resolveRenderOutcome(req, res.locals, status);
+        if (outcome.redirectTo) {
+          res.set(outcome.headers);
+          res.redirect(301, outcome.redirectTo);
           return;
         }
-        res.set({ 'Content-Type': 'text/html' });
-        if (status === 404) {
-          res.set('X-Robots-Tag', 'noindex, follow');
-        }
+        status = outcome.status;
+        // Content-Type always; X-Robots-Tag on a 404; Retry-After, no-store
+        // and noindex on a 503. The friendly error page is still streamed
+        // below — only a 500 gets the static error shell.
+        res.set(outcome.headers);
         res.status(status);
         if (status === 500) {
           res.write(error500HTML);

@@ -75,10 +75,18 @@ const routeConfiguration = async ({ config = {}, store, location }) => {
       },
       ...authForPrivateMarketplace,
     },
+    // Bare /l is not a page. It used to render an empty shell that sent the
+    // browser to the homepage; on the server that shell counted as a real page,
+    // so /l/ was 301ed to /l, which nginx 301s back to /l/ — a loop. It is a
+    // plain 404 now (the server also decides this before rendering, see
+    // isMalformedEntityPath in server/api-util/ssrStatus.js). The route name is
+    // kept so nothing that resolves 'ListingBasePage' breaks.
     {
       path: '/l',
       name: 'ListingBasePage',
-      Component: RedirectToLandingPage,
+      loaders: {
+        page: () => import('../containers/NotFoundPage/NotFoundPage'),
+      },
     },
     {
       path: '/l/:slug/:id',

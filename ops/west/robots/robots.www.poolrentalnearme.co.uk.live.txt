@@ -1,0 +1,11 @@
+# United Kingdom domain for Pool Rental Near Me.
+# Only this country's pages are crawlable here; everything else lives on
+# https://www.poolrentalnearme.com and must not be duplicated across origins.
+User-agent: *
+Disallow: /
+Allow: /p/*-uk$
+Allow: /p/*-united-kingdom$
+Allow: /p/rent-out-your-pool-london$
+Allow: /p/rent-out-your-pool-manchester$
+
+Sitemap: https://www.poolrentalnearme.co.uk/sitemap-country.xml

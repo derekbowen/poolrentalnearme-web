@@ -27,6 +27,9 @@ export const SsrSignalProvider = SsrSignalContext.Provider;
 
 export const useSsrSignal = () => useContext(SsrSignalContext);
 
-export const createSsrSignal = () => ({ notFound: false });
+// `unavailable` is the listing page's "the fetch failed, try again" flag: the
+// renderer answers 503 + Retry-After instead of an indexable 200. See
+// server/api-util/ssrStatus.js isUnavailableLocals.
+export const createSsrSignal = () => ({ notFound: false, unavailable: false });
 
 export default SsrSignalContext;
